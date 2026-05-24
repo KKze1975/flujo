@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Mayo 2026 | Fase: Construcción — Ticket 2 cerrado
+Actualizado: Mayo 2026 | Fase: Construcción — Ticket 3 cerrado
 
 ---
 
@@ -266,14 +266,17 @@ Rango B — Plan semana siguiente
 | Archivo | Estado |
 |---|---|
 | app/ | Directorio Next.js App Router |
-| lib/data/types.ts | Creado — 8 tipos + 10 interfaces |
+| app/api/conceptos/route.ts | Creado — GET devuelve H1 real desde Sheets |
+| lib/data/types.ts | Actualizado — Concepto sincronizado con esquema H1 aprobado |
 | lib/data/index.ts | Creado — IDataProvider con 23 métodos |
-| lib/data/sheets.ts | Creado — SheetsDataProvider vacío |
+| lib/data/sheets.ts | Actualizado — SheetsDataProvider con getConceptos() implementado |
 | lib/data/mock.ts | Creado — MockDataProvider con respuestas vacías |
+| lib/data/provider.ts | Creado — singleton getProvider() |
 | components/ | Directorio vacío |
 | public/ | Directorio vacío |
-| ESTADO.md | En el repo desde Ticket 2 |
-| package.json | Generado por create-next-app |
+| .env.local | Creado — credenciales Google (gitignored) |
+| ESTADO.md | En el repo — fuente de verdad |
+| package.json | googleapis agregado |
 | next.config.ts | Generado por create-next-app |
 
 ---
@@ -283,8 +286,8 @@ Rango B — Plan semana siguiente
 | Componente | Estado |
 |---|---|
 | Google Sheet original | Legacy — consulta histórica, no se toca |
-| Google Sheet nuevo | Creado — ID: 1GOMhxYw_f7Zl-GTVNtxAs9218x4vKxzg3LGRyveyr7A |
-| Cuenta de servicio | psibot@psibot-495119.iam.gserviceaccount.com — en suspenso |
+| Google Sheet nuevo | Activo — ID: 1GOMhxYw_f7Zl-GTVNtxAs9218x4vKxzg3LGRyveyr7A — pestaña H1 creada con headers y 3 filas de prueba |
+| Cuenta de servicio | psibot@psibot-495119.iam.gserviceaccount.com — configurada y conectada |
 | Repo GitHub (github.com/KKze1975/flujo) | Activo — Next.js base en rama main |
 | Next.js local | Corriendo en http://localhost:3000 |
 | lib/data/types.ts | Creado — 8 tipos + 10 interfaces |
@@ -300,10 +303,8 @@ Rango B — Plan semana siguiente
 ## Deuda técnica conocida
 
 - 2 vulnerabilidades moderadas en dependencias npm — pendiente npm audit después del MVP
-- Rama local master diverge de main en GitHub — resolver con: git branch -m master main al inicio de próxima sesión
 - Claude Code auto-update failed — resolver con: npm i -g @anthropic-ai/claude-code
-- lib/data/provider.ts (singleton) no creado — pendiente para cuando se conecte Sheets real
-- Credenciales cuenta de servicio Google no configuradas en proyecto — pendiente antes de Ticket 3
+- H1 en Google Sheet tiene 3 filas de prueba — reemplazar con datos reales del presupuesto antes de usar en producción
 
 ---
 

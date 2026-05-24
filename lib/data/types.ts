@@ -8,17 +8,32 @@ export type EstadoConcepto = "activo" | "retirado";
 export type EstadoMovimiento = "pendiente" | "ejecutado" | "pospuesto" | "no_aplica";
 export type EstadoIngresoCamilo = "pendiente" | "confirmado";
 export type Confianza = "alta" | "media" | "baja";
+export type Categoria =
+  | "Casa"
+  | "Servicios"
+  | "Transporte"
+  | "Mercado y Alimentación"
+  | "Salud"
+  | "Compromisos Financieros"
+  | "Recreación"
+  | "Metas Familiares";
+export type SemanaDefault = "S1" | "S2" | "S3" | "S4" | "variable";
 
 // ── H1 ─────────────────────────────────────────────────────────────────────
 
 export interface Concepto {
-  id: string;
+  id: string;                        // id_concepto
   nombre: string;
+  categoria: Categoria;
   tipo: TipoConcepto;
-  actor: Actor;
-  monto: number;
   frecuencia: Frecuencia;
+  mesActivoBimestral: string | null; // solo bimestral — null en otros casos
+  monto: number;                     // monto_referencia COP
+  semanaDefault: SemanaDefault;
+  requiereAprobacion: boolean;
   estado: EstadoConcepto;
+  fechaRetiro: string | null;
+  notas: string | null;
 }
 
 // ── H2 ─────────────────────────────────────────────────────────────────────
