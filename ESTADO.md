@@ -335,11 +335,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | Componente | Estado |
 |---|---|
 | Google Sheet original | Legacy — consulta histórica, no se toca |
-<<<<<<< HEAD
-| Google Sheet nuevo | Activo — ID: 1GOMhxYw_f7Zl-GTVNtxAs9218x4vKxzg3LGRyveyr7A — H1 con 3 filas de prueba — reemplazar con H1_presupuesto_base.csv en Ticket 4 |
-=======
 | Google Sheet nuevo | Activo — ID: 1GOMhxYw_f7Zl-GTVNtxAs9218x4vKxzg3LGRyveyr7A — pestaña H1 con 40 conceptos reales |
->>>>>>> f669ec8 (Ticket 4: cargar 40 conceptos reales en H1 del Google Sheet)
 | Cuenta de servicio | psibot@psibot-495119.iam.gserviceaccount.com — configurada y conectada |
 | Repo GitHub (github.com/KKze1975/flujo) | Activo — rama main — Ticket 4 pusheado |
 | Next.js local | http://localhost:3000 — GET /api/conceptos operativo |
@@ -360,11 +356,8 @@ Archivo fuente: H1_presupuesto_base.csv
 
 - 2 vulnerabilidades moderadas en dependencias npm — pendiente npm audit después del MVP
 - Claude Code auto-update failed — resolver con: npm i -g @anthropic-ai/claude-code
-<<<<<<< HEAD
 - H6 tiene columnas cat_* desactualizadas — actualizar para reflejar las 11 categorías aprobadas
-=======
 - scripts/seed-h1.mjs fue ejecutado — puede eliminarse o conservarse como referencia de re-seed
->>>>>>> f669ec8 (Ticket 4: cargar 40 conceptos reales en H1 del Google Sheet)
 
 ---
 
