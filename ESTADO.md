@@ -473,26 +473,14 @@ Archivo fuente: H1_presupuesto_base.csv
 
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo.
 
-Tipo de sesión: [CONSTRUCCIÓN]
+Tipo de sesión: [DISEÑO] — definir Ticket 5 antes de construir
 
 Reglas:
 1. Un solo ticket activo — no abrir el siguiente hasta verificar el DoD
 2. DoD ejecutable: comando o acción observable
 3. Al cerrar: hacer commit de ESTADO.md actualizado
 
-<<<<<<< HEAD
-Ticket 4 — objetivo:
-Reemplazar las 3 filas de prueba en H1 del Google Sheet con los 40 conceptos
-reales del presupuesto familiar aprobado.
-
-Archivo fuente: H1_presupuesto_base.csv — adjuntarlo al iniciar la sesión.
-
-DoD: GET /api/conceptos retorna 40 conceptos reales — sin filas de prueba.
-
-Esta sesión ocurre en Claude Code, no en Claude.ai.
-=======
-Ticket 5 — objetivo pendiente de definir.
->>>>>>> f669ec8 (Ticket 4: cargar 40 conceptos reales en H1 del Google Sheet)
+Ticket 5 — objetivo a definir en próxima sesión de DISEÑO.
 
 ---
 
