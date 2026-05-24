@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Mayo 2026 | Fase: Construcción — Ticket 4 pendiente
+Actualizado: Mayo 2026 | Fase: Construcción — Ticket 4 cerrado
 
 ---
 
@@ -324,6 +324,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | public/ | Directorio vacío |
 | .env.local | Creado — credenciales Google (gitignored) |
 | ESTADO.md | En el repo — fuente de verdad |
+| scripts/seed-h1.mjs | Creado — cargó 40 conceptos reales en H1 (uso único) |
 | package.json | googleapis agregado |
 | next.config.ts | Generado por create-next-app |
 
@@ -334,9 +335,13 @@ Archivo fuente: H1_presupuesto_base.csv
 | Componente | Estado |
 |---|---|
 | Google Sheet original | Legacy — consulta histórica, no se toca |
+<<<<<<< HEAD
 | Google Sheet nuevo | Activo — ID: 1GOMhxYw_f7Zl-GTVNtxAs9218x4vKxzg3LGRyveyr7A — H1 con 3 filas de prueba — reemplazar con H1_presupuesto_base.csv en Ticket 4 |
+=======
+| Google Sheet nuevo | Activo — ID: 1GOMhxYw_f7Zl-GTVNtxAs9218x4vKxzg3LGRyveyr7A — pestaña H1 con 40 conceptos reales |
+>>>>>>> f669ec8 (Ticket 4: cargar 40 conceptos reales en H1 del Google Sheet)
 | Cuenta de servicio | psibot@psibot-495119.iam.gserviceaccount.com — configurada y conectada |
-| Repo GitHub (github.com/KKze1975/flujo) | Activo — rama main — Ticket 3 pusheado |
+| Repo GitHub (github.com/KKze1975/flujo) | Activo — rama main — Ticket 4 pusheado |
 | Next.js local | http://localhost:3000 — GET /api/conceptos operativo |
 | lib/data/types.ts | Actualizado — Concepto con 12 campos del esquema H1 aprobado |
 | lib/data/index.ts | Creado — IDataProvider con 23 métodos |
@@ -355,7 +360,11 @@ Archivo fuente: H1_presupuesto_base.csv
 
 - 2 vulnerabilidades moderadas en dependencias npm — pendiente npm audit después del MVP
 - Claude Code auto-update failed — resolver con: npm i -g @anthropic-ai/claude-code
+<<<<<<< HEAD
 - H6 tiene columnas cat_* desactualizadas — actualizar para reflejar las 11 categorías aprobadas
+=======
+- scripts/seed-h1.mjs fue ejecutado — puede eliminarse o conservarse como referencia de re-seed
+>>>>>>> f669ec8 (Ticket 4: cargar 40 conceptos reales en H1 del Google Sheet)
 
 ---
 
@@ -471,6 +480,7 @@ Reglas:
 2. DoD ejecutable: comando o acción observable
 3. Al cerrar: hacer commit de ESTADO.md actualizado
 
+<<<<<<< HEAD
 Ticket 4 — objetivo:
 Reemplazar las 3 filas de prueba en H1 del Google Sheet con los 40 conceptos
 reales del presupuesto familiar aprobado.
@@ -480,6 +490,9 @@ Archivo fuente: H1_presupuesto_base.csv — adjuntarlo al iniciar la sesión.
 DoD: GET /api/conceptos retorna 40 conceptos reales — sin filas de prueba.
 
 Esta sesión ocurre en Claude Code, no en Claude.ai.
+=======
+Ticket 5 — objetivo pendiente de definir.
+>>>>>>> f669ec8 (Ticket 4: cargar 40 conceptos reales en H1 del Google Sheet)
 
 ---
 
