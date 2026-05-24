@@ -347,7 +347,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | Google Sheet original | Legacy — consulta histórica, no se toca |
 | Google Sheet nuevo | Activo — ID: 1GOMhxYw_f7Zl-GTVNtxAs9218x4vKxzg3LGRyveyr7A — H1 con 40 conceptos reales (montos confirmados), H2 inicializada (39 movimientos mayo 2026) |
 | Cuenta de servicio | psibot@psibot-495119.iam.gserviceaccount.com — configurada y conectada |
-| Repo GitHub (github.com/KKze1975/flujo) | Activo — rama main — Ticket 4 pusheado |
+| Repo GitHub (github.com/KKze1975/flujo) | Activo — rama main — Ticket 5 pusheado |
 | Next.js local | http://localhost:3000 — GET /api/conceptos operativo |
 | lib/data/types.ts | Actualizado — Concepto con 12 campos del esquema H1 aprobado |
 | lib/data/index.ts | Creado — IDataProvider con 23 métodos |
@@ -417,6 +417,9 @@ Archivo fuente: H1_presupuesto_base.csv
 | Mayo 2026 | Fondo emergencia en Metas Familiares | Meta 2M — aporte mensual 200.000 |
 | Mayo 2026 | Provisión Mireyita separada de pago semanal | 100.000 mensual para primas y vacaciones |
 | Mayo 2026 | Trazabilidad anticipos Lucas en M4 | No requiere campo en H1 |
+| Mayo 2026 | Ciclo de vida de conceptos: Camino B | Gestión manual con estado_concepto — sin fecha_inicio ni fecha_fin en H1 |
+| Mayo 2026 | semana: null para conceptos con semana_default variable | La semana se asigna al ejecutar — no se fuerza S1 como default |
+| Mayo 2026 | 409 Conflict para doble inicialización del mismo mes | Protección de integridad — reiniciar un mes no tiene caso de uso legítimo |
 
 ---
 
