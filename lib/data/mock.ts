@@ -31,10 +31,13 @@ export class MockDataProvider implements IDataProvider {
   }
 
   // ── H2 ───────────────────────────────────────────────────────────────────
-  getMovimientos(_mes?: number): Promise<Movimiento[]> {
+  getMovimientos(_mes?: string): Promise<Movimiento[]> {
     return Promise.resolve([]);
   }
-  getMovimientosByMesYSemana(_mes: number, _semana: Semana): Promise<Movimiento[]> {
+  getMovimientosByMesYSemana(_mes: string, _semana: Semana): Promise<Movimiento[]> {
+    return Promise.resolve([]);
+  }
+  crearMovimientosMes(_movimientos: Omit<Movimiento, "id">[]): Promise<Movimiento[]> {
     return Promise.resolve([]);
   }
   createMovimiento(_data: Omit<Movimiento, "id">): Promise<Movimiento> {

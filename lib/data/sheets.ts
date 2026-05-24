@@ -7,6 +7,8 @@ import type {
   TipoConcepto,
   Frecuencia,
   EstadoConcepto,
+  EstadoMovimiento,
+  Actor,
   Concepto,
   Movimiento,
   Bolsillo,
@@ -75,10 +77,125 @@ export class SheetsDataProvider implements IDataProvider {
   }
 
   // ── H2 ───────────────────────────────────────────────────────────────────
-  getMovimientos(_mes?: number): Promise<Movimiento[]> {
-    throw new Error("Not implemented yet");
+
+  private readonly H2_HEADERS = [
+    "id_movimiento", "id_concepto", "mes", "nombre_snapshot",
+    "categoria_snapshot", "tipo_snapshot", "semana",
+    "monto_presupuestado", "monto_ejecutado", "desviacion", "estado",
+    "ejecutor", "fuente_en_mano", "fuente_nequi", "fuente_camilo", "fuente_angie",
+    "fecha_ejecucion", "razon_desviacion", "razon_postergacion",
+    "comprobante_url", "pendiente_aprobacion", "notas",
+  ];
+
+  private rowToMovimiento(row: string[], headers: string[]): Movimiento {
+    const col = (name: string) => row[headers.indexOf(name)] ?? "";
+    return {
+      id: col("id_movimiento"),
+      conceptoId: col("id_concepto"),
+      mes: col("mes"),
+      nombreSnapshot: col("nombre_snapshot"),
+      categoriaSnapshot: col("categoria_snapshot") as Categoria,
+      tipoSnapshot: col("tipo_snapshot") as TipoConcepto,
+      semana: (col("semana") || null) as Semana | null,
+      montoPresupuestado: Number(col("monto_presupuestado")) || 0,
+      montoEjecutado: col("monto_ejecutado") ? Number(col("monto_ejecutado")) : null,
+      desviacion: col("desviacion") ? Number(col("desviacion")) : null,
+      estado: col("estado") as EstadoMovimiento,
+      ejecutor: (col("ejecutor") || null) as Actor | null,
+      fuenteEnMano: col("fuente_en_mano").toUpperCase() === "TRUE",
+      fuenteNequi: col("fuente_nequi").toUpperCase() === "TRUE",
+      fuenteCamilo: col("fuente_camilo").toUpperCase() === "TRUE",
+      fuenteAngie: col("fuente_angie").toUpperCase() === "TRUE",
+      fechaEjecucion: col("fecha_ejecucion") || null,
+      razonDesviacion: col("razon_desviacion") || null,
+      razonPostergacion: col("razon_postergacion") || null,
+      comprobanteUrl: col("comprobante_url") || null,
+      pendienteAprobacion: col("pendiente_aprobacion").toUpperCase() === "TRUE",
+      notas: col("notas") || null,
+    };
   }
-  getMovimientosByMesYSemana(_mes: number, _semana: Semana): Promise<Movimiento[]> {
+
+  private movimientoToRow(id: string, m: Omit<Movimiento, "id">): string[] {
+    return [
+      id,
+      m.conceptoId,
+      m.mes,
+      m.nombreSnapshot,
+      m.categoriaSnapshot,
+      m.tipoSnapshot,
+      m.semana ?? "",
+      String(m.montoPresupuestado),
+      m.montoEjecutado != null ? String(m.montoEjecutado) : "",
+      m.desviacion != null ? String(m.desviacion) : "",
+      m.estado,
+      m.ejecutor ?? "",
+      m.fuenteEnMano ? "TRUE" : "FALSE",
+      m.fuenteNequi ? "TRUE" : "FALSE",
+      m.fuenteCamilo ? "TRUE" : "FALSE",
+      m.fuenteAngie ? "TRUE" : "FALSE",
+      m.fechaEjecucion ?? "",
+      m.razonDesviacion ?? "",
+      m.razonPostergacion ?? "",
+      m.comprobanteUrl ?? "",
+      m.pendienteAprobacion ? "TRUE" : "FALSE",
+      m.notas ?? "",
+    ];
+  }
+
+  private async ensureH2Headers(): Promise<void> {
+    try {
+      const res = await this.sheets.spreadsheets.values.get({
+        spreadsheetId: process.env.GOOGLE_SHEET_ID,
+        range: "H2!A1",
+      });
+      if (res.data.values?.[0]?.[0] === "id_movimiento") return;
+    } catch {
+      // H2 tab might not exist — write will create it if the tab exists
+    }
+    await this.sheets.spreadsheets.values.update({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: "H2!A1",
+      valueInputOption: "RAW",
+      requestBody: { values: [this.H2_HEADERS] },
+    });
+  }
+
+  async getMovimientos(mes?: string): Promise<Movimiento[]> {
+    let rows: string[][];
+    try {
+      const res = await this.sheets.spreadsheets.values.get({
+        spreadsheetId: process.env.GOOGLE_SHEET_ID,
+        range: "H2!A:V",
+      });
+      rows = (res.data.values ?? []) as string[][];
+    } catch {
+      return [];
+    }
+    if (rows.length < 2) return [];
+    const [headers, ...dataRows] = rows;
+    const mesIdx = headers.indexOf("mes");
+    return dataRows
+      .filter((row) => row.length > 0 && row[0])
+      .filter((row) => !mes || row[mesIdx] === mes)
+      .map((row) => this.rowToMovimiento(row, headers));
+  }
+
+  async crearMovimientosMes(movimientos: Omit<Movimiento, "id">[]): Promise<Movimiento[]> {
+    await this.ensureH2Headers();
+    const base = Date.now();
+    const rows = movimientos.map((m, i) =>
+      this.movimientoToRow(`MOV_${base + i}`, m)
+    );
+    await this.sheets.spreadsheets.values.append({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: "H2!A:V",
+      valueInputOption: "RAW",
+      requestBody: { values: rows },
+    });
+    return movimientos.map((m, i) => ({ id: `MOV_${base + i}`, ...m }));
+  }
+
+  getMovimientosByMesYSemana(_mes: string, _semana: Semana): Promise<Movimiento[]> {
     throw new Error("Not implemented yet");
   }
   createMovimiento(_data: Omit<Movimiento, "id">): Promise<Movimiento> {

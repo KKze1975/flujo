@@ -10,13 +10,16 @@ export type EstadoIngresoCamilo = "pendiente" | "confirmado";
 export type Confianza = "alta" | "media" | "baja";
 export type Categoria =
   | "Casa"
-  | "Servicios"
-  | "Transporte"
-  | "Mercado y Alimentación"
+  | "Servicios Públicos"
+  | "Membresías y Suscripciones"
+  | "Educación"
   | "Salud"
+  | "Mercado y Alimentación"
   | "Compromisos Financieros"
   | "Recreación"
-  | "Metas Familiares";
+  | "Transporte"
+  | "Metas Familiares"
+  | "Frida";
 export type SemanaDefault = "S1" | "S2" | "S3" | "S4" | "variable";
 
 // ── H1 ─────────────────────────────────────────────────────────────────────
@@ -39,14 +42,28 @@ export interface Concepto {
 // ── H2 ─────────────────────────────────────────────────────────────────────
 
 export interface Movimiento {
-  id: string;
-  conceptoId: string;
-  mes: number;
-  semana: Semana;
-  monto: number;
+  id: string;                        // id_movimiento — MOV_{unix_timestamp}
+  conceptoId: string;                // id_concepto — FK a H1
+  mes: string;                       // "2026-05"
+  nombreSnapshot: string;            // copia inmutable del nombre de H1
+  categoriaSnapshot: Categoria;      // copia inmutable de categoria
+  tipoSnapshot: TipoConcepto;        // copia inmutable de tipo
+  semana: Semana | null;             // null si semana_default = variable
+  montoPresupuestado: number;        // monto_referencia de H1, incluyendo 0
+  montoEjecutado: number | null;     // null si no ejecutado
+  desviacion: number | null;         // null si no ejecutado
   estado: EstadoMovimiento;
-  notas?: string;
-  fechaEjecucion?: string;
+  ejecutor: Actor | null;
+  fuenteEnMano: boolean;
+  fuenteNequi: boolean;
+  fuenteCamilo: boolean;
+  fuenteAngie: boolean;
+  fechaEjecucion: string | null;
+  razonDesviacion: string | null;
+  razonPostergacion: string | null;
+  comprobanteUrl: string | null;
+  pendienteAprobacion: boolean;
+  notas: string | null;
 }
 
 // ── H3 ─────────────────────────────────────────────────────────────────────

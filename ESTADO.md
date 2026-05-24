@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Mayo 2026 | Fase: Construcción — Ticket 4 cerrado
+Actualizado: Mayo 2026 | Fase: Construcción — Ticket 5 cerrado
 
 ---
 
@@ -260,18 +260,24 @@ Rango B — Plan semana siguiente
 40 conceptos aprobados en sesión de diseño Mayo 2026.
 Archivo fuente: H1_presupuesto_base.csv
 
-### Gaps pendientes de completar (no bloquean Ticket 4)
+### Gaps pendientes de completar
 
 | Concepto | Gap |
 |---|---|
-| EPS / ARL / Pensión | Monto pendiente |
-| Plan complementario | Monto pendiente |
-| Dr. Sánchez (Angie) | Monto pendiente |
-| Mercado mensual | Monto pendiente |
-| Chucherías viernes | Monto pendiente |
 | CDT NU | Sin techo — se alimenta de remanentes |
 | Ropa | Monto pendiente |
 | Claude Pro | ~105.000 — verificar cobro exacto en COP |
+
+### Gaps resueltos en sesión Ticket 5
+
+| Concepto | Monto confirmado |
+|---|---|
+| EPS / ARL / Pensión | 540.000 |
+| Plan complementario | 740.000 |
+| Dr. Sánchez (Angie) | 115.000 |
+| Mercado mensual | 600.000 |
+| Chucherías viernes | 40.000 |
+| Ayuda mamá servicios | Retirado (recurrente desde junio 2026) |
 
 ### Decisiones de diseño tomadas en sesión de presupuesto
 
@@ -315,16 +321,20 @@ Archivo fuente: H1_presupuesto_base.csv
 |---|---|
 | app/ | Directorio Next.js App Router |
 | app/api/conceptos/route.ts | Creado — GET devuelve H1 real desde Sheets |
-| lib/data/types.ts | Actualizado — Concepto sincronizado con esquema H1 aprobado (12 campos) |
-| lib/data/index.ts | Creado — IDataProvider con 23 métodos |
-| lib/data/sheets.ts | Actualizado — SheetsDataProvider con getConceptos() implementado |
-| lib/data/mock.ts | Creado — MockDataProvider con respuestas vacías |
+| app/api/mes/[mes]/iniciar/route.ts | Creado — POST inicializa mes en H2 (Ticket 5) |
+| lib/data/types.ts | Actualizado — Concepto (12 campos), Movimiento (22 campos H2), Categoria (11 aprobadas) |
+| lib/data/index.ts | Creado — IDataProvider con métodos H1-H6 + crearMovimientosMes |
+| lib/data/sheets.ts | Actualizado — getMovimientos() y crearMovimientosMes() implementados |
+| lib/data/mock.ts | Creado — MockDataProvider actualizado |
 | lib/data/provider.ts | Creado — singleton getProvider() |
 | components/ | Directorio vacío |
 | public/ | Directorio vacío |
 | .env.local | Creado — credenciales Google (gitignored) |
 | ESTADO.md | En el repo — fuente de verdad |
 | scripts/seed-h1.mjs | Creado — cargó 40 conceptos reales en H1 (uso único) |
+| scripts/update-h1-montos.mjs | Creado — actualizó montos confirmados y retiró Ayuda mamá servicios |
+| scripts/setup-h2.mjs | Creado — creó pestaña H2 con 22 headers |
+| scripts/check-h2.mjs | Creado — verifica DoD en H2 |
 | package.json | googleapis agregado |
 | next.config.ts | Generado por create-next-app |
 
@@ -335,7 +345,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | Componente | Estado |
 |---|---|
 | Google Sheet original | Legacy — consulta histórica, no se toca |
-| Google Sheet nuevo | Activo — ID: 1GOMhxYw_f7Zl-GTVNtxAs9218x4vKxzg3LGRyveyr7A — pestaña H1 con 40 conceptos reales |
+| Google Sheet nuevo | Activo — ID: 1GOMhxYw_f7Zl-GTVNtxAs9218x4vKxzg3LGRyveyr7A — H1 con 40 conceptos reales (montos confirmados), H2 inicializada (39 movimientos mayo 2026) |
 | Cuenta de servicio | psibot@psibot-495119.iam.gserviceaccount.com — configurada y conectada |
 | Repo GitHub (github.com/KKze1975/flujo) | Activo — rama main — Ticket 4 pusheado |
 | Next.js local | http://localhost:3000 — GET /api/conceptos operativo |
@@ -345,6 +355,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | lib/data/mock.ts | Creado — MockDataProvider con respuestas vacías |
 | lib/data/provider.ts | Creado — singleton getProvider() |
 | app/api/conceptos/route.ts | Creado — GET /api/conceptos devuelve datos reales |
+| app/api/mes/[mes]/iniciar/route.ts | Creado — POST /api/mes/:mes/iniciar (Ticket 5) |
 | .env.local | Creado — credenciales Google (gitignored) |
 | Amazon WorkSpaces | Activo — entorno de desarrollo principal |
 | Railway | Descartado |
@@ -466,14 +477,13 @@ Archivo fuente: H1_presupuesto_base.csv
 
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo.
 
-Tipo de sesión: [DISEÑO] — definir Ticket 5 antes de construir
+Tipo de sesión: [CONSTRUCCIÓN]
+Ticket activo: Ticket 6 — GET /api/mes/[mes] (vista del mes inicializado)
 
 Reglas:
 1. Un solo ticket activo — no abrir el siguiente hasta verificar el DoD
-2. DoD ejecutable: comando o acción observable
-3. Al cerrar: hacer commit de ESTADO.md actualizado
-
-Ticket 5 — objetivo a definir en próxima sesión de DISEÑO.
+2. DoD verificado con curl — no se declara terminado internamente
+3. Al cerrar: hacer commit de ESTADO.md actualizado con "ESTADO: Ticket 6 [estado al cerrar]"
 
 ---
 
