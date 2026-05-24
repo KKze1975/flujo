@@ -286,14 +286,17 @@ Rango B — Plan semana siguiente
 | Componente | Estado |
 |---|---|
 | Google Sheet original | Legacy — consulta histórica, no se toca |
-| Google Sheet nuevo | Activo — ID: 1GOMhxYw_f7Zl-GTVNtxAs9218x4vKxzg3LGRyveyr7A — pestaña H1 creada con headers y 3 filas de prueba |
+| Google Sheet nuevo | Activo — ID: 1GOMhxYw_f7Zl-GTVNtxAs9218x4vKxzg3LGRyveyr7A — pestaña H1 con headers y 3 filas de prueba |
 | Cuenta de servicio | psibot@psibot-495119.iam.gserviceaccount.com — configurada y conectada |
-| Repo GitHub (github.com/KKze1975/flujo) | Activo — Next.js base en rama main |
-| Next.js local | Corriendo en http://localhost:3000 |
-| lib/data/types.ts | Creado — 8 tipos + 10 interfaces |
+| Repo GitHub (github.com/KKze1975/flujo) | Activo — rama main — Ticket 3 pusheado |
+| Next.js local | http://localhost:3000 — GET /api/conceptos operativo |
+| lib/data/types.ts | Actualizado — Concepto con 12 campos del esquema H1 aprobado |
 | lib/data/index.ts | Creado — IDataProvider con 23 métodos |
-| lib/data/sheets.ts | Creado — SheetsDataProvider vacío |
+| lib/data/sheets.ts | Actualizado — getConceptos() implementado y funcional |
 | lib/data/mock.ts | Creado — MockDataProvider con respuestas vacías |
+| lib/data/provider.ts | Creado — singleton getProvider() |
+| app/api/conceptos/route.ts | Creado — GET /api/conceptos devuelve datos reales |
+| .env.local | Creado — credenciales Google (gitignored) |
 | Amazon WorkSpaces | Activo — entorno de desarrollo principal |
 | Railway | Descartado |
 | Código Node.js anterior | Descartado |
@@ -378,10 +381,10 @@ Reglas:
 2. DoD ejecutable: comando o acción observable
 3. Al cerrar: hacer commit de ESTADO.md actualizado
 
-Prerequisito antes del Ticket 3:
-Resolver rama master vs main: git branch -m master main && git push origin main
+Prerequisito antes del Ticket 4:
+H1 en Google Sheets tiene 3 filas de prueba. Reemplazar con datos reales del presupuesto familiar antes de continuar, o confirmar explícitamente que se trabajará con datos de prueba durante el desarrollo.
 
-Objetivo Ticket 3: conectar Google Sheets API e implementar SheetsDataProvider para H1
+Ticket 4 — objetivo pendiente de definir.
 
 ---
 
