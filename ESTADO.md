@@ -437,6 +437,8 @@ Archivo fuente: H1_presupuesto_base.csv
 | Mayo 2026 | Borde activo sidebar via inline style borderLeft | border-l-[3px] en objetos JS tampoco es escaneado por Tailwind v4 |
 | Mayo 2026 | Referencia visual M1: Zoho Expense | Azul primario #1e3a5f, superficie plana, badges de estado, Inter font |
 | Mayo 2026 | Ajustes visuales M1 completados | V1-V11 verificados en browser — Inter, badges, header azul, sidebar sticky, balance dinámico |
+| Mayo 2026 | Mercado semanal dividido en dos bolsillos | Frutas y verduras $200.000 / Víveres y otros $250.000 |
+| Mayo 2026 | Apoyo Mariella agregado a H1 | $100.000 mensual fijo — Compromisos Financieros — S1 |
 
 ---
 
