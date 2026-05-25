@@ -8,6 +8,7 @@ import type { Movimiento, Concepto, IngresoCamilo, IngresoAngie, Semana, Categor
 import ModalIngresoCamilo from "./m1/ModalIngresoCamilo";
 import ModalAporteAngie from "./m1/ModalAporteAngie";
 import ModalEditarConcepto from "./m1/ModalEditarConcepto";
+import VistaPlanificacion from "./m1/VistaPlanificacion";
 
 // V10 — Inter font
 const inter = Inter({ subsets: ["latin"] });
@@ -414,9 +415,17 @@ export default function MesM1({
 
         {/* ── Content area ── */}
         {view === "planificacion" ? (
-          <div className="flex flex-1 items-center justify-center">
-            <p className="text-sm text-gray-400">Vista de Planificación — próximos tickets</p>
-          </div>
+          <VistaPlanificacion
+            mes={mes}
+            conceptos={conceptos}
+            movimientos={movs}
+            ingresoCamilo={ingresoCamilo}
+            ingresosAngie={ingresosAngie}
+            onSaveIngresoCamilo={(i) => setIngresoCamilo(i)}
+            onSaveIngresosAngie={(list) => setIngresosAngie(list)}
+            onUpdateConceptos={(updated) => setConceptos(updated)}
+            onCerrar={(updatedMovs) => { setMovs(updatedMovs); setView("ejecucion"); }}
+          />
         ) : (
           <>
             <div className="flex flex-1 min-h-0 overflow-hidden">

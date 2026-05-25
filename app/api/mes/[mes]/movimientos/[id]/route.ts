@@ -16,7 +16,8 @@ type PatchBody =
       razonDesviacion?: string | null;
     }
   | { tipo: "posponer"; nuevaSemana?: Semana }
-  | { tipo: "no_aplica" };
+  | { tipo: "no_aplica" }
+  | { tipo: "reasignar_semana"; semana: Semana };
 
 export async function PATCH(
   req: NextRequest,
@@ -35,7 +36,7 @@ export async function PATCH(
     return Response.json({ error: "Body inválido." }, { status: 400 });
   }
 
-  if (!body?.tipo || !["ejecutar", "posponer", "no_aplica"].includes(body.tipo)) {
+  if (!body?.tipo || !["ejecutar", "posponer", "no_aplica", "reasignar_semana"].includes(body.tipo)) {
     return Response.json({ error: "tipo inválido." }, { status: 400 });
   }
 
@@ -77,6 +78,11 @@ export async function PATCH(
         estado: "pospuesto",
         ...(body.nuevaSemana ? { semana: body.nuevaSemana } : {}),
       };
+    } else if (body.tipo === "reasignar_semana") {
+      if (!SEMANAS_VALIDAS.includes(body.semana)) {
+        return Response.json({ error: "semana inválida." }, { status: 400 });
+      }
+      patch = { semana: body.semana };
     } else {
       patch = { estado: "no_aplica" };
     }
