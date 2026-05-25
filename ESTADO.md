@@ -320,23 +320,30 @@ Archivo fuente: H1_presupuesto_base.csv
 | Archivo | Estado |
 |---|---|
 | app/ | Directorio Next.js App Router |
+| app/page.tsx | Server Component — fetches H2+H1+H4 y pasa props a MesM1 |
 | app/api/conceptos/route.ts | Creado — GET devuelve H1 real desde Sheets |
+| app/api/conceptos/[id]/route.ts | Creado — PATCH actualiza monto/semanaDefault/notas en H1 |
 | app/api/mes/[mes]/iniciar/route.ts | Creado — POST inicializa mes en H2 (Ticket 5) |
-| app/api/mes/[mes]/route.ts | Creado — GET devuelve H2 del mes (Ticket 6). 200 con array, 404 si no inicializado |
-| lib/data/types.ts | Actualizado — Concepto (12 campos), Movimiento (22 campos H2), Categoria (11 aprobadas) |
-| lib/data/index.ts | Creado — IDataProvider con métodos H1-H6 + crearMovimientosMes |
-| lib/data/sheets.ts | Actualizado — getMovimientos() y crearMovimientosMes() implementados |
-| lib/data/mock.ts | Creado — MockDataProvider actualizado |
+| app/api/mes/[mes]/route.ts | Creado — GET devuelve H2 del mes (Ticket 6) |
+| app/api/mes/[mes]/movimientos/[id]/route.ts | Creado — PATCH ejecutar/posponer/no_aplica en H2 |
+| app/api/ingresos/camilo/[mes]/route.ts | Creado — GET + POST (upsert) ingreso Camilo en H4A |
+| app/api/ingresos/angie/[mes]/route.ts | Creado — GET + PUT (upsert por semana) aportes Angie en H4B |
+| lib/data/types.ts | Actualizado — Concepto, Movimiento, IngresoCamilo, IngresoAngie, CuentaDestino |
+| lib/data/index.ts | Creado — IDataProvider con 24 métodos H1-H4 |
+| lib/data/sheets.ts | Actualizado — todos los métodos H1-H4 implementados |
+| lib/data/mock.ts | Creado — MockDataProvider con stubs |
 | lib/data/provider.ts | Creado — singleton getProvider() |
-| components/ | Directorio vacío |
-| public/ | Directorio vacío |
+| components/MesM1.tsx | Creado — pantalla M1 completa: lista, acciones, modales, visual Zoho-style |
+| components/m1/ModalIngresoCamilo.tsx | Creado — monto COP, cuenta destino, estado |
+| components/m1/ModalAporteAngie.tsx | Creado — grid S1-S4 con montos por semana |
+| components/m1/ModalEditarConcepto.tsx | Creado — edita monto/semanaDefault/notas de H1 |
 | .env.local | Creado — credenciales Google (gitignored) |
 | ESTADO.md | En el repo — fuente de verdad |
 | scripts/seed-h1.mjs | Creado — cargó 40 conceptos reales en H1 (uso único) |
-| scripts/update-h1-montos.mjs | Creado — actualizó montos confirmados y retiró Ayuda mamá servicios |
+| scripts/update-h1-montos.mjs | Creado — actualizó montos y retiró concepto |
 | scripts/setup-h2.mjs | Creado — creó pestaña H2 con 22 headers |
 | scripts/check-h2.mjs | Creado — verifica DoD en H2 |
-| package.json | googleapis agregado |
+| package.json | googleapis + next/font agregados |
 | next.config.ts | Generado por create-next-app |
 
 ---
@@ -345,22 +352,16 @@ Archivo fuente: H1_presupuesto_base.csv
 
 | Componente | Estado |
 |---|---|
-| Google Sheet original | Legacy — consulta histórica, no se toca |
-| Google Sheet nuevo | Activo — ID: 1GOMhxYw_f7Zl-GTVNtxAs9218x4vKxzg3LGRyveyr7A — H1 con 40 conceptos reales (montos confirmados), H2 inicializada (39 movimientos mayo 2026) |
-| Cuenta de servicio | psibot@psibot-495119.iam.gserviceaccount.com — configurada y conectada |
-| Repo GitHub (github.com/KKze1975/flujo) | Activo — rama main — Ticket 5 pusheado |
-| Next.js local | http://localhost:3000 — GET /api/conceptos operativo |
-| lib/data/types.ts | Actualizado — Concepto con 12 campos del esquema H1 aprobado |
-| lib/data/index.ts | Creado — IDataProvider con 23 métodos |
-| lib/data/sheets.ts | Actualizado — getConceptos() implementado y funcional |
-| lib/data/mock.ts | Creado — MockDataProvider con respuestas vacías |
-| lib/data/provider.ts | Creado — singleton getProvider() |
-| app/api/conceptos/route.ts | Creado — GET /api/conceptos devuelve datos reales |
-| app/api/mes/[mes]/iniciar/route.ts | Creado — POST /api/mes/:mes/iniciar (Ticket 5) |
-| .env.local | Creado — credenciales Google (gitignored) |
+| Google Sheet nuevo | Activo — ID: 1GOMhxYw_f7Zl-GTVNtxAs9218x4vKxzg3LGRyveyr7A — H1, H2, H4 operativos |
+| Cuenta de servicio | psibot@psibot-495119.iam.gserviceaccount.com — configurada |
+| Repo GitHub (github.com/KKze1975/flujo) | Activo — rama main |
+| Next.js local | http://localhost:3000 — operativo |
+| Ticket 7 — Pantalla M1 | Construido — pendiente commit y push final |
+| MesM1.tsx | Completo — lista 39 conceptos, acciones PATCH H2, modales H1/H4, visual Zoho-style con Inter |
+| API H2 PATCH | Operativo — ejecutar/posponer/no_aplica con cálculo de desviación y fecha |
+| API H4 | Operativo — upsert ingreso Camilo y aportes Angie por semana |
 | Amazon WorkSpaces | Activo — entorno de desarrollo principal |
-| Railway | Descartado |
-| Código Node.js anterior | Descartado |
+| Google Sheet original | Legacy — no se toca |
 
 ---
 
@@ -429,6 +430,13 @@ Archivo fuente: H1_presupuesto_base.csv
 | Mayo 2026 | Posponer = reasignar a otra semana u otro mes | Decisión se toma en el momento — no es solo marcar pospuesto |
 | Mayo 2026 | Desviación de monto sin justificación obligatoria | Registra si difiere — razón opcional |
 | Mayo 2026 | No aplica se marca manualmente | El sistema no lo detecta automáticamente |
+| Mayo 2026 | M1 layout: h-screen flex-col con min-h-0 | Sidebar y main scroll independientemente — footer siempre visible |
+| Mayo 2026 | Acciones inline: clic en fila expande panel debajo | Sin columna de acciones permanente — tabla mantiene exactamente 7 columnas |
+| Mayo 2026 | Modales via createPortal a document.body | Evita problemas de stacking context con overflow en el main |
+| Mayo 2026 | Colores badge via inline style, no Tailwind arbitrario | Clases como bg-[#e8f0fe] en objetos JS no son escaneadas por Tailwind v4 |
+| Mayo 2026 | Borde activo sidebar via inline style borderLeft | border-l-[3px] en objetos JS tampoco es escaneado por Tailwind v4 |
+| Mayo 2026 | Referencia visual M1: Zoho Expense | Azul primario #1e3a5f, superficie plana, badges de estado, Inter font |
+| Mayo 2026 | Ajustes visuales M1 completados | V1-V11 verificados en browser — Inter, badges, header azul, sidebar sticky, balance dinámico |
 
 ---
 
@@ -488,22 +496,9 @@ Archivo fuente: H1_presupuesto_base.csv
 ## Prompt de apertura — próxima sesión
 
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo.
-
-Tipo de sesión: [CONSTRUCCIÓN]
-Ticket activo: Ticket 7 — Pantalla M1 (lectura y escritura)
-
-DoD:
-1. Lista renderiza 39 conceptos reales desde GET /api/mes/2026-05
-2. Conceptos agrupados por semana (S1-S4)
-3. Ejecutar pago actualiza H2 — verificar en Sheet
-4. Posponer reasigna semana o mes en H2 — verificar en Sheet
-5. Marcar no aplica actualiza estado en H2 — verificar en Sheet
-6. Estado se refleja en pantalla sin recargar
-
-Reglas:
-1. Un solo ticket activo
-2. DoD verificado en browser y Sheet real
-3. Al cerrar: commit de ESTADO.md con "ESTADO: Ticket 7 [estado al cerrar]"
+Tipo de sesión: [DISEÑO]
+Ticket activo: Ticket 8 — Modo Planificación M1
+Entorno: Windows — PowerShell exclusivamente.
 
 ---
 
