@@ -372,7 +372,7 @@ Archivo fuente: H1_presupuesto_base.csv
 - H6 tiene columnas cat_* desactualizadas — actualizar para reflejar las 11 categorías aprobadas
 - scripts/seed-h1.mjs fue ejecutado — puede eliminarse o conservarse como referencia de re-seed
 - B4: Agregar concepto nuevo desde la app (temporal/permanente) — sesión de diseño pendiente
-- B5: Eliminar concepto desde la app — sesión de diseño pendiente
+- Concepto mensual pospuesto genera doble fila en mes siguiente — revisar si es comportamiento deseado
 
 ---
 
@@ -448,6 +448,8 @@ Archivo fuente: H1_presupuesto_base.csv
 | Mayo 2026 | Mercado mensual → S1 | Provisión Mireyita → S3 | Dr. Sánchez → S3 | Ropa, Fondo emergencia, CDT NU → S4 | Frida → S1 |
 | Mayo 2026 | H2 reinicializado con 62 movimientos | S1:28, S2:12, S3:10, S4:12 |
 | Mayo 2026 | Aporte Angie $2.300.000 semanal | Dato real histórico confirmado |
+| Mayo 2026 | No aplica este mes → estado no_aplica en H2 | No afecta H1 ni meses futuros |
+| Mayo 2026 | Mover a mes siguiente → estado pospuesto_mes_siguiente | Carry-over al inicializar mes siguiente |
 
 ---
 
