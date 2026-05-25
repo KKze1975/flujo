@@ -425,6 +425,10 @@ Archivo fuente: H1_presupuesto_base.csv
 | Mayo 2026 | GET /api/mes/[mes] devuelve H2 sin agregados | Totales y bolsillos son responsabilidad de otros tickets |
 | Mayo 2026 | Verificación DoD contra Sheet real | Conexión a Sheets ya probada en Ticket 3 |
 | Mayo 2026 | Mes no inicializado → 404 descriptivo | Array vacío y mes inexistente son estados diferentes |
+| Mayo 2026 | Ticket 7 es M1 completo — lectura y escritura | Vista sin escritura no completa M1 |
+| Mayo 2026 | Posponer = reasignar a otra semana u otro mes | Decisión se toma en el momento — no es solo marcar pospuesto |
+| Mayo 2026 | Desviación de monto sin justificación obligatoria | Registra si difiere — razón opcional |
+| Mayo 2026 | No aplica se marca manualmente | El sistema no lo detecta automáticamente |
 
 ---
 
@@ -486,14 +490,20 @@ Archivo fuente: H1_presupuesto_base.csv
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo.
 
 Tipo de sesión: [CONSTRUCCIÓN]
-Ticket activo: Ticket 6 — GET /api/mes/[mes]
+Ticket activo: Ticket 7 — Pantalla M1 (lectura y escritura)
 
-DoD: curl a /api/mes/2026-05 retorna 200 con array de 39 objetos desde H2 real. Mes no inicializado → 404.
+DoD:
+1. Lista renderiza 39 conceptos reales desde GET /api/mes/2026-05
+2. Conceptos agrupados por semana (S1-S4)
+3. Ejecutar pago actualiza H2 — verificar en Sheet
+4. Posponer reasigna semana o mes en H2 — verificar en Sheet
+5. Marcar no aplica actualiza estado en H2 — verificar en Sheet
+6. Estado se refleja en pantalla sin recargar
 
 Reglas:
 1. Un solo ticket activo
-2. DoD verificado con curl — no se declara terminado internamente
-3. Al cerrar: commit de ESTADO.md actualizado con "ESTADO: Ticket 6 [estado al cerrar]"
+2. DoD verificado en browser y Sheet real
+3. Al cerrar: commit de ESTADO.md con "ESTADO: Ticket 7 [estado al cerrar]"
 
 ---
 
