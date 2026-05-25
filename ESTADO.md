@@ -371,6 +371,8 @@ Archivo fuente: H1_presupuesto_base.csv
 - Claude Code auto-update failed — resolver con: npm i -g @anthropic-ai/claude-code
 - H6 tiene columnas cat_* desactualizadas — actualizar para reflejar las 11 categorías aprobadas
 - scripts/seed-h1.mjs fue ejecutado — puede eliminarse o conservarse como referencia de re-seed
+- B4: Agregar concepto nuevo desde la app (temporal/permanente) — sesión de diseño pendiente
+- B5: Eliminar concepto desde la app — sesión de diseño pendiente
 
 ---
 
@@ -442,6 +444,10 @@ Archivo fuente: H1_presupuesto_base.csv
 | Mayo 2026 | Conceptos semanales generan 4 filas en H2 | Una fila por semana S1-S4 al inicializar mes |
 | Mayo 2026 | Entretenimiento agregado como concepto semanal | $250.000 semanal — H1 fila 36 |
 | Mayo 2026 | Mesadas niños y Mireya pendientes de reubicar | Actualmente en Mercado y Alimentación — mover a nuevo concepto próxima sesión |
+| Mayo 2026 | semana_default variable eliminado de H1 | Todos los conceptos tienen semana asignada — variable describía el monto, no la semana |
+| Mayo 2026 | Mercado mensual → S1 | Provisión Mireyita → S3 | Dr. Sánchez → S3 | Ropa, Fondo emergencia, CDT NU → S4 | Frida → S1 |
+| Mayo 2026 | H2 reinicializado con 62 movimientos | S1:28, S2:12, S3:10, S4:12 |
+| Mayo 2026 | Aporte Angie $2.300.000 semanal | Dato real histórico confirmado |
 
 ---
 
@@ -501,8 +507,8 @@ Archivo fuente: H1_presupuesto_base.csv
 ## Prompt de apertura — próxima sesión
 
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo.
-Tipo de sesión: [CONSTRUCCIÓN]
-Ticket activo: Ticket 8 — Modo Planificación M1
+Tipo de sesión: [DISEÑO]
+Historia activa: HU-M1 — brechas B4 y B5 pendientes
 Entorno: Windows — PowerShell exclusivamente.
 
 ---
