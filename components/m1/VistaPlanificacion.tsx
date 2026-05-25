@@ -68,6 +68,24 @@ export default function VistaPlanificacion({
   const [editingMonto, setEditingMonto] = useState<string | null>(null);
   const [collapsedCats, setCollapsedCats] = useState<Set<Categoria>>(new Set());
 
+  // Panel de acciones por concepto
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  // Overrides locales sincronizados con H2: conceptoId → estado
+  const [movOverrides, setMovOverrides] = useState<Map<string, "no_aplica" | "pospuesto_mes_siguiente">>(() => {
+    const map = new Map<string, "no_aplica" | "pospuesto_mes_siguiente">();
+    for (const m of movimientos) {
+      if (m.estado === "no_aplica" || m.estado === "pospuesto_mes_siguiente") {
+        map.set(m.conceptoId, m.estado as "no_aplica" | "pospuesto_mes_siguiente");
+      }
+    }
+    return map;
+  });
+
+  // Estado local de movimientos — se actualiza tras PATCHes en planificación
+  const [movs, setMovs] = useState<Movimiento[]>(movimientos);
+
   const [savingBorrador, setSavingBorrador] = useState(false);
   const [savingCierre, setSavingCierre] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -85,13 +103,22 @@ export default function VistaPlanificacion({
     () =>
       conceptos.filter((c) => {
         if (c.estado !== "activo") return false;
+        if (movOverrides.has(c.id)) return false;
         if (c.frecuencia === "bimestral" && c.mesActivoBimestral) {
           return c.mesActivoBimestral.split(",").map((s) => s.trim().toLowerCase()).includes(mesNombre);
         }
         return true;
       }),
-    [conceptos, mesNombre]
+    [conceptos, mesNombre, movOverrides]
   );
+
+  const mesSiguienteNombre = useMemo(() => {
+    const [, monthStr] = mes.split("-");
+    const month = parseInt(monthStr, 10);
+    const nextKey = String(month === 12 ? 1 : month + 1).padStart(2, "0");
+    const name = MESES_ES[nextKey] ?? "";
+    return name.charAt(0).toUpperCase() + name.slice(1);
+  }, [mes]);
 
   const totalComprometido = useMemo(
     () => conceptosActivosMes.reduce((sum, c) => sum + (c.frecuencia === "semanal" ? c.monto * 4 : c.monto), 0),
@@ -234,6 +261,58 @@ export default function VistaPlanificacion({
     }
   };
 
+  const marcarNoAplica = async (conceptoId: string) => {
+    setActionLoading(conceptoId);
+    setError(null);
+    try {
+      const pendientes = movs.filter((m) => m.conceptoId === conceptoId && m.estado === "pendiente");
+      const actualizados: Movimiento[] = [];
+      for (const mov of pendientes) {
+        const res = await fetch(`/api/mes/${mes}/movimientos/${mov.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tipo: "no_aplica" }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? "Error al marcar no aplica");
+        actualizados.push(data as Movimiento);
+      }
+      setMovs((prev) => prev.map((m) => actualizados.find((u) => u.id === m.id) ?? m));
+      setMovOverrides((prev) => new Map(prev).set(conceptoId, "no_aplica"));
+      setExpandedId(null);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Error desconocido");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const moverMesSiguiente = async (conceptoId: string) => {
+    setActionLoading(conceptoId);
+    setError(null);
+    try {
+      const pendientes = movs.filter((m) => m.conceptoId === conceptoId && m.estado === "pendiente");
+      const actualizados: Movimiento[] = [];
+      for (const mov of pendientes) {
+        const res = await fetch(`/api/mes/${mes}/movimientos/${mov.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tipo: "mover_mes_siguiente" }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? "Error al mover al mes siguiente");
+        actualizados.push(data as Movimiento);
+      }
+      setMovs((prev) => prev.map((m) => actualizados.find((u) => u.id === m.id) ?? m));
+      setMovOverrides((prev) => new Map(prev).set(conceptoId, "pospuesto_mes_siguiente"));
+      setExpandedId(null);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Error desconocido");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const cerrarPlanificacion = async () => {
     setSavingCierre(true);
     setError(null);
@@ -242,8 +321,8 @@ export default function VistaPlanificacion({
       const conceptosFinales = await persistirH1();
 
       // 2. Sincronizar semanas en H2 — solo movimientos pendientes con semana_default fija
-      const updatedMovs = [...movimientos];
-      for (const mov of movimientos) {
+      const updatedMovs = [...movs];
+      for (const mov of movs) {
         if (mov.estado !== "pendiente") continue;
         const concepto = conceptosFinales.find((c) => c.id === mov.conceptoId);
         if (!concepto || concepto.semanaDefault === "variable") continue;
@@ -273,6 +352,7 @@ export default function VistaPlanificacion({
       if (next.has(cat)) next.delete(cat); else next.add(cat);
       return next;
     });
+    setExpandedId(null);
   };
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -437,13 +517,49 @@ export default function VistaPlanificacion({
                     {!collapsed && items.map((concepto) => {
                       const hasMod = dirtyIds.has(concepto.id);
                       const isEditingNota = editingNota === concepto.id;
+                      const isExpanded = expandedId === concepto.id;
+                      const override = movOverrides.get(concepto.id);
                       return (
+                        <React.Fragment key={concepto.id}>
                         <tr
-                          key={concepto.id}
-                          className={`border-b border-gray-100 ${hasMod ? "bg-blue-50" : "hover:bg-gray-50"}`}
+                          className={`border-b border-gray-100 ${hasMod ? "bg-blue-50" : isExpanded ? "bg-gray-50" : "hover:bg-gray-50"}`}
                         >
-                          {/* Concepto */}
-                          <td className="px-3 py-[8px] text-gray-900">{concepto.nombre}</td>
+                          {/* Concepto — chevron + nombre + badge override */}
+                          <td className="px-3 py-[8px]">
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setExpandedId(isExpanded ? null : concepto.id)}
+                                className="shrink-0 text-gray-300 hover:text-gray-500 focus:outline-none"
+                                title="Opciones"
+                              >
+                                {isExpanded ? "▾" : "▸"}
+                              </button>
+                              {override === "no_aplica" ? (
+                                <>
+                                  <s className="text-gray-400">{concepto.nombre}</s>
+                                  <span
+                                    style={{ backgroundColor: "#f1f3f4", color: "#5f6368", padding: "2px 7px", borderRadius: "10px" }}
+                                    className="shrink-0 text-xs font-medium"
+                                  >
+                                    No aplica
+                                  </span>
+                                </>
+                              ) : override === "pospuesto_mes_siguiente" ? (
+                                <>
+                                  <span className="text-gray-700">{concepto.nombre}</span>
+                                  <span
+                                    style={{ backgroundColor: "#fff7ed", color: "#c2410c", padding: "2px 7px", borderRadius: "10px", border: "1px solid #fed7aa" }}
+                                    className="shrink-0 text-xs font-medium"
+                                  >
+                                    → {mesSiguienteNombre}
+                                  </span>
+                                </>
+                              ) : (
+                                <span className="text-gray-900">{concepto.nombre}</span>
+                              )}
+                            </div>
+                          </td>
 
                           {/* Tipo badge */}
                           <td className="px-3 py-[8px]">
@@ -547,6 +663,49 @@ export default function VistaPlanificacion({
                             )}
                           </td>
                         </tr>
+
+                        {/* Panel de acciones expandible */}
+                        {isExpanded && (
+                          <tr className="border-b border-blue-100 bg-blue-50">
+                            <td colSpan={5} className="px-4 py-2">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-xs font-medium text-gray-400">Acciones:</span>
+                                <button
+                                  type="button"
+                                  disabled={!!override || actionLoading === concepto.id}
+                                  onClick={() => marcarNoAplica(concepto.id)}
+                                  className="rounded border border-gray-200 bg-white px-3 py-1 text-xs text-gray-600 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                >
+                                  {actionLoading === concepto.id ? "…" : "No aplica este mes"}
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={!!override || actionLoading === concepto.id}
+                                  onClick={() => moverMesSiguiente(concepto.id)}
+                                  style={{ borderColor: "#fed7aa", backgroundColor: "#fff7ed", color: "#c2410c" }}
+                                  className="rounded border px-3 py-1 text-xs hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
+                                >
+                                  {actionLoading === concepto.id ? "…" : `Mover a ${mesSiguienteNombre}`}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setExpandedId(null)}
+                                  className="rounded border border-gray-200 bg-white px-3 py-1 text-xs text-gray-400 hover:bg-gray-50"
+                                >
+                                  Cancelar
+                                </button>
+                                {override && (
+                                  <span className="text-xs text-gray-400">
+                                    {override === "no_aplica"
+                                      ? "Ya marcado como No aplica este mes"
+                                      : `Ya movido a ${mesSiguienteNombre}`}
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                        </React.Fragment>
                       );
                     })}
                   </React.Fragment>

@@ -14,6 +14,14 @@ function mesNombre(mes: string): string {
   return MESES[month - 1] ?? "";
 }
 
+function mesPrevio(mes: string): string {
+  const [yearStr, monthStr] = mes.split("-");
+  const year = parseInt(yearStr, 10);
+  const month = parseInt(monthStr, 10);
+  if (month === 1) return `${year - 1}-12`;
+  return `${year}-${String(month - 1).padStart(2, "0")}`;
+}
+
 function conceptoActivoEnMes(concepto: {
   estado: string;
   frecuencia: string;
@@ -52,40 +60,63 @@ export async function POST(
     );
   }
 
-  const conceptos = await provider.getConceptos();
+  const [conceptos, movimientosPrevios] = await Promise.all([
+    provider.getConceptos(),
+    provider.getMovimientos(mesPrevio(mes)),
+  ]);
 
   const SEMANAS: Semana[] = ["S1", "S2", "S3", "S4"];
 
-  const movimientosACrear: Omit<Movimiento, "id">[] = conceptos
+  const baseFields = {
+    montoEjecutado: null,
+    desviacion: null,
+    estado: "pendiente" as const,
+    ejecutor: null,
+    fuenteEnMano: false,
+    fuenteNequi: false,
+    fuenteCamilo: false,
+    fuenteAngie: false,
+    fechaEjecucion: null,
+    razonDesviacion: null,
+    razonPostergacion: null,
+    comprobanteUrl: null,
+    pendienteAprobacion: false,
+    notas: null,
+  };
+
+  const desdeH1: Omit<Movimiento, "id">[] = conceptos
     .filter((c) => conceptoActivoEnMes(c, mes))
     .flatMap((c) => {
       const base = {
+        ...baseFields,
         conceptoId: c.id,
         mes,
         nombreSnapshot: c.nombre,
         categoriaSnapshot: c.categoria,
         tipoSnapshot: c.tipo,
         montoPresupuestado: c.monto,
-        montoEjecutado: null,
-        desviacion: null,
-        estado: "pendiente" as const,
-        ejecutor: null,
-        fuenteEnMano: false,
-        fuenteNequi: false,
-        fuenteCamilo: false,
-        fuenteAngie: false,
-        fechaEjecucion: null,
-        razonDesviacion: null,
-        razonPostergacion: null,
-        comprobanteUrl: null,
-        pendienteAprobacion: false,
-        notas: null,
       };
       if (c.frecuencia === "semanal") {
         return SEMANAS.map((s) => ({ ...base, semana: s }));
       }
       return [{ ...base, semana: c.semanaDefault === "variable" ? null : (c.semanaDefault as Semana) }];
     });
+
+  // Conceptos pospuestos del mes anterior pasan a pendiente en este mes
+  const carryover: Omit<Movimiento, "id">[] = movimientosPrevios
+    .filter((m) => m.estado === "pospuesto_mes_siguiente")
+    .map((m) => ({
+      ...baseFields,
+      conceptoId: m.conceptoId,
+      mes,
+      nombreSnapshot: m.nombreSnapshot,
+      categoriaSnapshot: m.categoriaSnapshot,
+      tipoSnapshot: m.tipoSnapshot,
+      montoPresupuestado: m.montoPresupuestado,
+      semana: m.semana,
+    }));
+
+  const movimientosACrear = [...desdeH1, ...carryover];
 
   const movimientos = await provider.crearMovimientosMes(movimientosACrear);
 
