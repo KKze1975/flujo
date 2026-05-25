@@ -420,6 +420,10 @@ Archivo fuente: H1_presupuesto_base.csv
 | Mayo 2026 | Ciclo de vida de conceptos: Camino B | Gestión manual con estado_concepto — sin fecha_inicio ni fecha_fin en H1 |
 | Mayo 2026 | semana: null para conceptos con semana_default variable | La semana se asigna al ejecutar — no se fuerza S1 como default |
 | Mayo 2026 | 409 Conflict para doble inicialización del mismo mes | Protección de integridad — reiniciar un mes no tiene caso de uso legítimo |
+| Mayo 2026 | Ticket 6 sirve M1 exclusivamente | M1 es el consumidor concreto — endpoint no es genérico |
+| Mayo 2026 | GET /api/mes/[mes] devuelve H2 sin agregados | Totales y bolsillos son responsabilidad de otros tickets |
+| Mayo 2026 | Verificación DoD contra Sheet real | Conexión a Sheets ya probada en Ticket 3 |
+| Mayo 2026 | Mes no inicializado → 404 descriptivo | Array vacío y mes inexistente son estados diferentes |
 
 ---
 
@@ -481,12 +485,14 @@ Archivo fuente: H1_presupuesto_base.csv
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo.
 
 Tipo de sesión: [CONSTRUCCIÓN]
-Ticket activo: Ticket 6 — GET /api/mes/[mes] (vista del mes inicializado)
+Ticket activo: Ticket 6 — GET /api/mes/[mes]
+
+DoD: curl a /api/mes/2026-05 retorna 200 con array de 39 objetos desde H2 real. Mes no inicializado → 404.
 
 Reglas:
-1. Un solo ticket activo — no abrir el siguiente hasta verificar el DoD
+1. Un solo ticket activo
 2. DoD verificado con curl — no se declara terminado internamente
-3. Al cerrar: hacer commit de ESTADO.md actualizado con "ESTADO: Ticket 6 [estado al cerrar]"
+3. Al cerrar: commit de ESTADO.md actualizado con "ESTADO: Ticket 6 [estado al cerrar]"
 
 ---
 
