@@ -54,32 +54,38 @@ export async function POST(
 
   const conceptos = await provider.getConceptos();
 
-  const base = Date.now();
+  const SEMANAS: Semana[] = ["S1", "S2", "S3", "S4"];
+
   const movimientosACrear: Omit<Movimiento, "id">[] = conceptos
     .filter((c) => conceptoActivoEnMes(c, mes))
-    .map((c) => ({
-      conceptoId: c.id,
-      mes,
-      nombreSnapshot: c.nombre,
-      categoriaSnapshot: c.categoria,
-      tipoSnapshot: c.tipo,
-      semana: c.semanaDefault === "variable" ? null : (c.semanaDefault as Semana),
-      montoPresupuestado: c.monto,
-      montoEjecutado: null,
-      desviacion: null,
-      estado: "pendiente" as const,
-      ejecutor: null,
-      fuenteEnMano: false,
-      fuenteNequi: false,
-      fuenteCamilo: false,
-      fuenteAngie: false,
-      fechaEjecucion: null,
-      razonDesviacion: null,
-      razonPostergacion: null,
-      comprobanteUrl: null,
-      pendienteAprobacion: false,
-      notas: null,
-    }));
+    .flatMap((c) => {
+      const base = {
+        conceptoId: c.id,
+        mes,
+        nombreSnapshot: c.nombre,
+        categoriaSnapshot: c.categoria,
+        tipoSnapshot: c.tipo,
+        montoPresupuestado: c.monto,
+        montoEjecutado: null,
+        desviacion: null,
+        estado: "pendiente" as const,
+        ejecutor: null,
+        fuenteEnMano: false,
+        fuenteNequi: false,
+        fuenteCamilo: false,
+        fuenteAngie: false,
+        fechaEjecucion: null,
+        razonDesviacion: null,
+        razonPostergacion: null,
+        comprobanteUrl: null,
+        pendienteAprobacion: false,
+        notas: null,
+      };
+      if (c.frecuencia === "semanal") {
+        return SEMANAS.map((s) => ({ ...base, semana: s }));
+      }
+      return [{ ...base, semana: c.semanaDefault === "variable" ? null : (c.semanaDefault as Semana) }];
+    });
 
   const movimientos = await provider.crearMovimientosMes(movimientosACrear);
 
