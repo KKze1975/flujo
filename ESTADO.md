@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Mayo 2026 | Fase: Construcción — Ticket 5 cerrado
+Actualizado: Mayo 2026 | Fase: Construcción — Ticket 6 cerrado
 
 ---
 
@@ -322,6 +322,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | app/ | Directorio Next.js App Router |
 | app/api/conceptos/route.ts | Creado — GET devuelve H1 real desde Sheets |
 | app/api/mes/[mes]/iniciar/route.ts | Creado — POST inicializa mes en H2 (Ticket 5) |
+| app/api/mes/[mes]/route.ts | Creado — GET devuelve H2 del mes (Ticket 6). 200 con array, 404 si no inicializado |
 | lib/data/types.ts | Actualizado — Concepto (12 campos), Movimiento (22 campos H2), Categoria (11 aprobadas) |
 | lib/data/index.ts | Creado — IDataProvider con métodos H1-H6 + crearMovimientosMes |
 | lib/data/sheets.ts | Actualizado — getMovimientos() y crearMovimientosMes() implementados |
