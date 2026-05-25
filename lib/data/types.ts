@@ -89,24 +89,25 @@ export interface Consumo {
 
 // ── H4 ─────────────────────────────────────────────────────────────────────
 
+export type CuentaDestino = "en_mano" | "nequi" | "camilo" | "angie";
+
 export interface IngresoCamilo {
   id: string;
-  mes: number;
-  semana: Semana;
-  monto: number;
-  concepto: string;
-  estado: EstadoIngresoCamilo;
-  confianza?: Confianza;
-  notas?: string;
+  mes: string;                  // "2026-05"
+  montoCop: number;             // COP
+  cuentaDestino: CuentaDestino;
+  estado: EstadoIngresoCamilo;  // "pendiente" | "confirmado"
+  fechaConfirmacion: string | null;
+  notas: string | null;
 }
 
 export interface IngresoAngie {
   id: string;
-  mes: number;
+  mes: string;     // "2026-05"
   semana: Semana;
   monto: number;
-  concepto: string;
-  notas?: string;
+  fecha: string;
+  notas: string | null;
 }
 
 // ── H5 ─────────────────────────────────────────────────────────────────────

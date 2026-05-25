@@ -8,6 +8,8 @@ import type {
   Frecuencia,
   EstadoConcepto,
   EstadoMovimiento,
+  EstadoIngresoCamilo,
+  CuentaDestino,
   Actor,
   Concepto,
   Movimiento,
@@ -32,35 +34,54 @@ export class SheetsDataProvider implements IDataProvider {
     this.sheets = google.sheets({ version: "v4", auth });
   }
 
+  // ── H1 helpers ───────────────────────────────────────────────────────────
+
+  private readonly H1_HEADERS = [
+    "id_concepto", "nombre", "categoria", "tipo", "frecuencia",
+    "mes_activo_bimestral", "monto_referencia", "semana_default",
+    "requiere_aprobacion", "estado_concepto", "fecha_retiro", "notas",
+  ];
+
+  private rowToConcepto(row: string[], headers: string[]): Concepto {
+    const col = (name: string) => row[headers.indexOf(name)] ?? "";
+    return {
+      id: col("id_concepto"),
+      nombre: col("nombre"),
+      categoria: col("categoria") as Categoria,
+      tipo: col("tipo") as TipoConcepto,
+      frecuencia: col("frecuencia") as Frecuencia,
+      mesActivoBimestral: col("mes_activo_bimestral") || null,
+      monto: Number(col("monto_referencia")) || 0,
+      semanaDefault: col("semana_default") as SemanaDefault,
+      requiereAprobacion: col("requiere_aprobacion").toUpperCase() === "TRUE",
+      estado: col("estado_concepto") as EstadoConcepto,
+      fechaRetiro: col("fecha_retiro") || null,
+      notas: col("notas") || null,
+    };
+  }
+
+  private conceptoToRow(c: Concepto): string[] {
+    return [
+      c.id, c.nombre, c.categoria, c.tipo, c.frecuencia,
+      c.mesActivoBimestral ?? "", String(c.monto), c.semanaDefault,
+      c.requiereAprobacion ? "TRUE" : "FALSE", c.estado,
+      c.fechaRetiro ?? "", c.notas ?? "",
+    ];
+  }
+
   // ── H1 ───────────────────────────────────────────────────────────────────
+
   async getConceptos(): Promise<Concepto[]> {
     const res = await this.sheets.spreadsheets.values.get({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
       range: "H1!A:L",
     });
-
-    const rows = res.data.values;
+    const rows = res.data.values as string[][] | undefined;
     if (!rows || rows.length < 2) return [];
-
     const [headers, ...dataRows] = rows;
-    const col = (row: string[], name: string) => row[headers.indexOf(name)] ?? "";
-
     return dataRows
-      .filter((row) => row.length > 0 && col(row, "id_concepto"))
-      .map((row) => ({
-        id: col(row, "id_concepto"),
-        nombre: col(row, "nombre"),
-        categoria: col(row, "categoria") as Categoria,
-        tipo: col(row, "tipo") as TipoConcepto,
-        frecuencia: col(row, "frecuencia") as Frecuencia,
-        mesActivoBimestral: col(row, "mes_activo_bimestral") || null,
-        monto: Number(col(row, "monto_referencia")) || 0,
-        semanaDefault: col(row, "semana_default") as SemanaDefault,
-        requiereAprobacion: col(row, "requiere_aprobacion").toUpperCase() === "TRUE",
-        estado: col(row, "estado_concepto") as EstadoConcepto,
-        fechaRetiro: col(row, "fecha_retiro") || null,
-        notas: col(row, "notas") || null,
-      }));
+      .filter((row) => row.length > 0 && row[headers.indexOf("id_concepto")])
+      .map((row) => this.rowToConcepto(row, headers));
   }
 
   getConceptoById(_id: string): Promise<Concepto | null> {
@@ -69,9 +90,31 @@ export class SheetsDataProvider implements IDataProvider {
   createConcepto(_data: Omit<Concepto, "id">): Promise<Concepto> {
     throw new Error("Not implemented yet");
   }
-  updateConcepto(_id: string, _data: Partial<Omit<Concepto, "id">>): Promise<Concepto> {
-    throw new Error("Not implemented yet");
+
+  async updateConcepto(id: string, data: Partial<Omit<Concepto, "id">>): Promise<Concepto> {
+    const res = await this.sheets.spreadsheets.values.get({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: "H1!A:L",
+    });
+    const rows = (res.data.values ?? []) as string[][];
+    if (rows.length < 2) throw new Error("H1 vacía");
+    const [headers, ...dataRows] = rows;
+    const rowIndex = dataRows.findIndex(
+      (row) => row[headers.indexOf("id_concepto")] === id
+    );
+    if (rowIndex === -1) throw new Error(`Concepto ${id} no encontrado`);
+    const existing = this.rowToConcepto(dataRows[rowIndex], headers);
+    const updated: Concepto = { ...existing, ...data, id };
+    const sheetRow = rowIndex + 2;
+    await this.sheets.spreadsheets.values.update({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: `H1!A${sheetRow}:L${sheetRow}`,
+      valueInputOption: "RAW",
+      requestBody: { values: [this.conceptoToRow(updated)] },
+    });
+    return updated;
   }
+
   retirarConcepto(_id: string): Promise<Concepto> {
     throw new Error("Not implemented yet");
   }
@@ -201,14 +244,233 @@ export class SheetsDataProvider implements IDataProvider {
   createMovimiento(_data: Omit<Movimiento, "id">): Promise<Movimiento> {
     throw new Error("Not implemented yet");
   }
-  updateMovimiento(_id: string, _data: Partial<Omit<Movimiento, "id">>): Promise<Movimiento> {
-    throw new Error("Not implemented yet");
+  async updateMovimiento(id: string, data: Partial<Omit<Movimiento, "id">>): Promise<Movimiento> {
+    let rows: string[][];
+    try {
+      const res = await this.sheets.spreadsheets.values.get({
+        spreadsheetId: process.env.GOOGLE_SHEET_ID,
+        range: "H2!A:V",
+      });
+      rows = (res.data.values ?? []) as string[][];
+    } catch {
+      throw new Error("Error al leer H2");
+    }
+
+    if (rows.length < 2) throw new Error("H2 vacía o sin datos");
+
+    const [headers, ...dataRows] = rows;
+    const rowIndex = dataRows.findIndex(
+      (row) => row[headers.indexOf("id_movimiento")] === id
+    );
+    if (rowIndex === -1) throw new Error(`Movimiento ${id} no encontrado`);
+
+    const existing = this.rowToMovimiento(dataRows[rowIndex], headers);
+    const updated: Movimiento = { ...existing, ...data, id };
+    const newRow = this.movimientoToRow(id, updated);
+
+    const sheetRow = rowIndex + 2; // +1 header row, +1 for 1-based indexing
+    await this.sheets.spreadsheets.values.update({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: `H2!A${sheetRow}:V${sheetRow}`,
+      valueInputOption: "RAW",
+      requestBody: { values: [newRow] },
+    });
+
+    return updated;
   }
   ejecutarMovimiento(_id: string): Promise<Movimiento> {
     throw new Error("Not implemented yet");
   }
   posponerMovimiento(_id: string): Promise<Movimiento> {
     throw new Error("Not implemented yet");
+  }
+
+  // ── H4 helpers ───────────────────────────────────────────────────────────
+
+  private readonly H4A_HEADERS = [
+    "id_ingreso", "mes", "monto_cop", "cuenta_destino",
+    "estado", "fecha_confirmacion", "notas",
+  ];
+
+  private readonly H4B_HEADERS = [
+    "id_ingreso", "mes", "semana", "monto", "fecha", "notas",
+  ];
+
+  private rowToIngresoCamilo(row: string[], headers: string[]): IngresoCamilo {
+    const col = (name: string) => row[headers.indexOf(name)] ?? "";
+    return {
+      id: col("id_ingreso"),
+      mes: col("mes"),
+      montoCop: Number(col("monto_cop")) || 0,
+      cuentaDestino: col("cuenta_destino") as CuentaDestino,
+      estado: col("estado") as EstadoIngresoCamilo,
+      fechaConfirmacion: col("fecha_confirmacion") || null,
+      notas: col("notas") || null,
+    };
+  }
+
+  private ingresoCamiloToRow(id: string, ic: Omit<IngresoCamilo, "id">): string[] {
+    return [
+      id, ic.mes, String(ic.montoCop), ic.cuentaDestino,
+      ic.estado, ic.fechaConfirmacion ?? "", ic.notas ?? "",
+    ];
+  }
+
+  private rowToIngresoAngie(row: string[], headers: string[]): IngresoAngie {
+    const col = (name: string) => row[headers.indexOf(name)] ?? "";
+    return {
+      id: col("id_ingreso"),
+      mes: col("mes"),
+      semana: col("semana") as Semana,
+      monto: Number(col("monto")) || 0,
+      fecha: col("fecha"),
+      notas: col("notas") || null,
+    };
+  }
+
+  private ingresoAngieToRow(id: string, ia: Omit<IngresoAngie, "id">): string[] {
+    return [id, ia.mes, ia.semana, String(ia.monto), ia.fecha, ia.notas ?? ""];
+  }
+
+  private async ensureH4Headers(): Promise<void> {
+    let needsCreate = false;
+    try {
+      const res = await this.sheets.spreadsheets.values.get({
+        spreadsheetId: process.env.GOOGLE_SHEET_ID,
+        range: "H4!A1",
+      });
+      if (res.data.values?.[0]?.[0] === "id_ingreso") return;
+    } catch {
+      needsCreate = true;
+    }
+    if (needsCreate) {
+      try {
+        await this.sheets.spreadsheets.batchUpdate({
+          spreadsheetId: process.env.GOOGLE_SHEET_ID,
+          requestBody: {
+            requests: [{ addSheet: { properties: { title: "H4" } } }],
+          },
+        });
+      } catch {
+        // Tab ya existe
+      }
+    }
+    await this.sheets.spreadsheets.values.batchUpdate({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      requestBody: {
+        valueInputOption: "RAW",
+        data: [
+          { range: "H4!A1:G1", values: [this.H4A_HEADERS] },
+          { range: "H4!I1:N1", values: [this.H4B_HEADERS] },
+        ],
+      },
+    });
+  }
+
+  // ── H4 ───────────────────────────────────────────────────────────────────
+
+  async getIngresoCamilo(mes: string): Promise<IngresoCamilo[]> {
+    try {
+      const res = await this.sheets.spreadsheets.values.get({
+        spreadsheetId: process.env.GOOGLE_SHEET_ID,
+        range: "H4!A:G",
+      });
+      const rows = (res.data.values ?? []) as string[][];
+      if (rows.length < 2) return [];
+      const [headers, ...dataRows] = rows;
+      const mesIdx = headers.indexOf("mes");
+      return dataRows
+        .filter((row) => row.length > 0 && row[0] && row[mesIdx] === mes)
+        .map((row) => this.rowToIngresoCamilo(row, headers));
+    } catch {
+      return [];
+    }
+  }
+
+  async createIngresoCamilo(data: Omit<IngresoCamilo, "id">): Promise<IngresoCamilo> {
+    await this.ensureH4Headers();
+    const id = `INGRESO_CAM_${Date.now()}`;
+    await this.sheets.spreadsheets.values.append({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: "H4!A:G",
+      valueInputOption: "RAW",
+      requestBody: { values: [this.ingresoCamiloToRow(id, data)] },
+    });
+    return { id, ...data };
+  }
+
+  async updateIngresoCamilo(id: string, data: Partial<Omit<IngresoCamilo, "id">>): Promise<IngresoCamilo> {
+    const res = await this.sheets.spreadsheets.values.get({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: "H4!A:G",
+    });
+    const rows = (res.data.values ?? []) as string[][];
+    if (rows.length < 2) throw new Error("H4 Range A vacía");
+    const [headers, ...dataRows] = rows;
+    const rowIndex = dataRows.findIndex((row) => row[headers.indexOf("id_ingreso")] === id);
+    if (rowIndex === -1) throw new Error(`IngresoCamilo ${id} no encontrado`);
+    const existing = this.rowToIngresoCamilo(dataRows[rowIndex], headers);
+    const updated: IngresoCamilo = { ...existing, ...data, id };
+    const sheetRow = rowIndex + 2;
+    await this.sheets.spreadsheets.values.update({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: `H4!A${sheetRow}:G${sheetRow}`,
+      valueInputOption: "RAW",
+      requestBody: { values: [this.ingresoCamiloToRow(id, updated)] },
+    });
+    return updated;
+  }
+
+  async getIngresosAngie(mes: string): Promise<IngresoAngie[]> {
+    try {
+      const res = await this.sheets.spreadsheets.values.get({
+        spreadsheetId: process.env.GOOGLE_SHEET_ID,
+        range: "H4!I:N",
+      });
+      const rows = (res.data.values ?? []) as string[][];
+      if (rows.length < 2) return [];
+      const [headers, ...dataRows] = rows;
+      const mesIdx = headers.indexOf("mes");
+      return dataRows
+        .filter((row) => row.length > 0 && row[0] && row[mesIdx] === mes)
+        .map((row) => this.rowToIngresoAngie(row, headers));
+    } catch {
+      return [];
+    }
+  }
+
+  async createIngresoAngie(data: Omit<IngresoAngie, "id">): Promise<IngresoAngie> {
+    await this.ensureH4Headers();
+    const id = `INGRESO_ANG_${Date.now()}`;
+    await this.sheets.spreadsheets.values.append({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: "H4!I:N",
+      valueInputOption: "RAW",
+      requestBody: { values: [this.ingresoAngieToRow(id, data)] },
+    });
+    return { id, ...data };
+  }
+
+  async updateIngresoAngie(id: string, data: Partial<Omit<IngresoAngie, "id">>): Promise<IngresoAngie> {
+    const res = await this.sheets.spreadsheets.values.get({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: "H4!I:N",
+    });
+    const rows = (res.data.values ?? []) as string[][];
+    if (rows.length < 2) throw new Error("H4 Range B vacía");
+    const [headers, ...dataRows] = rows;
+    const rowIndex = dataRows.findIndex((row) => row[headers.indexOf("id_ingreso")] === id);
+    if (rowIndex === -1) throw new Error(`IngresoAngie ${id} no encontrado`);
+    const existing = this.rowToIngresoAngie(dataRows[rowIndex], headers);
+    const updated: IngresoAngie = { ...existing, ...data, id };
+    const sheetRow = rowIndex + 2;
+    await this.sheets.spreadsheets.values.update({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: `H4!I${sheetRow}:N${sheetRow}`,
+      valueInputOption: "RAW",
+      requestBody: { values: [this.ingresoAngieToRow(id, updated)] },
+    });
+    return updated;
   }
 
   // ── H3 ───────────────────────────────────────────────────────────────────
@@ -228,23 +490,6 @@ export class SheetsDataProvider implements IDataProvider {
     throw new Error("Not implemented yet");
   }
   getConsumos(_bolsilloId?: string): Promise<Consumo[]> {
-    throw new Error("Not implemented yet");
-  }
-
-  // ── H4 ───────────────────────────────────────────────────────────────────
-  getIngresoCamilo(_mes: number): Promise<IngresoCamilo[]> {
-    throw new Error("Not implemented yet");
-  }
-  createIngresoCamilo(_data: Omit<IngresoCamilo, "id">): Promise<IngresoCamilo> {
-    throw new Error("Not implemented yet");
-  }
-  updateIngresoCamilo(_id: string, _data: Partial<Omit<IngresoCamilo, "id">>): Promise<IngresoCamilo> {
-    throw new Error("Not implemented yet");
-  }
-  getIngresosAngie(_mes: number): Promise<IngresoAngie[]> {
-    throw new Error("Not implemented yet");
-  }
-  createIngresoAngie(_data: Omit<IngresoAngie, "id">): Promise<IngresoAngie> {
     throw new Error("Not implemented yet");
   }
 

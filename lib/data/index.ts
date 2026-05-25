@@ -37,11 +37,12 @@ export interface IDataProvider {
   getConsumos(bolsilloId?: string): Promise<Consumo[]>;
 
   // ── H4 ───────────────────────────────────────────────────────────────────
-  getIngresoCamilo(mes: number): Promise<IngresoCamilo[]>;
+  getIngresoCamilo(mes: string): Promise<IngresoCamilo[]>;
   createIngresoCamilo(data: Omit<IngresoCamilo, "id">): Promise<IngresoCamilo>;
   updateIngresoCamilo(id: string, data: Partial<Omit<IngresoCamilo, "id">>): Promise<IngresoCamilo>;
-  getIngresosAngie(mes: number): Promise<IngresoAngie[]>;
+  getIngresosAngie(mes: string): Promise<IngresoAngie[]>;
   createIngresoAngie(data: Omit<IngresoAngie, "id">): Promise<IngresoAngie>;
+  updateIngresoAngie(id: string, data: Partial<Omit<IngresoAngie, "id">>): Promise<IngresoAngie>;
 
   // ── H5 ───────────────────────────────────────────────────────────────────
   getCierreSemana(mes: number, semana: Semana): Promise<CierreSemana | null>;

@@ -74,7 +74,7 @@ export class MockDataProvider implements IDataProvider {
   }
 
   // ── H4 ───────────────────────────────────────────────────────────────────
-  getIngresoCamilo(_mes: number): Promise<IngresoCamilo[]> {
+  getIngresoCamilo(_mes: string): Promise<IngresoCamilo[]> {
     return Promise.resolve([]);
   }
   createIngresoCamilo(_data: Omit<IngresoCamilo, "id">): Promise<IngresoCamilo> {
@@ -83,11 +83,14 @@ export class MockDataProvider implements IDataProvider {
   updateIngresoCamilo(_id: string, _data: Partial<Omit<IngresoCamilo, "id">>): Promise<IngresoCamilo> {
     return Promise.resolve(null as unknown as IngresoCamilo);
   }
-  getIngresosAngie(_mes: number): Promise<IngresoAngie[]> {
+  getIngresosAngie(_mes: string): Promise<IngresoAngie[]> {
     return Promise.resolve([]);
   }
   createIngresoAngie(_data: Omit<IngresoAngie, "id">): Promise<IngresoAngie> {
     return Promise.resolve({ id: "mock-1", ..._data });
+  }
+  updateIngresoAngie(_id: string, _data: Partial<Omit<IngresoAngie, "id">>): Promise<IngresoAngie> {
+    return Promise.resolve(null as unknown as IngresoAngie);
   }
 
   // ── H5 ───────────────────────────────────────────────────────────────────
