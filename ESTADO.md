@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Mayo 2026 | Fase: Construcción — Ticket 6 cerrado
+Actualizado: Mayo 2026 | Fase: Construcción — prereqs Ticket 8 completos
 
 ---
 
@@ -356,7 +356,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | Cuenta de servicio | psibot@psibot-495119.iam.gserviceaccount.com — configurada |
 | Repo GitHub (github.com/KKze1975/flujo) | Activo — rama main |
 | Next.js local | http://localhost:3000 — operativo |
-| Ticket 7 — Pantalla M1 | Construido — pendiente commit y push final |
+| Ticket 7 — Pantalla M1 | Completo — commit y push realizados |
 | MesM1.tsx | Completo — lista 39 conceptos, acciones PATCH H2, modales H1/H4, visual Zoho-style con Inter |
 | API H2 PATCH | Operativo — ejecutar/posponer/no_aplica con cálculo de desviación y fecha |
 | API H4 | Operativo — upsert ingreso Camilo y aportes Angie por semana |
@@ -439,6 +439,9 @@ Archivo fuente: H1_presupuesto_base.csv
 | Mayo 2026 | Ajustes visuales M1 completados | V1-V11 verificados en browser — Inter, badges, header azul, sidebar sticky, balance dinámico |
 | Mayo 2026 | Mercado semanal dividido en dos bolsillos | Frutas y verduras $200.000 / Víveres y otros $250.000 |
 | Mayo 2026 | Apoyo Mariella agregado a H1 | $100.000 mensual fijo — Compromisos Financieros — S1 |
+| Mayo 2026 | Conceptos semanales generan 4 filas en H2 | Una fila por semana S1-S4 al inicializar mes |
+| Mayo 2026 | Entretenimiento agregado como concepto semanal | $250.000 semanal — H1 fila 36 |
+| Mayo 2026 | Mesadas niños y Mireya pendientes de reubicar | Actualmente en Mercado y Alimentación — mover a nuevo concepto próxima sesión |
 
 ---
 
@@ -498,7 +501,7 @@ Archivo fuente: H1_presupuesto_base.csv
 ## Prompt de apertura — próxima sesión
 
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo.
-Tipo de sesión: [DISEÑO]
+Tipo de sesión: [CONSTRUCCIÓN]
 Ticket activo: Ticket 8 — Modo Planificación M1
 Entorno: Windows — PowerShell exclusivamente.
 
