@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Mayo 2026 | Fase: Construcción — Ticket 8 completo
+Actualizado: Mayo 2026 | Fase: Construcción — Ticket 8 cerrado y verificado en browser
 
 ---
 
@@ -360,7 +360,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | Repo GitHub (github.com/KKze1975/flujo) | Activo — rama main |
 | Next.js local | http://localhost:3000 — operativo |
 | Ticket 7 — Pantalla M1 | Completo — commit y push realizados |
-| Ticket 8 — Modo Planificación M1 + B4 | Completo — VistaPlanificacion + ModalAgregarConcepto |
+| Ticket 8 — Modo Planificación M1 + B4 | Completo y verificado en browser |
 | MesM1.tsx | Completo — lista 39 conceptos, acciones PATCH H2, modales H1/H4, visual Zoho-style con Inter |
 | VistaPlanificacion.tsx | Completo — planificación, balance semanas, no aplica/posponer, agregar concepto (B4) |
 | ModalAgregarConcepto.tsx | Completo — tres ciclos de vida: solo este mes / cuotas / permanente |
