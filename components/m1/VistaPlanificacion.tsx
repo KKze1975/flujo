@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { createPortal } from "react-dom";
 import React from "react";
 import type { Concepto, Movimiento, Semana, SemanaDefault, Categoria, IngresoCamilo, IngresoAngie } from "@/lib/data/types";
+import ModalAgregarConcepto from "./ModalAgregarConcepto";
 
 const COP = (n: number) =>
   new Intl.NumberFormat("es-CO", {
@@ -89,6 +91,7 @@ export default function VistaPlanificacion({
   const [savingBorrador, setSavingBorrador] = useState(false);
   const [savingCierre, setSavingCierre] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showAgregar, setShowAgregar] = useState(false);
 
   // ── Balance mes ───────────────────────────────────────────────────────────
 
@@ -344,6 +347,15 @@ export default function VistaPlanificacion({
       setError(e instanceof Error ? e.message : "Error desconocido");
       setSavingCierre(false);
     }
+  };
+
+  const handleConceptoAgregado = (nuevoConcepto: Concepto, nuevoMovimiento: Movimiento) => {
+    // Forzar activo en vista local para que aparezca en tabla y balance.
+    // H1 conserva el estado real (retirado para "solo este mes").
+    // persistirH1 solo toca semanaDefault/notas/monto, no estado.
+    setConceptos((prev) => [...prev, { ...nuevoConcepto, estado: "activo" }]);
+    setMovs((prev) => [...prev, nuevoMovimiento]);
+    setShowAgregar(false);
   };
 
   const toggleCat = (cat: Categoria) => {
@@ -719,11 +731,21 @@ export default function VistaPlanificacion({
       {/* ── Footer ── */}
       <footer className="shrink-0 border-t border-gray-200 bg-white px-4 py-3">
         <div className="mx-auto flex max-w-screen-xl items-center justify-between">
-          <span className="text-xs text-gray-400">
-            {dirtyIds.size > 0
-              ? `${dirtyIds.size} cambio${dirtyIds.size > 1 ? "s" : ""} sin guardar en H1`
-              : "Sin cambios pendientes"}
-          </span>
+          <div className="flex items-center gap-4">
+            <span className="text-xs text-gray-400">
+              {dirtyIds.size > 0
+                ? `${dirtyIds.size} cambio${dirtyIds.size > 1 ? "s" : ""} sin guardar en H1`
+                : "Sin cambios pendientes"}
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowAgregar(true)}
+              disabled={savingBorrador || savingCierre}
+              className="rounded-lg border border-dashed border-gray-300 px-3 py-1.5 text-xs text-gray-500 hover:border-[#1a73e8] hover:text-[#1a73e8] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              + Agregar concepto
+            </button>
+          </div>
           <div className="flex gap-2">
             <button
               type="button"
@@ -744,6 +766,15 @@ export default function VistaPlanificacion({
           </div>
         </div>
       </footer>
+
+      {showAgregar && typeof window !== "undefined" && createPortal(
+        <ModalAgregarConcepto
+          mes={mes}
+          onClose={() => setShowAgregar(false)}
+          onSave={handleConceptoAgregado}
+        />,
+        document.body
+      )}
     </>
   );
 }

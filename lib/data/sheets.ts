@@ -87,8 +87,20 @@ export class SheetsDataProvider implements IDataProvider {
   getConceptoById(_id: string): Promise<Concepto | null> {
     throw new Error("Not implemented yet");
   }
-  createConcepto(_data: Omit<Concepto, "id">): Promise<Concepto> {
-    throw new Error("Not implemented yet");
+  async createConcepto(data: Omit<Concepto, "id">): Promise<Concepto> {
+    const categoriaKey = data.categoria
+      .normalize("NFD").replace(/\p{Mn}/gu, "")
+      .toUpperCase()
+      .replace(/[^A-Z0-9]+/g, "_");
+    const id = `${categoriaKey}_${Date.now()}`;
+    const concepto: Concepto = { id, ...data };
+    await this.sheets.spreadsheets.values.append({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: "H1!A:L",
+      valueInputOption: "RAW",
+      requestBody: { values: [this.conceptoToRow(concepto)] },
+    });
+    return concepto;
   }
 
   async updateConcepto(id: string, data: Partial<Omit<Concepto, "id">>): Promise<Concepto> {

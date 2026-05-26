@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Mayo 2026 | Fase: Construcción — prereqs Ticket 8 completos
+Actualizado: Mayo 2026 | Fase: Construcción — Ticket 8 completo
 
 ---
 
@@ -337,6 +337,9 @@ Archivo fuente: H1_presupuesto_base.csv
 | components/m1/ModalIngresoCamilo.tsx | Creado — monto COP, cuenta destino, estado |
 | components/m1/ModalAporteAngie.tsx | Creado — grid S1-S4 con montos por semana |
 | components/m1/ModalEditarConcepto.tsx | Creado — edita monto/semanaDefault/notas de H1 |
+| components/m1/VistaPlanificacion.tsx | Creado — vista planificación M1 con balance, agregar concepto (B4) |
+| components/m1/ModalAgregarConcepto.tsx | Creado — modal B4: tres ciclos de vida (solo este mes / cuotas / permanente) |
+| app/api/mes/[mes]/conceptos/route.ts | Creado — POST crea concepto en H1 + movimiento en H2 (atómico) |
 | .env.local | Creado — credenciales Google (gitignored) |
 | ESTADO.md | En el repo — fuente de verdad |
 | scripts/seed-h1.mjs | Creado — cargó 40 conceptos reales en H1 (uso único) |
@@ -357,8 +360,12 @@ Archivo fuente: H1_presupuesto_base.csv
 | Repo GitHub (github.com/KKze1975/flujo) | Activo — rama main |
 | Next.js local | http://localhost:3000 — operativo |
 | Ticket 7 — Pantalla M1 | Completo — commit y push realizados |
+| Ticket 8 — Modo Planificación M1 + B4 | Completo — VistaPlanificacion + ModalAgregarConcepto |
 | MesM1.tsx | Completo — lista 39 conceptos, acciones PATCH H2, modales H1/H4, visual Zoho-style con Inter |
+| VistaPlanificacion.tsx | Completo — planificación, balance semanas, no aplica/posponer, agregar concepto (B4) |
+| ModalAgregarConcepto.tsx | Completo — tres ciclos de vida: solo este mes / cuotas / permanente |
 | API H2 PATCH | Operativo — ejecutar/posponer/no_aplica con cálculo de desviación y fecha |
+| API POST /mes/[mes]/conceptos | Operativo — crea H1 + H2 atómico para B4 |
 | API H4 | Operativo — upsert ingreso Camilo y aportes Angie por semana |
 | Amazon WorkSpaces | Activo — entorno de desarrollo principal |
 | Google Sheet original | Legacy — no se toca |
@@ -371,7 +378,6 @@ Archivo fuente: H1_presupuesto_base.csv
 - Claude Code auto-update failed — resolver con: npm i -g @anthropic-ai/claude-code
 - H6 tiene columnas cat_* desactualizadas — actualizar para reflejar las 11 categorías aprobadas
 - scripts/seed-h1.mjs fue ejecutado — puede eliminarse o conservarse como referencia de re-seed
-- B4: Agregar concepto nuevo desde la app (temporal/permanente) — sesión de diseño pendiente
 - Concepto mensual pospuesto genera doble fila en mes siguiente — revisar si es comportamiento deseado
 
 ---
@@ -387,6 +393,12 @@ Archivo fuente: H1_presupuesto_base.csv
 - Sustitución vinculada de conceptos
 - Drill-down por concepto en M3
 - Alertas en M4
+- HU-Agente M1: agente de IA que organiza M1 Planificación a nombre de Camilo
+  y presenta un plan para aprobación. Lee H1 y H4, corre lógica de planificación,
+  propone asignación de semanas y ajustes de balance, Camilo aprueba o ajusta
+  puntualmente. Usa Claude API — infraestructura ya disponible en el stack.
+- Rediseño UX navegación — segunda etapa post MVP. Principio: "don't make me think".
+  Las acciones deben ser visibles, no descubribles.
 
 ---
 
@@ -450,6 +462,9 @@ Archivo fuente: H1_presupuesto_base.csv
 | Mayo 2026 | Aporte Angie $2.300.000 semanal | Dato real histórico confirmado |
 | Mayo 2026 | No aplica este mes → estado no_aplica en H2 | No afecta H1 ni meses futuros |
 | Mayo 2026 | Mover a mes siguiente → estado pospuesto_mes_siguiente | Carry-over al inicializar mes siguiente |
+| Mayo 2026 | B4 — Solo este mes entra a H1 como retirado | Integridad referencial — H2 siempre tiene FK válido a H1 |
+| Mayo 2026 | B4 — Cuotas con monto variable: Opción C | Caso borde dentro de caso borde — sin tabla auxiliar |
+| Mayo 2026 | B4 — Tres ciclos de vida: solo este mes / cuotas / permanente | Camilo conoce el ciclo en el momento de crear |
 
 ---
 
@@ -509,8 +524,8 @@ Archivo fuente: H1_presupuesto_base.csv
 ## Prompt de apertura — próxima sesión
 
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo.
-Tipo de sesión: [DISEÑO]
-Historia activa: HU-M1 — brechas B4 y B5 pendientes
+Tipo de sesión: [DEFINIR EN APERTURA]
+Ticket activo: Ticket 9 — por definir (M1 completo — próximo: M2 o cierre de mes)
 Entorno: Windows — PowerShell exclusivamente.
 
 ---
