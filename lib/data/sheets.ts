@@ -215,6 +215,28 @@ export class SheetsDataProvider implements IDataProvider {
     });
   }
 
+  async getMeses(): Promise<string[]> {
+    let rows: string[][];
+    try {
+      const res = await this.sheets.spreadsheets.values.get({
+        spreadsheetId: process.env.GOOGLE_SHEET_ID,
+        range: "H2!A:V",
+      });
+      rows = (res.data.values ?? []) as string[][];
+    } catch {
+      return [];
+    }
+    if (rows.length < 2) return [];
+    const [headers, ...dataRows] = rows;
+    const mesIdx = headers.indexOf("mes");
+    const seen = new Set<string>();
+    for (const row of dataRows) {
+      const m = row[mesIdx];
+      if (m) seen.add(m);
+    }
+    return Array.from(seen).sort();
+  }
+
   async getMovimientos(mes?: string): Promise<Movimiento[]> {
     let rows: string[][];
     try {

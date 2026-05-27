@@ -31,6 +31,9 @@ export class MockDataProvider implements IDataProvider {
   }
 
   // ── H2 ───────────────────────────────────────────────────────────────────
+  getMeses(): Promise<string[]> {
+    return Promise.resolve([]);
+  }
   getMovimientos(_mes?: string): Promise<Movimiento[]> {
     return Promise.resolve([]);
   }

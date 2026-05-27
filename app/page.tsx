@@ -1,34 +1,43 @@
 export const dynamic = "force-dynamic";
 
 import { getProvider } from "@/lib/data/provider";
-import MesM1 from "@/components/MesM1";
+import PantallaMeses from "@/components/PantallaMeses";
 
 export default async function Home() {
-  const mes = "2026-05";
   const provider = getProvider();
 
-  const [movimientos, conceptos, ingresoCamiloList, ingresosAngie] = await Promise.all([
-    provider.getMovimientos(mes),
-    provider.getConceptos(),
-    provider.getIngresoCamilo(mes).catch(() => []),
-    provider.getIngresosAngie(mes).catch(() => []),
-  ]);
+  const meses = await provider.getMeses();
 
-  if (movimientos.length === 0) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <p className="text-sm text-gray-500">El mes {mes} no ha sido inicializado.</p>
-      </div>
-    );
-  }
+  const resúmenes = await Promise.all(
+    meses.map(async (mes) => {
+      const [movs, ingresosCamilo, ingresosAngie] = await Promise.all([
+        provider.getMovimientos(mes),
+        provider.getIngresoCamilo(mes).catch(() => []),
+        provider.getIngresosAngie(mes).catch(() => []),
+      ]);
 
-  return (
-    <MesM1
-      mes={mes}
-      movimientos={movimientos}
-      conceptos={conceptos}
-      ingresoCamilo={ingresoCamiloList[0] ?? null}
-      ingresosAngie={ingresosAngie}
-    />
+      const totalPresupuestado = movs.reduce((s, m) => s + m.montoPresupuestado, 0);
+      const totalEjecutado = movs
+        .filter((m) => m.estado === "ejecutado")
+        .reduce((s, m) => s + (m.montoEjecutado ?? 0), 0);
+      const totalPendiente = movs.filter((m) => m.estado === "pendiente").length;
+      const ingresoCamilo = ingresosCamilo[0]?.montoCop ?? 0;
+      const ingresoAngie = ingresosAngie.reduce((s, a) => s + a.monto, 0);
+      const totalIngresos = ingresoCamilo + ingresoAngie;
+
+      return {
+        mes,
+        totalPresupuestado,
+        totalEjecutado,
+        superavit: totalIngresos - totalEjecutado,
+        totalIngresos,
+        ingresoCamilo,
+        ingresoAngie,
+        totalPendiente,
+        totalMovimientos: movs.length,
+      };
+    })
   );
+
+  return <PantallaMeses resúmenes={resúmenes} />;
 }

@@ -20,6 +20,7 @@ export interface IDataProvider {
   retirarConcepto(id: string): Promise<Concepto>;
 
   // ── H2 ───────────────────────────────────────────────────────────────────
+  getMeses(): Promise<string[]>;
   getMovimientos(mes?: string): Promise<Movimiento[]>;
   getMovimientosByMesYSemana(mes: string, semana: Semana): Promise<Movimiento[]>;
   crearMovimientosMes(movimientos: Omit<Movimiento, "id">[]): Promise<Movimiento[]>;
