@@ -113,14 +113,20 @@ export interface IngresoAngie {
 // ── H5 ─────────────────────────────────────────────────────────────────────
 
 export interface CierreSemana {
-  id: string;
-  mes: number;
+  id: string;                         // CIERRE_{unix_timestamp}
+  mes: string;                        // "2026-05"
   semana: Semana;
-  saldoInicial: number;
-  ingresos: number;
-  egresos: number;
-  saldoFinal: number;
-  notas?: string;
+  fechaCierre: string;                // "2026-05-07"
+  totalPresupuestado: number;
+  totalEjecutado: number;
+  desviacionTotal: number;
+  remanenteAngie: number;
+  ubicacionRemanenteAngie: string;
+  conceptosPospuestos: number;
+  conceptosNoAplica: number;
+  gastosSinClasificar: number;
+  cerradoPor: Actor;
+  notas: string | null;
 }
 
 export interface PlanSemana {

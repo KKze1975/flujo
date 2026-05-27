@@ -15,7 +15,7 @@ type PatchBody =
       fuenteAngie: boolean;
       razonDesviacion?: string | null;
     }
-  | { tipo: "posponer"; nuevaSemana?: Semana }
+  | { tipo: "posponer"; nuevaSemana?: Semana; razonPostergacion?: string | null }
   | { tipo: "no_aplica" }
   | { tipo: "reasignar_semana"; semana: Semana }
   | { tipo: "mover_mes_siguiente" };
@@ -78,6 +78,7 @@ export async function PATCH(
       patch = {
         estado: "pospuesto",
         ...(body.nuevaSemana ? { semana: body.nuevaSemana } : {}),
+        razonPostergacion: body.razonPostergacion ?? null,
       };
     } else if (body.tipo === "reasignar_semana") {
       if (!SEMANAS_VALIDAS.includes(body.semana)) {

@@ -45,9 +45,9 @@ export interface IDataProvider {
   updateIngresoAngie(id: string, data: Partial<Omit<IngresoAngie, "id">>): Promise<IngresoAngie>;
 
   // ── H5 ───────────────────────────────────────────────────────────────────
-  getCierreSemana(mes: number, semana: Semana): Promise<CierreSemana | null>;
+  getCierreSemana(mes: string, semana: Semana): Promise<CierreSemana | null>;
   createCierreSemana(data: Omit<CierreSemana, "id">): Promise<CierreSemana>;
-  getPlanSemana(mes: number, semana: Semana): Promise<PlanSemana | null>;
+  getPlanSemana(mes: string, semana: Semana): Promise<PlanSemana | null>;
   createPlanSemana(data: Omit<PlanSemana, "id">): Promise<PlanSemana>;
   updatePlanSemana(id: string, data: Partial<Omit<PlanSemana, "id">>): Promise<PlanSemana>;
 

@@ -250,8 +250,9 @@ export class SheetsDataProvider implements IDataProvider {
     return movimientos.map((m, i) => ({ id: `MOV_${base + i}`, ...m }));
   }
 
-  getMovimientosByMesYSemana(_mes: string, _semana: Semana): Promise<Movimiento[]> {
-    throw new Error("Not implemented yet");
+  async getMovimientosByMesYSemana(mes: string, semana: Semana): Promise<Movimiento[]> {
+    const todos = await this.getMovimientos(mes);
+    return todos.filter((m) => m.semana === semana);
   }
   createMovimiento(_data: Omit<Movimiento, "id">): Promise<Movimiento> {
     throw new Error("Not implemented yet");
@@ -506,13 +507,62 @@ export class SheetsDataProvider implements IDataProvider {
   }
 
   // ── H5 ───────────────────────────────────────────────────────────────────
-  getCierreSemana(_mes: number, _semana: Semana): Promise<CierreSemana | null> {
+
+  private readonly H5_HEADERS = [
+    "id_cierre", "mes", "semana", "fecha_cierre",
+    "total_presupuestado", "total_ejecutado", "desviacion_total",
+    "remanente_angie", "ubicacion_remanente_angie",
+    "conceptos_pospuestos", "conceptos_no_aplica", "gastos_sin_clasificar",
+    "cerrado_por", "notas",
+  ];
+
+  private cierreSemanaToRow(c: CierreSemana): string[] {
+    return [
+      c.id, c.mes, c.semana, c.fechaCierre,
+      String(c.totalPresupuestado), String(c.totalEjecutado), String(c.desviacionTotal),
+      String(c.remanenteAngie), c.ubicacionRemanenteAngie,
+      String(c.conceptosPospuestos), String(c.conceptosNoAplica), String(c.gastosSinClasificar),
+      c.cerradoPor, c.notas ?? "",
+    ];
+  }
+
+  private async ensureH5(): Promise<void> {
+    const meta = await this.sheets.spreadsheets.get({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+    });
+    const exists = meta.data.sheets?.some(s => s.properties?.title === "H5");
+    if (!exists) {
+      await this.sheets.spreadsheets.batchUpdate({
+        spreadsheetId: process.env.GOOGLE_SHEET_ID,
+        requestBody: { requests: [{ addSheet: { properties: { title: "H5" } } }] },
+      });
+    }
+    await this.sheets.spreadsheets.values.update({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: "H5!A1",
+      valueInputOption: "RAW",
+      requestBody: { values: [this.H5_HEADERS] },
+    });
+  }
+
+  getCierreSemana(_mes: string, _semana: Semana): Promise<CierreSemana | null> {
     throw new Error("Not implemented yet");
   }
-  createCierreSemana(_data: Omit<CierreSemana, "id">): Promise<CierreSemana> {
-    throw new Error("Not implemented yet");
+
+  async createCierreSemana(data: Omit<CierreSemana, "id">): Promise<CierreSemana> {
+    await this.ensureH5();
+    const id = `CIERRE_${Date.now()}`;
+    const cierre: CierreSemana = { id, ...data };
+    await this.sheets.spreadsheets.values.append({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: "H5!A:N",
+      valueInputOption: "RAW",
+      requestBody: { values: [this.cierreSemanaToRow(cierre)] },
+    });
+    return cierre;
   }
-  getPlanSemana(_mes: number, _semana: Semana): Promise<PlanSemana | null> {
+
+  getPlanSemana(_mes: string, _semana: Semana): Promise<PlanSemana | null> {
     throw new Error("Not implemented yet");
   }
   createPlanSemana(_data: Omit<PlanSemana, "id">): Promise<PlanSemana> {

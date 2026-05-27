@@ -107,6 +107,8 @@ export default function MesM1({
   const [collapsedCats, setCollapsedCats] = useState<Set<Categoria>>(new Set());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cerradoM1, setCerradoM1] = useState(false);
+  const [cerrandoM1, setCerrandoM1] = useState(false);
 
   const dates = useMemo(() => semanaDates(mes), [mes]);
 
@@ -144,6 +146,7 @@ export default function MesM1({
   const totalEjecutados = movs.filter((m) => m.estado === "ejecutado").length;
   const totalPendientes = movs.filter((m) => m.estado === "pendiente").length;
   const totalPospuestos = movs.filter((m) => m.estado === "pospuesto").length;
+  const pendientesS1 = movs.filter((m) => m.semana === "S1" && m.estado === "pendiente").length;
 
   const grupos = useMemo(() => {
     const map = new Map<Categoria, Movimiento[]>();
@@ -183,6 +186,23 @@ export default function MesM1({
       setError(e instanceof Error ? e.message : "Error desconocido");
     } finally {
       setBusy(false);
+    }
+  };
+
+  // ── Cerrar M1 ejecución ─────────────────────────────────────────────────────
+
+  const handleCerrarM1 = async () => {
+    setCerrandoM1(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/mes/${mes}/cerrar-m1`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Error al cerrar M1");
+      setCerradoM1(true);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Error desconocido");
+    } finally {
+      setCerrandoM1(false);
     }
   };
 
@@ -655,14 +675,21 @@ export default function MesM1({
                   <span className="text-gray-500"><strong>{totalPendientes}</strong> pendientes</span>
                   <span className="text-amber-700"><strong>{totalPospuestos}</strong> pospuestos</span>
                 </div>
-                <button
-                  type="button"
-                  disabled={totalPendientes > 0}
-                  className="rounded-lg bg-[#1e3a5f] px-4 py-1.5 text-sm font-medium text-white hover:bg-[#162d4a] disabled:cursor-not-allowed disabled:opacity-40"
-                  title={totalPendientes > 0 ? `${totalPendientes} conceptos pendientes` : "Cerrar M1"}
-                >
-                  Cerrar M1 ejecución
-                </button>
+                {cerradoM1 ? (
+                  <span className="rounded-lg bg-[#e6f4ea] px-4 py-1.5 text-sm font-medium text-[#137333]">
+                    M1 cerrado ✓
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleCerrarM1}
+                    disabled={pendientesS1 > 0 || cerrandoM1}
+                    className="rounded-lg bg-[#1e3a5f] px-4 py-1.5 text-sm font-medium text-white hover:bg-[#162d4a] disabled:cursor-not-allowed disabled:opacity-40"
+                    title={pendientesS1 > 0 ? `${pendientesS1} conceptos pendientes en S1` : "Cerrar M1"}
+                  >
+                    {cerrandoM1 ? "Cerrando…" : "Cerrar M1 ejecución"}
+                  </button>
+                )}
               </div>
             </footer>
           </>

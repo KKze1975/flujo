@@ -94,13 +94,13 @@ export class MockDataProvider implements IDataProvider {
   }
 
   // ── H5 ───────────────────────────────────────────────────────────────────
-  getCierreSemana(_mes: number, _semana: Semana): Promise<CierreSemana | null> {
+  getCierreSemana(_mes: string, _semana: Semana): Promise<CierreSemana | null> {
     return Promise.resolve(null);
   }
   createCierreSemana(_data: Omit<CierreSemana, "id">): Promise<CierreSemana> {
     return Promise.resolve({ id: "mock-1", ..._data });
   }
-  getPlanSemana(_mes: number, _semana: Semana): Promise<PlanSemana | null> {
+  getPlanSemana(_mes: string, _semana: Semana): Promise<PlanSemana | null> {
     return Promise.resolve(null);
   }
   createPlanSemana(_data: Omit<PlanSemana, "id">): Promise<PlanSemana> {
