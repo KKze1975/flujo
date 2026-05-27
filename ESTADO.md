@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Mayo 2026 | Fase: Construcción — Ticket 12 cerrado, pantalla de meses operativa
+Actualizado: Mayo 2026 | Fase: Construcción — Ticket 13 cerrado, métricas en Home operativas
 
 ---
 
@@ -320,7 +320,8 @@ Archivo fuente: H1_presupuesto_base.csv
 | Archivo | Estado |
 |---|---|
 | app/ | Directorio Next.js App Router |
-| app/page.tsx | Server Component — Home: fetcha resúmenes de meses y renderiza PantallaMeses |
+| app/page.tsx | Server Component — Home: fetcha resúmenes + métricas del mes reciente, renderiza PantallaMeses |
+| app/registro/page.tsx | Creado — placeholder "Registro rápido — próximamente" |
 | app/mes/[mes]/page.tsx | Creado — ruta dinámica para MesM1; lógica del page.tsx anterior |
 | app/api/meses/route.ts | Creado — GET lista de meses activos con resumen calculado desde H2+H4 |
 | app/api/conceptos/route.ts | Creado — GET devuelve H1 real desde Sheets |
@@ -332,11 +333,11 @@ Archivo fuente: H1_presupuesto_base.csv
 | app/api/ingresos/camilo/[mes]/route.ts | Creado — GET + POST (upsert) ingreso Camilo en H4A |
 | app/api/ingresos/angie/[mes]/route.ts | Creado — GET + PUT (upsert por semana) aportes Angie en H4B |
 | lib/data/types.ts | Actualizado — CierreSemana alineado al esquema de ESTADO.md |
-| lib/data/index.ts | Creado — IDataProvider con getMeses() + métodos H1-H5 |
-| lib/data/sheets.ts | Actualizado — H1-H4 + getMeses + createCierreSemana + getMovimientosByMesYSemana implementados |
+| lib/data/index.ts | Creado — IDataProvider con getMeses() + getCierresSemana() + métodos H1-H5 |
+| lib/data/sheets.ts | Actualizado — H1-H4 + getMeses + getCierresSemana + createCierreSemana implementados |
 | lib/data/mock.ts | Creado — MockDataProvider con stubs |
 | lib/data/provider.ts | Creado — singleton getProvider() |
-| components/PantallaMeses.tsx | Creado — Home: tarjetas de meses, botón inicializar, historial, click navega a /mes/[mes] |
+| components/PantallaMeses.tsx | Actualizado — panel de 3 métricas, botón "+ Registro rápido", tarjetas de meses |
 | components/MesM1.tsx | Creado — pantalla M1 completa: lista, acciones, modales, visual Zoho-style |
 | components/m1/ModalIngresoCamilo.tsx | Creado — monto COP, cuenta destino, estado |
 | components/m1/ModalAporteAngie.tsx | Creado — grid S1-S4 con montos por semana |
@@ -374,6 +375,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | Ticket 10 — Cerrar M1 ejecución | Completo — botón funcional, primera ejecución real S1 mayo 2026 |
 | Ticket 11 — Fix razonPostergacion | Completo — input en panel posponer, persiste en H2 |
 | Ticket 12 — Pantalla de meses | Completo — Home operativo, junio 2026 inicializado con carry-over |
+| Ticket 13 — Home con métricas | Completo — 3 métricas con datos reales, botón registro rápido navegable |
 | Mayo 2026 | H2 activo — M1 cerrado, ejecución en paralelo con Sheets |
 | Junio 2026 | H2 activo — 62 movimientos inicializados, go-live objetivo |
 | PantallaMeses | Operativa — tarjetas con métricas, inicialización automática, navegación a MesM1 |
@@ -602,7 +604,24 @@ Archivo fuente: H1_presupuesto_base.csv
 - Nada
 
 **Qué cambia en el próximo sprint:**
-- Ticket 13: métricas en Home + punto de entrada M4
+- Ticket 14: por definir — candidatos: M2 vista Angie / M3 cierre semanal / M4 registro rápido real
+
+---
+
+## Retrospectiva — Ticket 13 (Home con métricas)
+
+**Qué funcionó:**
+- Tres métricas con datos reales desde H2 + H4 + H5
+- getCierresSemana implementado con tolerancia a H5 vacío — muestra "sin cierres aún" sin error
+- Semana activa derivada del día del mes en server-side — siempre actualizada
+- Botón "+ Registro rápido" visible y navegable sin error
+- TypeScript sin errores al finalizar
+
+**Qué no funcionó:**
+- Nada
+
+**Qué cambia en el próximo sprint:**
+- Ticket 14 define el siguiente flujo a construir hacia go-live junio 2026
 
 ---
 
@@ -610,8 +629,7 @@ Archivo fuente: H1_presupuesto_base.csv
 
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo y el adjunto al proyecto Claude.
 Tipo de sesión: CONSTRUCCIÓN
-Ticket activo: Ticket 13 — Home con métricas + punto de entrada registro rápido M4
-Tres métricas aprobadas: disponible esta semana / ejecutado vs presupuestado / semanas en verde-rojo
+Ticket activo: Ticket 14 — por definir. Candidatos: M2 vista Angie / M3 cierre semanal / M4 registro rápido real
 Entorno: Windows — PowerShell exclusivamente.
 
 ---
