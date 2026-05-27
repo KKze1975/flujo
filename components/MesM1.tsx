@@ -71,7 +71,7 @@ type AccionEjecutar = {
 };
 type AccionPosponer = {
   rowId: string; tipo: "posponer";
-  modo: "semana" | "mes"; semana: Semana;
+  modo: "semana" | "mes"; semana: Semana; razon: string;
 };
 type Accion = AccionMenu | AccionEjecutar | AccionPosponer;
 
@@ -225,7 +225,7 @@ export default function MesM1({
               </button>
               <button
                 type="button"
-                onClick={() => setAccion({ rowId: mov.id, tipo: "posponer", modo: "semana", semana: (mov.semana as Semana) ?? "S1" })}
+                onClick={() => setAccion({ rowId: mov.id, tipo: "posponer", modo: "semana", semana: (mov.semana as Semana) ?? "S1", razon: "" })}
                 className="rounded bg-amber-500 px-3 py-1.5 text-xs text-white hover:bg-amber-600"
               >
                 Posponer
@@ -334,7 +334,7 @@ export default function MesM1({
                     <input
                       type="radio"
                       checked={ap.modo === modo}
-                      onChange={() => setAccion({ rowId: ap.rowId, tipo: "posponer", modo, semana: ap.semana })}
+                      onChange={() => setAccion({ rowId: ap.rowId, tipo: "posponer", modo, semana: ap.semana, razon: ap.razon })}
                       className="accent-amber-500"
                     />
                     {modo === "semana" ? "Cambiar semana" : "Mes siguiente"}
@@ -347,7 +347,7 @@ export default function MesM1({
                     <button
                       key={s}
                       type="button"
-                      onClick={() => setAccion({ rowId: ap.rowId, tipo: "posponer", modo: ap.modo, semana: s })}
+                      onClick={() => setAccion({ rowId: ap.rowId, tipo: "posponer", modo: ap.modo, semana: s, razon: ap.razon })}
                       disabled={s === mov.semana}
                       className={`rounded border px-2 py-1 text-xs ${
                         ap.semana === s ? "border-amber-500 bg-amber-500 text-white"
@@ -360,10 +360,20 @@ export default function MesM1({
                   ))}
                 </div>
               )}
+              <div className="min-w-40 flex-1">
+                <label className="mb-1 block text-xs text-gray-500">Razón (opcional)</label>
+                <input
+                  type="text"
+                  value={ap.razon}
+                  onChange={(e) => setAccion({ ...ap, razon: e.target.value })}
+                  placeholder="¿Por qué se pospone?"
+                  className="w-full rounded border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300"
+                />
+              </div>
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => patchar(ap.rowId, { tipo: "posponer", ...(ap.modo === "semana" ? { nuevaSemana: ap.semana } : {}) })}
+                  onClick={() => patchar(ap.rowId, { tipo: "posponer", ...(ap.modo === "semana" ? { nuevaSemana: ap.semana } : {}), razonPostergacion: ap.razon || null })}
                   disabled={busy}
                   className="rounded bg-amber-500 px-3 py-1.5 text-xs text-white hover:bg-amber-600 disabled:opacity-50"
                 >
