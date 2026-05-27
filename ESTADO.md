@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Mayo 2026 | Fase: Construcción — Ticket 10 cerrado, primera ejecución real mayo 2026
+Actualizado: Mayo 2026 | Fase: Construcción — Ticket 11 cerrado, objetivo go-live junio 2026
 
 ---
 
@@ -369,6 +369,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | API H2 PATCH | Operativo — ejecutar/posponer/no_aplica con desviación y fecha |
 | API POST /mes/[mes]/cerrar-m1 | Operativo — cierra M1, auto-crea H5, escribe snapshot S1 |
 | Ticket 10 — Cerrar M1 ejecución | Completo — botón funcional, primera ejecución real S1 mayo 2026 |
+| Ticket 11 — Fix razonPostergacion | Completo — input en panel posponer, persiste en H2 |
 | API POST /mes/[mes]/conceptos | Operativo — crea H1 + H2 atómico para B4 |
 | API H4 | Operativo — upsert ingreso Camilo y aportes Angie por semana |
 | Amazon WorkSpaces | Activo — entorno de desarrollo principal |
@@ -383,7 +384,6 @@ Archivo fuente: H1_presupuesto_base.csv
 - H6 tiene columnas cat_* desactualizadas — actualizar para reflejar las 11 categorías aprobadas
 - scripts/seed-h1.mjs fue ejecutado — puede eliminarse o conservarse como referencia de re-seed
 - Concepto mensual pospuesto genera doble fila en mes siguiente — revisar si es comportamiento deseado
-- razonPostergacion no persiste en PATCH posponer — el campo existe en H2 y en el tipo pero el endpoint no lo persiste en Sheets. Pendiente Ticket 11.
 - Uber One, NY Times, El País, Game Pass agregados via B4 en primera ejecución — verificar que quedaron correctamente en H1
 
 ---
@@ -472,6 +472,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | Mayo 2026 | B4 — Solo este mes entra a H1 como retirado | Integridad referencial — H2 siempre tiene FK válido a H1 |
 | Mayo 2026 | B4 — Cuotas con monto variable: Opción C | Caso borde dentro de caso borde — sin tabla auxiliar |
 | Mayo 2026 | B4 — Tres ciclos de vida: solo este mes / cuotas / permanente | Camilo conoce el ciclo en el momento de crear |
+| Mayo 2026 | Ejecución real en Sheets — última vez | Mayo 2026 fue la última ejecución en el Sheet legacy. Junio 2026: go-live completo en la app |
 
 ---
 
@@ -556,10 +557,25 @@ Archivo fuente: H1_presupuesto_base.csv
 - TypeScript sin errores al finalizar
 
 **Qué no funcionó:**
-- razonPostergacion sigue sin persistir en PATCH posponer — el campo existe pero el endpoint no lo escribe en Sheets
+- razonPostergacion seguía sin persistir — resuelto en Ticket 11
 
 **Qué cambia en el próximo sprint:**
-- Ticket 11 resuelve razonPostergacion antes de continuar con S2
+- Foco: preparar sistema para go-live junio 2026
+
+---
+
+## Retrospectiva — Ticket 11 (Fix razonPostergacion)
+
+**Qué funcionó:**
+- Diagnóstico correcto: bug estaba en el frontend, backend ya era correcto
+- Fix en 1m 28s — AccionPosponer + input en panel + razonPostergacion en patchar
+- DoD verificado: razonPostergacion visible en H2 del Sheet
+
+**Qué no funcionó:**
+- Nada
+
+**Qué cambia en el próximo sprint:**
+- Próximo foco: preparar sistema para go-live junio 2026
 
 ---
 
@@ -567,7 +583,8 @@ Archivo fuente: H1_presupuesto_base.csv
 
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo y el adjunto al proyecto Claude.
 Tipo de sesión: CONSTRUCCIÓN
-Ticket activo: Ticket 11 — Fix razonPostergacion en PATCH posponer + continuar ejecución S2 mayo 2026
+Ticket activo: Ticket 12 — por definir. Objetivo: go-live junio 2026.
+Candidatos: M2 vista Angie / M3 cierre semanal / H3 bolsillos / M4 registro diario
 Entorno: Windows — PowerShell exclusivamente.
 
 ---
