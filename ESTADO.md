@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Mayo 2026 | Fase: Construcción — Ticket 11 cerrado, objetivo go-live junio 2026
+Actualizado: Mayo 2026 | Fase: Construcción — Ticket 12 cerrado, pantalla de meses operativa
 
 ---
 
@@ -320,7 +320,9 @@ Archivo fuente: H1_presupuesto_base.csv
 | Archivo | Estado |
 |---|---|
 | app/ | Directorio Next.js App Router |
-| app/page.tsx | Server Component — fetches H2+H1+H4 y pasa props a MesM1 |
+| app/page.tsx | Server Component — Home: fetcha resúmenes de meses y renderiza PantallaMeses |
+| app/mes/[mes]/page.tsx | Creado — ruta dinámica para MesM1; lógica del page.tsx anterior |
+| app/api/meses/route.ts | Creado — GET lista de meses activos con resumen calculado desde H2+H4 |
 | app/api/conceptos/route.ts | Creado — GET devuelve H1 real desde Sheets |
 | app/api/conceptos/[id]/route.ts | Creado — PATCH actualiza monto/semanaDefault/notas en H1 |
 | app/api/mes/[mes]/iniciar/route.ts | Creado — POST inicializa mes en H2 (Ticket 5) |
@@ -330,10 +332,11 @@ Archivo fuente: H1_presupuesto_base.csv
 | app/api/ingresos/camilo/[mes]/route.ts | Creado — GET + POST (upsert) ingreso Camilo en H4A |
 | app/api/ingresos/angie/[mes]/route.ts | Creado — GET + PUT (upsert por semana) aportes Angie en H4B |
 | lib/data/types.ts | Actualizado — CierreSemana alineado al esquema de ESTADO.md |
-| lib/data/index.ts | Creado — IDataProvider con 24 métodos H1-H4; firmas H5 corregidas |
-| lib/data/sheets.ts | Actualizado — H1-H4 + createCierreSemana + getMovimientosByMesYSemana implementados |
+| lib/data/index.ts | Creado — IDataProvider con getMeses() + métodos H1-H5 |
+| lib/data/sheets.ts | Actualizado — H1-H4 + getMeses + createCierreSemana + getMovimientosByMesYSemana implementados |
 | lib/data/mock.ts | Creado — MockDataProvider con stubs |
 | lib/data/provider.ts | Creado — singleton getProvider() |
+| components/PantallaMeses.tsx | Creado — Home: tarjetas de meses, botón inicializar, historial, click navega a /mes/[mes] |
 | components/MesM1.tsx | Creado — pantalla M1 completa: lista, acciones, modales, visual Zoho-style |
 | components/m1/ModalIngresoCamilo.tsx | Creado — monto COP, cuenta destino, estado |
 | components/m1/ModalAporteAngie.tsx | Creado — grid S1-S4 con montos por semana |
@@ -370,6 +373,10 @@ Archivo fuente: H1_presupuesto_base.csv
 | API POST /mes/[mes]/cerrar-m1 | Operativo — cierra M1, auto-crea H5, escribe snapshot S1 |
 | Ticket 10 — Cerrar M1 ejecución | Completo — botón funcional, primera ejecución real S1 mayo 2026 |
 | Ticket 11 — Fix razonPostergacion | Completo — input en panel posponer, persiste en H2 |
+| Ticket 12 — Pantalla de meses | Completo — Home operativo, junio 2026 inicializado con carry-over |
+| Mayo 2026 | H2 activo — M1 cerrado, ejecución en paralelo con Sheets |
+| Junio 2026 | H2 activo — 62 movimientos inicializados, go-live objetivo |
+| PantallaMeses | Operativa — tarjetas con métricas, inicialización automática, navegación a MesM1 |
 | API POST /mes/[mes]/conceptos | Operativo — crea H1 + H2 atómico para B4 |
 | API H4 | Operativo — upsert ingreso Camilo y aportes Angie por semana |
 | Amazon WorkSpaces | Activo — entorno de desarrollo principal |
@@ -473,6 +480,10 @@ Archivo fuente: H1_presupuesto_base.csv
 | Mayo 2026 | B4 — Cuotas con monto variable: Opción C | Caso borde dentro de caso borde — sin tabla auxiliar |
 | Mayo 2026 | B4 — Tres ciclos de vida: solo este mes / cuotas / permanente | Camilo conoce el ciclo en el momento de crear |
 | Mayo 2026 | Ejecución real en Sheets — última vez | Mayo 2026 fue la última ejecución en el Sheet legacy. Junio 2026: go-live completo en la app |
+| Mayo 2026 | Pantalla de meses es el Home de la app | PantallaMeses reemplaza el acceso directo a MesM1 |
+| Mayo 2026 | Dos meses activos simultáneos permitidos | Mayo en ejecución + Junio inicializado — sin conflicto |
+| Mayo 2026 | Historial solo lectura | Sin navegación al detalle — se llenará al cerrar el primer mes |
+| Mayo 2026 | Botón inicializar detecta mes siguiente automáticamente | Sin hardcode — deriva del último mes en H2 |
 
 ---
 
@@ -579,12 +590,28 @@ Archivo fuente: H1_presupuesto_base.csv
 
 ---
 
+## Retrospectiva — Ticket 12 (Pantalla de meses)
+
+**Qué funcionó:**
+- Home operativo: mayo 2026 en tarjeta activa, junio 2026 inicializado con carry-over automático
+- getMeses() implementado desde H2 — sin tabla auxiliar
+- TypeScript sin errores al finalizar
+- API /api/meses devuelve resúmenes correctos desde H2+H4
+
+**Qué no funcionó:**
+- Nada
+
+**Qué cambia en el próximo sprint:**
+- Ticket 13: métricas en Home + punto de entrada M4
+
+---
+
 ## Prompt de apertura — próxima sesión
 
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo y el adjunto al proyecto Claude.
 Tipo de sesión: CONSTRUCCIÓN
-Ticket activo: Ticket 12 — por definir. Objetivo: go-live junio 2026.
-Candidatos: M2 vista Angie / M3 cierre semanal / H3 bolsillos / M4 registro diario
+Ticket activo: Ticket 13 — Home con métricas + punto de entrada registro rápido M4
+Tres métricas aprobadas: disponible esta semana / ejecutado vs presupuestado / semanas en verde-rojo
 Entorno: Windows — PowerShell exclusivamente.
 
 ---
