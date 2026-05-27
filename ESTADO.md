@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Mayo 2026 | Fase: Construcción — Ticket 9 cerrado y verificado via API
+Actualizado: Mayo 2026 | Fase: Construcción — Ticket 10a cerrado (Cerrar M1 ejecución funcional)
 
 ---
 
@@ -325,12 +325,13 @@ Archivo fuente: H1_presupuesto_base.csv
 | app/api/conceptos/[id]/route.ts | Creado — PATCH actualiza monto/semanaDefault/notas en H1 |
 | app/api/mes/[mes]/iniciar/route.ts | Creado — POST inicializa mes en H2 (Ticket 5) |
 | app/api/mes/[mes]/route.ts | Creado — GET devuelve H2 del mes (Ticket 6) |
-| app/api/mes/[mes]/movimientos/[id]/route.ts | Creado — PATCH ejecutar/posponer/no_aplica en H2 |
+| app/api/mes/[mes]/movimientos/[id]/route.ts | Creado — PATCH ejecutar/posponer/no_aplica en H2; expone razonPostergacion |
+| app/api/mes/[mes]/cerrar-m1/route.ts | Creado — POST cierra M1 ejecución: valida S1, escribe snapshot en H5 |
 | app/api/ingresos/camilo/[mes]/route.ts | Creado — GET + POST (upsert) ingreso Camilo en H4A |
 | app/api/ingresos/angie/[mes]/route.ts | Creado — GET + PUT (upsert por semana) aportes Angie en H4B |
-| lib/data/types.ts | Actualizado — Concepto, Movimiento, IngresoCamilo, IngresoAngie, CuentaDestino |
-| lib/data/index.ts | Creado — IDataProvider con 24 métodos H1-H4 |
-| lib/data/sheets.ts | Actualizado — todos los métodos H1-H4 implementados |
+| lib/data/types.ts | Actualizado — CierreSemana alineado al esquema de ESTADO.md |
+| lib/data/index.ts | Creado — IDataProvider con 24 métodos H1-H4; firmas H5 corregidas |
+| lib/data/sheets.ts | Actualizado — H1-H4 + createCierreSemana + getMovimientosByMesYSemana implementados |
 | lib/data/mock.ts | Creado — MockDataProvider con stubs |
 | lib/data/provider.ts | Creado — singleton getProvider() |
 | components/MesM1.tsx | Creado — pantalla M1 completa: lista, acciones, modales, visual Zoho-style |
@@ -355,7 +356,7 @@ Archivo fuente: H1_presupuesto_base.csv
 
 | Componente | Estado |
 |---|---|
-| Google Sheet nuevo | Activo — ID: 1GOMhxYw_f7Zl-GTVNtxAs9218x4vKxzg3LGRyveyr7A — H1, H2, H4 operativos |
+| Google Sheet nuevo | Activo — ID: 1GOMhxYw_f7Zl-GTVNtxAs9218x4vKxzg3LGRyveyr7A — H1, H2, H4, H5 operativos |
 | Cuenta de servicio | psibot@psibot-495119.iam.gserviceaccount.com — configurada |
 | Repo GitHub (github.com/KKze1975/flujo) | Activo — rama main |
 | Next.js local | http://localhost:3000 — operativo |
@@ -365,7 +366,8 @@ Archivo fuente: H1_presupuesto_base.csv
 | MesM1.tsx | Completo — lista 39 conceptos, acciones PATCH H2, modales H1/H4, visual Zoho-style con Inter |
 | VistaPlanificacion.tsx | Completo — planificación, balance semanas, no aplica/posponer, agregar concepto (B4) |
 | ModalAgregarConcepto.tsx | Completo — tres ciclos de vida: solo este mes / cuotas / permanente |
-| API H2 PATCH | Operativo — ejecutar/posponer/no_aplica con cálculo de desviación y fecha |
+| API H2 PATCH | Operativo — ejecutar/posponer/no_aplica con desviación, fecha y razonPostergacion |
+| API POST /mes/[mes]/cerrar-m1 | Operativo — cierra M1, auto-crea H5, escribe snapshot S1 |
 | API POST /mes/[mes]/conceptos | Operativo — crea H1 + H2 atómico para B4 |
 | API H4 | Operativo — upsert ingreso Camilo y aportes Angie por semana |
 | Amazon WorkSpaces | Activo — entorno de desarrollo principal |
@@ -380,7 +382,6 @@ Archivo fuente: H1_presupuesto_base.csv
 - H6 tiene columnas cat_* desactualizadas — actualizar para reflejar las 11 categorías aprobadas
 - scripts/seed-h1.mjs fue ejecutado — puede eliminarse o conservarse como referencia de re-seed
 - Concepto mensual pospuesto genera doble fila en mes siguiente — revisar si es comportamiento deseado
-- PATCH posponer no acepta razonPostergacion — el campo existe en H2 y en el tipo Movimiento pero el endpoint tipo:"posponer" no lo expone ni lo persiste en Sheets. Detectado en T9.
 
 ---
 
@@ -539,8 +540,23 @@ Archivo fuente: H1_presupuesto_base.csv
 - Servidor no estaba corriendo al iniciar — requirió arrancar via cmd.exe (Start-Process con npm falla en este entorno)
 
 **Qué cambia en el próximo sprint:**
-- Agregar razonPostergacion al tipo posponer del PATCH endpoint (deuda técnica documentada)
 - Próximo ticket: definir entre M2 (vista Angie) o flujo de cierre de semana (M3 parcial)
+
+---
+
+## Retrospectiva — Sesión Ticket 10a (Cerrar M1 ejecución)
+
+**Qué funcionó:**
+- Bug del botón identificado y corregido: condición evaluaba todas las semanas en vez de solo S1
+- H5 auto-creado en el primer cierre — sin script manual de setup
+- Deuda técnica T9 (razonPostergacion en posponer) saldada en el mismo commit
+- TypeScript sin errores al finalizar
+
+**Qué no funcionó:**
+- Servidor no estaba corriendo al iniciar sesión — patrón recurrente, requiere arrancar con bash
+
+**Qué cambia en el próximo sprint:**
+- Arrancar servidor al inicio de cada sesión antes de empezar código
 
 ---
 
@@ -548,7 +564,7 @@ Archivo fuente: H1_presupuesto_base.csv
 
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo y el adjunto al proyecto Claude.
 Tipo de sesión: [DEFINIR EN APERTURA]
-Ticket activo: Ticket 10 — por definir (próximo: M2 vista Angie o cierre de semana M3)
+Ticket activo: por definir — próximo: M2 vista Angie o cierre de semana M3
 Entorno: Windows — PowerShell exclusivamente.
 
 ---
