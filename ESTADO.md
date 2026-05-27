@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Mayo 2026 | Fase: Construcción — Ticket 13 cerrado, métricas en Home operativas
+Actualizado: Mayo 2026 | Fase: Construcción — Ticket 13 cerrado, Home con métricas y snapshot semanal
 
 ---
 
@@ -320,8 +320,8 @@ Archivo fuente: H1_presupuesto_base.csv
 | Archivo | Estado |
 |---|---|
 | app/ | Directorio Next.js App Router |
-| app/page.tsx | Server Component — Home: fetcha resúmenes + métricas del mes reciente, renderiza PantallaMeses |
-| app/registro/page.tsx | Creado — placeholder "Registro rápido — próximamente" |
+| app/page.tsx | Server Component — Home: fetch paralelo con métricas + snapshot semana activa |
+| app/registro/page.tsx | Creado — placeholder M4, navega desde botón "+ Registro rápido" en header |
 | app/mes/[mes]/page.tsx | Creado — ruta dinámica para MesM1; lógica del page.tsx anterior |
 | app/api/meses/route.ts | Creado — GET lista de meses activos con resumen calculado desde H2+H4 |
 | app/api/conceptos/route.ts | Creado — GET devuelve H1 real desde Sheets |
@@ -337,7 +337,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | lib/data/sheets.ts | Actualizado — H1-H4 + getMeses + getCierresSemana + createCierreSemana implementados |
 | lib/data/mock.ts | Creado — MockDataProvider con stubs |
 | lib/data/provider.ts | Creado — singleton getProvider() |
-| components/PantallaMeses.tsx | Actualizado — panel de 3 métricas, botón "+ Registro rápido", tarjetas de meses |
+| components/PantallaMeses.tsx | Actualizado — MetricasMes con 6 tarjetas: panel métricas + snapshot semana activa |
 | components/MesM1.tsx | Creado — pantalla M1 completa: lista, acciones, modales, visual Zoho-style |
 | components/m1/ModalIngresoCamilo.tsx | Creado — monto COP, cuenta destino, estado |
 | components/m1/ModalAporteAngie.tsx | Creado — grid S1-S4 con montos por semana |
@@ -375,7 +375,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | Ticket 10 — Cerrar M1 ejecución | Completo — botón funcional, primera ejecución real S1 mayo 2026 |
 | Ticket 11 — Fix razonPostergacion | Completo — input en panel posponer, persiste en H2 |
 | Ticket 12 — Pantalla de meses | Completo — Home operativo, junio 2026 inicializado con carry-over |
-| Ticket 13 — Home con métricas | Completo — 3 métricas con datos reales, botón registro rápido navegable |
+| Ticket 13 — Home con métricas | Completo — 6 tarjetas: panel métricas + snapshot semana activa, botón registro rápido |
 | Mayo 2026 | H2 activo — M1 cerrado, ejecución en paralelo con Sheets |
 | Junio 2026 | H2 activo — 62 movimientos inicializados, go-live objetivo |
 | PantallaMeses | Operativa — tarjetas con métricas, inicialización automática, navegación a MesM1 |
@@ -608,20 +608,20 @@ Archivo fuente: H1_presupuesto_base.csv
 
 ---
 
-## Retrospectiva — Ticket 13 (Home con métricas)
+## Retrospectiva — Ticket 13 (Home con métricas + snapshot semanal)
 
 **Qué funcionó:**
-- Tres métricas con datos reales desde H2 + H4 + H5
-- getCierresSemana implementado con tolerancia a H5 vacío — muestra "sin cierres aún" sin error
-- Semana activa derivada del día del mes en server-side — siempre actualizada
-- Botón "+ Registro rápido" visible y navegable sin error
-- TypeScript sin errores al finalizar
+- 6 tarjetas de métricas con datos reales: disponible semana, ejecutado vs presupuestado, semanas cerradas, recaudo semana, ejecutado semana, disponible semana
+- getCierresSemana tolerante a H5 vacío — "sin cierres aún" sin error
+- Semana activa derivada del día del mes server-side — siempre actualizada
+- Botón "+ Registro rápido" navegable — placeholder M4 en /registro
+- TypeScript sin errores en ambos commits
 
 **Qué no funcionó:**
 - Nada
 
 **Qué cambia en el próximo sprint:**
-- Ticket 14 define el siguiente flujo a construir hacia go-live junio 2026
+- Ticket 14: M4 Registro rápido — texto natural + foto de factura, mismo mecanismo de confirmación
 
 ---
 
@@ -629,7 +629,8 @@ Archivo fuente: H1_presupuesto_base.csv
 
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo y el adjunto al proyecto Claude.
 Tipo de sesión: CONSTRUCCIÓN
-Ticket activo: Ticket 14 — por definir. Candidatos: M2 vista Angie / M3 cierre semanal / M4 registro rápido real
+Ticket activo: Ticket 14 — M4 Registro rápido
+Nota de diseño M4: soportar dos inputs desde el inicio — texto natural y foto de factura. Mismo mecanismo de confirmación.
 Entorno: Windows — PowerShell exclusivamente.
 
 ---
