@@ -54,13 +54,14 @@ export default async function Home() {
 
   if (meses.length > 0) {
     const mesReciente = meses[meses.length - 1];
-    const [movsReciente, ingresosAngieReciente, cierres] = await Promise.all([
+    const [movsReciente, ingresosAngieReciente, ingresosCamiloReciente, cierres] = await Promise.all([
       provider.getMovimientos(mesReciente),
       provider.getIngresosAngie(mesReciente).catch(() => []),
+      provider.getIngresoCamilo(mesReciente).catch(() => []),
       provider.getCierresSemana(mesReciente).catch(() => []),
     ]);
 
-    // Métrica 1: disponible esta semana
+    // Métrica 1: disponible esta semana (panel superior)
     const ingresoSemana = ingresosAngieReciente
       .filter((a) => a.semana === semana)
       .reduce((s, a) => s + a.monto, 0);
@@ -69,7 +70,7 @@ export default async function Home() {
       .reduce((s, m) => s + m.montoPresupuestado, 0);
     const disponibleSemana = ingresoSemana - pendientesSemana;
 
-    // Métrica 2: ejecutado vs presupuestado
+    // Métrica 2: ejecutado vs presupuestado (panel superior)
     const totalPresupuestado = movsReciente.reduce((s, m) => s + m.montoPresupuestado, 0);
     const totalEjecutado = movsReciente
       .filter((m) => m.estado === "ejecutado")
@@ -78,8 +79,18 @@ export default async function Home() {
       ? Math.round((totalEjecutado / totalPresupuestado) * 100)
       : 0;
 
-    // Métrica 3: semanas cerradas desde H5
+    // Métrica 3: semanas cerradas desde H5 (panel superior)
     const semanasCerradas = cierres.length;
+
+    // Panel inferior — snapshot semana activa
+    const ingresoCamiloMes = ingresosCamiloReciente[0]?.montoCop ?? 0;
+    const recaudoSemana =
+      ingresosAngieReciente.filter((a) => a.semana === semana).reduce((s, a) => s + a.monto, 0) +
+      (semana === "S1" ? ingresoCamiloMes : 0);
+    const ejecutadoSemana = movsReciente
+      .filter((m) => m.semana === semana && m.estado === "ejecutado")
+      .reduce((s, m) => s + (m.montoEjecutado ?? 0), 0);
+    const disponibleSemanaSnapshot = recaudoSemana - ejecutadoSemana;
 
     metricas = {
       semana,
@@ -89,6 +100,9 @@ export default async function Home() {
       pctEjecutado,
       semanasCerradas,
       mes: mesReciente,
+      recaudoSemana,
+      ejecutadoSemana,
+      disponibleSemanaSnapshot,
     };
   }
 

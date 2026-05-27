@@ -58,6 +58,9 @@ export interface MetricasMes {
   pctEjecutado: number;
   semanasCerradas: number;
   mes: string;
+  recaudoSemana: number;
+  ejecutadoSemana: number;
+  disponibleSemanaSnapshot: number;
 }
 
 export default function PantallaMeses({
@@ -175,6 +178,44 @@ export default function PantallaMeses({
                     {metricas.semanasCerradas} / 4
                   </p>
                 )}
+              </div>
+
+            </div>
+
+            {/* ── Snapshot semana activa ── */}
+            <h3 className="mt-5 mb-3 text-xs font-semibold uppercase tracking-widest text-gray-400">
+              Semana activa — snapshot {metricas.semana}
+            </h3>
+            <div className="grid grid-cols-3 gap-4">
+
+              <div className="rounded-xl border bg-white px-5 py-4 shadow-sm">
+                <p className="text-xs text-gray-400 mb-1">Recaudo {metricas.semana}</p>
+                <p className="text-2xl font-semibold text-gray-800">
+                  {COP(metricas.recaudoSemana)}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {metricas.semana === "S1" ? "Angie + Camilo" : "Angie"}
+                </p>
+              </div>
+
+              <div className="rounded-xl border bg-white px-5 py-4 shadow-sm">
+                <p className="text-xs text-gray-400 mb-1">Ejecutado {metricas.semana}</p>
+                <p className="text-2xl font-semibold text-gray-800">
+                  {COP(metricas.ejecutadoSemana)}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">pagos confirmados</p>
+              </div>
+
+              <div className="rounded-xl border bg-white px-5 py-4 shadow-sm">
+                <p className="text-xs text-gray-400 mb-1">Disponible {metricas.semana}</p>
+                <p
+                  className="text-2xl font-semibold"
+                  style={{ color: metricas.disponibleSemanaSnapshot >= 0 ? "#137333" : "#c5221f" }}
+                >
+                  {metricas.disponibleSemanaSnapshot >= 0 ? "" : "-"}
+                  {COP(Math.abs(metricas.disponibleSemanaSnapshot))}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">recaudo menos ejecutado</p>
               </div>
 
             </div>
