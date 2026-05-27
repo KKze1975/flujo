@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Mayo 2026 | Fase: Construcción — Ticket 8 cerrado y verificado en browser
+Actualizado: Mayo 2026 | Fase: Construcción — Ticket 9 cerrado y verificado via API
 
 ---
 
@@ -361,6 +361,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | Next.js local | http://localhost:3000 — operativo |
 | Ticket 7 — Pantalla M1 | Completo — commit y push realizados |
 | Ticket 8 — Modo Planificación M1 + B4 | Completo y verificado en browser |
+| Ticket 9 — Prueba integrada M1 Planificación + Ejecución | Completo — DoD 7/7 cubiertos via API |
 | MesM1.tsx | Completo — lista 39 conceptos, acciones PATCH H2, modales H1/H4, visual Zoho-style con Inter |
 | VistaPlanificacion.tsx | Completo — planificación, balance semanas, no aplica/posponer, agregar concepto (B4) |
 | ModalAgregarConcepto.tsx | Completo — tres ciclos de vida: solo este mes / cuotas / permanente |
@@ -379,6 +380,7 @@ Archivo fuente: H1_presupuesto_base.csv
 - H6 tiene columnas cat_* desactualizadas — actualizar para reflejar las 11 categorías aprobadas
 - scripts/seed-h1.mjs fue ejecutado — puede eliminarse o conservarse como referencia de re-seed
 - Concepto mensual pospuesto genera doble fila en mes siguiente — revisar si es comportamiento deseado
+- PATCH posponer no acepta razonPostergacion — el campo existe en H2 y en el tipo Movimiento pero el endpoint tipo:"posponer" no lo expone ni lo persiste en Sheets. Detectado en T9.
 
 ---
 
@@ -399,6 +401,7 @@ Archivo fuente: H1_presupuesto_base.csv
   puntualmente. Usa Claude API — infraestructura ya disponible en el stack.
 - Rediseño UX navegación — segunda etapa post MVP. Principio: "don't make me think".
   Las acciones deben ser visibles, no descubribles.
+  - Filtro por semana en vista M1 Planificación — ver S1/S2/S3/S4 de forma independiente.
 
 ---
 
@@ -521,11 +524,31 @@ Archivo fuente: H1_presupuesto_base.csv
 
 ---
 
+## Retrospectiva — Ticket 9 (Prueba integrada M1 Planificación + Ejecución)
+
+**Qué funcionó:**
+- DoD 7/7 cubiertos en una sola sesión sin bloqueos de lógica de negocio
+- H4A e H4B ya tenían datos reales de sesiones anteriores — integración confirmada
+- B4 atómico (H1 + H2) funcionó sin errores — Seguros de vida Camilo creado y verificado
+- 5 ejecuciones en S1 via API: estado ejecutado, desviación 0, fecha y ejecutor correctos
+- Posponer funcionó correctamente a nivel de estado
+- no_aplica ya estaba persistido de sesiones previas — confirmado en H2
+
+**Qué no funcionó:**
+- PATCH posponer no persiste razonPostergacion — el campo existe en el tipo y en H2 pero el endpoint no lo expone
+- Servidor no estaba corriendo al iniciar — requirió arrancar via cmd.exe (Start-Process con npm falla en este entorno)
+
+**Qué cambia en el próximo sprint:**
+- Agregar razonPostergacion al tipo posponer del PATCH endpoint (deuda técnica documentada)
+- Próximo ticket: definir entre M2 (vista Angie) o flujo de cierre de semana (M3 parcial)
+
+---
+
 ## Prompt de apertura — próxima sesión
 
-Retomamos el proyecto Flujo. Lee ESTADO.md en el repo.
+Retomamos el proyecto Flujo. Lee ESTADO.md en el repo y el adjunto al proyecto Claude.
 Tipo de sesión: [DEFINIR EN APERTURA]
-Ticket activo: Ticket 9 — por definir (M1 completo — próximo: M2 o cierre de mes)
+Ticket activo: Ticket 10 — por definir (próximo: M2 vista Angie o cierre de semana M3)
 Entorno: Windows — PowerShell exclusivamente.
 
 ---
