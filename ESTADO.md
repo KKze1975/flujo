@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Mayo 2026 | Fase: Construcción — Ticket 10a cerrado (Cerrar M1 ejecución funcional)
+Actualizado: Mayo 2026 | Fase: Construcción — Ticket 10 cerrado, primera ejecución real mayo 2026
 
 ---
 
@@ -325,8 +325,8 @@ Archivo fuente: H1_presupuesto_base.csv
 | app/api/conceptos/[id]/route.ts | Creado — PATCH actualiza monto/semanaDefault/notas en H1 |
 | app/api/mes/[mes]/iniciar/route.ts | Creado — POST inicializa mes en H2 (Ticket 5) |
 | app/api/mes/[mes]/route.ts | Creado — GET devuelve H2 del mes (Ticket 6) |
-| app/api/mes/[mes]/movimientos/[id]/route.ts | Creado — PATCH ejecutar/posponer/no_aplica en H2; expone razonPostergacion |
-| app/api/mes/[mes]/cerrar-m1/route.ts | Creado — POST cierra M1 ejecución: valida S1, escribe snapshot en H5 |
+| app/api/mes/[mes]/movimientos/[id]/route.ts | Creado — PATCH ejecutar/posponer/no_aplica en H2 |
+| app/api/mes/[mes]/cerrar-m1/route.ts | Creado — POST cierra M1: valida S1 sin pendientes, escribe snapshot en H5 |
 | app/api/ingresos/camilo/[mes]/route.ts | Creado — GET + POST (upsert) ingreso Camilo en H4A |
 | app/api/ingresos/angie/[mes]/route.ts | Creado — GET + PUT (upsert por semana) aportes Angie en H4B |
 | lib/data/types.ts | Actualizado — CierreSemana alineado al esquema de ESTADO.md |
@@ -366,8 +366,9 @@ Archivo fuente: H1_presupuesto_base.csv
 | MesM1.tsx | Completo — lista 39 conceptos, acciones PATCH H2, modales H1/H4, visual Zoho-style con Inter |
 | VistaPlanificacion.tsx | Completo — planificación, balance semanas, no aplica/posponer, agregar concepto (B4) |
 | ModalAgregarConcepto.tsx | Completo — tres ciclos de vida: solo este mes / cuotas / permanente |
-| API H2 PATCH | Operativo — ejecutar/posponer/no_aplica con desviación, fecha y razonPostergacion |
+| API H2 PATCH | Operativo — ejecutar/posponer/no_aplica con desviación y fecha |
 | API POST /mes/[mes]/cerrar-m1 | Operativo — cierra M1, auto-crea H5, escribe snapshot S1 |
+| Ticket 10 — Cerrar M1 ejecución | Completo — botón funcional, primera ejecución real S1 mayo 2026 |
 | API POST /mes/[mes]/conceptos | Operativo — crea H1 + H2 atómico para B4 |
 | API H4 | Operativo — upsert ingreso Camilo y aportes Angie por semana |
 | Amazon WorkSpaces | Activo — entorno de desarrollo principal |
@@ -382,6 +383,8 @@ Archivo fuente: H1_presupuesto_base.csv
 - H6 tiene columnas cat_* desactualizadas — actualizar para reflejar las 11 categorías aprobadas
 - scripts/seed-h1.mjs fue ejecutado — puede eliminarse o conservarse como referencia de re-seed
 - Concepto mensual pospuesto genera doble fila en mes siguiente — revisar si es comportamiento deseado
+- razonPostergacion no persiste en PATCH posponer — el campo existe en H2 y en el tipo pero el endpoint no lo persiste en Sheets. Pendiente Ticket 11.
+- Uber One, NY Times, El País, Game Pass agregados via B4 en primera ejecución — verificar que quedaron correctamente en H1
 
 ---
 
@@ -544,27 +547,27 @@ Archivo fuente: H1_presupuesto_base.csv
 
 ---
 
-## Retrospectiva — Sesión Ticket 10a (Cerrar M1 ejecución)
+## Retrospectiva — Ticket 10 (Cerrar M1 ejecución + primera ejecución real)
 
 **Qué funcionó:**
-- Bug del botón identificado y corregido: condición evaluaba todas las semanas en vez de solo S1
-- H5 auto-creado en el primer cierre — sin script manual de setup
-- Deuda técnica T9 (razonPostergacion en posponer) saldada en el mismo commit
+- Bug del botón corregido: condición evaluaba todas las semanas, ahora solo S1
+- Primera ejecución real de mayo 2026 completada: S1 ejecutado, M1 cerrado
+- H5 auto-creada al primer cierre — sin script manual de setup
 - TypeScript sin errores al finalizar
 
 **Qué no funcionó:**
-- Servidor no estaba corriendo al iniciar sesión — patrón recurrente, requiere arrancar con bash
+- razonPostergacion sigue sin persistir en PATCH posponer — el campo existe pero el endpoint no lo escribe en Sheets
 
 **Qué cambia en el próximo sprint:**
-- Arrancar servidor al inicio de cada sesión antes de empezar código
+- Ticket 11 resuelve razonPostergacion antes de continuar con S2
 
 ---
 
 ## Prompt de apertura — próxima sesión
 
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo y el adjunto al proyecto Claude.
-Tipo de sesión: [DEFINIR EN APERTURA]
-Ticket activo: por definir — próximo: M2 vista Angie o cierre de semana M3
+Tipo de sesión: CONSTRUCCIÓN
+Ticket activo: Ticket 11 — Fix razonPostergacion en PATCH posponer + continuar ejecución S2 mayo 2026
 Entorno: Windows — PowerShell exclusivamente.
 
 ---
