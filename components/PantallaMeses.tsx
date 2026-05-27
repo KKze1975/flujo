@@ -50,10 +50,22 @@ export interface ResumenMes {
   totalMovimientos: number;
 }
 
+export interface MetricasMes {
+  semana: string;
+  disponibleSemana: number;
+  totalEjecutado: number;
+  totalPresupuestado: number;
+  pctEjecutado: number;
+  semanasCerradas: number;
+  mes: string;
+}
+
 export default function PantallaMeses({
   resúmenes: init,
+  metricas,
 }: {
   resúmenes: ResumenMes[];
+  metricas: MetricasMes | null;
 }) {
   const router = useRouter();
   const [resúmenes, setResúmenes] = useState(init);
@@ -70,8 +82,6 @@ export default function PantallaMeses({
       const res = await fetch(`/api/mes/${próximo}/iniciar`, { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Error al inicializar");
-
-      // Fetch resumen del nuevo mes
       const resRes = await fetch("/api/meses");
       const resData = await resRes.json();
       if (resRes.ok) setResúmenes(resData.meses);
@@ -94,21 +104,82 @@ export default function PantallaMeses({
             <h1 className="text-lg font-semibold text-white">Flujo</h1>
             <p className="text-xs text-white/60">Salud financiera familiar</p>
           </div>
-          <div className="flex flex-col items-end gap-1">
+          <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={handleInicializar}
-              disabled={inicializando}
-              className="rounded-lg bg-white px-4 py-1.5 text-sm font-medium text-[#1e3a5f] hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
+              onClick={() => router.push("/registro")}
+              className="rounded-lg bg-white/15 px-4 py-1.5 text-sm font-medium text-white hover:bg-white/25 border border-white/20"
             >
-              {inicializando ? "Inicializando…" : `Inicializar ${formatMes(próximo)}`}
+              + Registro rápido
             </button>
-            {error && <p className="text-xs text-red-300">{error}</p>}
+            <div className="flex flex-col items-end gap-1">
+              <button
+                type="button"
+                onClick={handleInicializar}
+                disabled={inicializando}
+                className="rounded-lg bg-white px-4 py-1.5 text-sm font-medium text-[#1e3a5f] hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {inicializando ? "Inicializando…" : `Inicializar ${formatMes(próximo)}`}
+              </button>
+              {error && <p className="text-xs text-red-300">{error}</p>}
+            </div>
           </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-4xl px-6 py-8 space-y-10">
+
+        {/* ── Métricas ── */}
+        {metricas && (
+          <section>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400">
+                {formatMes(metricas.mes)} · {metricas.semana}
+              </h2>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+
+              {/* M1: Disponible esta semana */}
+              <div className="rounded-xl border bg-white px-5 py-4 shadow-sm">
+                <p className="text-xs text-gray-400 mb-1">Disponible {metricas.semana}</p>
+                <p
+                  className="text-2xl font-semibold"
+                  style={{ color: metricas.disponibleSemana >= 0 ? "#137333" : "#c5221f" }}
+                >
+                  {metricas.disponibleSemana >= 0 ? "" : "-"}
+                  {COP(Math.abs(metricas.disponibleSemana))}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  ingreso semana menos pendientes
+                </p>
+              </div>
+
+              {/* M2: Ejecutado vs presupuestado */}
+              <div className="rounded-xl border bg-white px-5 py-4 shadow-sm">
+                <p className="text-xs text-gray-400 mb-1">Ejecutado vs presupuestado</p>
+                <p className="text-2xl font-semibold text-gray-800">
+                  {metricas.pctEjecutado}%
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  {COP(metricas.totalEjecutado)} / {COP(metricas.totalPresupuestado)}
+                </p>
+              </div>
+
+              {/* M3: Semanas cerradas */}
+              <div className="rounded-xl border bg-white px-5 py-4 shadow-sm">
+                <p className="text-xs text-gray-400 mb-1">Semanas cerradas</p>
+                {metricas.semanasCerradas === 0 ? (
+                  <p className="text-sm text-gray-400 mt-2">sin cierres aún</p>
+                ) : (
+                  <p className="text-2xl font-semibold text-gray-800">
+                    {metricas.semanasCerradas} / 4
+                  </p>
+                )}
+              </div>
+
+            </div>
+          </section>
+        )}
 
         {/* ── Meses activos ── */}
         <section>
@@ -130,7 +201,6 @@ export default function PantallaMeses({
                     style={esMásReciente ? { borderColor: "#1e3a5f", borderWidth: 2 } : {}}
                   >
                     <div className="flex items-start justify-between gap-4">
-                      {/* Título y badge */}
                       <div className="flex items-center gap-3">
                         <div>
                           <p className="font-semibold text-gray-800">{formatMes(r.mes)}</p>
@@ -149,8 +219,6 @@ export default function PantallaMeses({
                           </span>
                         )}
                       </div>
-
-                      {/* Métricas */}
                       <div className="flex gap-8 text-right text-sm">
                         <div>
                           <p className="text-xs text-gray-400">Ingresos</p>

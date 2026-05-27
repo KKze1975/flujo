@@ -100,6 +100,9 @@ export class MockDataProvider implements IDataProvider {
   getCierreSemana(_mes: string, _semana: Semana): Promise<CierreSemana | null> {
     return Promise.resolve(null);
   }
+  getCierresSemana(_mes: string): Promise<CierreSemana[]> {
+    return Promise.resolve([]);
+  }
   createCierreSemana(_data: Omit<CierreSemana, "id">): Promise<CierreSemana> {
     return Promise.resolve({ id: "mock-1", ..._data });
   }

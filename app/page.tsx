@@ -2,6 +2,15 @@ export const dynamic = "force-dynamic";
 
 import { getProvider } from "@/lib/data/provider";
 import PantallaMeses from "@/components/PantallaMeses";
+import type { Semana } from "@/lib/data/types";
+
+function semanaActual(): Semana {
+  const dia = new Date().getDate();
+  if (dia <= 7)  return "S1";
+  if (dia <= 14) return "S2";
+  if (dia <= 21) return "S3";
+  return "S4";
+}
 
 export default async function Home() {
   const provider = getProvider();
@@ -39,5 +48,49 @@ export default async function Home() {
     })
   );
 
-  return <PantallaMeses resúmenes={resúmenes} />;
+  // Métricas del mes más reciente
+  const semana = semanaActual();
+  let metricas = null;
+
+  if (meses.length > 0) {
+    const mesReciente = meses[meses.length - 1];
+    const [movsReciente, ingresosAngieReciente, cierres] = await Promise.all([
+      provider.getMovimientos(mesReciente),
+      provider.getIngresosAngie(mesReciente).catch(() => []),
+      provider.getCierresSemana(mesReciente).catch(() => []),
+    ]);
+
+    // Métrica 1: disponible esta semana
+    const ingresoSemana = ingresosAngieReciente
+      .filter((a) => a.semana === semana)
+      .reduce((s, a) => s + a.monto, 0);
+    const pendientesSemana = movsReciente
+      .filter((m) => m.semana === semana && m.estado === "pendiente")
+      .reduce((s, m) => s + m.montoPresupuestado, 0);
+    const disponibleSemana = ingresoSemana - pendientesSemana;
+
+    // Métrica 2: ejecutado vs presupuestado
+    const totalPresupuestado = movsReciente.reduce((s, m) => s + m.montoPresupuestado, 0);
+    const totalEjecutado = movsReciente
+      .filter((m) => m.estado === "ejecutado")
+      .reduce((s, m) => s + (m.montoEjecutado ?? 0), 0);
+    const pctEjecutado = totalPresupuestado > 0
+      ? Math.round((totalEjecutado / totalPresupuestado) * 100)
+      : 0;
+
+    // Métrica 3: semanas cerradas desde H5
+    const semanasCerradas = cierres.length;
+
+    metricas = {
+      semana,
+      disponibleSemana,
+      totalEjecutado,
+      totalPresupuestado,
+      pctEjecutado,
+      semanasCerradas,
+      mes: mesReciente,
+    };
+  }
+
+  return <PantallaMeses resúmenes={resúmenes} metricas={metricas} />;
 }

@@ -571,6 +571,43 @@ export class SheetsDataProvider implements IDataProvider {
     throw new Error("Not implemented yet");
   }
 
+  async getCierresSemana(mes: string): Promise<CierreSemana[]> {
+    let rows: string[][];
+    try {
+      const res = await this.sheets.spreadsheets.values.get({
+        spreadsheetId: process.env.GOOGLE_SHEET_ID,
+        range: "H5!A:N",
+      });
+      rows = (res.data.values ?? []) as string[][];
+    } catch {
+      return [];
+    }
+    if (rows.length < 2) return [];
+    const [headers, ...dataRows] = rows;
+    const mesIdx = headers.indexOf("mes");
+    return dataRows
+      .filter((row) => row.length > 0 && row[0] && row[mesIdx] === mes)
+      .map((row) => {
+        const col = (name: string) => row[headers.indexOf(name)] ?? "";
+        return {
+          id: col("id_cierre"),
+          mes: col("mes"),
+          semana: col("semana") as Semana,
+          fechaCierre: col("fecha_cierre"),
+          totalPresupuestado: Number(col("total_presupuestado")) || 0,
+          totalEjecutado: Number(col("total_ejecutado")) || 0,
+          desviacionTotal: Number(col("desviacion_total")) || 0,
+          remanenteAngie: Number(col("remanente_angie")) || 0,
+          ubicacionRemanenteAngie: col("ubicacion_remanente_angie"),
+          conceptosPospuestos: Number(col("conceptos_pospuestos")) || 0,
+          conceptosNoAplica: Number(col("conceptos_no_aplica")) || 0,
+          gastosSinClasificar: Number(col("gastos_sin_clasificar")) || 0,
+          cerradoPor: col("cerrado_por") as "camilo" | "angie",
+          notas: col("notas") || null,
+        };
+      });
+  }
+
   async createCierreSemana(data: Omit<CierreSemana, "id">): Promise<CierreSemana> {
     await this.ensureH5();
     const id = `CIERRE_${Date.now()}`;

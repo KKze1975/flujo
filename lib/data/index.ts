@@ -47,6 +47,7 @@ export interface IDataProvider {
 
   // ── H5 ───────────────────────────────────────────────────────────────────
   getCierreSemana(mes: string, semana: Semana): Promise<CierreSemana | null>;
+  getCierresSemana(mes: string): Promise<CierreSemana[]>;
   createCierreSemana(data: Omit<CierreSemana, "id">): Promise<CierreSemana>;
   getPlanSemana(mes: string, semana: Semana): Promise<PlanSemana | null>;
   createPlanSemana(data: Omit<PlanSemana, "id">): Promise<PlanSemana>;
