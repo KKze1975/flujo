@@ -538,6 +538,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | Mayo 2026 | Dos FABs en Home | FAB relámpago → registro rápido de compra. FAB dinero → ingreso a bolsillo |
 | Mayo 2026 | Vista semanal M4 es igual para Camilo y Angie | PIN identifica actor — sin vistas diferenciadas por rol |
 | Mayo 2026 | T16b prerequisito de T16 y T17 | Home hub debe existir antes de vista semanal y saldos |
+| Mayo 2026 | Vercel SSO Protection desactivada | App familiar — no requiere login de Vercel para acceder al deploy |
 
 ---
 
@@ -752,7 +753,7 @@ Archivo fuente: H1_presupuesto_base.csv
 
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo y el adjunto al proyecto Claude.
 Tipo de sesión: [CONSTRUCCIÓN]
-Ticket activo: T16 — Saldos por cuenta
+Ticket activo: T17 — Vista semanal M4
 Hora de inicio: [COMPLETAR AL ABRIR]
 Entorno: Windows — PowerShell exclusivamente.
 
@@ -760,17 +761,12 @@ APERTURA: Genera el dashboard con los datos actuales de ESTADO.md antes de cualq
 
 Contexto crítico:
 - Go-live junio 2026: 7 de junio
-- T16b cerrado — Home hub operativo
-- H4 Rango C definido en esquema: id_saldo, mes, cuenta (nu_camilo/nu_angie/arq/en_mano), saldo_inicial, fecha_confirmacion
-- Decisión tomada: sin saldo confirmado no hay ejecución — bloqueo obligatorio al abrir M1 Ejecución
-- T17 (vista semanal M4) es el siguiente ticket después de T16
+- T16 y T16b cerrados — MVP funcional
+- Deploy Vercel operativo — URL: flujo-7nsrzrdfo-camilo-s-projects10.vercel.app (sin protección SSO)
+- app/mes/[mes]/semana/page.tsx existe como placeholder — T17 construye sobre eso
 
-DoD T16:
-1. H4C operativo en Sheet — 4 cuentas por mes
-2. Confirmación de saldos obligatoria al abrir M1 Ejecución — bloquea si no está confirmado
-3. Sidebar M1 muestra saldos en tiempo real por cuenta
-4. Panel Home muestra saldos confirmados del mes activo
-5. Verificar en Sheet que H4C tiene las 4 filas correctas para el mes
+DoD T17:
+(pendiente de definir en apertura de sesión)
 
 CIERRE: Actualizar ESTADO.md con hora de cierre y retrospectiva.
 Regla: bugs se documentan como deuda técnica — no se corrigen dentro del ticket.
