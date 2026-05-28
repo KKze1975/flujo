@@ -408,11 +408,11 @@ Archivo fuente: H1_presupuesto_base.csv
 | API GET/POST /mes/[mes]/saldos | Operativo — lee y escribe H4C correctamente |
 | ModalConfirmarSaldos | Operativo — bloqueo obligatorio al abrir M1 Ejecución |
 | Panel saldos Home | Operativo — 4 cuentas + total + fecha de confirmación |
-| T16b — Rediseño Home como hub | Completo — DoD 6/6 verificado en browser mobile-first |
-| HomeHub.tsx | Operativo — hub mobile-first, 3 acciones, 2 FABs, métricas contextuales |
-| app/meses/page.tsx | Operativo — lista de meses con ?modo=historial solo lectura |
-| app/mes/[mes]/semana/page.tsx | Placeholder — "Vista semanal próximamente T17" |
-| components/m4/RegistroRapido.tsx | Operativo — state machine extraída de registro/page.tsx, reutilizable como modal |
+| T16b — Rediseño Home como hub | Completo — DoD 6/6 verificado |
+| HomeHub.tsx | Operativo — header mes/semana, 3 acciones, métricas contextuales, 2 FABs |
+| app/mes/[mes]/semana/page.tsx | Creado — placeholder T17 |
+| RegistroRapido.tsx | Extraído como componente reutilizable |
+| PantallaMeses | Actualizado — prop modoHistorial para solo lectura |
 | T17 — Vista semanal M4 | Pendiente |
 
 ---
@@ -734,18 +734,16 @@ Archivo fuente: H1_presupuesto_base.csv
 ## Retrospectiva — T16b (Rediseño Home como hub)
 
 **Qué funcionó:**
-- Extracción de RegistroRapido.tsx como componente reutilizable — limpia y sin regresión en /registro
-- Hub mobile-first con header azul, 3 cards de acción, métricas contextuales, 2 FABs — DoD 6/6 en una sesión
-- PantallaMeses reutilizada para /meses y /meses?modo=historial con prop modoHistorial — sin duplicar código
-- Placeholder /mes/[mes]/semana funcional como stub para T17
-- Playwright en viewport 390×844 confirmó comportamiento real en mobile
+- HomeHub.tsx limpio — Server Component para métricas, Client Component para navegación y FABs
+- RegistroRapido.tsx extraído correctamente — reutilizable desde Home y desde vista semanal
+- PantallaMeses con modoHistorial — sin duplicar componente
+- DoD 6/6 en una sola sesión
 
 **Qué no funcionó:**
-- waitForNavigation de Playwright no captura bien pushState de Next.js App Router — RSC tarda ~7s en first render y el script capturaba URL incorrecta. Workaround: navegar directamente a URL y usar waitForURL con timeout largo
+- Nada
 
 **Qué cambia en el próximo sprint:**
-- T17 — Vista semanal M4: /mes/[mes]/semana requiere implementación real
-- Go-live junio 7, 2026 — T16b completo, MVP operativo
+- T16: Saldos por cuenta (H4C + bloqueo obligatorio al abrir M1 Ejecución)
 
 ---
 
@@ -753,7 +751,7 @@ Archivo fuente: H1_presupuesto_base.csv
 
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo y el adjunto al proyecto Claude.
 Tipo de sesión: [CONSTRUCCIÓN]
-Ticket activo: T17 — Vista semanal M4
+Ticket activo: T16 — Saldos por cuenta
 Hora de inicio: [COMPLETAR AL ABRIR]
 Entorno: Windows — PowerShell exclusivamente.
 
@@ -761,11 +759,17 @@ APERTURA: Genera el dashboard con los datos actuales de ESTADO.md antes de cualq
 
 Contexto crítico:
 - Go-live junio 2026: 7 de junio
-- T16b completo — Home hub operativo con 3 acciones + 2 FABs
-- T17: vista semanal en /mes/[mes]/semana — placeholder existe, requiere implementación real
-- La vista semanal es el destino principal del hub ("Esta semana")
-- PIN identifica actor: camilo / angie — vista igual para ambos
-- Filtro por semana ya existe en MesM1 — puede reutilizarse como base
+- T16b cerrado — Home hub operativo
+- H4 Rango C definido en esquema: id_saldo, mes, cuenta (nu_camilo/nu_angie/arq/en_mano), saldo_inicial, fecha_confirmacion
+- Decisión tomada: sin saldo confirmado no hay ejecución — bloqueo obligatorio al abrir M1 Ejecución
+- T17 (vista semanal M4) es el siguiente ticket después de T16
+
+DoD T16:
+1. H4C operativo en Sheet — 4 cuentas por mes
+2. Confirmación de saldos obligatoria al abrir M1 Ejecución — bloquea si no está confirmado
+3. Sidebar M1 muestra saldos en tiempo real por cuenta
+4. Panel Home muestra saldos confirmados del mes activo
+5. Verificar en Sheet que H4C tiene las 4 filas correctas para el mes
 
 CIERRE: Actualizar ESTADO.md con hora de cierre y retrospectiva.
 Regla: bugs se documentan como deuda técnica — no se corrigen dentro del ticket.
