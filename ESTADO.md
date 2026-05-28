@@ -431,7 +431,6 @@ Archivo fuente: H1_presupuesto_base.csv
   puntualmente. Usa Claude API — infraestructura ya disponible en el stack.
 - Rediseño UX navegación — segunda etapa post MVP. Principio: "don't make me think".
   Las acciones deben ser visibles, no descubribles.
-  - Filtro por semana en vista M1 Planificación — ver S1/S2/S3/S4 de forma independiente.
 - Ticket 16 — Saldos por cuenta: H4C + pantalla confirmación obligatoria al abrir M1 Ejecución + sidebar saldos en tiempo real + panel en Home
 - Ticket 17 — M2 vista Angie
 
@@ -511,6 +510,9 @@ Archivo fuente: H1_presupuesto_base.csv
 | Mayo 2026 | Saldos iniciales confirman al abrir M1 Ejecución | Sin saldo confirmado no hay ejecución — bloqueo obligatorio |
 | Mayo 2026 | Saldos por cuenta en sidebar M1 y panel Home | NU Camilo / NU Angie / ARQ / EN MANO |
 | Mayo 2026 | H4 Rango C — Saldos iniciales | 4 cuentas por mes — confirmación única al inicio de ejecución |
+| Mayo 2026 | M2 y M3 colapsados en filtro por semana en MesM1 | Vista y revisión semanal con Angie no requieren pantallas separadas — M4 ya cubre el registro con ejecutor seleccionable |
+| Mayo 2026 | Filtro por semana adelantado al MVP | Estaba en features futuras — es el mecanismo que habilita M2 y M3 |
+| Mayo 2026 | H5 Rango B es requisito para go-live | Sin cierre de semana no hay remanente Angie como input para plan semana siguiente |
 
 ---
 
@@ -673,25 +675,30 @@ Archivo fuente: H1_presupuesto_base.csv
 
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo y el adjunto al proyecto Claude.
 Tipo de sesión: [CONSTRUCCIÓN]
-Ticket activo: Ticket 15 — M3 Cierre semanal
+Ticket activo: Ticket 15 — Cierre semanal + filtro por semana
 Hora de inicio: [COMPLETAR AL ABRIR]
 Entorno: Windows — PowerShell exclusivamente.
-
 APERTURA: Genera el dashboard con los datos actuales de ESTADO.md antes de cualquier otra cosa.
-
 Contexto crítico:
-- Primer domingo de junio 2026: 7 de junio — 11 días
-- M3 debe estar operativo antes de ese día
-- H5 ya existe — auto-creada en Ticket 10
-- getCierresSemana ya implementado — tolerante a H5 vacío
-- Ticket 16 definido: saldos por cuenta — construir después de M3
 
+Primer domingo de junio 2026: 7 de junio
+Ticket 15 habilita M2 y M3 — no hay pantallas separadas para esos momentos
+Filtro por semana en MesM1 es el mecanismo de revisión con Angie
+H5 Rango B requiere H5 Rango A — el cierre alimenta el plan
+H5 ya existe — auto-creada en Ticket 10
+getCierresSemana ya implementado — tolerante a H5 vacío
+Ticket 16 definido: saldos por cuenta — construir después de T15
+Ticket 17 definido: M2 vista Angie — fuera del MVP
+
+Historia de usuario aprobada (no reabrir):
+Como Camilo o Angie el domingo, quiero cerrar la semana que termina y registrar el plan de la siguiente, para que el remanente de Angie quede documentado y el balance proyectado de la semana siguiente tenga base de cálculo real.
 DoD Ticket 15:
-1. Botón "Cerrar semana" disponible en MesM1 o Home
-2. Al cerrar: snapshot de totales escrito en H5
-3. Plan semana siguiente registrado en H5 rango B
-4. Home refleja semana cerrada en métrica "Semanas cerradas"
-5. Verificar en Sheet que H5 tiene la fila correcta
+
+Filtro por semana operativo en MesM1
+Botón "Cerrar semana" disponible — solo activo si gastos sin clasificar = 0
+H5 Rango A tiene snapshot correcto verificado en Sheet
+H5 Rango B tiene plan con remanente arrastrado y balance proyectado
+Home actualiza métrica "Semanas cerradas"
 
 CIERRE: Actualizar ESTADO.md con hora de cierre y retrospectiva.
 Regla: bugs se documentan como deuda técnica — no se corrigen dentro del ticket.
