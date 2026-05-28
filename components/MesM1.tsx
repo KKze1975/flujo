@@ -4,11 +4,12 @@ import { useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
 import React from "react";
 import { Inter } from "next/font/google"; // V10
-import type { Movimiento, Concepto, IngresoCamilo, IngresoAngie, CierreSemana, Semana, Categoria } from "@/lib/data/types";
+import type { Movimiento, Concepto, IngresoCamilo, IngresoAngie, SaldoCuenta, CierreSemana, Semana, Categoria } from "@/lib/data/types";
 import ModalIngresoCamilo from "./m1/ModalIngresoCamilo";
 import ModalAporteAngie from "./m1/ModalAporteAngie";
 import ModalEditarConcepto from "./m1/ModalEditarConcepto";
 import ModalCerrarSemana from "./m1/ModalCerrarSemana";
+import ModalConfirmarSaldos from "./m1/ModalConfirmarSaldos";
 import VistaPlanificacion from "./m1/VistaPlanificacion";
 
 // V10 — Inter font
@@ -88,6 +89,7 @@ export default function MesM1({
   ingresosAngie: initAportes,
   cierresSemana: initCierres,
   gastosSinClasificarInit,
+  saldosInit,
 }: {
   mes: string;
   movimientos: Movimiento[];
@@ -96,6 +98,7 @@ export default function MesM1({
   ingresosAngie: IngresoAngie[];
   cierresSemana: CierreSemana[];
   gastosSinClasificarInit: Record<Semana, number>;
+  saldosInit: SaldoCuenta[];
 }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -117,6 +120,15 @@ export default function MesM1({
   const [cierres, setCierres] = useState<CierreSemana[]>(initCierres);
   const [gastosSinClasificar] = useState<Record<Semana, number>>(gastosSinClasificarInit);
   const [showCerrarSemana, setShowCerrarSemana] = useState(false);
+  const [saldos, setSaldos] = useState<SaldoCuenta[]>(saldosInit);
+  const CUENTAS_H4C: Array<{ cuenta: SaldoCuenta["cuenta"]; label: string }> = [
+    { cuenta: "nu_camilo", label: "NU Camilo" },
+    { cuenta: "nu_angie",  label: "NU Angie"  },
+    { cuenta: "arq",       label: "ARQ"        },
+    { cuenta: "en_mano",   label: "En mano"   },
+  ];
+  const saldosConfirmados = CUENTAS_H4C.every(({ cuenta }) => saldos.some((s) => s.cuenta === cuenta));
+  const [showConfirmarSaldos, setShowConfirmarSaldos] = useState(false);
 
   const dates = useMemo(() => semanaDates(mes), [mes]);
 
@@ -466,6 +478,14 @@ export default function MesM1({
           />
         ) : (
           <>
+            {/* Bloqueo obligatorio si saldos no confirmados */}
+            {mounted && !saldosConfirmados && (
+              <ModalConfirmarSaldos
+                mes={mes}
+                existing={saldos}
+                onConfirmed={(s) => { setSaldos(s); setShowConfirmarSaldos(false); }}
+              />
+            )}
             <div className="flex flex-1 min-h-0 overflow-hidden">
 
               {/* ── Sidebar (V3) ── */}
@@ -512,6 +532,35 @@ export default function MesM1({
                       </button>
                     );
                   })}
+                </div>
+
+                {/* Saldos por cuenta */}
+                <div className="shrink-0 border-t border-gray-200 bg-white p-3">
+                  <div className="mb-1 flex items-center justify-between">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Saldos</p>
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmarSaldos(true)}
+                      className="text-xs text-[#1a73e8] hover:underline"
+                    >
+                      {saldosConfirmados ? "Editar" : "Confirmar"}
+                    </button>
+                  </div>
+                  {saldosConfirmados ? (
+                    CUENTAS_H4C.map(({ cuenta, label }) => {
+                      const s = saldos.find((x) => x.cuenta === cuenta);
+                      return (
+                        <div key={cuenta} className="flex items-baseline justify-between py-0.5">
+                          <span className="text-xs text-gray-400">{label}</span>
+                          <span className="font-mono text-xs font-medium text-gray-700">
+                            {s ? COP(s.saldoInicial) : "—"}
+                          </span>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <p className="text-xs text-amber-600">Sin confirmar</p>
+                  )}
                 </div>
 
                 {/* V9 — Balance con semana activa dinámica */}
@@ -767,6 +816,14 @@ export default function MesM1({
             setModal(null);
             setConceptoEditando(null);
           }}
+        />,
+        document.body
+      )}
+      {mounted && showConfirmarSaldos && createPortal(
+        <ModalConfirmarSaldos
+          mes={mes}
+          existing={saldos}
+          onConfirmed={(s) => { setSaldos(s); setShowConfirmarSaldos(false); }}
         />,
         document.body
       )}
