@@ -1,4 +1,16 @@
-import Link from "next/link";
+export const dynamic = "force-dynamic";
+
+import { getProvider } from "@/lib/data/provider";
+import VistaSemanal from "@/components/VistaSemanal";
+import type { Semana } from "@/lib/data/types";
+
+function semanaActual(): Semana {
+  const dia = new Date().getDate();
+  if (dia <= 7)  return "S1";
+  if (dia <= 14) return "S2";
+  if (dia <= 21) return "S3";
+  return "S4";
+}
 
 const MESES_FULL = [
   "", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -6,8 +18,8 @@ const MESES_FULL = [
 ];
 
 function formatMes(mes: string): string {
-  const [year, monthStr] = mes.split("-");
-  return `${MESES_FULL[Number(monthStr)]} ${year}`;
+  const [, monthStr] = mes.split("-");
+  return MESES_FULL[Number(monthStr)] ?? mes;
 }
 
 export default async function SemanaPage({
@@ -16,24 +28,23 @@ export default async function SemanaPage({
   params: Promise<{ mes: string }>;
 }) {
   const { mes } = await params;
+  const semana = semanaActual();
+  const provider = getProvider();
+
+  const [movimientos, cierres] = await Promise.all([
+    provider.getMovimientosByMesYSemana(mes, semana).catch(() => []),
+    provider.getCierresSemana(mes).catch(() => []),
+  ]);
+
+  const cierreSemana = cierres.find((c) => c.semana === semana) ?? null;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <header
-        className="flex items-center gap-3 px-4 py-4 text-white"
-        style={{ background: "#1e3a5f" }}
-      >
-        <Link href="/" className="text-white/50 hover:text-white text-sm leading-none">←</Link>
-        <div>
-          <h1 className="text-sm font-semibold">Esta semana</h1>
-          <p className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>{formatMes(mes)}</p>
-        </div>
-      </header>
-      <main className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-3">
-        <p className="text-3xl">📅</p>
-        <p className="text-base font-semibold text-gray-700">Vista semanal</p>
-        <p className="text-sm text-gray-400">Próximamente — T17</p>
-      </main>
-    </div>
+    <VistaSemanal
+      mes={mes}
+      mesLabel={formatMes(mes)}
+      semanaActiva={semana}
+      movimientosInit={movimientos}
+      cierreSemana={cierreSemana}
+    />
   );
 }

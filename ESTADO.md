@@ -410,10 +410,12 @@ Archivo fuente: H1_presupuesto_base.csv
 | Panel saldos Home | Operativo — 4 cuentas + total + fecha de confirmación |
 | T16b — Rediseño Home como hub | Completo — DoD 6/6 verificado |
 | HomeHub.tsx | Operativo — header mes/semana, 3 acciones, métricas contextuales, 2 FABs |
-| app/mes/[mes]/semana/page.tsx | Creado — placeholder T17 |
+| app/mes/[mes]/semana/page.tsx | Actualizado — Server Component T17: fetch paralelo movimientos + cierres, semana activa server-side |
+| components/VistaSemanal.tsx | Creado — vista semanal M4: header + bolsillos + tabs + acciones inline + FAB RegistroRapido |
+| app/api/mes/[mes]/semana/[semana]/route.ts | Creado — GET movimientos semana + métricas + cierreSemana |
 | RegistroRapido.tsx | Extraído como componente reutilizable |
 | PantallaMeses | Actualizado — prop modoHistorial para solo lectura |
-| T17 — Vista semanal M4 | Pendiente |
+| T17 — Vista semanal M4 | Completo — DoD 7/7 verificado en browser 390px |
 | Deploy Vercel | Operativo — primer deploy exitoso, variables de entorno configuradas |
 
 ---
@@ -427,6 +429,8 @@ Archivo fuente: H1_presupuesto_base.csv
 - scripts/seed-h1.mjs fue ejecutado — puede eliminarse o conservarse como referencia de re-seed
 - Concepto mensual pospuesto genera doble fila en mes siguiente — revisar si es comportamiento deseado
 - Uber One, NY Times, El País, Game Pass agregados via B4 en primera ejecución — verificar que quedaron correctamente en H1
+- VistaSemanal no refleja en tiempo real los gastos registrados via FAB RegistroRapido — requiere reload manual (VistaSemanal no escucha eventos de RegistroRapido)
+- RegistroRapido desde FAB de VistaSemanal no ofrece opción explícita de guardar como "pendiente de clasificación" — el flujo actual solo lo hace sin clasificar si Claude no encuentra match en H2
 
 ---
 
@@ -749,24 +753,39 @@ Archivo fuente: H1_presupuesto_base.csv
 
 ---
 
+## Retrospectiva — T17 (Vista semanal M4)
+
+**Qué funcionó:**
+- DoD 7/7 en una sola sesión — carga con datos reales, tabs, acciones inline, bolsillos, FAB
+- Bolsillos desde H2 tipo_snapshot="bolsillo" — solución pragmática sin necesitar getBolsillos() (no implementado)
+- Acciones inline OK/Editar con actualización optimista de estado local — sin reload
+- Reutilización de RegistroRapido.tsx sin modificaciones — integración limpia
+- TypeScript sin errores al finalizar
+
+**Qué no funcionó:**
+- VistaSemanal no comunica con RegistroRapido — los gastos del FAB no refrescan la lista (deuda técnica)
+- RegistroRapido no expone "guardar sin clasificar" explícitamente desde VistaSemanal (deuda técnica)
+
+**Qué cambia en el próximo sprint:**
+- MVP completo — go-live junio 7, 2026
+- Deploy Vercel pendiente con los cambios de T17
+
+---
+
 ## Prompt de apertura — próxima sesión
 
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo y el adjunto al proyecto Claude.
 Tipo de sesión: [CONSTRUCCIÓN]
-Ticket activo: T17 — Vista semanal M4
+Ticket activo: [COMPLETAR]
 Hora de inicio: [COMPLETAR AL ABRIR]
 Entorno: Windows — PowerShell exclusivamente.
 
 APERTURA: Genera el dashboard con los datos actuales de ESTADO.md antes de cualquier otra cosa.
 
 Contexto crítico:
-- Go-live junio 2026: 7 de junio
-- T16 y T16b cerrados — MVP funcional
-- Deploy Vercel operativo — URL: flujo-7nsrzrdfo-camilo-s-projects10.vercel.app (sin protección SSO)
-- app/mes/[mes]/semana/page.tsx existe como placeholder — T17 construye sobre eso
-
-DoD T17:
-(pendiente de definir en apertura de sesión)
+- Go-live junio 7, 2026 — MVP completo
+- T17 cerrado — Vista semanal M4 operativa en /mes/[mes]/semana
+- Deploy Vercel operativo — URL: flujo-7nsrzrdfo-camilo-s-projects10.vercel.app
 
 CIERRE: Actualizar ESTADO.md con hora de cierre y retrospectiva.
 Regla: bugs se documentan como deuda técnica — no se corrigen dentro del ticket.
