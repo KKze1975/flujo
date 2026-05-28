@@ -321,14 +321,14 @@ Archivo fuente: H1_presupuesto_base.csv
 |---|---|
 | app/ | Directorio Next.js App Router |
 | app/page.tsx | Server Component — Home: fetch paralelo con métricas + snapshot semana activa |
-| app/registro/page.tsx | Creado — placeholder M4, navega desde botón "+ Registro rápido" en header |
+| app/registro/page.tsx | Actualizado — M4 completo: state machine idle/procesando/aclaracion/propuesta/confirmando/exito |
 | app/mes/[mes]/page.tsx | Creado — ruta dinámica para MesM1; lógica del page.tsx anterior |
 | app/api/meses/route.ts | Creado — GET lista de meses activos con resumen calculado desde H2+H4 |
 | app/api/conceptos/route.ts | Creado — GET devuelve H1 real desde Sheets |
 | app/api/conceptos/[id]/route.ts | Creado — PATCH actualiza monto/semanaDefault/notas en H1 |
 | app/api/mes/[mes]/iniciar/route.ts | Creado — POST inicializa mes en H2 (Ticket 5) |
 | app/api/mes/[mes]/route.ts | Creado — GET devuelve H2 del mes (Ticket 6) |
-| app/api/mes/[mes]/movimientos/[id]/route.ts | Creado — PATCH ejecutar/posponer/no_aplica en H2 |
+| app/api/mes/[mes]/movimientos/[id]/route.ts | Actualizado — PATCH ejecutar/posponer/no_aplica en H2 + ejecutor opcional |
 | app/api/mes/[mes]/cerrar-m1/route.ts | Creado — POST cierra M1: valida S1 sin pendientes, escribe snapshot en H5 |
 | app/api/ingresos/camilo/[mes]/route.ts | Creado — GET + POST (upsert) ingreso Camilo en H4A |
 | app/api/ingresos/angie/[mes]/route.ts | Creado — GET + PUT (upsert por semana) aportes Angie en H4B |
@@ -345,13 +345,19 @@ Archivo fuente: H1_presupuesto_base.csv
 | components/m1/VistaPlanificacion.tsx | Creado — vista planificación M1 con balance, agregar concepto (B4) |
 | components/m1/ModalAgregarConcepto.tsx | Creado — modal B4: tres ciclos de vida (solo este mes / cuotas / permanente) |
 | app/api/mes/[mes]/conceptos/route.ts | Creado — POST crea concepto en H1 + movimiento en H2 (atómico) |
-| .env.local | Creado — credenciales Google (gitignored) |
+| app/api/registro/interpretar/route.ts | Creado — POST proxy Claude API, interpreta texto e imagen, devuelve InterpretacionM4 |
+| app/api/registro/sin-concepto/route.ts | Creado — POST escribe consumo en H3 con clasificado:false, auto-crea tab H3 |
+| components/m4/InputRegistro.tsx | Creado — tabs texto/foto, cámara directa (capture via useEffect), preview imagen |
+| components/m4/AclaracionBanner.tsx | Creado — banner condicional cuando confianza baja o aclaracion_necesaria |
+| components/m4/PropuestaCard.tsx | Creado — tarjeta editable: concepto H2, monto, semana, fuente, ejecutor |
+| components/m4/ConfirmacionExito.tsx | Creado — pantalla éxito con nombre concepto y botón nuevo registro |
+| .env.local | Creado — credenciales Google + ANTHROPIC_API_KEY (gitignored) |
 | ESTADO.md | En el repo — fuente de verdad |
 | scripts/seed-h1.mjs | Creado — cargó 40 conceptos reales en H1 (uso único) |
 | scripts/update-h1-montos.mjs | Creado — actualizó montos y retiró concepto |
 | scripts/setup-h2.mjs | Creado — creó pestaña H2 con 22 headers |
 | scripts/check-h2.mjs | Creado — verifica DoD en H2 |
-| package.json | googleapis + next/font agregados |
+| package.json | googleapis + next/font + @anthropic-ai/sdk agregados |
 | next.config.ts | Generado por create-next-app |
 
 ---
@@ -360,7 +366,7 @@ Archivo fuente: H1_presupuesto_base.csv
 
 | Componente | Estado |
 |---|---|
-| Google Sheet nuevo | Activo — ID: 1GOMhxYw_f7Zl-GTVNtxAs9218x4vKxzg3LGRyveyr7A — H1, H2, H4, H5 operativos |
+| Google Sheet nuevo | Activo — ID: 1GOMhxYw_f7Zl-GTVNtxAs9218x4vKxzg3LGRyveyr7A — H1, H2, H3, H4, H5 operativos |
 | Cuenta de servicio | psibot@psibot-495119.iam.gserviceaccount.com — configurada |
 | Repo GitHub (github.com/KKze1975/flujo) | Activo — rama main |
 | Next.js local | http://localhost:3000 — operativo |
