@@ -319,7 +319,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | Backend | API Routes de Next.js — sin servidor separado |
 | Base de datos MVP | Google Sheets — invisible para usuarios finales |
 | Abstracción de datos | Camino B — lib/data/index.ts como contrato, sheets.ts como implementación |
-| Deploy | Vercel — deploy automático en cada push a main |
+| Deploy | Vercel — deploy automático en cada push a main — URL: flujo-7nsrzrdfo-camilo-s-projects10.vercel.app |
 | Autenticación MVP | PIN simple — actor: camilo / angie |
 | Autenticación futura | Google OAuth — sin retrofit |
 | Registro rápido | Claude API — JSON con campo confianza, costo menor a $0.20 USD/mes |
@@ -414,6 +414,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | RegistroRapido.tsx | Extraído como componente reutilizable |
 | PantallaMeses | Actualizado — prop modoHistorial para solo lectura |
 | T17 — Vista semanal M4 | Pendiente |
+| Deploy Vercel | Operativo — primer deploy exitoso, variables de entorno configuradas |
 
 ---
 
