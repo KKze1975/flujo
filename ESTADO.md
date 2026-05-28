@@ -189,6 +189,16 @@ Rango B — Ingresos Angie
 
 Remanente y saldo bolsillo Angie calculados en tiempo real desde H3 — sin campos calculados en H4.
 
+Rango C — Saldos iniciales
+
+| Columna | Tipo | Detalle |
+|---|---|---|
+| id_saldo | string | SALDO_{unix_timestamp} |
+| mes | string | 2026-05 |
+| cuenta | enum | nu_camilo / nu_angie / arq / en_mano |
+| saldo_inicial | number | COP |
+| fecha_confirmacion | date | |
+
 ### H5 — Semanas
 
 Rango A — Cierre de semana
@@ -422,6 +432,8 @@ Archivo fuente: H1_presupuesto_base.csv
 - Rediseño UX navegación — segunda etapa post MVP. Principio: "don't make me think".
   Las acciones deben ser visibles, no descubribles.
   - Filtro por semana en vista M1 Planificación — ver S1/S2/S3/S4 de forma independiente.
+- Ticket 16 — Saldos por cuenta: H4C + pantalla confirmación obligatoria al abrir M1 Ejecución + sidebar saldos en tiempo real + panel en Home
+- Ticket 17 — M2 vista Angie
 
 ---
 
@@ -496,6 +508,9 @@ Archivo fuente: H1_presupuesto_base.csv
 | Mayo 2026 | M4 vincula con H2 cuando hay concepto correspondiente | Sin concepto → H3 clasificado: false |
 | Mayo 2026 | Confianza baja → AclaracionBanner antes de propuesta | No bloquea — permite continuar |
 | Mayo 2026 | Ejecutor seleccionable en M4 | camilo / angie en PropuestaCard |
+| Mayo 2026 | Saldos iniciales confirman al abrir M1 Ejecución | Sin saldo confirmado no hay ejecución — bloqueo obligatorio |
+| Mayo 2026 | Saldos por cuenta en sidebar M1 y panel Home | NU Camilo / NU Angie / ARQ / EN MANO |
+| Mayo 2026 | H4 Rango C — Saldos iniciales | 4 cuentas por mes — confirmación única al inicio de ejecución |
 
 ---
 
@@ -657,9 +672,29 @@ Archivo fuente: H1_presupuesto_base.csv
 ## Prompt de apertura — próxima sesión
 
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo y el adjunto al proyecto Claude.
-Tipo de sesión: CONSTRUCCIÓN
-Ticket activo: Ticket 15 — por definir (candidatos: M3 cierre semanal / M2 vista Angie / R7b historial M4)
+Tipo de sesión: [CONSTRUCCIÓN]
+Ticket activo: Ticket 15 — M3 Cierre semanal
+Hora de inicio: [COMPLETAR AL ABRIR]
 Entorno: Windows — PowerShell exclusivamente.
+
+APERTURA: Genera el dashboard con los datos actuales de ESTADO.md antes de cualquier otra cosa.
+
+Contexto crítico:
+- Primer domingo de junio 2026: 7 de junio — 11 días
+- M3 debe estar operativo antes de ese día
+- H5 ya existe — auto-creada en Ticket 10
+- getCierresSemana ya implementado — tolerante a H5 vacío
+- Ticket 16 definido: saldos por cuenta — construir después de M3
+
+DoD Ticket 15:
+1. Botón "Cerrar semana" disponible en MesM1 o Home
+2. Al cerrar: snapshot de totales escrito en H5
+3. Plan semana siguiente registrado en H5 rango B
+4. Home refleja semana cerrada en métrica "Semanas cerradas"
+5. Verificar en Sheet que H5 tiene la fila correcta
+
+CIERRE: Actualizar ESTADO.md con hora de cierre y retrospectiva.
+Regla: bugs se documentan como deuda técnica — no se corrigen dentro del ticket.
 
 ---
 
