@@ -493,6 +493,9 @@ Archivo fuente: H1_presupuesto_base.csv
 | Mayo 2026 | Dos meses activos simultáneos permitidos | Mayo en ejecución + Junio inicializado — sin conflicto |
 | Mayo 2026 | Historial solo lectura | Sin navegación al detalle — se llenará al cerrar el primer mes |
 | Mayo 2026 | Botón inicializar detecta mes siguiente automáticamente | Sin hardcode — deriva del último mes en H2 |
+| Mayo 2026 | M4 vincula con H2 cuando hay concepto correspondiente | Sin concepto → H3 clasificado: false |
+| Mayo 2026 | Confianza baja → AclaracionBanner antes de propuesta | No bloquea — permite continuar |
+| Mayo 2026 | Ejecutor seleccionable en M4 | camilo / angie en PropuestaCard |
 
 ---
 
