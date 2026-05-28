@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Inter } from "next/font/google";
 import type { SaldoCuenta } from "@/lib/data/types";
 
@@ -75,9 +76,11 @@ const CUENTAS_LABEL: Record<SaldoCuenta["cuenta"], string> = {
 export default function PantallaMeses({
   resúmenes: init,
   metricas,
+  modoHistorial = false,
 }: {
   resúmenes: ResumenMes[];
   metricas: MetricasMes | null;
+  modoHistorial?: boolean;
 }) {
   const router = useRouter();
   const [resúmenes, setResúmenes] = useState(init);
@@ -112,18 +115,18 @@ export default function PantallaMeses({
       {/* ── Header ── */}
       <header className="bg-[#1e3a5f] px-6 py-4 shadow-md">
         <div className="mx-auto flex max-w-4xl items-center justify-between">
-          <div>
-            <h1 className="text-lg font-semibold text-white">Flujo</h1>
-            <p className="text-xs text-white/60">Salud financiera familiar</p>
-          </div>
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => router.push("/registro")}
-              className="rounded-lg bg-white/15 px-4 py-1.5 text-sm font-medium text-white hover:bg-white/25 border border-white/20"
-            >
-              + Registro rápido
-            </button>
+            <Link href="/" className="text-white/50 hover:text-white text-sm leading-none">←</Link>
+            <div>
+              <h1 className="text-lg font-semibold text-white">
+                {modoHistorial ? "Historial" : "Inicio de mes"}
+              </h1>
+              <p className="text-xs text-white/60">
+                {modoHistorial ? "Solo lectura" : "Planificación y ejecución"}
+              </p>
+            </div>
+          </div>
+          {!modoHistorial && (
             <div className="flex flex-col items-end gap-1">
               <button
                 type="button"
@@ -135,7 +138,7 @@ export default function PantallaMeses({
               </button>
               {error && <p className="text-xs text-red-300">{error}</p>}
             </div>
-          </div>
+          )}
         </div>
       </header>
 
@@ -287,8 +290,8 @@ export default function PantallaMeses({
                 return (
                   <div
                     key={r.mes}
-                    onClick={() => router.push(`/mes/${r.mes}`)}
-                    className="cursor-pointer rounded-xl border bg-white px-6 py-5 shadow-sm transition hover:shadow-md"
+                    onClick={() => !modoHistorial && router.push(`/mes/${r.mes}`)}
+                    className={`rounded-xl border bg-white px-6 py-5 shadow-sm transition ${modoHistorial ? "cursor-default" : "cursor-pointer hover:shadow-md"}`}
                     style={esMásReciente ? { borderColor: "#1e3a5f", borderWidth: 2 } : {}}
                   >
                     <div className="flex items-start justify-between gap-4">

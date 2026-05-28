@@ -408,7 +408,11 @@ Archivo fuente: H1_presupuesto_base.csv
 | API GET/POST /mes/[mes]/saldos | Operativo — lee y escribe H4C correctamente |
 | ModalConfirmarSaldos | Operativo — bloqueo obligatorio al abrir M1 Ejecución |
 | Panel saldos Home | Operativo — 4 cuentas + total + fecha de confirmación |
-| T16b — Rediseño Home como hub | Pendiente |
+| T16b — Rediseño Home como hub | Completo — DoD 6/6 verificado en browser mobile-first |
+| HomeHub.tsx | Operativo — hub mobile-first, 3 acciones, 2 FABs, métricas contextuales |
+| app/meses/page.tsx | Operativo — lista de meses con ?modo=historial solo lectura |
+| app/mes/[mes]/semana/page.tsx | Placeholder — "Vista semanal próximamente T17" |
+| components/m4/RegistroRapido.tsx | Operativo — state machine extraída de registro/page.tsx, reutilizable como modal |
 | T17 — Vista semanal M4 | Pendiente |
 
 ---
@@ -727,11 +731,29 @@ Archivo fuente: H1_presupuesto_base.csv
 
 ---
 
+## Retrospectiva — T16b (Rediseño Home como hub)
+
+**Qué funcionó:**
+- Extracción de RegistroRapido.tsx como componente reutilizable — limpia y sin regresión en /registro
+- Hub mobile-first con header azul, 3 cards de acción, métricas contextuales, 2 FABs — DoD 6/6 en una sesión
+- PantallaMeses reutilizada para /meses y /meses?modo=historial con prop modoHistorial — sin duplicar código
+- Placeholder /mes/[mes]/semana funcional como stub para T17
+- Playwright en viewport 390×844 confirmó comportamiento real en mobile
+
+**Qué no funcionó:**
+- waitForNavigation de Playwright no captura bien pushState de Next.js App Router — RSC tarda ~7s en first render y el script capturaba URL incorrecta. Workaround: navegar directamente a URL y usar waitForURL con timeout largo
+
+**Qué cambia en el próximo sprint:**
+- T17 — Vista semanal M4: /mes/[mes]/semana requiere implementación real
+- Go-live junio 7, 2026 — T16b completo, MVP operativo
+
+---
+
 ## Prompt de apertura — próxima sesión
 
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo y el adjunto al proyecto Claude.
 Tipo de sesión: [CONSTRUCCIÓN]
-Ticket activo: T16b — Rediseño Home como hub
+Ticket activo: T17 — Vista semanal M4
 Hora de inicio: [COMPLETAR AL ABRIR]
 Entorno: Windows — PowerShell exclusivamente.
 
@@ -739,22 +761,11 @@ APERTURA: Genera el dashboard con los datos actuales de ESTADO.md antes de cualq
 
 Contexto crítico:
 - Go-live junio 2026: 7 de junio
-- T16b es prerequisito de T16 (saldos) y T17 (vista semanal M4)
-- Home actual muestra tarjetas de meses — debe convertirse en hub de navegación
-- Tres destinos: Esta semana / Inicio de mes / Historial
-- Dos FABs: registro rápido de compra (relámpago) + ingreso a bolsillo (dinero)
-- Esta semana → vista semanal mes activo (/mes/[mes]/semana — ruta nueva)
-- Inicio de mes → lista de meses → MesM1 (flujo existente)
-- Historial → lista de meses solo lectura (flujo existente con flag)
-- PIN identifica actor: camilo / angie — vista semanal igual para ambos
-
-DoD T16b:
-1. Home muestra tres accesos claros: Esta semana / Inicio de mes / Historial
-2. "Esta semana" navega a /mes/[mes]/semana (puede ser placeholder por ahora)
-3. "Inicio de mes" navega a lista de meses
-4. "Historial" navega a lista de meses en modo solo lectura
-5. Dos FABs visibles en Home — el de compra abre modal registro rápido existente
-6. Diseño mobile-first — consistente con screenshots de M4
+- T16b completo — Home hub operativo con 3 acciones + 2 FABs
+- T17: vista semanal en /mes/[mes]/semana — placeholder existe, requiere implementación real
+- La vista semanal es el destino principal del hub ("Esta semana")
+- PIN identifica actor: camilo / angie — vista igual para ambos
+- Filtro por semana ya existe en MesM1 — puede reutilizarse como base
 
 CIERRE: Actualizar ESTADO.md con hora de cierre y retrospectiva.
 Regla: bugs se documentan como deuda técnica — no se corrigen dentro del ticket.
