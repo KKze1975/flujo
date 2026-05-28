@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { getProvider } from "@/lib/data/provider";
 import PantallaMeses from "@/components/PantallaMeses";
-import type { Semana } from "@/lib/data/types";
+import type { Semana, SaldoCuenta } from "@/lib/data/types";
 
 function semanaActual(): Semana {
   const dia = new Date().getDate();
@@ -54,11 +54,12 @@ export default async function Home() {
 
   if (meses.length > 0) {
     const mesReciente = meses[meses.length - 1];
-    const [movsReciente, ingresosAngieReciente, ingresosCamiloReciente, cierres] = await Promise.all([
+    const [movsReciente, ingresosAngieReciente, ingresosCamiloReciente, cierres, saldosCuenta] = await Promise.all([
       provider.getMovimientos(mesReciente),
       provider.getIngresosAngie(mesReciente).catch(() => []),
       provider.getIngresoCamilo(mesReciente).catch(() => []),
       provider.getCierresSemana(mesReciente).catch(() => []),
+      provider.getSaldosCuenta(mesReciente).catch(() => [] as SaldoCuenta[]),
     ]);
 
     // Métrica 1: disponible esta semana (panel superior)
@@ -103,6 +104,7 @@ export default async function Home() {
       recaudoSemana,
       ejecutadoSemana,
       disponibleSemanaSnapshot,
+      saldosCuenta,
     };
   }
 

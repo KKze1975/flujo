@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Inter } from "next/font/google";
+import type { SaldoCuenta } from "@/lib/data/types";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -61,7 +62,15 @@ export interface MetricasMes {
   recaudoSemana: number;
   ejecutadoSemana: number;
   disponibleSemanaSnapshot: number;
+  saldosCuenta: SaldoCuenta[];
 }
+
+const CUENTAS_LABEL: Record<SaldoCuenta["cuenta"], string> = {
+  nu_camilo: "NU Camilo",
+  nu_angie:  "NU Angie",
+  arq:       "ARQ",
+  en_mano:   "En mano",
+};
 
 export default function PantallaMeses({
   resúmenes: init,
@@ -219,6 +228,47 @@ export default function PantallaMeses({
               </div>
 
             </div>
+            {/* ── Saldos por cuenta ── */}
+            <h3 className="mt-5 mb-3 text-xs font-semibold uppercase tracking-widest text-gray-400">
+              Saldos por cuenta
+            </h3>
+            {metricas.saldosCuenta.length >= 4 ? (
+              <div className="rounded-xl border bg-white px-6 py-4 shadow-sm">
+                <div className="grid grid-cols-4 gap-6">
+                  {(["nu_camilo", "nu_angie", "arq", "en_mano"] as SaldoCuenta["cuenta"][]).map((cuenta) => {
+                    const s = metricas.saldosCuenta.find((x) => x.cuenta === cuenta);
+                    return (
+                      <div key={cuenta}>
+                        <p className="text-xs text-gray-400 mb-1">{CUENTAS_LABEL[cuenta]}</p>
+                        <p className="text-lg font-semibold text-gray-800">
+                          {s ? COP(s.saldoInicial) : "—"}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="mt-3 text-xs text-gray-400">
+                  Total: <span className="font-semibold text-gray-700">
+                    {COP(metricas.saldosCuenta.reduce((s, x) => s + x.saldoInicial, 0))}
+                  </span>
+                  {metricas.saldosCuenta[0]?.fechaConfirmacion && (
+                    <span className="ml-3">Confirmado: {metricas.saldosCuenta[0].fechaConfirmacion}</span>
+                  )}
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-6 py-4">
+                <p className="text-sm text-amber-700">
+                  Saldos sin confirmar —{" "}
+                  <span
+                    className="cursor-pointer underline"
+                    onClick={() => router.push(`/mes/${metricas.mes}`)}
+                  >
+                    confirmar en {formatMes(metricas.mes)}
+                  </span>
+                </p>
+              </div>
+            )}
           </section>
         )}
 
