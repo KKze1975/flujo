@@ -13,6 +13,7 @@ type PatchBody =
       fuenteNequi: boolean;
       fuenteCamilo: boolean;
       fuenteAngie: boolean;
+      ejecutor?: "camilo" | "angie";
       razonDesviacion?: string | null;
     }
   | { tipo: "posponer"; nuevaSemana?: Semana; razonPostergacion?: string | null }
@@ -63,7 +64,7 @@ export async function PATCH(
         estado: "ejecutado",
         montoEjecutado,
         desviacion: montoEjecutado - mov.montoPresupuestado,
-        ejecutor: "camilo",
+        ejecutor: body.ejecutor ?? "camilo",
         fuenteEnMano: body.fuenteEnMano,
         fuenteNequi: body.fuenteNequi,
         fuenteCamilo: body.fuenteCamilo,

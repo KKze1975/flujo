@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Mayo 2026 | Fase: Construcción — Ticket 13 cerrado, Home con métricas y snapshot semanal
+Actualizado: Mayo 2026 | Fase: Construcción — Ticket 14 cerrado, M4 Registro rápido operativo
 
 ---
 
@@ -376,8 +376,9 @@ Archivo fuente: H1_presupuesto_base.csv
 | Ticket 11 — Fix razonPostergacion | Completo — input en panel posponer, persiste en H2 |
 | Ticket 12 — Pantalla de meses | Completo — Home operativo, junio 2026 inicializado con carry-over |
 | Ticket 13 — Home con métricas | Completo — 6 tarjetas: panel métricas + snapshot semana activa, botón registro rápido |
+| Ticket 14 — M4 Registro rápido | Completo — texto natural + foto de factura, Claude interpreta con conceptos H2 reales, propuesta editable, PATCH H2, fallback H3 clasificado:false |
 | Mayo 2026 | H2 activo — M1 cerrado, ejecución en paralelo con Sheets |
-| Junio 2026 | H2 activo — 62 movimientos inicializados, go-live objetivo |
+| Junio 2026 | H2 activo — 62 movimientos inicializados, go-live objetivo — primeros registros M4 verificados |
 | PantallaMeses | Operativa — tarjetas con métricas, inicialización automática, navegación a MesM1 |
 | API POST /mes/[mes]/conceptos | Operativo — crea H1 + H2 atómico para B4 |
 | API H4 | Operativo — upsert ingreso Camilo y aportes Angie por semana |
@@ -621,7 +622,26 @@ Archivo fuente: H1_presupuesto_base.csv
 - Nada
 
 **Qué cambia en el próximo sprint:**
-- Ticket 14: M4 Registro rápido — texto natural + foto de factura, mismo mecanismo de confirmación
+- Definir Ticket 15 — candidatos: M3 cierre semanal / M2 vista Angie / R7b historial de registros M4
+
+---
+
+## Retrospectiva — Ticket 14 (M4 Registro rápido)
+
+**Qué funcionó:**
+- Claude interpreta texto natural con alta precisión cuando recibe la lista real de conceptos H2
+- Flujo estado completo: idle → procesando → [aclaracion] → propuesta → confirmando → exito
+- PATCH H2 verificado en Sheet — movimiento "Víveres y otros" ejecutado correctamente
+- Foto de factura + cámara directa operativos en móvil (capture via useEffect para evitar hydration mismatch)
+- TypeScript sin errores al finalizar
+
+**Qué no funcionó:**
+- Primera versión enviaba concepto_sugerido sin contexto — Claude inventaba nombres (ej. "mercado D1")
+- Fix: pasar lista de conceptos pendientes de H2 al system prompt dinámicamente
+- capture="environment" como prop JSX causó hydration mismatch — resuelto con useEffect
+
+**Qué cambia en el próximo sprint:**
+- Definir Ticket 15
 
 ---
 
@@ -629,8 +649,7 @@ Archivo fuente: H1_presupuesto_base.csv
 
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo y el adjunto al proyecto Claude.
 Tipo de sesión: CONSTRUCCIÓN
-Ticket activo: Ticket 14 — M4 Registro rápido
-Nota de diseño M4: soportar dos inputs desde el inicio — texto natural y foto de factura. Mismo mecanismo de confirmación.
+Ticket activo: Ticket 15 — por definir (candidatos: M3 cierre semanal / M2 vista Angie / R7b historial M4)
 Entorno: Windows — PowerShell exclusivamente.
 
 ---

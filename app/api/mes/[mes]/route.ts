@@ -17,14 +17,20 @@ export async function GET(
   }
 
   const provider = getProvider();
-  const movimientos = await provider.getMovimientos(mes);
 
-  if (movimientos.length === 0) {
-    return Response.json(
-      { error: "El mes no ha sido inicializado.", mes },
-      { status: 404 }
-    );
+  try {
+    const movimientos = await provider.getMovimientos(mes);
+
+    if (movimientos.length === 0) {
+      return Response.json(
+        { error: "El mes no ha sido inicializado.", mes },
+        { status: 404 }
+      );
+    }
+
+    return Response.json(movimientos);
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "Error interno";
+    return Response.json({ error: msg }, { status: 500 });
   }
-
-  return Response.json(movimientos);
 }
