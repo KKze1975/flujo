@@ -509,6 +509,33 @@ export class SheetsDataProvider implements IDataProvider {
   }
 
   // ── H3 ───────────────────────────────────────────────────────────────────
+
+  async getGastosSinClasificarPorSemana(mes: string): Promise<Record<Semana, number>> {
+    const result: Record<Semana, number> = { S1: 0, S2: 0, S3: 0, S4: 0 };
+    try {
+      const res = await this.sheets.spreadsheets.values.get({
+        spreadsheetId: process.env.GOOGLE_SHEET_ID,
+        range: "H3!A:N",
+      });
+      const rows = (res.data.values ?? []) as string[][];
+      if (rows.length < 2) return result;
+      const [headers, ...data] = rows;
+      const mesIdx = headers.indexOf("mes");
+      const semIdx = headers.indexOf("semana");
+      const claIdx = headers.indexOf("clasificado");
+      for (const row of data) {
+        if (row[mesIdx] !== mes) continue;
+        if ((row[claIdx] ?? "").toUpperCase() === "FALSE") {
+          const sem = row[semIdx] as Semana;
+          if (sem in result) result[sem]++;
+        }
+      }
+    } catch {
+      // H3 no existe aún — retorna ceros
+    }
+    return result;
+  }
+
   getBolsillos(): Promise<Bolsillo[]> {
     throw new Error("Not implemented yet");
   }
@@ -621,12 +648,57 @@ export class SheetsDataProvider implements IDataProvider {
     return cierre;
   }
 
+  private readonly H5B_HEADERS = [
+    "id_plan", "mes", "semana", "fecha_plan",
+    "aporte_angie_planeado", "remanente_angie_arrastrado",
+    "total_comprometido", "balance_proyectado", "notas",
+  ];
+
+  private planSemanaToRow(p: PlanSemana): string[] {
+    return [
+      p.id, p.mes, p.semana, p.fechaPlan,
+      String(p.aporteAngiePlaneado), String(p.remanenteAngieArrastrado),
+      String(p.totalComprometido), String(p.balanceProyectado),
+      p.notas ?? "",
+    ];
+  }
+
+  private async ensureH5B(): Promise<void> {
+    const meta = await this.sheets.spreadsheets.get({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+    });
+    const exists = meta.data.sheets?.some(s => s.properties?.title === "H5B");
+    if (!exists) {
+      await this.sheets.spreadsheets.batchUpdate({
+        spreadsheetId: process.env.GOOGLE_SHEET_ID,
+        requestBody: { requests: [{ addSheet: { properties: { title: "H5B" } } }] },
+      });
+    }
+    await this.sheets.spreadsheets.values.update({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: "H5B!A1",
+      valueInputOption: "RAW",
+      requestBody: { values: [this.H5B_HEADERS] },
+    });
+  }
+
   getPlanSemana(_mes: string, _semana: Semana): Promise<PlanSemana | null> {
     throw new Error("Not implemented yet");
   }
-  createPlanSemana(_data: Omit<PlanSemana, "id">): Promise<PlanSemana> {
-    throw new Error("Not implemented yet");
+
+  async createPlanSemana(data: Omit<PlanSemana, "id">): Promise<PlanSemana> {
+    await this.ensureH5B();
+    const id = `PLAN_${Date.now()}`;
+    const plan: PlanSemana = { id, ...data };
+    await this.sheets.spreadsheets.values.append({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: "H5B!A:I",
+      valueInputOption: "RAW",
+      requestBody: { values: [this.planSemanaToRow(plan)] },
+    });
+    return plan;
   }
+
   updatePlanSemana(_id: string, _data: Partial<Omit<PlanSemana, "id">>): Promise<PlanSemana> {
     throw new Error("Not implemented yet");
   }

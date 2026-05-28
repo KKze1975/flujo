@@ -11,11 +11,13 @@ export default async function MesPage({
   const { mes } = await params;
   const provider = getProvider();
 
-  const [movimientos, conceptos, ingresoCamiloList, ingresosAngie] = await Promise.all([
+  const [movimientos, conceptos, ingresoCamiloList, ingresosAngie, cierresSemana, gastosSinClasificar] = await Promise.all([
     provider.getMovimientos(mes),
     provider.getConceptos(),
     provider.getIngresoCamilo(mes).catch(() => []),
     provider.getIngresosAngie(mes).catch(() => []),
+    provider.getCierresSemana(mes).catch(() => []),
+    provider.getGastosSinClasificarPorSemana(mes).catch(() => ({ S1: 0, S2: 0, S3: 0, S4: 0 })),
   ]);
 
   if (movimientos.length === 0) {
@@ -33,6 +35,8 @@ export default async function MesPage({
       conceptos={conceptos}
       ingresoCamilo={ingresoCamiloList[0] ?? null}
       ingresosAngie={ingresosAngie}
+      cierresSemana={cierresSemana}
+      gastosSinClasificarInit={gastosSinClasificar}
     />
   );
 }

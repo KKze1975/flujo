@@ -131,11 +131,14 @@ export interface CierreSemana {
 
 export interface PlanSemana {
   id: string;
-  mes: number;
-  semana: Semana;
-  montoPlaneado: number;
-  categorias?: Record<string, number>;
-  notas?: string;
+  mes: string;                   // "2026-05"
+  semana: Semana;                // semana planificada (siguiente al cierre)
+  fechaPlan: string;             // "2026-05-07"
+  aporteAngiePlaneado: number;
+  remanenteAngieArrastrado: number;
+  totalComprometido: number;
+  balanceProyectado: number;
+  notas: string | null;
 }
 
 // ── H6 ─────────────────────────────────────────────────────────────────────

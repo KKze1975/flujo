@@ -4,10 +4,11 @@ import { useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
 import React from "react";
 import { Inter } from "next/font/google"; // V10
-import type { Movimiento, Concepto, IngresoCamilo, IngresoAngie, Semana, Categoria } from "@/lib/data/types";
+import type { Movimiento, Concepto, IngresoCamilo, IngresoAngie, CierreSemana, Semana, Categoria } from "@/lib/data/types";
 import ModalIngresoCamilo from "./m1/ModalIngresoCamilo";
 import ModalAporteAngie from "./m1/ModalAporteAngie";
 import ModalEditarConcepto from "./m1/ModalEditarConcepto";
+import ModalCerrarSemana from "./m1/ModalCerrarSemana";
 import VistaPlanificacion from "./m1/VistaPlanificacion";
 
 // V10 — Inter font
@@ -85,12 +86,16 @@ export default function MesM1({
   conceptos: initConceptos,
   ingresoCamilo: initIngreso,
   ingresosAngie: initAportes,
+  cierresSemana: initCierres,
+  gastosSinClasificarInit,
 }: {
   mes: string;
   movimientos: Movimiento[];
   conceptos: Concepto[];
   ingresoCamilo: IngresoCamilo | null;
   ingresosAngie: IngresoAngie[];
+  cierresSemana: CierreSemana[];
+  gastosSinClasificarInit: Record<Semana, number>;
 }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -109,6 +114,9 @@ export default function MesM1({
   const [error, setError] = useState<string | null>(null);
   const [cerradoM1, setCerradoM1] = useState(false);
   const [cerrandoM1, setCerrandoM1] = useState(false);
+  const [cierres, setCierres] = useState<CierreSemana[]>(initCierres);
+  const [gastosSinClasificar] = useState<Record<Semana, number>>(gastosSinClasificarInit);
+  const [showCerrarSemana, setShowCerrarSemana] = useState(false);
 
   const dates = useMemo(() => semanaDates(mes), [mes]);
 
@@ -685,21 +693,46 @@ export default function MesM1({
                   <span className="text-gray-500"><strong>{totalPendientes}</strong> pendientes</span>
                   <span className="text-amber-700"><strong>{totalPospuestos}</strong> pospuestos</span>
                 </div>
-                {cerradoM1 ? (
-                  <span className="rounded-lg bg-[#e6f4ea] px-4 py-1.5 text-sm font-medium text-[#137333]">
-                    M1 cerrado ✓
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleCerrarM1}
-                    disabled={pendientesS1 > 0 || cerrandoM1}
-                    className="rounded-lg bg-[#1e3a5f] px-4 py-1.5 text-sm font-medium text-white hover:bg-[#162d4a] disabled:cursor-not-allowed disabled:opacity-40"
-                    title={pendientesS1 > 0 ? `${pendientesS1} conceptos pendientes en S1` : "Cerrar M1"}
-                  >
-                    {cerrandoM1 ? "Cerrando…" : "Cerrar M1 ejecución"}
-                  </button>
-                )}
+                <div className="flex items-center gap-2">
+                  {/* Botón cerrar semana — visible cuando hay semana seleccionada */}
+                  {semanaFiltro && (() => {
+                    const yaCerrada = cierres.some((c) => c.semana === semanaFiltro);
+                    const gastosBloquean = (gastosSinClasificar[semanaFiltro] ?? 0) > 0;
+                    if (yaCerrada) {
+                      return (
+                        <span className="rounded-lg bg-[#e6f4ea] px-3 py-1.5 text-xs font-medium text-[#137333]">
+                          {semanaFiltro} cerrada ✓
+                        </span>
+                      );
+                    }
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => setShowCerrarSemana(true)}
+                        disabled={gastosBloquean}
+                        title={gastosBloquean ? `${gastosSinClasificar[semanaFiltro]} gastos sin clasificar` : `Cerrar ${semanaFiltro}`}
+                        className="rounded-lg border border-[#1e3a5f] px-3 py-1.5 text-xs font-medium text-[#1e3a5f] hover:bg-[#1e3a5f] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        Cerrar {semanaFiltro}
+                      </button>
+                    );
+                  })()}
+                  {cerradoM1 ? (
+                    <span className="rounded-lg bg-[#e6f4ea] px-4 py-1.5 text-sm font-medium text-[#137333]">
+                      M1 cerrado ✓
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleCerrarM1}
+                      disabled={pendientesS1 > 0 || cerrandoM1}
+                      className="rounded-lg bg-[#1e3a5f] px-4 py-1.5 text-sm font-medium text-white hover:bg-[#162d4a] disabled:cursor-not-allowed disabled:opacity-40"
+                      title={pendientesS1 > 0 ? `${pendientesS1} conceptos pendientes en S1` : "Cerrar M1"}
+                    >
+                      {cerrandoM1 ? "Cerrando…" : "Cerrar M1 ejecución"}
+                    </button>
+                  )}
+                </div>
               </div>
             </footer>
           </>
@@ -733,6 +766,18 @@ export default function MesM1({
             setConceptos((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
             setModal(null);
             setConceptoEditando(null);
+          }}
+        />,
+        document.body
+      )}
+      {mounted && showCerrarSemana && semanaFiltro && createPortal(
+        <ModalCerrarSemana
+          mes={mes}
+          semana={semanaFiltro}
+          onClose={() => setShowCerrarSemana(false)}
+          onSuccess={(semana) => {
+            setCierres((prev) => [...prev, { id: "", mes, semana, fechaCierre: "", totalPresupuestado: 0, totalEjecutado: 0, desviacionTotal: 0, remanenteAngie: 0, ubicacionRemanenteAngie: "", conceptosPospuestos: 0, conceptosNoAplica: 0, gastosSinClasificar: 0, cerradoPor: "camilo", notas: null }]);
+            setShowCerrarSemana(false);
           }}
         />,
         document.body

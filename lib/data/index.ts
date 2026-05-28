@@ -36,6 +36,7 @@ export interface IDataProvider {
   createConsumo(data: Omit<Consumo, "id">): Promise<Consumo>;
   updateConsumo(id: string, data: Partial<Omit<Consumo, "id">>): Promise<Consumo>;
   getConsumos(bolsilloId?: string): Promise<Consumo[]>;
+  getGastosSinClasificarPorSemana(mes: string): Promise<Record<Semana, number>>;
 
   // ── H4 ───────────────────────────────────────────────────────────────────
   getIngresoCamilo(mes: string): Promise<IngresoCamilo[]>;

@@ -75,6 +75,9 @@ export class MockDataProvider implements IDataProvider {
   getConsumos(_bolsilloId?: string): Promise<Consumo[]> {
     return Promise.resolve([]);
   }
+  getGastosSinClasificarPorSemana(_mes: string): Promise<Record<Semana, number>> {
+    return Promise.resolve({ S1: 0, S2: 0, S3: 0, S4: 0 });
+  }
 
   // ── H4 ───────────────────────────────────────────────────────────────────
   getIngresoCamilo(_mes: string): Promise<IngresoCamilo[]> {
