@@ -425,6 +425,24 @@ export class SheetsDataProvider implements IDataProvider {
     });
   }
 
+  private async ensureH4CHeaders(): Promise<void> {
+    try {
+      const res = await this.sheets.spreadsheets.values.get({
+        spreadsheetId: process.env.GOOGLE_SHEET_ID,
+        range: "H4!P1",
+      });
+      if (res.data.values?.[0]?.[0] === "id_saldo") return;
+    } catch {
+      // continúa a escribir
+    }
+    await this.sheets.spreadsheets.values.update({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: "H4!P1:T1",
+      valueInputOption: "RAW",
+      requestBody: { values: [this.H4C_HEADERS] },
+    });
+  }
+
   // ── H4 ───────────────────────────────────────────────────────────────────
 
   async getIngresoCamilo(mes: string): Promise<IngresoCamilo[]> {
@@ -532,6 +550,7 @@ export class SheetsDataProvider implements IDataProvider {
   }
 
   async getSaldosCuenta(mes: string): Promise<SaldoCuenta[]> {
+    await this.ensureH4CHeaders();
     try {
       const res = await this.sheets.spreadsheets.values.get({
         spreadsheetId: process.env.GOOGLE_SHEET_ID,
@@ -553,7 +572,7 @@ export class SheetsDataProvider implements IDataProvider {
     mes: string,
     saldos: { cuenta: CuentaH4C; saldoInicial: number }[]
   ): Promise<SaldoCuenta[]> {
-    await this.ensureH4Headers();
+    await this.ensureH4CHeaders();
     const hoy = new Date().toISOString().split("T")[0];
 
     // Leer filas existentes de H4C para este mes
