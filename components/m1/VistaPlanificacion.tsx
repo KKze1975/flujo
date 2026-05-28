@@ -66,6 +66,7 @@ export default function VistaPlanificacion({
   });
   const [savingAportes, setSavingAportes] = useState(false);
 
+  const [semanaFiltro, setSemanaFiltro] = useState<Semana | null>(null);
   const [editingNota, setEditingNota] = useState<string | null>(null);
   const [editingMonto, setEditingMonto] = useState<string | null>(null);
   const [collapsedCats, setCollapsedCats] = useState<Set<Categoria>>(new Set());
@@ -169,11 +170,15 @@ export default function VistaPlanificacion({
     for (const cat of CATEGORIAS_ORDER) map.set(cat, []);
     for (const c of conceptos) {
       if (c.estado !== "activo") continue;
+      if (semanaFiltro) {
+        // Semanales aparecen en todas las semanas; fijos solo si coinciden; variables se excluyen
+        if (c.frecuencia !== "semanal" && c.semanaDefault !== semanaFiltro) continue;
+      }
       const list = map.get(c.categoria);
       if (list) list.push(c);
     }
     return Array.from(map.entries()).filter(([, items]) => items.length > 0);
-  }, [conceptos]);
+  }, [conceptos, semanaFiltro]);
 
   // ── Handlers ─────────────────────────────────────────────────────────────
 
@@ -451,7 +456,12 @@ export default function VistaPlanificacion({
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">Balance por semana</p>
               <div className="space-y-2">
                 {balancePorSemana.map(({ semana, remanteAnterior, aporteAngie, disponible, comprometido, diferencia }, i) => (
-                  <div key={semana} className="rounded bg-gray-50 p-2">
+                  <div
+                    key={semana}
+                    onClick={() => setSemanaFiltro(semanaFiltro === semana ? null : semana)}
+                    style={semanaFiltro === semana ? { borderLeft: "3px solid #1a73e8" } : undefined}
+                    className={`rounded bg-gray-50 p-2 cursor-pointer transition-colors ${semanaFiltro === semana ? "bg-blue-50" : "hover:bg-gray-100"}`}
+                  >
                     <div className="mb-1.5 flex items-center justify-between">
                       <span className="text-xs font-semibold text-gray-700">{semana}</span>
                       <span
@@ -492,6 +502,24 @@ export default function VistaPlanificacion({
             <div className="m-4 rounded-md bg-red-50 px-4 py-2 text-sm text-red-700">{error}</div>
           )}
 
+          {/* Filtro por semana */}
+          <div className="flex items-center gap-1.5 border-b border-gray-100 bg-white px-3 py-2">
+            <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-gray-400">Semana:</span>
+            {([null, "S1", "S2", "S3", "S4"] as (Semana | null)[]).map((s) => (
+              <button
+                key={s ?? "todo"}
+                type="button"
+                onClick={() => setSemanaFiltro(s)}
+                className={`rounded border px-3 py-1 text-xs font-medium transition-colors ${
+                  semanaFiltro === s
+                    ? "border-[#1a73e8] bg-[#1a73e8] text-white"
+                    : "border-gray-200 bg-white text-gray-500 hover:border-[#1a73e8] hover:text-[#1a73e8]"
+                }`}
+              >
+                {s ?? "Todo"}
+              </button>
+            ))}
+          </div>
 
           <table className="w-full min-w-[700px] border-collapse text-[13px]">
             <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_0_0_#e5e7eb]">
