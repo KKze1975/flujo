@@ -10,6 +10,7 @@ import type {
   EstadoMovimiento,
   EstadoIngresoCamilo,
   CuentaDestino,
+  CuentaH4C,
   Actor,
   Concepto,
   Movimiento,
@@ -17,6 +18,7 @@ import type {
   Consumo,
   IngresoCamilo,
   IngresoAngie,
+  SaldoCuenta,
   CierreSemana,
   PlanSemana,
   CierreMensual,
@@ -367,6 +369,26 @@ export class SheetsDataProvider implements IDataProvider {
     return [id, ia.mes, ia.semana, String(ia.monto), ia.fecha, ia.notas ?? ""];
   }
 
+  // H4C helpers
+  private readonly H4C_HEADERS = [
+    "id_saldo", "mes", "cuenta", "saldo_inicial", "fecha_confirmacion",
+  ];
+
+  private rowToSaldoCuenta(row: string[], headers: string[]): SaldoCuenta {
+    const col = (name: string) => row[headers.indexOf(name)] ?? "";
+    return {
+      id: col("id_saldo"),
+      mes: col("mes"),
+      cuenta: col("cuenta") as CuentaH4C,
+      saldoInicial: Number(col("saldo_inicial")) || 0,
+      fechaConfirmacion: col("fecha_confirmacion"),
+    };
+  }
+
+  private saldoCuentaToRow(s: SaldoCuenta): string[] {
+    return [s.id, s.mes, s.cuenta, String(s.saldoInicial), s.fechaConfirmacion];
+  }
+
   private async ensureH4Headers(): Promise<void> {
     let needsCreate = false;
     try {
@@ -397,6 +419,7 @@ export class SheetsDataProvider implements IDataProvider {
         data: [
           { range: "H4!A1:G1", values: [this.H4A_HEADERS] },
           { range: "H4!I1:N1", values: [this.H4B_HEADERS] },
+          { range: "H4!P1:T1", values: [this.H4C_HEADERS] },
         ],
       },
     });
@@ -506,6 +529,87 @@ export class SheetsDataProvider implements IDataProvider {
       requestBody: { values: [this.ingresoAngieToRow(id, updated)] },
     });
     return updated;
+  }
+
+  async getSaldosCuenta(mes: string): Promise<SaldoCuenta[]> {
+    try {
+      const res = await this.sheets.spreadsheets.values.get({
+        spreadsheetId: process.env.GOOGLE_SHEET_ID,
+        range: "H4!P:T",
+      });
+      const rows = (res.data.values ?? []) as string[][];
+      if (rows.length < 2) return [];
+      const [headers, ...dataRows] = rows;
+      const mesIdx = headers.indexOf("mes");
+      return dataRows
+        .filter((row) => row.length > 0 && row[0] && row[mesIdx] === mes)
+        .map((row) => this.rowToSaldoCuenta(row, headers));
+    } catch {
+      return [];
+    }
+  }
+
+  async upsertSaldosCuenta(
+    mes: string,
+    saldos: { cuenta: CuentaH4C; saldoInicial: number }[]
+  ): Promise<SaldoCuenta[]> {
+    await this.ensureH4Headers();
+    const hoy = new Date().toISOString().split("T")[0];
+
+    // Leer filas existentes de H4C para este mes
+    const res = await this.sheets.spreadsheets.values.get({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: "H4!P:T",
+    });
+    const allRows = (res.data.values ?? []) as string[][];
+    const headers = allRows[0] ?? this.H4C_HEADERS;
+    const dataRows = allRows.slice(1);
+    const mesIdx = headers.indexOf("mes");
+    const cuentaIdx = headers.indexOf("cuenta");
+
+    const result: SaldoCuenta[] = [];
+    const updateData: { range: string; values: string[][] }[] = [];
+    const appendRows: string[][] = [];
+
+    for (const { cuenta, saldoInicial } of saldos) {
+      const rowIdx = dataRows.findIndex(
+        (r) => r[mesIdx] === mes && r[cuentaIdx] === cuenta
+      );
+      const saldo: SaldoCuenta = {
+        id: rowIdx >= 0 ? (dataRows[rowIdx][0] ?? `SALDO_${Date.now()}_${cuenta}`) : `SALDO_${Date.now()}_${cuenta}`,
+        mes,
+        cuenta,
+        saldoInicial,
+        fechaConfirmacion: hoy,
+      };
+      result.push(saldo);
+
+      if (rowIdx >= 0) {
+        // +2: +1 header, +1 base-1 index
+        const sheetRow = rowIdx + 2;
+        updateData.push({ range: `H4!P${sheetRow}:T${sheetRow}`, values: [this.saldoCuentaToRow(saldo)] });
+      } else {
+        appendRows.push(this.saldoCuentaToRow(saldo));
+      }
+    }
+
+    // Ejecutar updates e inserts
+    if (updateData.length > 0) {
+      await this.sheets.spreadsheets.values.batchUpdate({
+        spreadsheetId: process.env.GOOGLE_SHEET_ID,
+        requestBody: { valueInputOption: "RAW", data: updateData },
+      });
+    }
+    if (appendRows.length > 0) {
+      await this.sheets.spreadsheets.values.append({
+        spreadsheetId: process.env.GOOGLE_SHEET_ID,
+        range: "H4!P:T",
+        valueInputOption: "RAW",
+        requestBody: { values: appendRows },
+      });
+    }
+
+    return result;
   }
 
   // ── H3 ───────────────────────────────────────────────────────────────────

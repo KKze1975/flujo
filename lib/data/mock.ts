@@ -7,6 +7,7 @@ import type {
   Consumo,
   IngresoCamilo,
   IngresoAngie,
+  SaldoCuenta,
   CierreSemana,
   PlanSemana,
   CierreMensual,
@@ -97,6 +98,12 @@ export class MockDataProvider implements IDataProvider {
   }
   updateIngresoAngie(_id: string, _data: Partial<Omit<IngresoAngie, "id">>): Promise<IngresoAngie> {
     return Promise.resolve(null as unknown as IngresoAngie);
+  }
+  getSaldosCuenta(_mes: string): Promise<SaldoCuenta[]> {
+    return Promise.resolve([]);
+  }
+  upsertSaldosCuenta(_mes: string, _saldos: { cuenta: SaldoCuenta["cuenta"]; saldoInicial: number }[]): Promise<SaldoCuenta[]> {
+    return Promise.resolve([]);
   }
 
   // ── H5 ───────────────────────────────────────────────────────────────────

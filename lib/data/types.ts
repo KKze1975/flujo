@@ -90,6 +90,15 @@ export interface Consumo {
 // ── H4 ─────────────────────────────────────────────────────────────────────
 
 export type CuentaDestino = "en_mano" | "nequi" | "camilo" | "angie";
+export type CuentaH4C = "nu_camilo" | "nu_angie" | "arq" | "en_mano";
+
+export interface SaldoCuenta {
+  id: string;
+  mes: string;                  // "2026-05"
+  cuenta: CuentaH4C;
+  saldoInicial: number;         // COP
+  fechaConfirmacion: string;    // "2026-05-01"
+}
 
 export interface IngresoCamilo {
   id: string;
