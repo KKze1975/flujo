@@ -408,6 +408,8 @@ Archivo fuente: H1_presupuesto_base.csv
 | API GET/POST /mes/[mes]/saldos | Operativo — lee y escribe H4C correctamente |
 | ModalConfirmarSaldos | Operativo — bloqueo obligatorio al abrir M1 Ejecución |
 | Panel saldos Home | Operativo — 4 cuentas + total + fecha de confirmación |
+| T16b — Rediseño Home como hub | Pendiente |
+| T17 — Vista semanal M4 | Pendiente |
 
 ---
 
@@ -441,7 +443,6 @@ Archivo fuente: H1_presupuesto_base.csv
 - Rediseño UX navegación — segunda etapa post MVP. Principio: "don't make me think".
   Las acciones deben ser visibles, no descubribles.
 - Ticket 16 — Saldos por cuenta: H4C + pantalla confirmación obligatoria al abrir M1 Ejecución + sidebar saldos en tiempo real + panel en Home
-- Ticket 17 — M2 vista Angie
 
 ---
 
@@ -527,6 +528,11 @@ Archivo fuente: H1_presupuesto_base.csv
 | Mayo 2026 | H4C en columnas P:T del tab H4 existente | Consistente con patrón H4A (A:G) + H4B (I:N) — un tab por hoja lógica |
 | Mayo 2026 | ensureH4CHeaders separado de ensureH4Headers | H4 ya existía — el chequeo temprano de A1 impedía escribir los headers de H4C |
 | Mayo 2026 | Confirmación de saldos como bloqueo sin cancelar en M1 Ejecución | Sin saldo inicial no hay trazabilidad de cuenta — requisito no negociable |
+| Mayo 2026 | Home rediseñado como hub de navegación | Vista semanal M4 es el destino principal — M1 e historial son destinos secundarios |
+| Mayo 2026 | Navegación Home: Esta semana / Inicio de mes / Historial | Esta semana → vista semanal mes activo. Inicio de mes → lista de meses → MesM1. Historial → lista de meses solo lectura |
+| Mayo 2026 | Dos FABs en Home | FAB relámpago → registro rápido de compra. FAB dinero → ingreso a bolsillo |
+| Mayo 2026 | Vista semanal M4 es igual para Camilo y Angie | PIN identifica actor — sin vistas diferenciadas por rol |
+| Mayo 2026 | T16b prerequisito de T16 y T17 | Home hub debe existir antes de vista semanal y saldos |
 
 ---
 
@@ -724,26 +730,31 @@ Archivo fuente: H1_presupuesto_base.csv
 ## Prompt de apertura — próxima sesión
 
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo y el adjunto al proyecto Claude.
-Tipo de sesión: [GO-LIVE / CONSTRUCCIÓN]
-Objetivo: Primera ejecución real en Junio 2026 — go-live 7 de junio
+Tipo de sesión: [CONSTRUCCIÓN]
+Ticket activo: T16b — Rediseño Home como hub
 Hora de inicio: [COMPLETAR AL ABRIR]
 Entorno: Windows — PowerShell exclusivamente.
 
 APERTURA: Genera el dashboard con los datos actuales de ESTADO.md antes de cualquier otra cosa.
 
 Contexto crítico:
-- Go-live: 7 de junio 2026 — primer domingo de junio, primera revisión real con Angie
-- MVP completo: T1–T16 cerrados — todos los flujos M1/M3/M4 operativos
-- Junio 2026 inicializado: 62 movimientos en H2
-- Flujo go-live esperado:
-  1. Confirmar saldos iniciales en M1 Ejecución (H4C)
-  2. Ejecutar pagos S1 contra presupuesto (M1)
-  3. Registrar gastos semana con M4 (registro rápido)
-  4. Domingo 7 de junio: cerrar S1 con Angie (H5A + H5B)
-- Ticket 17 definido: M2 vista Angie — construir post go-live si se decide
+- Go-live junio 2026: 7 de junio
+- T16b es prerequisito de T16 (saldos) y T17 (vista semanal M4)
+- Home actual muestra tarjetas de meses — debe convertirse en hub de navegación
+- Tres destinos: Esta semana / Inicio de mes / Historial
+- Dos FABs: registro rápido de compra (relámpago) + ingreso a bolsillo (dinero)
+- Esta semana → vista semanal mes activo (/mes/[mes]/semana — ruta nueva)
+- Inicio de mes → lista de meses → MesM1 (flujo existente)
+- Historial → lista de meses solo lectura (flujo existente con flag)
+- PIN identifica actor: camilo / angie — vista semanal igual para ambos
 
-Deuda técnica activa (documentada, no bloquea go-live):
-- Vista M1 Ejecución no refleja cambios de Planificación sin recargar
+DoD T16b:
+1. Home muestra tres accesos claros: Esta semana / Inicio de mes / Historial
+2. "Esta semana" navega a /mes/[mes]/semana (puede ser placeholder por ahora)
+3. "Inicio de mes" navega a lista de meses
+4. "Historial" navega a lista de meses en modo solo lectura
+5. Dos FABs visibles en Home — el de compra abre modal registro rápido existente
+6. Diseño mobile-first — consistente con screenshots de M4
 
 CIERRE: Actualizar ESTADO.md con hora de cierre y retrospectiva.
 Regla: bugs se documentan como deuda técnica — no se corrigen dentro del ticket.
