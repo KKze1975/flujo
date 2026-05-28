@@ -405,6 +405,7 @@ Archivo fuente: H1_presupuesto_base.csv
 
 ## Deuda técnica conocida
 
+- Vista M1 Ejecución no refleja cambios hechos en M1 Planificación sin recargar — posible estado desincronizado entre vistas o caché de fetch
 - 2 vulnerabilidades moderadas en dependencias npm — pendiente npm audit después del MVP
 - Claude Code auto-update failed — resolver con: npm i -g @anthropic-ai/claude-code
 - H6 tiene columnas cat_* desactualizadas — actualizar para reflejar las 11 categorías aprobadas
