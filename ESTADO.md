@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Mayo 2026 | Fase: Construcción — Ticket 16 cerrado, saldos por cuenta operativos — MVP listo para go-live
+Actualizado: Mayo 2026 | Fase: MVP completo — T17 cerrado, vista semanal M4 operativa en producción
 
 ---
 
@@ -410,12 +410,12 @@ Archivo fuente: H1_presupuesto_base.csv
 | Panel saldos Home | Operativo — 4 cuentas + total + fecha de confirmación |
 | T16b — Rediseño Home como hub | Completo — DoD 6/6 verificado |
 | HomeHub.tsx | Operativo — header mes/semana, 3 acciones, métricas contextuales, 2 FABs |
-| app/mes/[mes]/semana/page.tsx | Actualizado — Server Component T17: fetch paralelo movimientos + cierres, semana activa server-side |
+| app/mes/[mes]/semana/page.tsx | Operativo — vista semanal con H2 + H3 + FAB registro rápido |
 | components/VistaSemanal.tsx | Creado — vista semanal M4: header + bolsillos + tabs + acciones inline + FAB RegistroRapido |
 | app/api/mes/[mes]/semana/[semana]/route.ts | Creado — GET movimientos semana + métricas + cierreSemana |
 | RegistroRapido.tsx | Extraído como componente reutilizable |
 | PantallaMeses | Actualizado — prop modoHistorial para solo lectura |
-| T17 — Vista semanal M4 | Completo — DoD 7/7 verificado en browser 390px |
+| T17 — Vista semanal M4 | Completo — DoD 6/6 verificado en producción |
 | Deploy Vercel | Operativo — primer deploy exitoso, variables de entorno configuradas |
 
 ---
@@ -756,36 +756,36 @@ Archivo fuente: H1_presupuesto_base.csv
 ## Retrospectiva — T17 (Vista semanal M4)
 
 **Qué funcionó:**
-- DoD 7/7 en una sola sesión — carga con datos reales, tabs, acciones inline, bolsillos, FAB
-- Bolsillos desde H2 tipo_snapshot="bolsillo" — solución pragmática sin necesitar getBolsillos() (no implementado)
-- Acciones inline OK/Editar con actualización optimista de estado local — sin reload
-- Reutilización de RegistroRapido.tsx sin modificaciones — integración limpia
-- TypeScript sin errores al finalizar
+- Vista semanal con datos reales de H2 filtrados por semana activa
+- Bolsillos con progreso real desde H3
+- FAB registro rápido reutilizado correctamente
+- Mobile-first verificado en producción
 
 **Qué no funcionó:**
-- VistaSemanal no comunica con RegistroRapido — los gastos del FAB no refrescan la lista (deuda técnica)
-- RegistroRapido no expone "guardar sin clasificar" explícitamente desde VistaSemanal (deuda técnica)
+- Deploy bloqueado por identidad git del WorkSpace — resuelto haciendo el repo público
+- Claude Code se desvió al OAuth de Vercel fuera del scope del ticket
 
 **Qué cambia en el próximo sprint:**
-- MVP completo — go-live junio 7, 2026
-- Deploy Vercel pendiente con los cambios de T17
+- git config --global con camilovillamil@gmail.com ya configurado — futuros deploys no tendrán este problema
+- Repo público — sin impacto en seguridad real
 
 ---
 
 ## Prompt de apertura — próxima sesión
 
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo y el adjunto al proyecto Claude.
-Tipo de sesión: [CONSTRUCCIÓN]
-Ticket activo: [COMPLETAR]
+Tipo de sesión: [DEFINIR AL ABRIR]
 Hora de inicio: [COMPLETAR AL ABRIR]
 Entorno: Windows — PowerShell exclusivamente.
 
 APERTURA: Genera el dashboard con los datos actuales de ESTADO.md antes de cualquier otra cosa.
 
 Contexto crítico:
-- Go-live junio 7, 2026 — MVP completo
-- T17 cerrado — Vista semanal M4 operativa en /mes/[mes]/semana
-- Deploy Vercel operativo — URL: flujo-7nsrzrdfo-camilo-s-projects10.vercel.app
+- MVP completo — T15, T16, T16b, T17 cerrados
+- Go-live junio 7, 2026
+- Repo público en GitHub — sin impacto en seguridad
+- git identity configurada: camilovillamil@gmail.com
+- Deuda técnica pendiente: vista M1 desincronizada, doble fila concepto pospuesto, npm audit
 
 CIERRE: Actualizar ESTADO.md con hora de cierre y retrospectiva.
 Regla: bugs se documentan como deuda técnica — no se corrigen dentro del ticket.
