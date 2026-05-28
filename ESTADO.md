@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Mayo 2026 | Fase: Construcción — Ticket 14 cerrado, M4 Registro rápido operativo
+Actualizado: Mayo 2026 | Fase: Construcción — Ticket 15 cerrado, M3 Cierre semanal + filtro por semana operativos
 
 ---
 
@@ -400,6 +400,9 @@ Archivo fuente: H1_presupuesto_base.csv
 | API H4 | Operativo — upsert ingreso Camilo y aportes Angie por semana |
 | Amazon WorkSpaces | Activo — entorno de desarrollo principal |
 | Google Sheet original | Legacy — no se toca |
+| Ticket 15 — Filtro por semana + Cierre semanal | Completo — DoD 5/5 verificado |
+| Filtro S1/S2/S3/S4/Todas en MesM1 | Operativo — semana activa por default, totales reactivos |
+| API POST /mes/[mes]/cerrar-semana | Operativo — batchUpdate H5 Rango A + B atómico |
 
 ---
 
@@ -514,6 +517,8 @@ Archivo fuente: H1_presupuesto_base.csv
 | Mayo 2026 | M2 y M3 colapsados en filtro por semana en MesM1 | Vista y revisión semanal con Angie no requieren pantallas separadas — M4 ya cubre el registro con ejecutor seleccionable |
 | Mayo 2026 | Filtro por semana adelantado al MVP | Estaba en features futuras — es el mecanismo que habilita M2 y M3 |
 | Mayo 2026 | H5 Rango B es requisito para go-live | Sin cierre de semana no hay remanente Angie como input para plan semana siguiente |
+| Mayo 2026 | Botón cerrar semana bloqueado si hay H3 clasificado:false | Sin clasificar todos los gastos el cierre no tiene integridad — remanente Angie sería inexacto |
+| Mayo 2026 | Cierre semanal es batchUpdate atómico H5A + H5B | Falla completa o no falla — consistencia con patrón establecido |
 
 ---
 
@@ -672,34 +677,45 @@ Archivo fuente: H1_presupuesto_base.csv
 
 ---
 
+## Retrospectiva — Ticket 15 (Filtro por semana + Cierre semanal)
+
+**Qué funcionó:**
+- Filtro por semana solo UI — sin llamadas adicionales a API
+- Semana activa por default — sin clic manual
+- batchUpdate atómico H5A + H5B — patrón consistente con el resto del sistema
+- DoD 5/5 en una sola sesión
+
+**Qué no funcionó:**
+- Bug detectado: vista M1 Ejecución no refleja cambios de Planificación sin recargar — documentado como deuda técnica
+
+**Qué cambia en el próximo sprint:**
+- Ticket 16: Saldos por cuenta (H4C + confirmación obligatoria al abrir M1 Ejecución)
+
+---
+
 ## Prompt de apertura — próxima sesión
 
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo y el adjunto al proyecto Claude.
 Tipo de sesión: [CONSTRUCCIÓN]
-Ticket activo: Ticket 15 — Cierre semanal + filtro por semana
+Ticket activo: Ticket 16 — Saldos por cuenta
 Hora de inicio: [COMPLETAR AL ABRIR]
 Entorno: Windows — PowerShell exclusivamente.
+
 APERTURA: Genera el dashboard con los datos actuales de ESTADO.md antes de cualquier otra cosa.
+
 Contexto crítico:
+- Go-live junio 2026: 7 de junio — objetivo activo
+- T15 cerrado: filtro por semana + cierre semanal operativos
+- H4 Rango C ya definido en esquema: id_saldo, mes, cuenta (nu_camilo/nu_angie/arq/en_mano), saldo_inicial, fecha_confirmacion
+- Decisión tomada: sin saldo confirmado no hay ejecución — bloqueo obligatorio al abrir M1 Ejecución
+- Ticket 17 definido: M2 vista Angie — fuera del MVP
 
-Primer domingo de junio 2026: 7 de junio
-Ticket 15 habilita M2 y M3 — no hay pantallas separadas para esos momentos
-Filtro por semana en MesM1 es el mecanismo de revisión con Angie
-H5 Rango B requiere H5 Rango A — el cierre alimenta el plan
-H5 ya existe — auto-creada en Ticket 10
-getCierresSemana ya implementado — tolerante a H5 vacío
-Ticket 16 definido: saldos por cuenta — construir después de T15
-Ticket 17 definido: M2 vista Angie — fuera del MVP
-
-Historia de usuario aprobada (no reabrir):
-Como Camilo o Angie el domingo, quiero cerrar la semana que termina y registrar el plan de la siguiente, para que el remanente de Angie quede documentado y el balance proyectado de la semana siguiente tenga base de cálculo real.
-DoD Ticket 15:
-
-Filtro por semana operativo en MesM1
-Botón "Cerrar semana" disponible — solo activo si gastos sin clasificar = 0
-H5 Rango A tiene snapshot correcto verificado en Sheet
-H5 Rango B tiene plan con remanente arrastrado y balance proyectado
-Home actualiza métrica "Semanas cerradas"
+DoD Ticket 16:
+1. H4 Rango C operativo en Sheet — 4 cuentas por mes
+2. Confirmación de saldos obligatoria al abrir M1 Ejecución — bloquea si no está confirmado
+3. Sidebar M1 muestra saldos en tiempo real por cuenta
+4. Panel Home muestra saldos confirmados del mes activo
+5. Verificar en Sheet que H4C tiene la fila correcta
 
 CIERRE: Actualizar ESTADO.md con hora de cierre y retrospectiva.
 Regla: bugs se documentan como deuda técnica — no se corrigen dentro del ticket.
