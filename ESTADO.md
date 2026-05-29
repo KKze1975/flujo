@@ -418,6 +418,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | T17 — Vista semanal M4 | Completo — DoD 6/6 verificado en producción |
 | Deploy Vercel | Operativo — primer deploy exitoso, variables de entorno configuradas |
 | Ticket Handoff Claude Design | Completo — sistema visual fl-* migrado, deploy Vercel activo, validado en hardware real (29 mayo 2026) |
+| T19 — MesM1 Desktop | Completo — vista desktop con toggle móvil/desktop, @layer base fix para Tailwind v4, validado en browser |
 
 ---
 
@@ -434,6 +435,7 @@ Archivo fuente: H1_presupuesto_base.csv
 - RegistroRapido desde FAB de VistaSemanal no ofrece opción explícita de guardar como "pendiente de clasificación" — el flujo actual solo lo hace sin clasificar si Claude no encuentra match en H2
 - Tabla de conceptos en MesM1 (thead/tbody/tr/td) usa clases Tailwind y hex hardcodeados — pendiente migración a tokens fl-*
 - components/ui/BottomNav.tsx creado en handoff — verificar si duplica components en proto-shell o es el componente activo
+- dk-app position fixed no aplica correctamente en Next.js — sidebar ocupa ancho completo en scroll
 
 ---
 
@@ -547,6 +549,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | Mayo 2026 | Vista semanal M4 es igual para Camilo y Angie | PIN identifica actor — sin vistas diferenciadas por rol |
 | Mayo 2026 | T16b prerequisito de T16 y T17 | Home hub debe existir antes de vista semanal y saldos |
 | Mayo 2026 | Vercel SSO Protection desactivada | App familiar — no requiere login de Vercel para acceder al deploy |
+| Mayo 2026 | MesM1ClientWrapper co-ubicado en app/mes/[mes]/ | Fix hidratación App Router — Client Component en misma carpeta que Server Component |
 
 ---
 
