@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Icon from "@/components/ui/Icon";
 import type { Movimiento } from "@/lib/data/types";
 import type { InterpretacionM4, FuentePago } from "@/app/api/registro/interpretar/route";
 
@@ -26,21 +27,21 @@ interface Props {
 
 const FUENTES: { value: FuentePago; label: string }[] = [
   { value: "en_mano", label: "En mano" },
-  { value: "nequi", label: "Nequi" },
-  { value: "camilo", label: "Cuenta Camilo" },
-  { value: "angie", label: "Cuenta Angie" },
+  { value: "nequi",   label: "Nequi"   },
+  { value: "camilo",  label: "NU Camilo" },
+  { value: "angie",   label: "NU Angie"  },
 ];
 
 const SEMANAS: Semana[] = ["S1", "S2", "S3", "S4"];
 
-const CONFIANZA_COLORS: Record<string, string> = {
-  alta: "#16a34a",
-  media: "#d97706",
-  baja: "#dc2626",
+const CONF_CLASS: Record<string, string> = {
+  alta: "pos", media: "warn", baja: "neg",
 };
 
-function formatMonto(n: number) {
-  return new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(n);
+function COP(n: number): string {
+  return new Intl.NumberFormat("es-CO", {
+    style: "currency", currency: "COP", maximumFractionDigits: 0,
+  }).format(n);
 }
 
 export default function PropuestaCard({ interpretacion, movimientos, cargando, onConfirmar, onCancelar }: Props) {
@@ -48,7 +49,6 @@ export default function PropuestaCard({ interpretacion, movimientos, cargando, o
     .filter((m) => m.estado === "pendiente")
     .sort((a, b) => (a.semana ?? "").localeCompare(b.semana ?? "") || a.nombreSnapshot.localeCompare(b.nombreSnapshot));
 
-  // Match bidireccional: el nombre de H2 contiene la sugerencia, o la sugerencia contiene el nombre
   const sugerencia = interpretacion.concepto_sugerido.toLowerCase();
   const sugerido =
     movimientosPendientes.find((m) => m.nombreSnapshot.toLowerCase().includes(sugerencia)) ??
@@ -64,6 +64,7 @@ export default function PropuestaCard({ interpretacion, movimientos, cargando, o
 
   const movSeleccionado = movimientosPendientes.find((m) => m.id === movimientoId) ?? null;
   const categoriaLabel = movSeleccionado?.categoriaSnapshot ?? interpretacion.categoria;
+  const confClass = CONF_CLASS[interpretacion.confianza] ?? "";
 
   function handleConfirmar() {
     if (monto <= 0) return;
@@ -71,159 +72,143 @@ export default function PropuestaCard({ interpretacion, movimientos, cargando, o
   }
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       {/* Header */}
-      <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-        <p className="text-sm font-semibold text-gray-800">Propuesta de Claude</p>
-        <span
-          className="text-xs font-medium px-2 py-0.5 rounded-full"
-          style={{
-            color: CONFIANZA_COLORS[interpretacion.confianza],
-            background: `${CONFIANZA_COLORS[interpretacion.confianza]}18`,
-          }}
-        >
-          Confianza {interpretacion.confianza}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span className="fl-ai-pill"><Icon name="sparkle" size={14} fill /> Claude interpretó tu gasto</span>
+        <span className={`fl-badge ${confClass}`}>
+          <span className="dot" />Confianza {interpretacion.confianza}
         </span>
       </div>
 
-      <div className="p-5 flex flex-col gap-4">
-        {/* Concepto */}
-        <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">
-            Concepto en H2
-            {!movSeleccionado && (
-              <span className="ml-2 text-gray-400 font-normal">
-                (Claude sugiere: <em>{interpretacion.concepto_sugerido}</em>)
-              </span>
-            )}
-          </label>
+      <div className="fl-card" style={{ display: "flex", flexDirection: "column", gap: 14, padding: 17 }}>
+
+        {/* Vinculación al concepto */}
+        {movimientoId ? (
+          <div style={{
+            background: "var(--pos-soft)", borderRadius: 12, padding: "10px 13px",
+            display: "flex", alignItems: "center", gap: 9,
+          }}>
+            <Icon name="check" size={15} style={{ color: "var(--pos)" }} />
+            <span style={{ fontSize: 13, color: "var(--pos)", fontWeight: 600 }}>
+              Vinculado a "{movSeleccionado?.nombreSnapshot}"
+            </span>
+          </div>
+        ) : (
+          <div style={{
+            background: "var(--warn-soft)", borderRadius: 12, padding: "10px 13px",
+            display: "flex", alignItems: "center", gap: 9,
+          }}>
+            <Icon name="info" size={15} style={{ color: "var(--warn)" }} />
+            <span style={{ fontSize: 12.5, color: "var(--warn)", fontWeight: 600 }}>
+              Sin concepto fijo · se guarda como gasto variable
+            </span>
+          </div>
+        )}
+
+        {/* Concepto selector */}
+        <div className="fl-field">
+          <label>Concepto en H2</label>
           <select
             value={movimientoId ?? ""}
             onChange={(e) => setMovimientoId(e.target.value || null)}
-            className="w-full rounded-lg border px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 bg-white"
-            style={{ borderColor: movimientoId === null ? "#f59e0b" : "#e5e7eb" }}
+            className="fl-input"
+            style={{ appearance: "auto" }}
           >
-            <option value="">— Sin concepto vinculado (guarda en H3) —</option>
+            <option value="">— Sin concepto (gasto variable) —</option>
             {movimientosPendientes.map((m) => (
               <option key={m.id} value={m.id}>
-                {m.semana} — {m.nombreSnapshot} ({formatMonto(m.montoPresupuestado)})
+                {m.semana} — {m.nombreSnapshot} ({COP(m.montoPresupuestado)})
               </option>
             ))}
           </select>
-          {movimientoId === null && (
-            <p className="mt-1 text-xs text-amber-600">
-              ⚠ Sin concepto seleccionado — el gasto se guardará como pendiente de clasificación en H3.
-            </p>
-          )}
         </div>
 
-        {/* Categoria (read-only) */}
-        <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">Categoría</label>
-          <span
-            className="inline-block text-xs font-medium px-2.5 py-1 rounded-full"
-            style={{ background: "#e8f0fe", color: "#1e3a5f" }}
-          >
-            {categoriaLabel}
-          </span>
+        {/* Descripción */}
+        <div className="fl-field">
+          <label>Descripción</label>
+          <div className="fl-input">{descripcion}</div>
         </div>
 
-        {/* Descripcion */}
-        <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">Descripción</label>
-          <input
-            type="text"
-            value={descripcion}
-            onChange={(e) => setDescripcion(e.target.value)}
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2"
-          />
-        </div>
-
-        {/* Monto */}
-        <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">Monto (COP)</label>
-          <input
-            type="number"
-            value={monto}
-            min={0}
-            onChange={(e) => setMonto(Number(e.target.value))}
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2"
-          />
-          {movSeleccionado && (
-            <p className="mt-0.5 text-xs text-gray-400">
-              Presupuestado: {formatMonto(movSeleccionado.montoPresupuestado)}
-              {monto !== movSeleccionado.montoPresupuestado && (
-                <span className="ml-1" style={{ color: monto > movSeleccionado.montoPresupuestado ? "#dc2626" : "#16a34a" }}>
-                  ({monto > movSeleccionado.montoPresupuestado ? "+" : ""}{formatMonto(monto - movSeleccionado.montoPresupuestado)})
-                </span>
-              )}
-            </p>
-          )}
+        {/* Monto + Categoría */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div className="fl-field">
+            <label>Monto</label>
+            <input
+              type="number"
+              value={monto}
+              min={0}
+              onChange={(e) => setMonto(Number(e.target.value))}
+              className="fl-input"
+              style={{ fontFeatureSettings: '"tnum" 1', fontWeight: 600 }}
+            />
+          </div>
+          <div className="fl-field">
+            <label>Categoría</label>
+            <div style={{ display: "flex", alignItems: "center", height: 41 }}>
+              <span className="fl-chip" style={{ fontSize: 12 }}>{categoriaLabel}</span>
+            </div>
+          </div>
         </div>
 
         {/* Semana + Fuente */}
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Semana</label>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div className="fl-field">
+            <label>Semana</label>
             <select
               value={semana}
               onChange={(e) => setSemana(e.target.value as Semana)}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none bg-white"
+              className="fl-input"
+              style={{ appearance: "auto" }}
             >
-              {SEMANAS.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
+              {SEMANAS.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Fuente</label>
+          <div className="fl-field">
+            <label>Fuente</label>
             <select
               value={fuente}
               onChange={(e) => setFuente(e.target.value as FuentePago)}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none bg-white"
+              className="fl-input"
+              style={{ appearance: "auto" }}
             >
-              {FUENTES.map((f) => (
-                <option key={f.value} value={f.value}>{f.label}</option>
-              ))}
+              {FUENTES.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
             </select>
           </div>
         </div>
 
-        {/* Ejecutor */}
-        <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1">¿Quién pagó?</label>
-          <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+        {/* ¿Quién pagó? */}
+        <div className="fl-field">
+          <label>¿Quién pagó?</label>
+          <div className="fl-tabs">
             {(["camilo", "angie"] as Actor[]).map((a) => (
               <button
                 key={a}
+                type="button"
+                className={`fl-tab${ejecutor === a ? " on" : ""}`}
                 onClick={() => setEjecutor(a)}
-                className="flex-1 py-2 text-sm font-medium capitalize transition-colors"
-                style={{
-                  background: ejecutor === a ? "#1e3a5f" : "white",
-                  color: ejecutor === a ? "white" : "#6b7280",
-                }}
               >
-                {a}
+                <span className={`fl-person ${a === "camilo" ? "c" : "a"}`}>
+                  {a === "camilo" ? "C" : "A"}
+                </span>
+                {a === "camilo" ? "Camilo" : "Angie"}
               </button>
             ))}
           </div>
         </div>
 
         {/* Actions */}
-        <div className="flex gap-2 pt-1">
-          <button
-            onClick={onCancelar}
-            className="flex-1 rounded-lg border border-gray-200 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
-          >
-            Cancelar
+        <div style={{ display: "flex", gap: 10, marginTop: 2 }}>
+          <button type="button" className="fl-btn ghost" onClick={onCancelar}>
+            <Icon name="pencil" size={15} />
           </button>
           <button
+            type="button"
+            className="fl-btn primary block"
             onClick={handleConfirmar}
             disabled={cargando || monto <= 0}
-            className="flex-1 rounded-lg py-2.5 text-sm font-semibold text-white transition-opacity"
-            style={{ background: "#1e3a5f", opacity: cargando || monto <= 0 ? 0.5 : 1 }}
           >
-            {cargando ? "Guardando..." : "Confirmar"}
+            {cargando ? "Guardando…" : <><Icon name="check" size={16} /> Confirmar gasto</>}
           </button>
         </div>
       </div>

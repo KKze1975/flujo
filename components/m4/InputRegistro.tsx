@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Icon from "@/components/ui/Icon";
 
 type PayloadTexto = { tipo: "texto"; contenido: string };
 type PayloadImagen = { tipo: "imagen"; base64: string; mimeType: string };
@@ -47,81 +48,80 @@ export default function InputRegistro({ onSubmit }: Props) {
   const puedeEnviar = tab === "texto" ? texto.trim().length > 0 : imagen !== null;
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       {/* Tabs */}
-      <div className="flex border-b border-gray-100">
+      <div className="fl-tabs">
         {(["texto", "imagen"] as const).map((t) => (
           <button
             key={t}
+            type="button"
+            className={`fl-tab${tab === t ? " on" : ""}`}
             onClick={() => setTab(t)}
-            className="flex-1 py-3 text-sm font-medium transition-colors"
-            style={{
-              color: tab === t ? "#1e3a5f" : "#6b7280",
-              borderBottom: tab === t ? "2px solid #1e3a5f" : "2px solid transparent",
-              background: "none",
-            }}
           >
-            {t === "texto" ? "✏️ Texto" : "📷 Foto de factura"}
+            {t === "texto" ? <><Icon name="pencil" size={14} /> Texto</> : <><Icon name="camera" size={14} /> Foto</>}
           </button>
         ))}
       </div>
 
-      <div className="p-5">
+      {/* Input area */}
+      <div style={{
+        background: "var(--surface)", borderRadius: "var(--radius-inner)",
+        border: "1px solid var(--line)", padding: 14,
+        display: "flex", flexDirection: "column", gap: 12,
+      }}>
         {tab === "texto" ? (
           <textarea
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
-            placeholder="Ej: pagué el mercado 87mil en efectivo"
-            rows={4}
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 resize-none"
-            style={{ focusRingColor: "#1e3a5f" } as React.CSSProperties}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && e.ctrlKey) handleSubmit();
+            placeholder={'Escribe el gasto como hablas… p. ej. "mercado 64 mil en el Jumbo"'}
+            rows={3}
+            style={{
+              border: "none", resize: "none", outline: "none", background: "transparent",
+              fontFamily: "inherit", fontSize: 15, color: "var(--ink)", lineHeight: 1.45,
+              width: "100%",
             }}
+            onKeyDown={(e) => { if (e.key === "Enter" && e.ctrlKey) handleSubmit(); }}
           />
         ) : (
           <div>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleFile}
-            />
-            <input
-              ref={cameraRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleFile}
-            />
+            <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFile} />
+            <input ref={cameraRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFile} />
             {imagen ? (
-              <div className="relative">
+              <div style={{ position: "relative" }}>
                 <img
                   src={imagen.previewUrl}
                   alt="Factura"
-                  className="w-full max-h-64 object-contain rounded-lg border border-gray-200"
+                  style={{ width: "100%", maxHeight: 200, objectFit: "contain", borderRadius: 12, border: "1px solid var(--line)" }}
                 />
                 <button
+                  type="button"
                   onClick={() => { setImagen(null); if (fileRef.current) fileRef.current.value = ""; }}
-                  className="absolute top-2 right-2 bg-white rounded-full w-7 h-7 flex items-center justify-center text-gray-500 hover:text-red-500 shadow text-sm border border-gray-200"
+                  className="icon-btn"
+                  style={{ position: "absolute", top: 8, right: 8 }}
                 >
-                  ✕
+                  <Icon name="x" size={14} />
                 </button>
               </div>
             ) : (
-              <div className="flex flex-col gap-2">
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <button
+                  type="button"
                   onClick={() => cameraRef.current?.click()}
-                  className="w-full rounded-lg border-2 border-dashed border-gray-200 py-8 flex flex-col items-center gap-2 text-gray-400 hover:border-gray-300 hover:text-gray-500 transition-colors"
+                  style={{
+                    borderRadius: 14, border: "2px dashed var(--line)", padding: "28px 0",
+                    display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
+                    background: "var(--surface-2)", color: "var(--ink-faint)", cursor: "pointer",
+                  }}
                 >
-                  <span className="text-3xl">📸</span>
-                  <span className="text-sm font-medium">Tomar foto</span>
-                  <span className="text-xs">Abre la cámara</span>
+                  <Icon name="camera" size={30} style={{ color: "var(--primary)" }} />
+                  <span style={{ fontSize: 14, fontWeight: 600, color: "var(--ink-soft)" }}>Tomar foto del recibo</span>
+                  <span style={{ fontSize: 12 }}>Abre la cámara</span>
                 </button>
                 <button
+                  type="button"
                   onClick={() => fileRef.current?.click()}
-                  className="w-full rounded-lg border border-gray-200 py-2.5 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
+                  className="fl-btn ghost sm"
+                  style={{ width: "100%" }}
                 >
                   Seleccionar imagen existente
                 </button>
@@ -130,17 +130,21 @@ export default function InputRegistro({ onSubmit }: Props) {
           </div>
         )}
 
-        <button
-          onClick={handleSubmit}
-          disabled={!puedeEnviar}
-          className="mt-4 w-full rounded-lg py-3 text-sm font-semibold text-white transition-opacity"
-          style={{ background: "#1e3a5f", opacity: puedeEnviar ? 1 : 0.4 }}
-        >
-          Interpretar gasto
-        </button>
-        {tab === "texto" && (
-          <p className="mt-1 text-center text-xs text-gray-400">Ctrl + Enter para enviar</p>
-        )}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          {tab === "texto" ? (
+            <span className="fl-faint">Ctrl + Enter para enviar</span>
+          ) : (
+            <span />
+          )}
+          <button
+            type="button"
+            className="fl-btn primary sm"
+            onClick={handleSubmit}
+            disabled={!puedeEnviar}
+          >
+            <Icon name="send" size={14} /> Interpretar
+          </button>
+        </div>
       </div>
     </div>
   );

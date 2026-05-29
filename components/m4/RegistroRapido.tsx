@@ -145,7 +145,10 @@ export default function RegistroRapido({ onClose }: { onClose?: () => void }) {
   return (
     <div>
       {error && (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div style={{
+          background: "var(--neg-soft)", color: "var(--neg)", borderRadius: 14,
+          padding: "12px 16px", fontSize: 13.5, marginBottom: 16,
+        }}>
           {error}
         </div>
       )}
@@ -153,12 +156,16 @@ export default function RegistroRapido({ onClose }: { onClose?: () => void }) {
       {estado === "idle" && <InputRegistro onSubmit={handleSubmitInput} />}
 
       {estado === "procesando" && (
-        <div className="flex flex-col items-center gap-3 py-20">
-          <div
-            className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
-            style={{ borderColor: "#1e3a5f", borderTopColor: "transparent" }}
-          />
-          <p className="text-sm text-gray-500">Claude está interpretando el gasto...</p>
+        <div style={{ padding: "44px 0", display: "flex", flexDirection: "column", alignItems: "center", gap: 18 }}>
+          <div className="ai-spin" />
+          <span className="fl-ai-pill">
+            Claude está interpretando…
+          </span>
+          <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 10, marginTop: 8 }}>
+            {[100, 72, 86].map((w, i) => (
+              <div key={i} className="skeleton" style={{ width: `${w}%` }} />
+            ))}
+          </div>
         </div>
       )}
 

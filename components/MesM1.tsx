@@ -3,7 +3,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
 import React from "react";
-import { Inter } from "next/font/google"; // V10
 import type { Movimiento, Concepto, IngresoCamilo, IngresoAngie, SaldoCuenta, CierreSemana, Semana, Categoria } from "@/lib/data/types";
 import ModalIngresoCamilo from "./m1/ModalIngresoCamilo";
 import ModalAporteAngie from "./m1/ModalAporteAngie";
@@ -11,9 +10,6 @@ import ModalEditarConcepto from "./m1/ModalEditarConcepto";
 import ModalCerrarSemana from "./m1/ModalCerrarSemana";
 import ModalConfirmarSaldos from "./m1/ModalConfirmarSaldos";
 import VistaPlanificacion from "./m1/VistaPlanificacion";
-
-// V10 — Inter font
-const inter = Inter({ subsets: ["latin"] });
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -41,20 +37,18 @@ function semanaDates(mes: string): Record<Semana, string> {
   return { S1: `1–7 ${m}`, S2: `8–14 ${m}`, S3: `15–21 ${m}`, S4: `22–${last} ${m}` };
 }
 
-// V1 — "M1 · Mayo 2026"
 function formatMesLabel(mes: string): string {
   const [year, monthStr] = mes.split("-");
   return `M1 · ${MESES_FULL[Number(monthStr)]} ${year}`;
 }
 
-// V4 — Tipo badges (inline styles — no Tailwind arbitrary classes en objetos JS)
+// Table badges — kept as inline hex since the table is desktop-only and pending full migration
 const TIPO_BADGE: Record<string, { bg: string; color: string; label: string }> = {
   fijo:         { bg: "#e8f0fe", color: "#1a73e8", label: "Fijo" },
   bolsillo:     { bg: "#e6f4ea", color: "#137333", label: "Bolsillo" },
   discrecional: { bg: "#f1f3f4", color: "#5f6368", label: "Discrecional" },
 };
 
-// V5 — Estado badges
 const ESTADO_CONFIG: Record<string, { bg: string; color: string; icon: string; label: string }> = {
   ejecutado: { bg: "#e6f4ea", color: "#137333", icon: "✓", label: "Ejecutado" },
   pendiente: { bg: "#fef7e0", color: "#b05e00", icon: "○", label: "Pendiente" },
@@ -233,20 +227,20 @@ export default function MesM1({
 
     if (accion.tipo === "menu") {
       return (
-        <tr className="bg-gray-50">
-          <td colSpan={7} className="border-b border-gray-100 px-4 py-2">
-            <div className="flex items-center gap-2">
+        <tr style={{ background: "var(--surface-2)" }}>
+          <td colSpan={7} style={{ borderBottom: "1px solid var(--line)", padding: "8px 16px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <button
                 type="button"
                 onClick={() => setAccion({ rowId: mov.id, tipo: "ejecutar", monto: String(mov.montoPresupuestado), razon: "", fuenteEnMano: false, fuenteNequi: false, fuenteCamilo: false, fuenteAngie: false })}
-                className="rounded bg-[#1a73e8] px-3 py-1.5 text-xs text-white hover:bg-[#1557b0]"
+                className="fl-btn primary sm"
               >
                 Ejecutar
               </button>
               <button
                 type="button"
                 onClick={() => setAccion({ rowId: mov.id, tipo: "posponer", modo: "semana", semana: (mov.semana as Semana) ?? "S1", razon: "" })}
-                className="rounded bg-amber-500 px-3 py-1.5 text-xs text-white hover:bg-amber-600"
+                className="fl-btn warn-btn sm"
               >
                 Posponer
               </button>
@@ -254,14 +248,14 @@ export default function MesM1({
                 type="button"
                 onClick={() => patchar(mov.id, { tipo: "no_aplica" })}
                 disabled={busy}
-                className="rounded bg-slate-200 px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-300 disabled:opacity-50"
+                className="fl-btn ghost sm"
               >
                 No aplica
               </button>
               <button
                 type="button"
                 onClick={() => setAccion(null)}
-                className="ml-2 text-xs text-gray-400 hover:text-gray-600"
+                style={{ marginLeft: 8, fontSize: 12, color: "var(--ink-faint)", background: "none", border: "none", cursor: "pointer" }}
               >
                 ✕ Cancelar
               </button>
@@ -276,34 +270,44 @@ export default function MesM1({
       const monto = Number(ae.monto);
       const diff  = isNaN(monto) ? 0 : monto - mov.montoPresupuestado;
       return (
-        <tr className="bg-blue-50">
-          <td colSpan={7} className="border-b border-blue-100 px-4 py-3">
-            <div className="flex flex-wrap items-end gap-4">
+        <tr style={{ background: "var(--primary-soft)" }}>
+          <td colSpan={7} style={{ borderBottom: "1px solid var(--line)", padding: "12px 16px" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: 16 }}>
               <div>
-                <label className="mb-1 block text-xs text-gray-500">Monto ejecutado</label>
+                <label style={{ display: "block", fontSize: 11, color: "var(--ink-faint)", marginBottom: 4, fontWeight: 600 }}>
+                  Monto ejecutado
+                </label>
                 <input
                   type="number"
                   value={ae.monto}
                   onChange={(e) => setAccion({ ...ae, monto: e.target.value })}
-                  className="w-36 rounded border border-gray-200 px-2 py-1 text-right text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  className="fl-input"
+                  style={{ width: 144, textAlign: "right", fontFeatureSettings: '"tnum" 1', fontWeight: 600 }}
                 />
                 {diff !== 0 && (
-                  <p className={`mt-0.5 text-xs ${diff > 0 ? "text-red-500" : "text-green-600"}`}>
+                  <p style={{ marginTop: 2, fontSize: 11, color: diff > 0 ? "var(--neg)" : "var(--pos)" }}>
                     {diff > 0 ? "+" : ""}{COP(diff)}
                   </p>
                 )}
               </div>
               <div>
-                <p className="mb-1 text-xs text-gray-500">Fuentes</p>
-                <div className="flex gap-1">
+                <p style={{ marginBottom: 4, fontSize: 11, color: "var(--ink-faint)", fontWeight: 600 }}>Fuentes</p>
+                <div style={{ display: "flex", gap: 6 }}>
                   {(["fuenteEnMano","fuenteNequi","fuenteCamilo","fuenteAngie"] as const).map((key) => {
                     const label = key === "fuenteEnMano" ? "En mano" : key === "fuenteNequi" ? "Nequi" : key === "fuenteCamilo" ? "Camilo" : "Angie";
+                    const active = ae[key];
                     return (
                       <button
                         key={key}
                         type="button"
                         onClick={() => setAccion({ ...ae, [key]: !ae[key] } as AccionEjecutar)}
-                        className={`rounded border px-2 py-1 text-xs ${ae[key] ? "border-[#1a73e8] bg-[#1a73e8] text-white" : "border-gray-200 bg-white text-gray-600"}`}
+                        className="fl-chip"
+                        style={{
+                          cursor: "pointer",
+                          background: active ? "var(--primary)" : "var(--surface-2)",
+                          color: active ? "var(--on-primary)" : "var(--ink-soft)",
+                          borderColor: "transparent",
+                        }}
                       >
                         {label}
                       </button>
@@ -312,27 +316,30 @@ export default function MesM1({
                 </div>
               </div>
               {diff !== 0 && (
-                <div className="min-w-32 flex-1">
-                  <label className="mb-1 block text-xs text-gray-500">Razón (opcional)</label>
+                <div style={{ minWidth: 128, flex: 1 }}>
+                  <label style={{ display: "block", fontSize: 11, color: "var(--ink-faint)", marginBottom: 4, fontWeight: 600 }}>
+                    Razón (opcional)
+                  </label>
                   <input
                     type="text"
                     value={ae.razon}
                     onChange={(e) => setAccion({ ...ae, razon: e.target.value })}
                     placeholder="Razón desviación"
-                    className="w-full rounded border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                    className="fl-input"
+                    style={{ fontSize: 13 }}
                   />
                 </div>
               )}
-              <div className="flex gap-2">
+              <div style={{ display: "flex", gap: 8 }}>
                 <button
                   type="button"
                   onClick={() => patchar(ae.rowId, { tipo: "ejecutar", montoEjecutado: monto, fuenteEnMano: ae.fuenteEnMano, fuenteNequi: ae.fuenteNequi, fuenteCamilo: ae.fuenteCamilo, fuenteAngie: ae.fuenteAngie, razonDesviacion: ae.razon || null })}
                   disabled={busy || !monto || isNaN(monto)}
-                  className="rounded bg-[#1a73e8] px-3 py-1.5 text-xs text-white hover:bg-[#1557b0] disabled:opacity-50"
+                  className="fl-btn primary sm"
                 >
                   {busy ? "…" : "Confirmar pago"}
                 </button>
-                <button type="button" onClick={() => setAccion(null)} className="rounded border border-gray-200 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-100">
+                <button type="button" onClick={() => setAccion(null)} className="fl-btn ghost sm">
                   Cancelar
                 </button>
               </div>
@@ -345,61 +352,71 @@ export default function MesM1({
     if (accion.tipo === "posponer") {
       const ap = accion;
       return (
-        <tr className="bg-amber-50">
-          <td colSpan={7} className="border-b border-amber-100 px-4 py-3">
-            <div className="flex flex-wrap items-center gap-4">
-              <div className="flex gap-3">
+        <tr style={{ background: "var(--warn-soft)" }}>
+          <td colSpan={7} style={{ borderBottom: "1px solid var(--line)", padding: "12px 16px" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 16 }}>
+              <div style={{ display: "flex", gap: 12 }}>
                 {(["semana","mes"] as const).map((modo) => (
-                  <label key={modo} className="flex cursor-pointer items-center gap-1.5 text-sm text-gray-700">
+                  <label key={modo} style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", fontSize: 13, color: "var(--ink-soft)" }}>
                     <input
                       type="radio"
                       checked={ap.modo === modo}
                       onChange={() => setAccion({ rowId: ap.rowId, tipo: "posponer", modo, semana: ap.semana, razon: ap.razon })}
-                      className="accent-amber-500"
+                      style={{ accentColor: "var(--warn)" }}
                     />
                     {modo === "semana" ? "Cambiar semana" : "Mes siguiente"}
                   </label>
                 ))}
               </div>
               {ap.modo === "semana" && (
-                <div className="flex gap-1">
-                  {SEMANAS.map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => setAccion({ rowId: ap.rowId, tipo: "posponer", modo: ap.modo, semana: s, razon: ap.razon })}
-                      disabled={s === mov.semana}
-                      className={`rounded border px-2 py-1 text-xs ${
-                        ap.semana === s ? "border-amber-500 bg-amber-500 text-white"
-                        : s === mov.semana ? "cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400"
-                        : "border-gray-200 bg-white text-gray-600 hover:border-amber-400"
-                      }`}
-                    >
-                      {s}
-                    </button>
-                  ))}
+                <div style={{ display: "flex", gap: 6 }}>
+                  {SEMANAS.map((s) => {
+                    const active = ap.semana === s;
+                    const isCurrent = s === mov.semana;
+                    return (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setAccion({ rowId: ap.rowId, tipo: "posponer", modo: ap.modo, semana: s, razon: ap.razon })}
+                        disabled={isCurrent}
+                        className="fl-chip"
+                        style={{
+                          cursor: isCurrent ? "not-allowed" : "pointer",
+                          background: active ? "var(--warn)" : isCurrent ? "var(--surface-2)" : "var(--surface)",
+                          color: active ? "white" : isCurrent ? "var(--ink-faint)" : "var(--ink-soft)",
+                          borderColor: "transparent",
+                          opacity: isCurrent ? 0.5 : 1,
+                        }}
+                      >
+                        {s}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
-              <div className="min-w-40 flex-1">
-                <label className="mb-1 block text-xs text-gray-500">Razón (opcional)</label>
+              <div style={{ minWidth: 160, flex: 1 }}>
+                <label style={{ display: "block", fontSize: 11, color: "var(--ink-faint)", marginBottom: 4, fontWeight: 600 }}>
+                  Razón (opcional)
+                </label>
                 <input
                   type="text"
                   value={ap.razon}
                   onChange={(e) => setAccion({ ...ap, razon: e.target.value })}
                   placeholder="¿Por qué se pospone?"
-                  className="w-full rounded border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300"
+                  className="fl-input"
+                  style={{ fontSize: 13 }}
                 />
               </div>
-              <div className="flex gap-2">
+              <div style={{ display: "flex", gap: 8 }}>
                 <button
                   type="button"
                   onClick={() => patchar(ap.rowId, { tipo: "posponer", ...(ap.modo === "semana" ? { nuevaSemana: ap.semana } : {}), razonPostergacion: ap.razon || null })}
                   disabled={busy}
-                  className="rounded bg-amber-500 px-3 py-1.5 text-xs text-white hover:bg-amber-600 disabled:opacity-50"
+                  className="fl-btn warn-btn sm"
                 >
                   {busy ? "…" : "Confirmar"}
                 </button>
-                <button type="button" onClick={() => setAccion(null)} className="rounded border border-gray-200 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-100">
+                <button type="button" onClick={() => setAccion(null)} className="fl-btn ghost sm">
                   Cancelar
                 </button>
               </div>
@@ -416,46 +433,46 @@ export default function MesM1({
 
   return (
     <>
-      <div className={`h-screen flex flex-col bg-gray-50 ${inter.className}`}>
+      <div className="m1-shell">
 
-        {/* ── Header (V1 + V2) — dark blue bar ── */}
-        <header className="shrink-0 bg-[#1e3a5f] px-4 py-3">
-          <div className="mx-auto flex max-w-screen-xl items-center justify-between gap-4">
+        {/* ── Header ── */}
+        <header style={{ flexShrink: 0, padding: "12px 16px", background: "var(--appbar-bg)", color: "var(--appbar-ink)" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, maxWidth: 1280, margin: "0 auto", width: "100%" }}>
 
-            {/* V1 — Title */}
-            <span className="text-sm font-semibold text-white">{formatMesLabel(mes)}</span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: "var(--appbar-ink)" }}>{formatMesLabel(mes)}</span>
 
-            {/* V2 — Toggle pills on dark background */}
-            <div className="flex rounded-full bg-white/10 p-0.5 text-xs font-medium">
+            {/* Toggle pills */}
+            <div style={{ display: "flex", borderRadius: 999, background: "var(--appbar-hair)", padding: 2 }}>
               {(["planificacion","ejecucion"] as const).map((v) => (
                 <button
                   key={v}
                   type="button"
                   onClick={() => setView(v)}
-                  className={`rounded-full px-4 py-1.5 transition-colors ${
-                    view === v
-                      ? "bg-white font-semibold text-[#1e3a5f]"
-                      : "text-white/80 hover:text-white"
-                  }`}
+                  style={{
+                    borderRadius: 999, padding: "6px 16px", fontSize: 12, fontWeight: 600, border: "none", cursor: "pointer",
+                    background: view === v ? "var(--surface)" : "transparent",
+                    color: view === v ? "var(--primary)" : "var(--appbar-ink)",
+                    transition: "background 0.15s",
+                  }}
                 >
                   {v === "planificacion" ? "Planificación" : "Ejecución"}
                 </button>
               ))}
             </div>
 
-            {/* Header action buttons — outlined white on dark bg */}
-            <div className="flex gap-2">
+            {/* Action buttons */}
+            <div style={{ display: "flex", gap: 8 }}>
               <button
                 type="button"
                 onClick={() => setModal("ingresoCamilo")}
-                className="rounded-lg border border-white/30 px-3 py-1.5 text-xs text-white transition-colors hover:bg-white/10"
+                style={{ borderRadius: 999, border: "1px solid var(--appbar-hair)", padding: "6px 12px", fontSize: 12, color: "var(--appbar-ink)", background: "transparent", cursor: "pointer" }}
               >
                 Ingreso Camilo
               </button>
               <button
                 type="button"
                 onClick={() => setModal("aporteAngie")}
-                className="rounded-lg border border-white/30 px-3 py-1.5 text-xs text-white transition-colors hover:bg-white/10"
+                style={{ borderRadius: 999, border: "1px solid var(--appbar-hair)", padding: "6px 12px", fontSize: 12, color: "var(--appbar-ink)", background: "transparent", cursor: "pointer" }}
               >
                 Aporte Angie
               </button>
@@ -478,7 +495,6 @@ export default function MesM1({
           />
         ) : (
           <>
-            {/* Bloqueo obligatorio si saldos no confirmados */}
             {mounted && !saldosConfirmados && (
               <ModalConfirmarSaldos
                 mes={mes}
@@ -486,14 +502,13 @@ export default function MesM1({
                 onConfirmed={(s) => { setSaldos(s); setShowConfirmarSaldos(false); }}
               />
             )}
-            <div className="flex flex-1 min-h-0 overflow-hidden">
+            <div style={{ display: "flex", flex: 1, minHeight: 0, overflow: "hidden" }}>
 
-              {/* ── Sidebar (V3) ── */}
-              <aside className="hidden w-56 shrink-0 border-r border-gray-200 bg-gray-50 md:flex md:flex-col">
-                <div className="flex-1 overflow-y-auto p-3">
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">Semanas</p>
+              {/* ── Sidebar ── */}
+              <aside className="m1-sidebar" style={{ borderRight: "1px solid var(--line)", background: "var(--surface)" }}>
+                <div className="m1-sidebar-body">
+                  <p className="fl-sectlabel" style={{ marginBottom: 8 }}>Semanas</p>
 
-                  {/* V3 — Week cards */}
                   {SEMANAS.map((s) => {
                     const stat = semanaStat(s);
                     const isActive = semanaFiltro === s;
@@ -502,31 +517,37 @@ export default function MesM1({
                         key={s}
                         type="button"
                         onClick={() => setSemanaFiltro(isActive ? null : s)}
-                        style={isActive ? { borderLeft: "3px solid #1a73e8" } : undefined}
-                        className={`mb-2 w-full rounded-lg border border-gray-200 bg-white text-left transition-all ${
-                          isActive ? "shadow-sm" : "hover:border-gray-300 hover:shadow-sm"
-                        }`}
+                        style={{
+                          display: "block", width: "100%", marginBottom: 8,
+                          borderRadius: 12,
+                          border: `1px solid ${isActive ? "var(--primary)" : "var(--line)"}`,
+                          borderLeft: isActive ? `3px solid var(--primary)` : `1px solid var(--line)`,
+                          background: "var(--surface)", textAlign: "left", cursor: "pointer",
+                          boxShadow: isActive ? "var(--shadow-card)" : "none",
+                        }}
                       >
-                        <div className="px-3 py-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-semibold text-gray-700">{s}</span>
-                            <div className="flex items-center gap-1.5">
+                        <div style={{ padding: "8px 12px" }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                            <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>{s}</span>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                               {stat.estadoLabel === "cerrada" ? (
-                                <span className="text-xs font-semibold text-green-600">✓</span>
+                                <span style={{ fontSize: 11, fontWeight: 600, color: "var(--pos)" }}>✓</span>
                               ) : (
-                                <span className="text-xs text-gray-400">{stat.estadoLabel}</span>
+                                <span style={{ fontSize: 11, color: "var(--ink-faint)" }}>{stat.estadoLabel}</span>
                               )}
-                              {isActive && <span className="text-sm text-blue-400">→</span>}
+                              {isActive && <span style={{ fontSize: 13, color: "var(--primary)" }}>→</span>}
                             </div>
                           </div>
-                          <p className="text-xs text-gray-400">{dates[s]}</p>
+                          <p style={{ fontSize: 11, color: "var(--ink-faint)", margin: "2px 0 0" }}>{dates[s]}</p>
                           {stat.total > 0 && stat.pct > 0 && stat.pct < 100 && (
-                            <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-gray-100">
-                              <div className="h-full rounded-full bg-blue-400" style={{ width: `${stat.pct}%` }} />
+                            <div className="fl-bar" style={{ marginTop: 6 }}>
+                              <i style={{ width: `${stat.pct}%` }} />
                             </div>
                           )}
                           {stat.estadoLabel === "cerrada" && (
-                            <div className="mt-1.5 h-1 w-full rounded-full bg-green-400" />
+                            <div className="fl-bar pos" style={{ marginTop: 6 }}>
+                              <i style={{ width: "100%" }} />
+                            </div>
                           )}
                         </div>
                       </button>
@@ -534,14 +555,14 @@ export default function MesM1({
                   })}
                 </div>
 
-                {/* Saldos por cuenta */}
-                <div className="shrink-0 border-t border-gray-200 bg-white p-3">
-                  <div className="mb-1 flex items-center justify-between">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Saldos</p>
+                {/* Saldos */}
+                <div style={{ flexShrink: 0, borderTop: "1px solid var(--line)", background: "var(--surface)", padding: 12 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                    <p className="fl-sectlabel">Saldos</p>
                     <button
                       type="button"
                       onClick={() => setShowConfirmarSaldos(true)}
-                      className="text-xs text-[#1a73e8] hover:underline"
+                      style={{ fontSize: 11, color: "var(--primary)", background: "none", border: "none", cursor: "pointer" }}
                     >
                       {saldosConfirmados ? "Editar" : "Confirmar"}
                     </button>
@@ -550,44 +571,44 @@ export default function MesM1({
                     CUENTAS_H4C.map(({ cuenta, label }) => {
                       const s = saldos.find((x) => x.cuenta === cuenta);
                       return (
-                        <div key={cuenta} className="flex items-baseline justify-between py-0.5">
-                          <span className="text-xs text-gray-400">{label}</span>
-                          <span className="font-mono text-xs font-medium text-gray-700">
-                            {s ? COP(s.saldoInicial) : "—"}
-                          </span>
+                        <div key={cuenta} style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", padding: "2px 0" }}>
+                          <span className="fl-faint">{label}</span>
+                          <span className="fl-num" style={{ fontSize: 12 }}>{s ? COP(s.saldoInicial) : "—"}</span>
                         </div>
                       );
                     })
                   ) : (
-                    <p className="text-xs text-amber-600">Sin confirmar</p>
+                    <p style={{ fontSize: 11, color: "var(--warn)" }}>Sin confirmar</p>
                   )}
                 </div>
 
-                {/* V9 — Balance con semana activa dinámica */}
-                <div className="shrink-0 border-t border-gray-200 bg-white p-3">
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
+                {/* Balance */}
+                <div style={{ flexShrink: 0, borderTop: "1px solid var(--line)", background: "var(--surface)", padding: 12 }}>
+                  <p className="fl-sectlabel" style={{ marginBottom: 8 }}>
                     {semanaFiltro ? `Balance ${semanaFiltro}` : "Balance mes"}
                   </p>
                   {[
-                    { label: "Planeado",  value: balance.planeado,  color: "#374151" },
-                    { label: "Ejecutado", value: balance.ejecutado, color: "#137333" },
-                    { label: "Resta",     value: balance.resta,     color: "#b45309" },
+                    { label: "Planeado",  value: balance.planeado,  color: "var(--ink)"  },
+                    { label: "Ejecutado", value: balance.ejecutado, color: "var(--pos)"  },
+                    { label: "Resta",     value: balance.resta,     color: "var(--warn)" },
                   ].map(({ label, value, color }) => (
-                    <div key={label} className="flex items-baseline justify-between py-0.5">
-                      <span className="text-xs text-gray-400">{label}</span>
-                      <span style={{ color }} className="font-mono text-xs font-medium">{COP(value)}</span>
+                    <div key={label} style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", padding: "2px 0" }}>
+                      <span className="fl-faint">{label}</span>
+                      <span className="fl-num" style={{ fontSize: 12, color }}>{COP(value)}</span>
                     </div>
                   ))}
                 </div>
               </aside>
 
               {/* ── Main table ── */}
-              <main className="flex-1 overflow-auto">
+              {/* Table rows (thead/tbody/tr/td) retain Tailwind — pending full table migration */}
+              <main style={{ flex: 1, overflow: "auto" }}>
                 {error && (
-                  <div className="m-4 rounded-md bg-red-50 px-4 py-2 text-sm text-red-700">{error}</div>
+                  <div style={{ margin: 16, borderRadius: 12, background: "var(--neg-soft)", padding: "10px 16px", fontSize: 13, color: "var(--neg)" }}>
+                    {error}
+                  </div>
                 )}
 
-                {/* V7 — 13px font for entire table */}
                 <table className="w-full min-w-[700px] border-collapse text-[13px]">
                   <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_0_0_#e5e7eb]">
                     <tr>
@@ -608,7 +629,6 @@ export default function MesM1({
                       const collapsed = collapsedCats.has(cat);
                       return (
                         <React.Fragment key={cat}>
-                          {/* V8 — Category header: gray uppercase, no colored bg, subtle separator */}
                           <tr
                             className="cursor-pointer select-none border-t border-b border-gray-200 hover:bg-gray-50"
                             onClick={() => toggleCat(cat)}
@@ -622,7 +642,6 @@ export default function MesM1({
                             </td>
                           </tr>
 
-                          {/* Rows */}
                           {!collapsed && items.map((mov) => {
                             const canAct    = mov.estado === "pendiente" || mov.estado === "pospuesto";
                             const isExpanded = accion?.rowId === mov.id;
@@ -640,7 +659,6 @@ export default function MesM1({
                                     : undefined
                                   }
                                 >
-                                  {/* Concepto */}
                                   <td className="px-3 py-[8px]">
                                     <div className="flex items-center gap-1.5">
                                       {concepto && (
@@ -660,15 +678,11 @@ export default function MesM1({
                                     </div>
                                   </td>
 
-                                  {/* V4 — Tipo badge */}
                                   <td className="px-3 py-[8px]">
                                     {(() => {
                                       const b = TIPO_BADGE[mov.tipoSnapshot.toLowerCase()];
                                       return b ? (
-                                        <span
-                                          style={{ backgroundColor: b.bg, color: b.color, padding: "2px 8px", borderRadius: "12px" }}
-                                          className="text-xs font-medium"
-                                        >
+                                        <span style={{ backgroundColor: b.bg, color: b.color, padding: "2px 8px", borderRadius: "12px" }} className="text-xs font-medium">
                                           {b.label}
                                         </span>
                                       ) : (
@@ -677,15 +691,12 @@ export default function MesM1({
                                     })()}
                                   </td>
 
-                                  {/* Presup. */}
                                   <td className="px-3 py-[8px] text-right font-mono text-gray-700">{COP(mov.montoPresupuestado)}</td>
 
-                                  {/* Ejecutado */}
                                   <td className="px-3 py-[8px] text-right font-mono text-gray-700">
                                     {mov.montoEjecutado != null ? COP(mov.montoEjecutado) : "—"}
                                   </td>
 
-                                  {/* Desviación */}
                                   <td className={`px-3 py-[8px] text-right font-mono ${
                                     mov.desviacion == null ? "text-gray-300"
                                     : mov.desviacion > 0  ? "font-medium text-red-600"
@@ -697,15 +708,11 @@ export default function MesM1({
                                       : `${mov.desviacion > 0 ? "+" : ""}${COP(mov.desviacion)}`}
                                   </td>
 
-                                  {/* V5 — Estado badge */}
                                   <td className="px-3 py-[8px]">
                                     {(() => {
                                       const cfg = ESTADO_CONFIG[mov.estado];
                                       return cfg ? (
-                                        <span
-                                          style={{ backgroundColor: cfg.bg, color: cfg.color, padding: "2px 8px", borderRadius: "12px" }}
-                                          className="inline-flex items-center gap-1 text-xs font-medium"
-                                        >
+                                        <span style={{ backgroundColor: cfg.bg, color: cfg.color, padding: "2px 8px", borderRadius: "12px" }} className="inline-flex items-center gap-1 text-xs font-medium">
                                           <span aria-hidden="true">{cfg.icon}</span>
                                           {cfg.label}
                                         </span>
@@ -715,7 +722,6 @@ export default function MesM1({
                                     })()}
                                   </td>
 
-                                  {/* V6 — Ejecutor: blue, truncated */}
                                   <td className="max-w-[80px] px-3 py-[8px]">
                                     <span className={`block truncate text-xs ${mov.ejecutor ? "text-[#1a73e8]" : "text-gray-300"}`}>
                                       {mov.ejecutor ?? "—"}
@@ -735,24 +741,19 @@ export default function MesM1({
             </div>
 
             {/* ── Footer ── */}
-            <footer className="shrink-0 border-t border-gray-200 bg-white px-4 py-3">
-              <div className="mx-auto flex max-w-screen-xl items-center justify-between">
-                <div className="flex gap-4 text-sm">
-                  <span className="text-[#137333]"><strong>{totalEjecutados}</strong> ejecutados</span>
-                  <span className="text-gray-500"><strong>{totalPendientes}</strong> pendientes</span>
-                  <span className="text-amber-700"><strong>{totalPospuestos}</strong> pospuestos</span>
+            <footer style={{ flexShrink: 0, padding: "12px 16px", borderTop: "1px solid var(--line)", background: "var(--surface)" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", maxWidth: 1280, margin: "0 auto" }}>
+                <div style={{ display: "flex", gap: 16, fontSize: 13 }}>
+                  <span style={{ color: "var(--pos)" }}><strong>{totalEjecutados}</strong> ejecutados</span>
+                  <span style={{ color: "var(--ink-soft)" }}><strong>{totalPendientes}</strong> pendientes</span>
+                  <span style={{ color: "var(--warn)" }}><strong>{totalPospuestos}</strong> pospuestos</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  {/* Botón cerrar semana — visible cuando hay semana seleccionada */}
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   {semanaFiltro && (() => {
                     const yaCerrada = cierres.some((c) => c.semana === semanaFiltro);
                     const gastosBloquean = (gastosSinClasificar[semanaFiltro] ?? 0) > 0;
                     if (yaCerrada) {
-                      return (
-                        <span className="rounded-lg bg-[#e6f4ea] px-3 py-1.5 text-xs font-medium text-[#137333]">
-                          {semanaFiltro} cerrada ✓
-                        </span>
-                      );
+                      return <span className="fl-badge pos" style={{ padding: "6px 14px" }}>{semanaFiltro} cerrada ✓</span>;
                     }
                     return (
                       <button
@@ -760,22 +761,21 @@ export default function MesM1({
                         onClick={() => setShowCerrarSemana(true)}
                         disabled={gastosBloquean}
                         title={gastosBloquean ? `${gastosSinClasificar[semanaFiltro]} gastos sin clasificar` : `Cerrar ${semanaFiltro}`}
-                        className="rounded-lg border border-[#1e3a5f] px-3 py-1.5 text-xs font-medium text-[#1e3a5f] hover:bg-[#1e3a5f] hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                        className="fl-btn ghost sm"
+                        style={{ opacity: gastosBloquean ? 0.4 : 1 }}
                       >
                         Cerrar {semanaFiltro}
                       </button>
                     );
                   })()}
                   {cerradoM1 ? (
-                    <span className="rounded-lg bg-[#e6f4ea] px-4 py-1.5 text-sm font-medium text-[#137333]">
-                      M1 cerrado ✓
-                    </span>
+                    <span className="fl-badge pos" style={{ padding: "6px 14px" }}>M1 cerrado ✓</span>
                   ) : (
                     <button
                       type="button"
                       onClick={handleCerrarM1}
                       disabled={pendientesS1 > 0 || cerrandoM1}
-                      className="rounded-lg bg-[#1e3a5f] px-4 py-1.5 text-sm font-medium text-white hover:bg-[#162d4a] disabled:cursor-not-allowed disabled:opacity-40"
+                      className="fl-btn primary sm"
                       title={pendientesS1 > 0 ? `${pendientesS1} conceptos pendientes en S1` : "Cerrar M1"}
                     >
                       {cerrandoM1 ? "Cerrando…" : "Cerrar M1 ejecución"}

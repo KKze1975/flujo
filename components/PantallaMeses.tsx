@@ -2,18 +2,23 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Inter } from "next/font/google";
+import Icon from "@/components/ui/Icon";
+import BottomNav from "@/components/ui/BottomNav";
 import type { SaldoCuenta } from "@/lib/data/types";
 
-const inter = Inter({ subsets: ["latin"] });
-
-const COP = (n: number) =>
-  new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    maximumFractionDigits: 0,
+function COP(n: number): string {
+  return new Intl.NumberFormat("es-CO", {
+    style: "currency", currency: "COP", maximumFractionDigits: 0,
   }).format(n);
+}
+
+function COPCompact(n: number): string {
+  const abs = Math.abs(n);
+  const sign = n < 0 ? "-" : "";
+  if (abs >= 1_000_000) return sign + "$" + (abs / 1_000_000).toFixed(1).replace(".0", "") + "M";
+  if (abs >= 1000) return sign + "$" + Math.round(abs / 1000) + "k";
+  return sign + "$" + abs;
+}
 
 const MESES_FULL = [
   "", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -21,21 +26,18 @@ const MESES_FULL = [
 ];
 
 function formatMes(mes: string): string {
-  const [year, monthStr] = mes.split("-");
-  return `${MESES_FULL[Number(monthStr)]} ${year}`;
+  const [year, m] = mes.split("-");
+  return `${MESES_FULL[Number(m)]} ${year}`;
 }
 
 function mesSiguiente(meses: string[]): string {
   if (meses.length === 0) {
     const now = new Date();
-    const y = now.getFullYear();
-    const m = now.getMonth() + 1;
-    return `${y}-${String(m).padStart(2, "0")}`;
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   }
   const ultimo = meses[meses.length - 1];
-  const [yearStr, monthStr] = ultimo.split("-");
-  const year = Number(yearStr);
-  const month = Number(monthStr);
+  const [y, m] = ultimo.split("-");
+  const year = Number(y), month = Number(m);
   if (month === 12) return `${year + 1}-01`;
   return `${year}-${String(month + 1).padStart(2, "0")}`;
 }
@@ -89,6 +91,7 @@ export default function PantallaMeses({
 
   const mesesExistentes = resúmenes.map((r) => r.mes);
   const próximo = mesSiguiente(mesesExistentes);
+  const másReciente = mesesExistentes[mesesExistentes.length - 1];
 
   const handleInicializar = async () => {
     setInicializando(true);
@@ -107,254 +110,199 @@ export default function PantallaMeses({
     }
   };
 
-  const másReciente = mesesExistentes[mesesExistentes.length - 1];
+  const semanaHref = metricas ? `/mes/${metricas.mes}/semana` : "/";
 
   return (
-    <div className={`min-h-screen bg-gray-50 ${inter.className}`}>
-
-      {/* ── Header ── */}
-      <header className="bg-[#1e3a5f] px-6 py-4 shadow-md">
-        <div className="mx-auto flex max-w-4xl items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="text-white/50 hover:text-white text-sm leading-none">←</Link>
-            <div>
-              <h1 className="text-lg font-semibold text-white">
-                {modoHistorial ? "Historial" : "Inicio de mes"}
-              </h1>
-              <p className="text-xs text-white/60">
-                {modoHistorial ? "Solo lectura" : "Planificación y ejecución"}
-              </p>
-            </div>
-          </div>
+    <div className="t-calido screen-anim">
+      {/* App bar */}
+      <div className="fl-appbar">
+        <div className="fl-topnav">
+          <button className="fl-back" type="button" onClick={() => router.push("/")}>
+            <Icon name="back" size={17} />
+          </button>
+          <div style={{ flex: 1 }} />
           {!modoHistorial && (
-            <div className="flex flex-col items-end gap-1">
-              <button
-                type="button"
-                onClick={handleInicializar}
-                disabled={inicializando}
-                className="rounded-lg bg-white px-4 py-1.5 text-sm font-medium text-[#1e3a5f] hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {inicializando ? "Inicializando…" : `Inicializar ${formatMes(próximo)}`}
-              </button>
-              {error && <p className="text-xs text-red-300">{error}</p>}
-            </div>
+            <button
+              className="fl-btn ghost sm"
+              type="button"
+              onClick={handleInicializar}
+              disabled={inicializando}
+              style={{ background: "var(--appbar-hair)", border: "none", color: "var(--appbar-ink)" }}
+            >
+              {inicializando ? "…" : `+ ${formatMes(próximo)}`}
+            </button>
           )}
         </div>
-      </header>
+        <p className="eyebrow">{modoHistorial ? "Historial" : "Inicio de mes"}</p>
+        <h1 style={{ fontSize: 22 }}>
+          {modoHistorial ? "Meses cerrados" : "Planificación y ejecución"}
+        </h1>
+      </div>
 
-      <main className="mx-auto max-w-4xl px-6 py-8 space-y-10">
+      {/* Body */}
+      <div className="fl-body">
 
-        {/* ── Métricas ── */}
-        {metricas && (
-          <section>
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-400">
-                {formatMes(metricas.mes)} · {metricas.semana}
-              </h2>
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-
-              {/* M1: Disponible esta semana */}
-              <div className="rounded-xl border bg-white px-5 py-4 shadow-sm">
-                <p className="text-xs text-gray-400 mb-1">Disponible {metricas.semana}</p>
-                <p
-                  className="text-2xl font-semibold"
-                  style={{ color: metricas.disponibleSemana >= 0 ? "#137333" : "#c5221f" }}
-                >
-                  {metricas.disponibleSemana >= 0 ? "" : "-"}
-                  {COP(Math.abs(metricas.disponibleSemana))}
-                </p>
-                <p className="text-xs text-gray-400 mt-1">
-                  ingreso semana menos pendientes
-                </p>
-              </div>
-
-              {/* M2: Ejecutado vs presupuestado */}
-              <div className="rounded-xl border bg-white px-5 py-4 shadow-sm">
-                <p className="text-xs text-gray-400 mb-1">Ejecutado vs presupuestado</p>
-                <p className="text-2xl font-semibold text-gray-800">
-                  {metricas.pctEjecutado}%
-                </p>
-                <p className="text-xs text-gray-400 mt-1">
-                  {COP(metricas.totalEjecutado)} / {COP(metricas.totalPresupuestado)}
-                </p>
-              </div>
-
-              {/* M3: Semanas cerradas */}
-              <div className="rounded-xl border bg-white px-5 py-4 shadow-sm">
-                <p className="text-xs text-gray-400 mb-1">Semanas cerradas</p>
-                {metricas.semanasCerradas === 0 ? (
-                  <p className="text-sm text-gray-400 mt-2">sin cierres aún</p>
-                ) : (
-                  <p className="text-2xl font-semibold text-gray-800">
-                    {metricas.semanasCerradas} / 4
-                  </p>
-                )}
-              </div>
-
-            </div>
-
-            {/* ── Snapshot semana activa ── */}
-            <h3 className="mt-5 mb-3 text-xs font-semibold uppercase tracking-widest text-gray-400">
-              Semana activa — snapshot {metricas.semana}
-            </h3>
-            <div className="grid grid-cols-3 gap-4">
-
-              <div className="rounded-xl border bg-white px-5 py-4 shadow-sm">
-                <p className="text-xs text-gray-400 mb-1">Recaudo {metricas.semana}</p>
-                <p className="text-2xl font-semibold text-gray-800">
-                  {COP(metricas.recaudoSemana)}
-                </p>
-                <p className="text-xs text-gray-400 mt-1">
-                  {metricas.semana === "S1" ? "Angie + Camilo" : "Angie"}
-                </p>
-              </div>
-
-              <div className="rounded-xl border bg-white px-5 py-4 shadow-sm">
-                <p className="text-xs text-gray-400 mb-1">Ejecutado {metricas.semana}</p>
-                <p className="text-2xl font-semibold text-gray-800">
-                  {COP(metricas.ejecutadoSemana)}
-                </p>
-                <p className="text-xs text-gray-400 mt-1">pagos confirmados</p>
-              </div>
-
-              <div className="rounded-xl border bg-white px-5 py-4 shadow-sm">
-                <p className="text-xs text-gray-400 mb-1">Disponible {metricas.semana}</p>
-                <p
-                  className="text-2xl font-semibold"
-                  style={{ color: metricas.disponibleSemanaSnapshot >= 0 ? "#137333" : "#c5221f" }}
-                >
-                  {metricas.disponibleSemanaSnapshot >= 0 ? "" : "-"}
-                  {COP(Math.abs(metricas.disponibleSemanaSnapshot))}
-                </p>
-                <p className="text-xs text-gray-400 mt-1">recaudo menos ejecutado</p>
-              </div>
-
-            </div>
-            {/* ── Saldos por cuenta ── */}
-            <h3 className="mt-5 mb-3 text-xs font-semibold uppercase tracking-widest text-gray-400">
-              Saldos por cuenta
-            </h3>
-            {metricas.saldosCuenta.length >= 4 ? (
-              <div className="rounded-xl border bg-white px-6 py-4 shadow-sm">
-                <div className="grid grid-cols-4 gap-6">
-                  {(["nu_camilo", "nu_angie", "arq", "en_mano"] as SaldoCuenta["cuenta"][]).map((cuenta) => {
-                    const s = metricas.saldosCuenta.find((x) => x.cuenta === cuenta);
-                    return (
-                      <div key={cuenta}>
-                        <p className="text-xs text-gray-400 mb-1">{CUENTAS_LABEL[cuenta]}</p>
-                        <p className="text-lg font-semibold text-gray-800">
-                          {s ? COP(s.saldoInicial) : "—"}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-                <p className="mt-3 text-xs text-gray-400">
-                  Total: <span className="font-semibold text-gray-700">
-                    {COP(metricas.saldosCuenta.reduce((s, x) => s + x.saldoInicial, 0))}
-                  </span>
-                  {metricas.saldosCuenta[0]?.fechaConfirmacion && (
-                    <span className="ml-3">Confirmado: {metricas.saldosCuenta[0].fechaConfirmacion}</span>
-                  )}
-                </p>
-              </div>
-            ) : (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 px-6 py-4">
-                <p className="text-sm text-amber-700">
-                  Saldos sin confirmar —{" "}
-                  <span
-                    className="cursor-pointer underline"
-                    onClick={() => router.push(`/mes/${metricas.mes}`)}
-                  >
-                    confirmar en {formatMes(metricas.mes)}
-                  </span>
-                </p>
-              </div>
-            )}
-          </section>
+        {/* Error */}
+        {error && (
+          <div style={{
+            background: "var(--neg-soft)", color: "var(--neg)", borderRadius: 14,
+            padding: "12px 16px", fontSize: 13.5,
+          }}>
+            {error}
+          </div>
         )}
 
-        {/* ── Meses activos ── */}
-        <section>
-          <h2 className="mb-4 text-xs font-semibold uppercase tracking-widest text-gray-400">
-            Meses activos
-          </h2>
-          {resúmenes.length === 0 ? (
-            <p className="text-sm text-gray-400">No hay meses activos. Inicializa el primero.</p>
-          ) : (
-            <div className="space-y-3">
-              {[...resúmenes].reverse().map((r) => {
-                const esMásReciente = r.mes === másReciente;
-                const superavitPos = r.superavit >= 0;
-                return (
-                  <div
-                    key={r.mes}
-                    onClick={() => !modoHistorial && router.push(`/mes/${r.mes}`)}
-                    className={`rounded-xl border bg-white px-6 py-5 shadow-sm transition ${modoHistorial ? "cursor-default" : "cursor-pointer hover:shadow-md"}`}
-                    style={esMásReciente ? { borderColor: "#1e3a5f", borderWidth: 2 } : {}}
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-center gap-3">
-                        <div>
-                          <p className="font-semibold text-gray-800">{formatMes(r.mes)}</p>
-                          <p className="text-xs text-gray-400 mt-0.5">
-                            {r.totalPendiente > 0
-                              ? `${r.totalPendiente} pendientes`
-                              : "Sin pendientes"}
-                          </p>
-                        </div>
-                        {esMásReciente && (
-                          <span
-                            className="rounded-full px-2 py-0.5 text-xs font-medium text-white"
-                            style={{ backgroundColor: "#1e3a5f" }}
-                          >
-                            Activo
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex gap-8 text-right text-sm">
-                        <div>
-                          <p className="text-xs text-gray-400">Ingresos</p>
-                          <p className="font-medium text-gray-700">{COP(r.totalIngresos)}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-400">Presupuestado</p>
-                          <p className="font-medium text-gray-700">{COP(r.totalPresupuestado)}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-400">Ejecutado</p>
-                          <p className="font-medium text-gray-700">{COP(r.totalEjecutado)}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-400">Superávit / Déficit</p>
-                          <p
-                            className="font-semibold"
-                            style={{ color: superavitPos ? "#137333" : "#c5221f" }}
-                          >
-                            {superavitPos ? "+" : ""}{COP(r.superavit)}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+        {/* Métricas del mes activo */}
+        {metricas && !modoHistorial && (
+          <>
+            <p className="fl-sectlabel">{formatMes(metricas.mes)} · {metricas.semana}</p>
+            <div className="fl-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {/* Barra ejecutado */}
+              <div>
+                <div className="fl-row" style={{ marginBottom: 8 }}>
+                  <span className="fl-muted">Ejecutado</span>
+                  <span className="fl-num" style={{ fontSize: 14 }}>
+                    {metricas.pctEjecutado}%
+                  </span>
+                </div>
+                <div className="fl-bar">
+                  <i style={{ width: `${Math.min(metricas.pctEjecutado, 100)}%` }} />
+                </div>
+                <p className="fl-faint" style={{ marginTop: 6 }}>
+                  {COP(metricas.totalEjecutado)} de {COP(metricas.totalPresupuestado)}
+                </p>
+              </div>
+              <div className="fl-divider" />
+              {/* Mini stats grid */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                <MiniStat
+                  k={`Disponible ${metricas.semana}`}
+                  v={COPCompact(metricas.disponibleSemana)}
+                  color={metricas.disponibleSemana >= 0 ? "var(--pos)" : "var(--neg)"}
+                />
+                <MiniStat k="Semanas cerradas" v={`${metricas.semanasCerradas} / 4`} />
+                <MiniStat k="Recaudo sem." v={COPCompact(metricas.recaudoSemana)} />
+              </div>
             </div>
-          )}
-        </section>
 
-        {/* ── Historial ── */}
-        <section>
-          <h2 className="mb-4 text-xs font-semibold uppercase tracking-widest text-gray-400">
-            Historial
-          </h2>
-          <p className="text-sm text-gray-400">
-            Los meses cerrados aparecerán aquí.
-          </p>
-        </section>
+            {/* Saldos */}
+            {metricas.saldosCuenta.length > 0 && (
+              <>
+                <p className="fl-sectlabel">Saldos por cuenta</p>
+                <div className="fl-card">
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                    {(["nu_camilo", "nu_angie", "arq", "en_mano"] as SaldoCuenta["cuenta"][]).map((cuenta) => {
+                      const s = metricas.saldosCuenta.find((x) => x.cuenta === cuenta);
+                      const isPersona = cuenta === "nu_camilo" || cuenta === "nu_angie";
+                      const personaKey = cuenta === "nu_camilo" ? "c" : "a";
+                      return (
+                        <div key={cuenta} style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                          {isPersona ? (
+                            <span className={`fl-person ${personaKey}`}>
+                              {personaKey === "c" ? "C" : "A"}
+                            </span>
+                          ) : (
+                            <span style={{ width: 22, height: 22, borderRadius: 7, background: "var(--surface-2)", display: "grid", placeItems: "center" }}>
+                              <Icon name="wallet" size={12} style={{ color: "var(--ink-faint)" }} />
+                            </span>
+                          )}
+                          <div>
+                            <p className="fl-faint" style={{ margin: 0 }}>{CUENTAS_LABEL[cuenta]}</p>
+                            <p className="fl-num" style={{ fontSize: 14.5, fontWeight: 700, color: "var(--ink)" }}>
+                              {s ? COP(s.saldoInicial) : "—"}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
+          </>
+        )}
 
-      </main>
+        {/* Lista de meses */}
+        <p className="fl-sectlabel" style={{ marginTop: 4 }}>
+          {modoHistorial ? "Meses registrados" : "Meses activos"}
+        </p>
+
+        {resúmenes.length === 0 ? (
+          <div className="fl-emptystate">
+            <div className="ic"><Icon name="archive" size={26} /></div>
+            <p className="t">No hay meses aún</p>
+            <p className="d">
+              {modoHistorial
+                ? "Cuando cierres un mes completo, aparecerá aquí."
+                : "Inicializa el primer mes para comenzar."}
+            </p>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {[...resúmenes].reverse().map((r) => {
+              const esMásReciente = r.mes === másReciente;
+              const pos = r.superavit >= 0;
+              return (
+                <button
+                  key={r.mes}
+                  type="button"
+                  className="fl-card"
+                  onClick={() => !modoHistorial && router.push(`/mes/${r.mes}`)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 12,
+                    textAlign: "left", cursor: modoHistorial ? "default" : "pointer",
+                    padding: "16px 18px",
+                    outline: esMásReciente ? "2px solid var(--primary)" : "none",
+                    outlineOffset: -2,
+                  }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                      <p style={{
+                        fontFamily: "var(--font-bricolage, system-ui)",
+                        fontWeight: 700, fontSize: 15.5, color: "var(--ink)", margin: 0,
+                      }}>
+                        {formatMes(r.mes)}
+                      </p>
+                      {esMásReciente && (
+                        <span className="fl-badge primary">Activo</span>
+                      )}
+                    </div>
+                    <p className="fl-faint">
+                      Ejecutado {COPCompact(r.totalEjecutado)} de {COPCompact(r.totalPresupuestado)}
+                      {r.totalPendiente > 0 && ` · ${r.totalPendiente} pendientes`}
+                    </p>
+                  </div>
+                  <span className={`fl-badge ${pos ? "pos" : "neg"}`}>
+                    {pos ? "+" : ""}{COPCompact(r.superavit)}
+                  </span>
+                  {!modoHistorial && (
+                    <Icon name="arrow" size={16} style={{ color: "var(--ink-faint)", flexShrink: 0 }} />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+      </div>
+
+      {/* Bottom nav */}
+      <BottomNav
+        semanaHref={semanaHref}
+        active={modoHistorial ? "historial" : "mes"}
+      />
+    </div>
+  );
+}
+
+function MiniStat({ k, v, color }: { k: string; v: string; color?: string }) {
+  return (
+    <div>
+      <p className="fl-faint" style={{ margin: "0 0 5px" }}>{k}</p>
+      <p className="fl-num" style={{ fontSize: 16, fontWeight: 700, color: color ?? "var(--ink)", letterSpacing: "-0.02em" }}>
+        {v}
+      </p>
     </div>
   );
 }

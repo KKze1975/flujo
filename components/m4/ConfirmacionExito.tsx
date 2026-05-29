@@ -1,5 +1,7 @@
 "use client";
 
+import Icon from "@/components/ui/Icon";
+
 interface Resultado {
   nombreConcepto: string | null;
   clasificado: boolean;
@@ -12,23 +14,31 @@ interface Props {
 
 export default function ConfirmacionExito({ resultado, onNuevoRegistro }: Props) {
   return (
-    <div className="rounded-xl border border-green-200 bg-green-50 p-6 text-center">
-      <div className="text-4xl mb-3">✓</div>
-      <p className="text-base font-semibold text-green-800 mb-1">
-        {resultado.clasificado ? "Gasto registrado" : "Gasto guardado"}
-      </p>
-      <p className="text-sm text-green-700">
-        {resultado.clasificado && resultado.nombreConcepto
-          ? `"${resultado.nombreConcepto}" marcado como ejecutado en H2.`
-          : "Guardado como pendiente de clasificación en H3."}
-      </p>
-      <button
-        onClick={onNuevoRegistro}
-        className="mt-5 w-full rounded-lg py-3 text-sm font-semibold text-white"
-        style={{ background: "#1e3a5f" }}
-      >
-        + Nuevo registro
-      </button>
+    <div style={{ display: "flex", flexDirection: "column", gap: 18, paddingTop: 18, alignItems: "center", textAlign: "center" }}>
+      <div className="ok-pop" style={{
+        width: 76, height: 76, borderRadius: 999, background: "var(--pos)", color: "#fff",
+        display: "grid", placeItems: "center",
+      }}>
+        <Icon name="check" size={38} />
+      </div>
+      <div>
+        <p style={{
+          fontFamily: "var(--font-bricolage, system-ui)",
+          fontWeight: 700, fontSize: 19, color: "var(--ink)", margin: 0,
+        }}>
+          {resultado.clasificado ? "Gasto registrado" : "Gasto guardado"}
+        </p>
+        <p className="fl-muted" style={{ marginTop: 6 }}>
+          {resultado.clasificado && resultado.nombreConcepto
+            ? `"${resultado.nombreConcepto}" marcado como ejecutado`
+            : "Guardado como pendiente de clasificación"}
+        </p>
+      </div>
+      <div style={{ display: "flex", gap: 8, width: "100%" }}>
+        <button type="button" className="fl-btn primary block" onClick={onNuevoRegistro}>
+          <Icon name="plus" size={16} /> Nuevo registro
+        </button>
+      </div>
     </div>
   );
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import Icon from "@/components/ui/Icon";
+
 interface Props {
   mensaje: string | null;
   confianza: "alta" | "media" | "baja";
@@ -14,20 +16,21 @@ export default function AclaracionBanner({ mensaje, confianza, onContinuar }: Pr
   );
 
   return (
-    <div className="rounded-xl border border-amber-200 bg-amber-50 p-5">
-      <div className="flex items-start gap-3">
-        <span className="text-xl mt-0.5">⚠️</span>
-        <div className="flex-1">
-          <p className="text-sm font-semibold text-amber-800 mb-1">Aclaración sugerida</p>
-          <p className="text-sm text-amber-700">{texto}</p>
-        </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingTop: 4 }}>
+      <div className="fl-card" style={{
+        borderLeft: "3px solid var(--warn)",
+        display: "flex", flexDirection: "column", gap: 8,
+      }}>
+        <span className="fl-badge warn" style={{ alignSelf: "flex-start" }}>
+          <Icon name="info" size={12} /> Confianza baja
+        </span>
+        <p style={{ margin: 0, fontSize: 14.5, color: "var(--ink)", lineHeight: 1.5 }}>
+          {texto}
+        </p>
+        <p className="fl-faint">Podés continuar y ajustar los campos manualmente.</p>
       </div>
-      <button
-        onClick={onContinuar}
-        className="mt-4 w-full rounded-lg py-2.5 text-sm font-semibold text-white"
-        style={{ background: "#1e3a5f" }}
-      >
-        Continuar y revisar →
+      <button type="button" className="fl-btn primary block" onClick={onContinuar}>
+        Continuar y revisar
       </button>
     </div>
   );

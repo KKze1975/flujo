@@ -22,9 +22,10 @@ export default async function Home() {
   let metricas = null;
 
   if (mesActivo) {
-    const [movs, ingresosAngie, cierres] = await Promise.all([
+    const [movs, ingresosAngie, ingresosCamilo, cierres] = await Promise.all([
       provider.getMovimientos(mesActivo),
       provider.getIngresosAngie(mesActivo).catch(() => []),
+      provider.getIngresoCamilo(mesActivo).catch(() => []),
       provider.getCierresSemana(mesActivo).catch(() => []),
     ]);
 
@@ -44,12 +45,17 @@ export default async function Home() {
       .reduce((s, m) => s + m.montoPresupuestado, 0);
     const disponibleSemana = ingresoSemana - pendientesSemana;
 
+    const aporteAngie = ingresosAngie.reduce((s, a) => s + a.monto, 0);
+    const aporteCamilo = ingresosCamilo.reduce((s, i) => s + i.montoCop, 0);
+
     metricas = {
       totalEjecutado,
       totalPresupuestado,
       pctEjecutado,
       semanasCerradas: cierres.length,
       disponibleSemana,
+      aporteCamilo,
+      aporteAngie,
     };
   }
 
