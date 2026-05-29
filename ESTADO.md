@@ -419,6 +419,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | Deploy Vercel | Operativo — primer deploy exitoso, variables de entorno configuradas |
 | Ticket Handoff Claude Design | Completo — sistema visual fl-* migrado, deploy Vercel activo, validado en hardware real (29 mayo 2026) |
 | T19 — MesM1 Desktop | Completo — vista desktop con toggle móvil/desktop, @layer base fix para Tailwind v4, validado en browser |
+| T20 — Fix bugs desktop M1 | Completo — sidebar grid fix, Ejecutar conectado a API, balance semanal en sidebar, modal Ingreso Camilo, bloqueo sin ingreso |
 
 ---
 
@@ -435,7 +436,7 @@ Archivo fuente: H1_presupuesto_base.csv
 - RegistroRapido desde FAB de VistaSemanal no ofrece opción explícita de guardar como "pendiente de clasificación" — el flujo actual solo lo hace sin clasificar si Claude no encuentra match en H2
 - Tabla de conceptos en MesM1 (thead/tbody/tr/td) usa clases Tailwind y hex hardcodeados — pendiente migración a tokens fl-*
 - components/ui/BottomNav.tsx creado en handoff — verificar si duplica components en proto-shell o es el componente activo
-- dk-app position fixed no aplica correctamente en Next.js — sidebar ocupa ancho completo en scroll
+- Bloqueo ejecución sin ingreso no validado visualmente — verificar al inicializar Julio 2026
 
 ---
 
