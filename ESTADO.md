@@ -417,6 +417,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | PantallaMeses | Actualizado — prop modoHistorial para solo lectura |
 | T17 — Vista semanal M4 | Completo — DoD 6/6 verificado en producción |
 | Deploy Vercel | Operativo — primer deploy exitoso, variables de entorno configuradas |
+| Ticket Handoff Claude Design | Completo — sistema visual fl-* migrado, deploy Vercel activo, validado en hardware real (29 mayo 2026) |
 
 ---
 
@@ -431,6 +432,8 @@ Archivo fuente: H1_presupuesto_base.csv
 - Uber One, NY Times, El País, Game Pass agregados via B4 en primera ejecución — verificar que quedaron correctamente en H1
 - VistaSemanal no refleja en tiempo real los gastos registrados via FAB RegistroRapido — requiere reload manual (VistaSemanal no escucha eventos de RegistroRapido)
 - RegistroRapido desde FAB de VistaSemanal no ofrece opción explícita de guardar como "pendiente de clasificación" — el flujo actual solo lo hace sin clasificar si Claude no encuentra match en H2
+- Tabla de conceptos en MesM1 (thead/tbody/tr/td) usa clases Tailwind y hex hardcodeados — pendiente migración a tokens fl-*
+- components/ui/BottomNav.tsx creado en handoff — verificar si duplica components en proto-shell o es el componente activo
 
 ---
 
@@ -529,6 +532,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | Mayo 2026 | Saldos iniciales confirman al abrir M1 Ejecución | Sin saldo confirmado no hay ejecución — bloqueo obligatorio |
 | Mayo 2026 | Saldos por cuenta en sidebar M1 y panel Home | NU Camilo / NU Angie / ARQ / EN MANO |
 | Mayo 2026 | H4 Rango C — Saldos iniciales | 4 cuentas por mes — confirmación única al inicio de ejecución |
+| Mayo 2026 | Sistema de tokens fl-* integrado desde Claude Design handoff | themes.css → globals.css, componentes migrados uno a uno con validación visual por pantalla |
 | Mayo 2026 | M2 y M3 colapsados en filtro por semana en MesM1 | Vista y revisión semanal con Angie no requieren pantallas separadas — M4 ya cubre el registro con ejecutor seleccionable |
 | Mayo 2026 | Filtro por semana adelantado al MVP | Estaba en features futuras — es el mecanismo que habilita M2 y M3 |
 | Mayo 2026 | H5 Rango B es requisito para go-live | Sin cierre de semana no hay remanente Angie como input para plan semana siguiente |
