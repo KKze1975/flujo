@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { getProvider } from "@/lib/data/provider";
-import MesM1 from "@/components/MesM1";
+import MesM1ClientWrapper from "./MesM1ClientWrapper";
 
 export default async function MesPage({
   params,
@@ -30,7 +30,7 @@ export default async function MesPage({
   }
 
   return (
-    <MesM1
+    <MesM1ClientWrapper
       mes={mes}
       movimientos={movimientos}
       conceptos={conceptos}

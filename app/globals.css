@@ -418,3 +418,156 @@ body {
 
 /* ===== Balance modifiers ===== */
 .fl-appbar .balance.neg { color: oklch(1 0.05 25 / 0.85); }
+
+@layer base {
+
+/* ============================================================
+   FLUJO · desktop.css — vista de escritorio para M1
+   Usa los tokens .t-calido de themes.css. Prefijo .dk-
+   ============================================================ */
+.dk { font-family: var(--font-body); color: var(--ink); }
+.dk *, .dk *::before, .dk *::after { box-sizing: border-box; }
+
+.dk-app {
+  position: fixed; inset: 0;
+  display: grid; grid-template-columns: 236px 1fr;
+  background: var(--bg);
+}
+
+/* ---------- sidebar ---------- */
+.dk-side {
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  display: flex; flex-direction: column;
+  padding: 22px 16px;
+}
+.dk-brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 24px; }
+.dk-brand .mark {
+  width: 32px; height: 32px; border-radius: 10px; flex: none;
+  background: var(--primary); color: var(--on-primary);
+  display: grid; place-items: center;
+}
+.dk-brand .nm { font-family: var(--font-display); font-weight: 700; font-size: 18px; letter-spacing: -0.02em; color: var(--ink); }
+.dk-nav { display: flex; flex-direction: column; gap: 3px; }
+.dk-navitem {
+  display: flex; align-items: center; gap: 11px;
+  padding: 10px 12px; border-radius: 11px; border: none; cursor: pointer;
+  background: transparent; color: var(--ink-soft); font: inherit; font-size: 14px; font-weight: 600;
+  text-align: left; width: 100%;
+}
+.dk-navitem:hover { background: var(--surface-2); }
+.dk-navitem.on { background: var(--primary-soft); color: var(--primary); }
+.dk-navitem .badge { margin-left: auto; font-family: var(--font-num); font-size: 11px; font-weight: 700;
+  background: var(--primary); color: var(--on-primary); border-radius: 999px; padding: 1px 7px; }
+.dk-navlabel { font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-faint);
+  font-weight: 700; padding: 0 12px; margin: 22px 0 9px; }
+.dk-user {
+  margin-top: auto; display: flex; align-items: center; gap: 10px;
+  padding: 12px; border-radius: 14px; background: var(--surface-2);
+}
+.dk-user .av { display: flex; }
+.dk-user .av .fl-person { box-shadow: 0 0 0 2px var(--surface-2); }
+.dk-user .av .fl-person + .fl-person { margin-left: -7px; }
+.dk-user .tx .t { font-size: 13px; font-weight: 700; color: var(--ink); margin: 0; }
+.dk-user .tx .d { font-size: 11px; color: var(--ink-faint); margin: 1px 0 0; }
+
+/* ---------- main ---------- */
+.dk-main { overflow-y: auto; }
+.dk-main::-webkit-scrollbar { width: 10px; }
+.dk-main::-webkit-scrollbar-thumb { background: var(--line); border-radius: 999px; border: 3px solid var(--bg); }
+.dk-topbar {
+  position: sticky; top: 0; z-index: 10;
+  background: color-mix(in oklch, var(--bg) 86%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; gap: 16px;
+  padding: 18px 32px;
+}
+.dk-topbar .ttl { font-family: var(--font-display); font-weight: 700; font-size: 22px; letter-spacing: -0.02em; color: var(--ink); margin: 0; }
+.dk-topbar .sub { font-size: 13px; color: var(--ink-soft); margin: 3px 0 0; }
+.dk-monthpill {
+  display: inline-flex; align-items: center; gap: 7px; font-family: var(--font-num);
+  font-size: 12.5px; font-weight: 700; color: var(--primary); background: var(--primary-soft);
+  padding: 5px 11px; border-radius: 999px; margin-left: 12px;
+}
+.dk-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+
+.dk-content { padding: 26px 32px 48px; max-width: 1400px; }
+
+/* KPI row */
+.dk-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 22px; }
+.dk-kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 18px 20px; }
+.dk-kpi .k { font-size: 12px; color: var(--ink-faint); font-weight: 600; margin: 0 0 9px; display: flex; align-items: center; gap: 7px; }
+.dk-kpi .v { font-family: var(--font-num); font-feature-settings: var(--num-feat); font-size: 28px; font-weight: 700; letter-spacing: -0.03em; color: var(--ink); line-height: 1; }
+.dk-kpi .h { font-size: 12px; color: var(--ink-faint); margin: 10px 0 0; }
+
+/* layout split */
+.dk-grid { display: grid; grid-template-columns: minmax(0, 1.85fr) minmax(300px, 1fr); gap: 20px; align-items: start; }
+.dk-panel { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; overflow: hidden; }
+.dk-panel-head { display: flex; align-items: center; gap: 12px; padding: 18px 20px; border-bottom: 1px solid var(--line); }
+.dk-panel-head h3 { font-family: var(--font-display); font-weight: 700; font-size: 16px; letter-spacing: -0.01em; color: var(--ink); margin: 0; }
+.dk-panel-head .cnt { font-family: var(--font-num); font-size: 12px; color: var(--ink-faint); font-weight: 600; }
+
+/* week filter chips */
+.dk-filters { display: flex; gap: 7px; margin-left: auto; }
+.dk-fchip {
+  font-size: 12px; font-weight: 700; font-family: var(--font-num); padding: 6px 12px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); cursor: pointer;
+}
+.dk-fchip.on { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
+
+/* ---------- table ---------- */
+.dk-table { width: 100%; border-collapse: collapse; }
+.dk-table thead th {
+  text-align: left; font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--ink-faint); font-weight: 700; padding: 11px 16px; background: var(--surface-2);
+  border-bottom: 1px solid var(--line); white-space: nowrap;
+}
+.dk-table thead th.num, .dk-table tbody td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.dk-table tbody td { padding: 12px 16px; border-bottom: 1px solid var(--line); font-size: 13.5px; vertical-align: middle; }
+.dk-table tbody tr:hover { background: var(--surface-2); }
+.dk-table tbody tr:last-child td { border-bottom: none; }
+.dk-grouprow td {
+  background: var(--surface-2); font-family: var(--font-num); font-weight: 700; font-size: 11.5px;
+  letter-spacing: 0.04em; color: var(--ink-soft); padding: 8px 16px !important; text-transform: uppercase;
+}
+.dk-concepto { display: flex; align-items: center; gap: 11px; }
+.dk-concepto .ic { width: 34px; height: 34px; border-radius: 10px; flex: none; display: grid; place-items: center; background: var(--primary-soft); color: var(--primary); }
+.dk-concepto .nm { font-weight: 600; color: var(--ink); }
+.dk-amt { font-family: var(--font-num); font-feature-settings: var(--num-feat); font-weight: 700; color: var(--ink); }
+.dk-wk { font-family: var(--font-num); font-weight: 700; font-size: 12px; color: var(--ink-soft); }
+.dk-foot td { padding: 13px 16px; border-top: 2px solid var(--line); font-weight: 700; }
+.dk-foot .lbl { color: var(--ink-soft); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+.dk-foot .tot { font-family: var(--font-num); font-size: 16px; color: var(--ink); }
+
+/* right rail cards */
+.dk-rail { display: flex; flex-direction: column; gap: 16px; }
+.dk-card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 18px; }
+.dk-card h4 { font-family: var(--font-display); font-weight: 700; font-size: 14.5px; letter-spacing: -0.01em; color: var(--ink); margin: 0 0 14px; display: flex; align-items: center; gap: 8px; }
+.dk-acct { display: flex; align-items: center; gap: 10px; padding: 9px 0; }
+.dk-acct + .dk-acct { border-top: 1px solid var(--line); }
+.dk-acct .nm { flex: 1; font-size: 13px; color: var(--ink-soft); font-weight: 600; }
+.dk-acct .v { font-family: var(--font-num); font-feature-settings: var(--num-feat); font-weight: 700; font-size: 13.5px; color: var(--ink); }
+.dk-acct .sq { width: 24px; height: 24px; border-radius: 8px; flex: none; display: grid; place-items: center; background: var(--surface-2); color: var(--ink-faint); }
+
+.dk-approval { display: flex; align-items: center; gap: 11px; padding: 11px; border-radius: 12px; background: var(--warn-soft); }
+.dk-approval .ic { color: var(--warn); flex: none; }
+.dk-approval .tx { flex: 1; }
+.dk-approval .tx .t { font-size: 13px; font-weight: 700; color: var(--ink); margin: 0; }
+.dk-approval .tx .d { font-size: 11.5px; color: var(--ink-soft); margin: 1px 0 0; }
+
+.dk-catbar { margin-bottom: 12px; }
+.dk-catbar:last-child { margin-bottom: 0; }
+.dk-catbar .row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12px; }
+.dk-catbar .row .n { color: var(--ink-soft); font-weight: 600; }
+.dk-catbar .row .v { font-family: var(--font-num); color: var(--ink); font-weight: 700; }
+
+/* status badge reuse fl-badge; estado dot button */
+.dk-exec-btn {
+  font-family: var(--font-body); font-weight: 700; font-size: 12px; border: 1px solid var(--primary);
+  background: var(--primary); color: var(--on-primary); border-radius: 9px; padding: 7px 14px; cursor: pointer;
+}
+.dk-exec-btn:hover { background: var(--primary-2); }
+.dk-done { display: inline-flex; align-items: center; gap: 5px; color: var(--pos); font-size: 12px; font-weight: 700; }
+
+} /* end @layer base */

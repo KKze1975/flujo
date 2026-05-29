@@ -10,6 +10,7 @@ import ModalEditarConcepto from "./m1/ModalEditarConcepto";
 import ModalCerrarSemana from "./m1/ModalCerrarSemana";
 import ModalConfirmarSaldos from "./m1/ModalConfirmarSaldos";
 import VistaPlanificacion from "./m1/VistaPlanificacion";
+import Icon from "@/components/ui/Icon";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -84,6 +85,7 @@ export default function MesM1({
   cierresSemana: initCierres,
   gastosSinClasificarInit,
   saldosInit,
+  onSwitchToDesktop,
 }: {
   mes: string;
   movimientos: Movimiento[];
@@ -93,6 +95,7 @@ export default function MesM1({
   cierresSemana: CierreSemana[];
   gastosSinClasificarInit: Record<Semana, number>;
   saldosInit: SaldoCuenta[];
+  onSwitchToDesktop?: () => void;
 }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -462,6 +465,15 @@ export default function MesM1({
 
             {/* Action buttons */}
             <div style={{ display: "flex", gap: 8 }}>
+              {onSwitchToDesktop && (
+                <button
+                  type="button"
+                  onClick={onSwitchToDesktop}
+                  style={{ borderRadius: 999, border: "1px solid var(--appbar-hair)", padding: "6px 12px", fontSize: 12, color: "var(--appbar-ink)", background: "transparent", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}
+                >
+                  <Icon name="monitor" size={14} /> Escritorio
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setModal("ingresoCamilo")}
