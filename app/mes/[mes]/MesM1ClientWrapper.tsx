@@ -34,6 +34,7 @@ export default function MesM1ClientWrapper({
         mes={mes}
         movimientos={movimientos}
         saldos={saldosInit}
+        ingresoCamilo={ingresoCamilo}
         onSwitchToMobile={() => setViewMode("mobile")}
       />
     );

@@ -429,13 +429,14 @@ body {
 .dk *, .dk *::before, .dk *::after { box-sizing: border-box; }
 
 .dk-app {
-  position: fixed; inset: 0;
+  position: relative; min-height: 100svh;
   display: grid; grid-template-columns: 236px 1fr;
   background: var(--bg);
 }
 
 /* ---------- sidebar ---------- */
 .dk-side {
+  position: sticky; top: 0; height: 100svh; overflow-y: auto;
   background: var(--surface);
   border-right: 1px solid var(--line);
   display: flex; flex-direction: column;
