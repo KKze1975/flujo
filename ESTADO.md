@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Mayo 2026 | Fase: T21 completo — layout desktop operativo — go-live junio 7, 2026
+Actualizado: Mayo 2026 | Fase: T21 completo — desktop + móvil operativo — go-live junio 7, 2026
 
 ---
 
@@ -431,7 +431,6 @@ Archivo fuente: H1_presupuesto_base.csv
 
 - Vista M1 Ejecución no refleja cambios hechos en M1 Planificación sin recargar — estado desincronizado entre vistas o caché de fetch
 - Vista Ejecución desktop sin agrupación por categorías colapsable — H3
-- Vistas Ejecución y Planificación móvil sin rediseño fl-* — H4
 - Botones barra izquierda desktop no navegan — sin navegación a Home — H6
 - Tabla de conceptos en MesM1 (thead/tbody/tr/td) usa clases Tailwind y hex hardcodeados — pendiente migración a tokens fl-*
 - VistaSemanal no refleja en tiempo real los gastos registrados via FAB RegistroRapido — requiere reload manual
