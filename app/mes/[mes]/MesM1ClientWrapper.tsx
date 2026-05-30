@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Movimiento, Concepto, IngresoCamilo, IngresoAngie, SaldoCuenta, CierreSemana, Semana } from "@/lib/data/types";
-import MesM1 from "@/components/MesM1";
+import MesM1Mobile from "@/components/MesM1Mobile";
 import MesM1Desktop from "@/components/MesM1Desktop";
 
 type ViewMode = "mobile" | "desktop";
@@ -26,7 +26,15 @@ export default function MesM1ClientWrapper({
   gastosSinClasificarInit: Record<Semana, number>;
   saldosInit: SaldoCuenta[];
 }) {
+  // Default to mobile; corrected by effect before first paint on client
   const [viewMode, setViewMode] = useState<ViewMode>("mobile");
+
+  useEffect(() => {
+    const detect = () => setViewMode(window.innerWidth < 768 ? "mobile" : "desktop");
+    detect();
+    window.addEventListener("resize", detect);
+    return () => window.removeEventListener("resize", detect);
+  }, []);
 
   if (viewMode === "desktop") {
     return (
@@ -43,7 +51,7 @@ export default function MesM1ClientWrapper({
   }
 
   return (
-    <MesM1
+    <MesM1Mobile
       mes={mes}
       movimientos={movimientos}
       conceptos={conceptos}

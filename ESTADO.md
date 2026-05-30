@@ -348,7 +348,9 @@ Archivo fuente: H1_presupuesto_base.csv
 | lib/data/mock.ts | Creado — MockDataProvider con stubs |
 | lib/data/provider.ts | Creado — singleton getProvider() |
 | components/PantallaMeses.tsx | Actualizado — MetricasMes con 6 tarjetas: panel métricas + snapshot semana activa |
-| components/MesM1.tsx | Creado — pantalla M1 completa: lista, acciones, modales, visual Zoho-style |
+| components/MesM1.tsx | Creado — pantalla M1 legacy (tabla desktop, sin usar desde T21) |
+| components/MesM1Mobile.tsx | Creado — vista móvil nueva M1: header berry, toggle Planeación/Ejecución, métricas, saldos 2×2, tabs semana, lista conceptos con acciones inline, panel ejecutar, BottomNav |
+| app/mes/[mes]/MesM1ClientWrapper.tsx | Actualizado — responsive: auto-detecta width < 768 → MesM1Mobile, ≥ 768 → MesM1Desktop; listener resize; toggle manual funciona |
 | components/m1/ModalIngresoCamilo.tsx | Creado — monto COP, cuenta destino, estado |
 | components/m1/ModalAporteAngie.tsx | Creado — grid S1-S4 con montos por semana |
 | components/m1/ModalEditarConcepto.tsx | Creado — edita monto/semanaDefault/notas de H1 |
@@ -421,7 +423,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | Ticket Handoff Claude Design | Completo — sistema visual fl-* migrado, deploy Vercel activo, validado en hardware real (29 mayo 2026) |
 | T19 — MesM1 Desktop | Completo — vista desktop con toggle móvil/desktop, @layer base fix para Tailwind v4, validado en browser |
 | T20 — Fix bugs desktop M1 | Completo — sidebar grid fix, Ejecutar conectado a API, balance semanal en sidebar, modal Ingreso Camilo, bloqueo sin ingreso |
-| T21 — Layout desktop + móvil Planeación y Ejecución | Completo — DoD 7/7 — toggle Planificación/Ejecución, semana activa por defecto, ingresos y aportes en sidebar, semana editable con PATCH H2 |
+| T21 — Layout desktop + móvil Planeación y Ejecución | Completo — DoD 7/7 (incl. DoD 6) — MesM1Mobile nueva vista móvil fl-*, toggle Planeación/Ejecución, acciones inline, wrapper responsive auto-detecta viewport |
 
 ---
 
@@ -843,16 +845,17 @@ Fecha: 30 mayo 2026 | 10:00 – 11:27 am
 
 ## Retrospectiva — Sesión CONSTRUCCIÓN · T21 Layout desktop + móvil
 
-Fecha: 30 mayo 2026 | 11:27 am – [HORA CIERRE]
+Fecha: 30 mayo 2026 | 11:27 am – completado (DoD 6 incluido)
 
 **Qué funcionó:**
 - Paso 0 cumplido — design-handoff leído antes de escribir código; tokens fl-* y clases dk-* usados directamente
-- Un solo archivo modificado para cubrir los 7 puntos del DoD — MesM1Desktop.tsx reescrito como vista unificada
+- MesM1Desktop.tsx reescrito como vista unificada (Planificación + Ejecución)
 - Balance Planificación reactivo — recalcula al editar inputs sin round-trip al servidor
 - `handleCambiarSemana` con PATCH H2 inmediato — semana persiste y balance reacciona en el acto
-- TypeScript limpio al primer intento — tsc --noEmit sin errores
-- Semana activa como default en ambos filtros (Planificación y Ejecución) — sin "Todo" como estado inicial
-- Sidebar con overflow-y: auto — contenido Planificación más largo no desborda el layout fijo
+- MesM1Mobile.tsx creado como componente nuevo independiente — vista móvil fl-* completa
+- Wrapper MesM1ClientWrapper actualizado con detección responsive automática (resize listener)
+- TypeScript limpio al primer intento en ambos archivos — tsc --noEmit sin errores
+- Semana activa como default en Planeación y Ejecución (móvil y desktop)
 
 **Qué no funcionó:**
 - No se verificó en browser real — pendiente confirmar visualmente en http://localhost:3000
@@ -860,7 +863,7 @@ Fecha: 30 mayo 2026 | 11:27 am – [HORA CIERRE]
 
 **Qué cambia en el próximo sprint:**
 - Push a main y deploy Vercel antes de cualquier otra cosa
-- Smoke test en producción: toggle Planificación/Ejecución, guardar ingreso, cambiar semana, ejecutar concepto
+- Smoke test en producción: toggle Planificación/Ejecución, tabs semana, confirmar saldos, ejecutar concepto en móvil
 - Si smoke test pasa → go-live declarado para junio 7, 2026
 
 Flujo - Proyecto de salud financiera familiar - Camilo Villamil - 2026
