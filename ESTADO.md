@@ -420,6 +420,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | Ticket Handoff Claude Design | Completo — sistema visual fl-* migrado, deploy Vercel activo, validado en hardware real (29 mayo 2026) |
 | T19 — MesM1 Desktop | Completo — vista desktop con toggle móvil/desktop, @layer base fix para Tailwind v4, validado en browser |
 | T20 — Fix bugs desktop M1 | Completo — sidebar grid fix, Ejecutar conectado a API, balance semanal en sidebar, modal Ingreso Camilo, bloqueo sin ingreso |
+| T21 — Layout desktop + móvil Planeación y Ejecución | Especificación aprobada — pendiente construcción |
 
 ---
 
@@ -793,19 +794,18 @@ Archivo fuente: H1_presupuesto_base.csv
 ## Prompt de apertura — próxima sesión
 
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo y el adjunto al proyecto Claude.
-Tipo de sesión: DISEÑO — Planificación y Ejecución desktop
+Tipo de sesión: CONSTRUCCIÓN — T21 Layout desktop + móvil Planeación y Ejecución
 Hora de inicio: [COMPLETAR AL ABRIR]
 Entorno: Windows — PowerShell exclusivamente.
 
 APERTURA: Genera el dashboard con los datos actuales de ESTADO.md antes de cualquier otra cosa.
 
 Contexto crítico:
-- T19 y T20 cerrados — diseño fl-* en producción
-- QA parcial realizado — H1-H6 documentados en deuda técnica
-- T21 revertido — faltaba diseño aprobado antes de construir
-- Próximo paso obligatorio: sesión de DISEÑO para definir layout desktop de Planificación y Ejecución antes de retomar construcción
+- Diseño aprobado — especificación completa en ESTADO.md
+- Paso 0 obligatorio: leer archivo de Claude Design del repo antes de escribir cualquier componente
+- Un solo ticket activo: T21
+- DoD: 7 puntos verificables
 - Go-live junio 7, 2026
-- git identity: camilovillamil@gmail.com — repo público en GitHub
 
 CIERRE: Actualizar ESTADO.md con hora de cierre y retrospectiva.
 Regla: bugs se documentan como deuda técnica — no se corrigen dentro del ticket.
@@ -825,5 +825,25 @@ Regla: bugs se documentan como deuda técnica — no se corrigen dentro del tick
 **Qué cambia en el próximo sprint:**
 - Próxima sesión es obligatoriamente DISEÑO — no construcción
 - Sin diseño aprobado de ambas vistas desktop no se abre ningún ticket de construcción
+
+---
+
+## Retrospectiva — Sesión DISEÑO · Layout desktop + móvil M1
+
+Fecha: 30 mayo 2026 | 10:00 – 11:27 am
+
+**Qué funcionó:**
+- Diseño de Claude Design como punto de partida — evitó rediseñar desde cero
+- Modelo de Vercel actual definió el layout correcto para desktop (2 columnas, no 3)
+- Secuencia de preguntas antes de especificar — cada respuesta eliminó ambigüedad real
+- T21 revertido correctamente — la sesión de diseño existió por esa razón
+
+**Qué no funcionó:**
+- Especificación inicial excluyó responsive sin señalarlo explícitamente — corrección necesaria
+- Asunción implícita de que la vista móvil actual era móvil real — no lo era
+
+**Qué cambia en el próximo sprint:**
+- Claude Code lee archivo de Claude Design antes de escribir cualquier componente
+- T21 abierto con DoD de 7 puntos — sesión de CONSTRUCCIÓN
 
 Flujo - Proyecto de salud financiera familiar - Camilo Villamil - 2026
