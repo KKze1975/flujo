@@ -399,6 +399,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | API POST /mes/[mes]/conceptos | Operativo — crea H1 + H2 atómico para B4 |
 | API H4 | Operativo — upsert ingreso Camilo y aportes Angie por semana |
 | Amazon WorkSpaces | Activo — entorno de desarrollo principal |
+| graphify | Activo — grafo de código en graphify-out/ — 527 nodos, 847 aristas, 42 comunidades — se actualiza automáticamente al editar .ts/.tsx |
 | Google Sheet original | Legacy — no se toca |
 | Ticket 15 — Filtro por semana + Cierre semanal | Completo — DoD 5/5 verificado |
 | Filtro S1/S2/S3/S4/Todas en MesM1 | Operativo — semana activa por default, totales reactivos |
@@ -479,6 +480,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | Mayo 2026 | Turbopack activo en desarrollo | Default de create-next-app — sin impacto en producción |
 | Mayo 2026 | Repo anterior descartado | 44 objetos sin archivos rastreados — proyecto nuevo |
 | Mayo 2026 | ESTADO.md vive en el repo | Repo privado — fuente de verdad junto al código |
+| Mayo 2026 | graphify como capa de navegación de código | ESTADO.md cubre contexto de negocio y decisiones. graphify cubre estructura del código — reemplaza grep/lectura masiva de archivos para navegación |
 | Mayo 2026 | Autenticación MVP: PIN simple | actor: camilo / angie — Google OAuth como feature futura |
 | Mayo 2026 | Registro rápido: Claude API | JSON con campo confianza — costo menor a $0.20 USD/mes |
 | Mayo 2026 | Escrituras compuestas: batchUpdate | Falla completa o no falla |
@@ -786,17 +788,17 @@ Archivo fuente: H1_presupuesto_base.csv
 ## Prompt de apertura — próxima sesión
 
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo y el adjunto al proyecto Claude.
-Tipo de sesión: VERIFICACIÓN + DEPLOY — T21 en producción, smoke test go-live
+Tipo de sesión: [COMPLETAR AL ABRIR]
 Hora de inicio: [COMPLETAR AL ABRIR]
 Entorno: Windows — PowerShell exclusivamente.
 
 APERTURA: Genera el dashboard con los datos actuales de ESTADO.md antes de cualquier otra cosa.
 
-Contexto crítico:
-- T21 completo en local — pendiente push a main y deploy Vercel
-- Go-live junio 7, 2026 — faltan días
-- Smoke test obligatorio en Vercel antes de declarar go-live
-- Deuda técnica H3, H4, H6 documentada — no se toca en esta sesión salvo que bloquee go-live
+Navegación de código: el proyecto tiene un grafo en graphify-out/. Antes de leer archivos fuente para entender estructura, usá:
+- `graphify query "<pregunta>"` para preguntas sobre el código
+- `graphify path "<A>" "<B>"` para entender cómo se conectan dos símbolos
+- `graphify explain "<símbolo>"` para ver todas las conexiones de un nodo
+Leé archivos fuente solo para el archivo específico que vas a editar.
 
 CIERRE: Actualizar ESTADO.md con hora de cierre y retrospectiva.
 Regla: bugs se documentan como deuda técnica — no se corrigen dentro del ticket.
