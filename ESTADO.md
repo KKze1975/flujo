@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Mayo 2026 | Fase: MVP completo — T17 cerrado, vista semanal M4 operativa en producción
+Actualizado: Mayo 2026 | Fase: MVP completo — T20 cerrado, diseño desktop en curso
 
 ---
 
@@ -426,6 +426,12 @@ Archivo fuente: H1_presupuesto_base.csv
 ## Deuda técnica conocida
 
 - Vista M1 Ejecución no refleja cambios hechos en M1 Planificación sin recargar — posible estado desincronizado entre vistas o caché de fetch
+- Vista Planificación desktop no existe — T21 requiere sesión de DISEÑO antes de construcción
+- Vista Ejecución desktop carga por defecto en lugar de Planificación — bug H5
+- Botón "Cerrar planificación" aparece en Ejecución desktop — mezcla de vistas — bug H2
+- Vista Ejecución desktop sin agrupación por categorías colapsable — bug H3
+- Vistas Ejecución y Planificación móvil sin rediseño fl-* — bug H4
+- Botones barra izquierda desktop no navegan — sin navegación a Home — bug H6
 - 2 vulnerabilidades moderadas en dependencias npm — pendiente npm audit después del MVP
 - Claude Code auto-update failed — resolver con: npm i -g @anthropic-ai/claude-code
 - H6 tiene columnas cat_* desactualizadas — actualizar para reflejar las 11 categorías aprobadas
@@ -437,6 +443,11 @@ Archivo fuente: H1_presupuesto_base.csv
 - Tabla de conceptos en MesM1 (thead/tbody/tr/td) usa clases Tailwind y hex hardcodeados — pendiente migración a tokens fl-*
 - components/ui/BottomNav.tsx creado en handoff — verificar si duplica components en proto-shell o es el componente activo
 - Bloqueo ejecución sin ingreso no validado visualmente — verificar al inicializar Julio 2026
+- Vista Planificación desktop no existe — T21 requiere sesión de DISEÑO antes de construcción
+- Vista Ejecución desktop carga por defecto en lugar de Planificación — H5
+- Botón "Cerrar planificación" aparece en Ejecución desktop — mezcla de vistas — H2
+- Vista Ejecución desktop sin agrupación por categorías colapsable — H3
+- Botones barra izquierda desktop no navegan — sin navegación a Home — H6
 
 ---
 
@@ -782,22 +793,37 @@ Archivo fuente: H1_presupuesto_base.csv
 ## Prompt de apertura — próxima sesión
 
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo y el adjunto al proyecto Claude.
-Tipo de sesión: [DEFINIR AL ABRIR]
+Tipo de sesión: DISEÑO — Planificación y Ejecución desktop
 Hora de inicio: [COMPLETAR AL ABRIR]
 Entorno: Windows — PowerShell exclusivamente.
 
 APERTURA: Genera el dashboard con los datos actuales de ESTADO.md antes de cualquier otra cosa.
 
 Contexto crítico:
-- MVP completo — T15, T16, T16b, T17 cerrados
+- T19 y T20 cerrados — diseño fl-* en producción
+- QA parcial realizado — H1-H6 documentados en deuda técnica
+- T21 revertido — faltaba diseño aprobado antes de construir
+- Próximo paso obligatorio: sesión de DISEÑO para definir layout desktop de Planificación y Ejecución antes de retomar construcción
 - Go-live junio 7, 2026
-- Repo público en GitHub — sin impacto en seguridad
-- git identity configurada: camilovillamil@gmail.com
-- Deuda técnica pendiente: vista M1 desincronizada, doble fila concepto pospuesto, npm audit
+- git identity: camilovillamil@gmail.com — repo público en GitHub
 
 CIERRE: Actualizar ESTADO.md con hora de cierre y retrospectiva.
 Regla: bugs se documentan como deuda técnica — no se corrigen dentro del ticket.
 
 ---
+
+## Retrospectiva — Sesión QA parcial (Mayo 2026)
+
+**Qué funcionó:**
+- Recorrido de QA identificó 6 hallazgos concretos en M1 desktop
+- T21 revertido correctamente antes de acumular deuda
+
+**Qué no funcionó:**
+- T21 se intentó construir sin diseño aprobado — violación de la metodología
+- El diseño desktop de Planificación y Ejecución nunca fue especificado formalmente
+
+**Qué cambia en el próximo sprint:**
+- Próxima sesión es obligatoriamente DISEÑO — no construcción
+- Sin diseño aprobado de ambas vistas desktop no se abre ningún ticket de construcción
 
 Flujo - Proyecto de salud financiera familiar - Camilo Villamil - 2026
