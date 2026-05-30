@@ -33,8 +33,10 @@ export default function MesM1ClientWrapper({
       <MesM1Desktop
         mes={mes}
         movimientos={movimientos}
+        conceptos={conceptos}
         saldos={saldosInit}
         ingresoCamilo={ingresoCamilo}
+        ingresosAngie={ingresosAngie}
         onSwitchToMobile={() => setViewMode("mobile")}
       />
     );

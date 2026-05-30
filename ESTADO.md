@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Mayo 2026 | Fase: MVP completo — T20 cerrado, diseño desktop en curso
+Actualizado: Mayo 2026 | Fase: T21 completo — layout desktop operativo — go-live junio 7, 2026
 
 ---
 
@@ -420,35 +420,27 @@ Archivo fuente: H1_presupuesto_base.csv
 | Ticket Handoff Claude Design | Completo — sistema visual fl-* migrado, deploy Vercel activo, validado en hardware real (29 mayo 2026) |
 | T19 — MesM1 Desktop | Completo — vista desktop con toggle móvil/desktop, @layer base fix para Tailwind v4, validado en browser |
 | T20 — Fix bugs desktop M1 | Completo — sidebar grid fix, Ejecutar conectado a API, balance semanal en sidebar, modal Ingreso Camilo, bloqueo sin ingreso |
-| T21 — Layout desktop + móvil Planeación y Ejecución | Especificación aprobada — pendiente construcción |
+| T21 — Layout desktop + móvil Planeación y Ejecución | Completo — DoD 7/7 — toggle Planificación/Ejecución, semana activa por defecto, ingresos y aportes en sidebar, semana editable con PATCH H2 |
 
 ---
 
 ## Deuda técnica conocida
 
-- Vista M1 Ejecución no refleja cambios hechos en M1 Planificación sin recargar — posible estado desincronizado entre vistas o caché de fetch
-- Vista Planificación desktop no existe — T21 requiere sesión de DISEÑO antes de construcción
-- Vista Ejecución desktop carga por defecto en lugar de Planificación — bug H5
-- Botón "Cerrar planificación" aparece en Ejecución desktop — mezcla de vistas — bug H2
-- Vista Ejecución desktop sin agrupación por categorías colapsable — bug H3
-- Vistas Ejecución y Planificación móvil sin rediseño fl-* — bug H4
-- Botones barra izquierda desktop no navegan — sin navegación a Home — bug H6
+- Vista M1 Ejecución no refleja cambios hechos en M1 Planificación sin recargar — estado desincronizado entre vistas o caché de fetch
+- Vista Ejecución desktop sin agrupación por categorías colapsable — H3
+- Vistas Ejecución y Planificación móvil sin rediseño fl-* — H4
+- Botones barra izquierda desktop no navegan — sin navegación a Home — H6
+- Tabla de conceptos en MesM1 (thead/tbody/tr/td) usa clases Tailwind y hex hardcodeados — pendiente migración a tokens fl-*
+- VistaSemanal no refleja en tiempo real los gastos registrados via FAB RegistroRapido — requiere reload manual
+- RegistroRapido desde FAB de VistaSemanal no ofrece opción explícita de guardar como "pendiente de clasificación"
 - 2 vulnerabilidades moderadas en dependencias npm — pendiente npm audit después del MVP
 - Claude Code auto-update failed — resolver con: npm i -g @anthropic-ai/claude-code
 - H6 tiene columnas cat_* desactualizadas — actualizar para reflejar las 11 categorías aprobadas
-- scripts/seed-h1.mjs fue ejecutado — puede eliminarse o conservarse como referencia de re-seed
 - Concepto mensual pospuesto genera doble fila en mes siguiente — revisar si es comportamiento deseado
 - Uber One, NY Times, El País, Game Pass agregados via B4 en primera ejecución — verificar que quedaron correctamente en H1
-- VistaSemanal no refleja en tiempo real los gastos registrados via FAB RegistroRapido — requiere reload manual (VistaSemanal no escucha eventos de RegistroRapido)
-- RegistroRapido desde FAB de VistaSemanal no ofrece opción explícita de guardar como "pendiente de clasificación" — el flujo actual solo lo hace sin clasificar si Claude no encuentra match en H2
-- Tabla de conceptos en MesM1 (thead/tbody/tr/td) usa clases Tailwind y hex hardcodeados — pendiente migración a tokens fl-*
 - components/ui/BottomNav.tsx creado en handoff — verificar si duplica components en proto-shell o es el componente activo
 - Bloqueo ejecución sin ingreso no validado visualmente — verificar al inicializar Julio 2026
-- Vista Planificación desktop no existe — T21 requiere sesión de DISEÑO antes de construcción
-- Vista Ejecución desktop carga por defecto en lugar de Planificación — H5
-- Botón "Cerrar planificación" aparece en Ejecución desktop — mezcla de vistas — H2
-- Vista Ejecución desktop sin agrupación por categorías colapsable — H3
-- Botones barra izquierda desktop no navegan — sin navegación a Home — H6
+- scripts/seed-h1.mjs fue ejecutado — puede eliminarse o conservarse como referencia de re-seed
 
 ---
 
@@ -794,18 +786,17 @@ Archivo fuente: H1_presupuesto_base.csv
 ## Prompt de apertura — próxima sesión
 
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo y el adjunto al proyecto Claude.
-Tipo de sesión: CONSTRUCCIÓN — T21 Layout desktop + móvil Planeación y Ejecución
+Tipo de sesión: VERIFICACIÓN + DEPLOY — T21 en producción, smoke test go-live
 Hora de inicio: [COMPLETAR AL ABRIR]
 Entorno: Windows — PowerShell exclusivamente.
 
 APERTURA: Genera el dashboard con los datos actuales de ESTADO.md antes de cualquier otra cosa.
 
 Contexto crítico:
-- Diseño aprobado — especificación completa en ESTADO.md
-- Paso 0 obligatorio: leer archivo de Claude Design del repo antes de escribir cualquier componente
-- Un solo ticket activo: T21
-- DoD: 7 puntos verificables
-- Go-live junio 7, 2026
+- T21 completo en local — pendiente push a main y deploy Vercel
+- Go-live junio 7, 2026 — faltan días
+- Smoke test obligatorio en Vercel antes de declarar go-live
+- Deuda técnica H3, H4, H6 documentada — no se toca en esta sesión salvo que bloquee go-live
 
 CIERRE: Actualizar ESTADO.md con hora de cierre y retrospectiva.
 Regla: bugs se documentan como deuda técnica — no se corrigen dentro del ticket.
@@ -845,5 +836,29 @@ Fecha: 30 mayo 2026 | 10:00 – 11:27 am
 **Qué cambia en el próximo sprint:**
 - Claude Code lee archivo de Claude Design antes de escribir cualquier componente
 - T21 abierto con DoD de 7 puntos — sesión de CONSTRUCCIÓN
+
+---
+
+## Retrospectiva — Sesión CONSTRUCCIÓN · T21 Layout desktop + móvil
+
+Fecha: 30 mayo 2026 | 11:27 am – [HORA CIERRE]
+
+**Qué funcionó:**
+- Paso 0 cumplido — design-handoff leído antes de escribir código; tokens fl-* y clases dk-* usados directamente
+- Un solo archivo modificado para cubrir los 7 puntos del DoD — MesM1Desktop.tsx reescrito como vista unificada
+- Balance Planificación reactivo — recalcula al editar inputs sin round-trip al servidor
+- `handleCambiarSemana` con PATCH H2 inmediato — semana persiste y balance reacciona en el acto
+- TypeScript limpio al primer intento — tsc --noEmit sin errores
+- Semana activa como default en ambos filtros (Planificación y Ejecución) — sin "Todo" como estado inicial
+- Sidebar con overflow-y: auto — contenido Planificación más largo no desborda el layout fijo
+
+**Qué no funcionó:**
+- No se verificó en browser real — pendiente confirmar visualmente en http://localhost:3000
+- Deuda técnica H3 (agrupación por categorías colapsable en Ejecución desktop) no resuelta — fuera del scope
+
+**Qué cambia en el próximo sprint:**
+- Push a main y deploy Vercel antes de cualquier otra cosa
+- Smoke test en producción: toggle Planificación/Ejecución, guardar ingreso, cambiar semana, ejecutar concepto
+- Si smoke test pasa → go-live declarado para junio 7, 2026
 
 Flujo - Proyecto de salud financiera familiar - Camilo Villamil - 2026
