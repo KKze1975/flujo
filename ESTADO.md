@@ -370,6 +370,11 @@ Archivo fuente: H1_presupuesto_base.csv
 | scripts/setup-h2.mjs | Creado — creó pestaña H2 con 22 headers |
 | scripts/check-h2.mjs | Creado — verifica DoD en H2 |
 | package.json | googleapis + next/font + @anthropic-ai/sdk agregados |
+| components/m1/RemRow.tsx | Creado — remanente semana y Angie en header S1-S4, verde/rojo por signo |
+| components/m1/CatGroup.tsx | Creado — categorías colapsables default, orden monto descendente, vacías al final atenuadas |
+| components/ModalCorrecionM5.tsx | Creado — 5 escenarios, registro original como referencia, persiste en H3 via PATCH |
+| app/api/consumos/[id]/route.ts | Creado — PATCH actualiza H3 via updateConsumoH3() |
+| app/api/mes/[mes]/consumos/[semana]/route.ts | Creado — GET sirve historial H3 por semana |
 | next.config.ts | Generado por create-next-app |
 
 ---
@@ -425,7 +430,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | T20 — Fix bugs desktop M1 | Completo — sidebar grid fix, Ejecutar conectado a API, balance semanal en sidebar, modal Ingreso Camilo, bloqueo sin ingreso |
 | T21 — Layout desktop + móvil Planeación y Ejecución | Completo — DoD 7/7 (incl. DoD 6) — MesM1Mobile nueva vista móvil fl-*, toggle Planeación/Ejecución, acciones inline, wrapper responsive auto-detecta viewport |
 | ConceptoBoard — Grid S1-S4 con cards interactivas | Completo — commit d36715d — Planeación y Ejecución desktop |
-| T27 — Diseño pre go-live | Completo — DoD 6/6 — commit b794bf5 — deploy Vercel automático |
+| T27 — Diseño pre go-live | Completo — DoD 6/6 verificado en producción |
 
 ---
 
@@ -964,25 +969,18 @@ Ajuste post Claude Design: escenario H3 sin clasificar vincula exclusivamente a 
 
 ---
 
-## Retrospectiva — Sesión CONSTRUCCIÓN · T27 Mejoras de diseño pre go-live
-Fecha: 31 mayo 2026
+## Retrospectiva — T27 Mejoras de diseño pre go-live
 
 **Qué funcionó:**
-- Diseño Claude Design leído desde bundle gzip — todos los tokens dk-* / fl-* extraídos antes de escribir código
-- DoD 6/6 implementados en una sesión: ConceptoBoard (DoD 1-3), VistaSemanal + modal M5 (DoD 4-6)
-- ConsumoH3 type + updateConsumoH3 en sheets.ts siguiendo exactamente el patrón de updateMovimiento
-- CatGroup colapsable con estado `empty` para semana activa — solo categorías sin conceptos en esa semana van al final atenuadas
-- API PATCH /api/consumos/[id] + GET /api/mes/[mes]/consumos/[semana] — clean, sin side effects
-- tsc --noEmit sin errores al primer intento
-- Deploy Vercel automático confirmado
+- DoD 6/6 en una sola sesión de construcción
+- graphify optimizó navegación de código — sin lectura masiva de archivos
+- Handoff Claude Design → Claude Code directo sin intermediación manual
+- Deploy Vercel automático verificado en producción
 
 **Qué no funcionó:**
-- El WebFetch del bundle devolvió gzip binario — requirió descomprimir con PowerShell antes de leer el HTML
-- graphify queries en Bash (cd sintaxis) requieren PowerShell en este entorno
+- WebFetch del bundle devolvió gzip binario — requirió descomprimir con PowerShell antes de leer
 
 **Qué cambia en el próximo sprint:**
-- Verificar en browser real: remanente semana/Angie en encabezado S1-S4, grupos colapsables, modal M5
-- Si hay H3 consumos en junio 2026, el historial M4 aparecerá automáticamente en VistaSemanal
-- go-live junio 7, 2026 — siguiente acción: smoke test en móvil
+- Abrir T22 — Planificación: acciones y flujo (bugs 3, 4, 5, 6)
 
 Flujo - Proyecto de salud financiera familiar - Camilo Villamil - 2026
