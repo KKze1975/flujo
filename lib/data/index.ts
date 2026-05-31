@@ -4,6 +4,7 @@ import type {
   Movimiento,
   Bolsillo,
   Consumo,
+  ConsumoH3,
   IngresoCamilo,
   IngresoAngie,
   SaldoCuenta,
@@ -38,6 +39,8 @@ export interface IDataProvider {
   updateConsumo(id: string, data: Partial<Omit<Consumo, "id">>): Promise<Consumo>;
   getConsumos(bolsilloId?: string): Promise<Consumo[]>;
   getGastosSinClasificarPorSemana(mes: string): Promise<Record<Semana, number>>;
+  getConsumosByMesYSemana(mes: string, semana: Semana): Promise<ConsumoH3[]>;
+  updateConsumoH3(id: string, data: Partial<Omit<ConsumoH3, "id">>): Promise<ConsumoH3>;
 
   // ── H4 ───────────────────────────────────────────────────────────────────
   getIngresoCamilo(mes: string): Promise<IngresoCamilo[]>;
@@ -63,5 +66,5 @@ export interface IDataProvider {
   createCierreMensual(data: Omit<CierreMensual, "id">): Promise<CierreMensual>;
 }
 
-export type { Semana, Concepto, Movimiento, Bolsillo, Consumo, IngresoCamilo, IngresoAngie, SaldoCuenta, CierreSemana, PlanSemana, CierreMensual };
+export type { Semana, Concepto, Movimiento, Bolsillo, Consumo, ConsumoH3, IngresoCamilo, IngresoAngie, SaldoCuenta, CierreSemana, PlanSemana, CierreMensual };
 export * from "./types";

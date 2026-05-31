@@ -281,6 +281,7 @@ export default function MesM1Desktop({
   mes,
   ingresoCamilo: ingresoCamiloProp = null,
   ingresosAngie: ingresosAngieProp = [],
+  cierresSemana: cierresSemanaProps = [],
   onSwitchToMobile,
 }: {
   movimientos: Movimiento[];
@@ -289,6 +290,7 @@ export default function MesM1Desktop({
   mes: string;
   ingresoCamilo?: IngresoCamilo | null;
   ingresosAngie?: IngresoAngie[];
+  cierresSemana?: import("@/lib/data/types").CierreSemana[];
   onSwitchToMobile: () => void;
 }) {
   const [view, setView] = useState<"planificacion" | "ejecucion">("planificacion");
@@ -369,6 +371,21 @@ export default function MesM1Desktop({
     return Object.entries(map as Record<string, number>).sort((a, b) => b[1] - a[1]).slice(0, 5);
   }, [movs]);
   const catMax = byCat[0]?.[1] ?? 1;
+
+  // T27 · Remanente Angie por semana
+  const remanenteAngiePerSemana = useMemo(() => {
+    const result: Record<import("@/lib/data/types").Semana, number> = { S1: 0, S2: 0, S3: 0, S4: 0 };
+    for (const s of SEMANAS) {
+      const cierre = cierresSemanaProps.find(c => c.semana === s);
+      if (cierre) {
+        result[s] = cierre.remanenteAngie;
+      } else {
+        const ingreso = ingresosAngieProp.find(i => i.semana === s);
+        result[s] = ingreso?.monto ?? 0;
+      }
+    }
+    return result;
+  }, [cierresSemanaProps, ingresosAngieProp]);
 
   // ── Planificación derivations ─────────────────────────────────────────────
 
@@ -926,6 +943,7 @@ export default function MesM1Desktop({
                   mode="ejecucion"
                   focus={wk}
                   onMovimientoUpdate={handleMovUpdate}
+                  remanenteAngiePerSemana={remanenteAngiePerSemana}
                 />
               </div>
             )}

@@ -5,6 +5,7 @@ import type {
   Movimiento,
   Bolsillo,
   Consumo,
+  ConsumoH3,
   IngresoCamilo,
   IngresoAngie,
   SaldoCuenta,
@@ -78,6 +79,12 @@ export class MockDataProvider implements IDataProvider {
   }
   getGastosSinClasificarPorSemana(_mes: string): Promise<Record<Semana, number>> {
     return Promise.resolve({ S1: 0, S2: 0, S3: 0, S4: 0 });
+  }
+  getConsumosByMesYSemana(_mes: string, _semana: Semana): Promise<ConsumoH3[]> {
+    return Promise.resolve([]);
+  }
+  updateConsumoH3(_id: string, _data: Partial<Omit<ConsumoH3, "id">>): Promise<ConsumoH3> {
+    return Promise.resolve(null as unknown as ConsumoH3);
   }
 
   // ── H4 ───────────────────────────────────────────────────────────────────

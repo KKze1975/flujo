@@ -16,6 +16,7 @@ import type {
   Movimiento,
   Bolsillo,
   Consumo,
+  ConsumoH3,
   IngresoCamilo,
   IngresoAngie,
   SaldoCuenta,
@@ -676,6 +677,84 @@ export class SheetsDataProvider implements IDataProvider {
   }
   getConsumos(_bolsilloId?: string): Promise<Consumo[]> {
     throw new Error("Not implemented yet");
+  }
+
+  private readonly H3B_HEADERS = [
+    "id_consumo", "id_bolsillo", "mes", "semana", "descripcion",
+    "monto", "ejecutor", "fuente_en_mano", "fuente_nequi",
+    "fuente_camilo", "fuente_angie", "fecha", "comprobante_url", "clasificado",
+  ];
+
+  private rowToConsumoH3(row: string[], headers: string[]): ConsumoH3 {
+    const col = (name: string) => row[headers.indexOf(name)] ?? "";
+    return {
+      id: col("id_consumo"),
+      bolsilloId: col("id_bolsillo"),
+      mes: col("mes"),
+      semana: col("semana") as Semana,
+      descripcion: col("descripcion"),
+      monto: Number(col("monto")) || 0,
+      ejecutor: (col("ejecutor") || "camilo") as Actor,
+      fuenteEnMano: col("fuente_en_mano").toUpperCase() === "TRUE",
+      fuenteNequi: col("fuente_nequi").toUpperCase() === "TRUE",
+      fuenteCamilo: col("fuente_camilo").toUpperCase() === "TRUE",
+      fuenteAngie: col("fuente_angie").toUpperCase() === "TRUE",
+      fecha: col("fecha"),
+      comprobanteUrl: col("comprobante_url") || null,
+      clasificado: col("clasificado").toUpperCase() === "TRUE",
+    };
+  }
+
+  private consumoH3ToRow(c: ConsumoH3): string[] {
+    return [
+      c.id, c.bolsilloId, c.mes, c.semana, c.descripcion,
+      String(c.monto), c.ejecutor,
+      c.fuenteEnMano ? "TRUE" : "FALSE",
+      c.fuenteNequi  ? "TRUE" : "FALSE",
+      c.fuenteCamilo ? "TRUE" : "FALSE",
+      c.fuenteAngie  ? "TRUE" : "FALSE",
+      c.fecha, c.comprobanteUrl ?? "",
+      c.clasificado ? "TRUE" : "FALSE",
+    ];
+  }
+
+  async getConsumosByMesYSemana(mes: string, semana: Semana): Promise<ConsumoH3[]> {
+    try {
+      const res = await this.sheets.spreadsheets.values.get({
+        spreadsheetId: process.env.GOOGLE_SHEET_ID,
+        range: "H3!A:N",
+      });
+      const rows = (res.data.values ?? []) as string[][];
+      if (rows.length < 2) return [];
+      const [headers, ...data] = rows;
+      return data
+        .filter(row => row[headers.indexOf("mes")] === mes && row[headers.indexOf("semana")] === semana && row[headers.indexOf("id_consumo")])
+        .map(row => this.rowToConsumoH3(row, headers));
+    } catch {
+      return [];
+    }
+  }
+
+  async updateConsumoH3(id: string, data: Partial<Omit<ConsumoH3, "id">>): Promise<ConsumoH3> {
+    const res = await this.sheets.spreadsheets.values.get({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: "H3!A:N",
+    });
+    const rows = (res.data.values ?? []) as string[][];
+    if (rows.length < 2) throw new Error("H3 vacía");
+    const [headers, ...data2] = rows;
+    const rowIndex = data2.findIndex(row => row[headers.indexOf("id_consumo")] === id);
+    if (rowIndex === -1) throw new Error(`Consumo ${id} no encontrado`);
+    const existing = this.rowToConsumoH3(data2[rowIndex], headers);
+    const updated: ConsumoH3 = { ...existing, ...data, id };
+    const sheetRow = rowIndex + 2;
+    await this.sheets.spreadsheets.values.update({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: `H3!A${sheetRow}:N${sheetRow}`,
+      valueInputOption: "RAW",
+      requestBody: { values: [this.consumoH3ToRow(updated)] },
+    });
+    return updated;
   }
 
   // ── H5 ───────────────────────────────────────────────────────────────────

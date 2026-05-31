@@ -68,6 +68,23 @@ export interface Movimiento {
 
 // ── H3 ─────────────────────────────────────────────────────────────────────
 
+export interface ConsumoH3 {
+  id: string;
+  bolsilloId: string;
+  mes: string;
+  semana: Semana;
+  descripcion: string;
+  monto: number;
+  ejecutor: Actor;
+  fuenteEnMano: boolean;
+  fuenteNequi: boolean;
+  fuenteCamilo: boolean;
+  fuenteAngie: boolean;
+  fecha: string;
+  comprobanteUrl: string | null;
+  clasificado: boolean;
+}
+
 export interface Bolsillo {
   id: string;
   nombre: string;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import type { Movimiento, Semana, Actor } from "@/lib/data/types";
+import type { Movimiento, Semana, Actor, Categoria } from "@/lib/data/types";
 import Icon from "@/components/ui/Icon";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -319,12 +319,101 @@ function ConceptCard({
   );
 }
 
+// ── RemRow ────────────────────────────────────────────────────────────────────
+
+function RemRow({ label, value, persona }: { label: string; value: number; persona?: "c" | "a" }) {
+  const cls = value > 0 ? "pos" : value < 0 ? "neg" : "flat";
+  const sgn = value >= 0 ? "+" : "−";
+  return (
+    <div className="dk-rem-row">
+      <span className="k">
+        {persona && (
+          <span className={`fl-person ${persona}`} style={{ width: 16, height: 16, fontSize: 9 }}>
+            {persona === "a" ? "A" : "C"}
+          </span>
+        )}
+        <span className="kt">{label}</span>
+      </span>
+      <span className={`v ${cls}`}>
+        <span className="sgn">{sgn}</span>
+        {copCompact(Math.abs(value))}
+      </span>
+    </div>
+  );
+}
+
+// ── CatGroup ─────────────────────────────────────────────────────────────────
+
+const ALL_CATS: Categoria[] = [
+  "Casa", "Servicios Públicos", "Membresías y Suscripciones", "Educación",
+  "Salud", "Mercado y Alimentación", "Compromisos Financieros",
+  "Recreación", "Transporte", "Metas Familiares", "Frida",
+];
+
+function CatGroup({
+  cat, items, mode, defaultOpen, empty,
+  openCard, onToggle, onConfirmExec, onSavePlan, busy,
+  dragId, onDragStart, onDragEnd,
+}: {
+  cat: Categoria; items: Movimiento[]; mode: BoardMode;
+  defaultOpen: boolean; empty: boolean;
+  openCard: string | null; onToggle: (id: string) => void;
+  onConfirmExec: (id: string, s: ExecState) => void;
+  onSavePlan: (id: string, exc: null | "no" | "next") => void;
+  busy: boolean; dragId: string | null;
+  onDragStart: (id: string, sem: Semana) => void; onDragEnd: () => void;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  const tot = items.reduce((s, m) => s + m.montoPresupuestado, 0);
+
+  return (
+    <div className={`dk-catgroup${open && !empty ? " open" : ""}${empty ? " empty" : ""}`}>
+      <button
+        type="button"
+        className="dk-cathead"
+        onClick={empty ? undefined : () => setOpen(o => !o)}
+      >
+        <span className="dk-cat-ic">
+          <Icon name={CAT_ICON[cat] ?? "wallet"} size={15} />
+        </span>
+        <span className="dk-cat-tx">
+          <span className="nm">{cat}</span>
+          <span className="meta">
+            {empty ? "Sin conceptos" : `${items.length} concepto${items.length !== 1 ? "s" : ""}`}
+          </span>
+        </span>
+        <span className="dk-cat-amt">{empty ? "—" : copCompact(tot)}</span>
+        <span className="dk-cat-chev">
+          <Icon name="arrow" size={14} />
+        </span>
+      </button>
+      {open && !empty && (
+        <div className="dk-cat-body">
+          {items.map(mov => (
+            <ConceptCard
+              key={mov.id} mov={mov} mode={mode} busy={busy}
+              isOpen={openCard === mov.id}
+              onToggle={() => onToggle(mov.id)}
+              onConfirmExec={s => onConfirmExec(mov.id, s)}
+              onSavePlan={exc => onSavePlan(mov.id, exc)}
+              dragId={dragId}
+              onDragStart={onDragStart}
+              onDragEnd={onDragEnd}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── WeekColumn ────────────────────────────────────────────────────────────────
 
 function WeekColumn({
   semana, items, dates, mode, focus, activeSemana,
   openCard, onToggle, onConfirmExec, onSavePlan, busy,
   dragId, onDragStart, onDragEnd, onDrop, dropHover, setDropHover,
+  remanenteAngie,
 }: {
   semana: Semana; items: Movimiento[]; dates: Record<Semana, string>;
   mode: BoardMode; focus: "todas" | Semana; activeSemana: Semana;
@@ -339,17 +428,43 @@ function WeekColumn({
   onDrop: (to: Semana) => void;
   dropHover: Semana | null;
   setDropHover: (s: Semana | null) => void;
+  remanenteAngie?: number;
 }) {
   const tot = items.reduce((s, m) => s + m.montoPresupuestado, 0);
   const ejecutados = items.filter(m => m.estado === "ejecutado");
+  const ejecutadoMonto = ejecutados.reduce((s, m) => s + (m.montoEjecutado ?? m.montoPresupuestado), 0);
   const pct = items.length ? Math.round((ejecutados.length / items.length) * 100) : 0;
   const porPagar = items.filter(m => m.estado === "pendiente").reduce((s, m) => s + m.montoPresupuestado, 0);
+  const remanenteSemana = tot - ejecutadoMonto;
   const dim = focus !== "todas" && focus !== semana;
   const isFocus = focus === semana;
   const allDone = ejecutados.length === items.length && items.length > 0;
   const isActiva = semana === activeSemana;
   const canDrop = mode === "planeacion" && !!dragId && dragId !== "";
   const isDropTarget = canDrop && dropHover === semana;
+
+  // Group items by category; order active-week categories first (by total desc), then empty ones at end
+  const catGroups = useMemo(() => {
+    const map: Partial<Record<Categoria, Movimiento[]>> = {};
+    for (const mov of items) {
+      const cat = mov.categoriaSnapshot as Categoria;
+      if (!map[cat]) map[cat] = [];
+      map[cat]!.push(mov);
+    }
+    // Categories with items sorted by total presupuestado desc
+    const withItems = ALL_CATS
+      .filter(c => map[c] && map[c]!.length > 0)
+      .sort((a, b) => {
+        const ta = (map[a] ?? []).reduce((s, m) => s + m.montoPresupuestado, 0);
+        const tb = (map[b] ?? []).reduce((s, m) => s + m.montoPresupuestado, 0);
+        return tb - ta;
+      });
+    // For active semana: categories not present in this week's items go at end, dimmed
+    const emptyCats = semana === activeSemana
+      ? ALL_CATS.filter(c => !map[c] || map[c]!.length === 0)
+      : [];
+    return { withItems, emptyCats, map };
+  }, [items, semana, activeSemana]);
 
   return (
     <div
@@ -375,6 +490,13 @@ function WeekColumn({
           <>
             <div className="dk-wk-prog"><i style={{ width: `${pct}%` }} /></div>
             <p className="dk-wk-progtx">{ejecutados.length}/{items.length} ejecutados · {copCompact(porPagar)} por pagar</p>
+            {/* T27 · Remanente semana + Remanente Angie */}
+            <div className="dk-wk-rem">
+              <RemRow label="Remanente semana" value={remanenteSemana} />
+              {remanenteAngie !== undefined && (
+                <RemRow label="Remanente Angie" value={remanenteAngie} persona="a" />
+              )}
+            </div>
           </>
         ) : (
           <>
@@ -385,19 +507,29 @@ function WeekColumn({
       </div>
 
       <div className="dk-wk-body">
-        {items.length === 0 && (
+        {items.length === 0 && !catGroups.emptyCats.length && (
           <div className="dk-wk-empty">{canDrop ? "Suelta aquí" : "Sin conceptos"}</div>
         )}
-        {items.map(mov => (
-          <ConceptCard
-            key={mov.id} mov={mov} mode={mode} busy={busy}
-            isOpen={openCard === mov.id}
-            onToggle={() => onToggle(mov.id)}
-            onConfirmExec={s => onConfirmExec(mov.id, s)}
-            onSavePlan={exc => onSavePlan(mov.id, exc)}
-            dragId={dragId}
-            onDragStart={onDragStart}
-            onDragEnd={onDragEnd}
+        {/* T27 · Categorías colapsables */}
+        {catGroups.withItems.map(cat => (
+          <CatGroup
+            key={cat} cat={cat} items={catGroups.map[cat] ?? []}
+            mode={mode} defaultOpen={false} empty={false}
+            openCard={openCard} onToggle={onToggle}
+            onConfirmExec={onConfirmExec} onSavePlan={onSavePlan}
+            busy={busy} dragId={dragId}
+            onDragStart={onDragStart} onDragEnd={onDragEnd}
+          />
+        ))}
+        {/* T27 · Categorías sin conceptos en semana activa — al final, atenuadas */}
+        {catGroups.emptyCats.map(cat => (
+          <CatGroup
+            key={cat} cat={cat} items={[]}
+            mode={mode} defaultOpen={false} empty
+            openCard={openCard} onToggle={onToggle}
+            onConfirmExec={onConfirmExec} onSavePlan={onSavePlan}
+            busy={busy} dragId={dragId}
+            onDragStart={onDragStart} onDragEnd={onDragEnd}
           />
         ))}
       </div>
@@ -413,12 +545,14 @@ export default function ConceptoBoard({
   mode,
   focus,
   onMovimientoUpdate,
+  remanenteAngiePerSemana,
 }: {
   movimientos: Movimiento[];
   mes: string;
   mode: BoardMode;
   focus: "todas" | Semana;
   onMovimientoUpdate: (updated: Movimiento) => void;
+  remanenteAngiePerSemana?: Record<Semana, number>;
 }) {
   const [movs, setMovs] = useState<Movimiento[]>(movimientos);
   const [openCard, setOpenCard] = useState<string | null>(null);
@@ -515,6 +649,7 @@ export default function ConceptoBoard({
             onDrop={handleDrop}
             dropHover={dropHover}
             setDropHover={setDropHover}
+            remanenteAngie={remanenteAngiePerSemana?.[s]}
           />
         ))}
       </div>

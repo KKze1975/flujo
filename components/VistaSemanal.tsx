@@ -6,7 +6,7 @@ import Icon from "@/components/ui/Icon";
 import Ring from "@/components/ui/Ring";
 import BottomNav from "@/components/ui/BottomNav";
 import RegistroRapido from "@/components/m4/RegistroRapido";
-import type { Movimiento, CierreSemana, Semana, Actor } from "@/lib/data/types";
+import type { Movimiento, CierreSemana, Semana, Actor, ConsumoH3 } from "@/lib/data/types";
 
 type Fuente = "en_mano" | "nequi" | "camilo" | "angie";
 
@@ -26,6 +26,298 @@ function COP(n: number): string {
   return new Intl.NumberFormat("es-CO", {
     style: "currency", currency: "COP", maximumFractionDigits: 0,
   }).format(n);
+}
+
+function copCompact(n: number): string {
+  const a = Math.abs(n);
+  const sign = n < 0 ? "-" : "";
+  if (a >= 1_000_000) return `${sign}$${(a / 1_000_000).toFixed(1)}M`;
+  if (a >= 1_000) return `${sign}$${Math.round(a / 1_000)}K`;
+  return `${sign}$${a}`;
+}
+
+// Active bolsillos list (ESTADO.md: vincula exclusivamente a bolsillos activos)
+const BOLSILLOS_ACTIVOS = [
+  { id: "frida",           nombre: "Frida",           icon: "paw"    },
+  { id: "entretenimiento", nombre: "Entretenimiento",  icon: "film"   },
+  { id: "mercado_semanal", nombre: "Mercado semanal",  icon: "bag"    },
+  { id: "mercado_mensual", nombre: "Mercado mensual",  icon: "bag"    },
+  { id: "fondo_transporte",nombre: "Fondo transporte", icon: "car"    },
+  { id: "angie",           nombre: "Angie",            icon: "wallet" },
+];
+
+const FUENTES_M5 = [
+  { key: "fuenteCamilo" as const, label: "NU Camilo", persona: "c" as const },
+  { key: "fuenteAngie"  as const, label: "NU Angie",  persona: "a" as const },
+  { key: "fuenteNequi"  as const, label: "ARQ",       persona: null         },
+  { key: "fuenteEnMano" as const, label: "En mano",   persona: null         },
+];
+
+// ── M5 Modal ──────────────────────────────────────────────────────────────────
+
+type M5FuenteKey = "fuenteCamilo" | "fuenteAngie" | "fuenteNequi" | "fuenteEnMano";
+
+function fuenteLabel(c: ConsumoH3): string {
+  if (c.fuenteCamilo) return "NU Camilo";
+  if (c.fuenteAngie)  return "NU Angie";
+  if (c.fuenteNequi)  return "ARQ";
+  if (c.fuenteEnMano) return "En mano";
+  return "—";
+}
+
+function OriginalRecord({ consumo, flagClasif }: { consumo: ConsumoH3; flagClasif?: boolean }) {
+  const fuente = fuenteLabel(consumo);
+  const catIcon = CAT_ICON[consumo.bolsilloId] ?? "wallet";
+  return (
+    <div className="dk-orig">
+      <p className="dk-orig-lbl"><Icon name="receipt" size={12} /> Registro original</p>
+      <div className="dk-orig-main">
+        <span className="dk-orig-ic"><Icon name={catIcon} size={16} /></span>
+        <div className="dk-orig-tx">
+          <p className="t">{consumo.descripcion || "Sin descripción"}</p>
+          <p className="d">{consumo.fecha}</p>
+        </div>
+        <span className="dk-orig-amt">{COP(consumo.monto)}</span>
+      </div>
+      <div className="dk-orig-tags">
+        <span className={`dk-otag${flagClasif ? " flag" : ""}`}>
+          {flagClasif && <Icon name="alert" size={11} />}
+          {consumo.clasificado ? consumo.bolsilloId : "Sin clasificar"}
+        </span>
+        <span className="dk-otag">Semana {consumo.semana}</span>
+        <span className="dk-otag">{fuente}</span>
+        <span className="dk-otag">
+          <span className={`fl-person ${consumo.ejecutor === "camilo" ? "c" : "a"}`} style={{ width: 14, height: 14, fontSize: 8 }}>
+            {consumo.ejecutor === "camilo" ? "C" : "A"}
+          </span>
+          {consumo.ejecutor === "camilo" ? "Camilo" : "Angie"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+type M5Scenario = "monto" | "ejecutor" | "fuente" | "clasif" | "semana";
+
+const SCN_LABEL: Record<M5Scenario, { eye: string; title: string; note: string }> = {
+  monto:    { eye: "Error de monto",           title: "Corregir el monto",         note: "Ajusta el valor; el registro original queda como referencia." },
+  ejecutor: { eye: "Ejecutor incorrecto",      title: "¿Quién ejecutó el gasto?",  note: "Cambia la persona que pagó." },
+  fuente:   { eye: "Fuente de pago incorrecta",title: "Cambiar la fuente de pago", note: "Selecciona de dónde salió realmente el dinero." },
+  clasif:   { eye: "Gasto sin clasificar · H3",title: "Clasificar el gasto",       note: "Asígnalo a un bolsillo activo para registrar correctamente el consumo." },
+  semana:   { eye: "Semana incorrecta",        title: "Mover de semana",           note: "Reasigna el registro a la semana correcta del mes." },
+};
+
+function ModalCorreccion({
+  consumo,
+  onClose,
+  onSaved,
+}: {
+  consumo: ConsumoH3;
+  onClose: () => void;
+  onSaved: (updated: ConsumoH3) => void;
+}) {
+  const defaultScenario: M5Scenario = !consumo.clasificado ? "clasif" : "monto";
+  const [scenario, setScenario] = useState<M5Scenario>(defaultScenario);
+  const [monto, setMonto] = useState(consumo.monto);
+  const [ejecutor, setEjecutor] = useState<Actor>(consumo.ejecutor);
+  const [fuentes, setFuentes] = useState({
+    fuenteCamilo: consumo.fuenteCamilo,
+    fuenteAngie: consumo.fuenteAngie,
+    fuenteNequi: consumo.fuenteNequi,
+    fuenteEnMano: consumo.fuenteEnMano,
+  });
+  const [bolsilloId, setBolsilloId] = useState<string | null>(null);
+  const [semana, setSemana] = useState<Semana>(consumo.semana);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const scn = SCN_LABEL[scenario];
+
+  async function guardar() {
+    setBusy(true);
+    setError(null);
+    let patch: Record<string, unknown> = {};
+    if (scenario === "monto")    patch = { monto };
+    if (scenario === "ejecutor") patch = { ejecutor };
+    if (scenario === "fuente")   patch = { ...fuentes };
+    if (scenario === "clasif")   patch = { bolsilloId: bolsilloId ?? consumo.bolsilloId, clasificado: true };
+    if (scenario === "semana")   patch = { semana };
+
+    try {
+      const res = await fetch(`/api/consumos/${consumo.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Error al guardar");
+      onSaved(data as ConsumoH3);
+      onClose();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Error desconocido");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function toggleFuente(key: M5FuenteKey) {
+    setFuentes(prev => ({ ...prev, [key]: !prev[key] }));
+  }
+
+  const semanas: Semana[] = ["S1", "S2", "S3", "S4"];
+
+  return (
+    <div className="dk-modal-backdrop" onClick={onClose}>
+      <div className="dk-modal" onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <header className="dk-modal-head">
+          <div className="lhs">
+            <p className="eyebrow"><Icon name="pencil" size={11} /> {scn.eye}</p>
+            <h3>{scn.title}</h3>
+          </div>
+          <button type="button" className="dk-modal-x" onClick={onClose}>
+            <Icon name="x" size={15} />
+          </button>
+        </header>
+
+        {/* Body */}
+        <div className="dk-modal-body">
+          {/* Scenario tabs */}
+          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+            {(["monto", "ejecutor", "fuente", "clasif", "semana"] as M5Scenario[]).map(s => (
+              <button
+                key={s}
+                type="button"
+                className={`fl-btn ghost sm${scenario === s ? " primary" : ""}`}
+                style={{
+                  fontSize: 10.5, padding: "4px 10px",
+                  background: scenario === s ? "var(--primary-soft)" : "var(--surface-2)",
+                  color: scenario === s ? "var(--primary)" : "var(--ink-soft)",
+                  border: scenario === s ? "1.5px solid var(--primary)" : "1.5px solid var(--line)",
+                }}
+                onClick={() => setScenario(s)}
+              >
+                {SCN_LABEL[s].eye}
+              </button>
+            ))}
+          </div>
+
+          {/* Original record */}
+          <OriginalRecord consumo={consumo} flagClasif={scenario === "clasif"} />
+
+          {/* Correction control */}
+          <div className="dk-corr">
+            {scenario === "monto" && (
+              <>
+                <p className="dk-exp-lbl">Monto corregido</p>
+                <div className="dk-amtrow">
+                  <input
+                    className="dk-amt-in"
+                    type="number"
+                    value={monto}
+                    onChange={e => setMonto(Number(e.target.value) || 0)}
+                    style={{ width: "100%", textAlign: "right", fontFeatureSettings: '"tnum" 1', fontWeight: 600 }}
+                  />
+                </div>
+                {monto !== consumo.monto && (
+                  <div className="dk-diff">
+                    <span className="was">{COP(consumo.monto)}</span>
+                    <span className="arr"><Icon name="arrow" size={13} /></span>
+                    <span className="now">{COP(monto)}</span>
+                  </div>
+                )}
+              </>
+            )}
+
+            {scenario === "ejecutor" && (
+              <>
+                <p className="dk-exp-lbl">Ejecutó</p>
+                <div className="dk-seg2">
+                  {(["camilo", "angie"] as Actor[]).map(a => (
+                    <button key={a} type="button"
+                      className={ejecutor === a ? "on" : ""}
+                      onClick={() => setEjecutor(a)}>
+                      <span className={`fl-person ${a === "camilo" ? "c" : "a"}`} style={{ width: 18, height: 18, fontSize: 9 }}>
+                        {a === "camilo" ? "C" : "A"}
+                      </span>
+                      {a === "camilo" ? "Camilo" : "Angie"}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {scenario === "fuente" && (
+              <>
+                <p className="dk-exp-lbl">Fuente de pago</p>
+                <div className="dk-srcs">
+                  {FUENTES_M5.map(({ key, label, persona }) => (
+                    <button key={key} type="button"
+                      className={`dk-src${fuentes[key] ? " on" : ""}`}
+                      onClick={() => toggleFuente(key)}>
+                      {persona
+                        ? <span className={`fl-person ${persona}`} style={{ width: 22, height: 22, fontSize: 10 }}>{persona === "c" ? "C" : "A"}</span>
+                        : <span className="dk-src-ic"><Icon name="wallet" size={13} /></span>}
+                      <span className="nm">{label}</span>
+                      <span className="dk-rb"><Icon name="check" size={11} /></span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {scenario === "clasif" && (
+              <>
+                <p className="dk-exp-lbl">Bolsillo activo</p>
+                <div className="dk-h2pick">
+                  {BOLSILLOS_ACTIVOS.map(b => (
+                    <button key={b.id} type="button"
+                      className={`dk-h2${bolsilloId === b.id ? " on" : ""}`}
+                      onClick={() => setBolsilloId(b.id)}>
+                      <span className="dk-h2-ic"><Icon name={b.icon} size={13} /></span>
+                      <span className="nm">{b.nombre}</span>
+                      <span className="dk-rb"><Icon name="check" size={11} /></span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {scenario === "semana" && (
+              <>
+                <p className="dk-exp-lbl">Semana del registro</p>
+                <div className="dk-seg2" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
+                  {semanas.map(s => (
+                    <button key={s} type="button"
+                      className={semana === s ? "on" : ""}
+                      onClick={() => setSemana(s)}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            <p className="dk-corr-note"><Icon name="info" size={13} /> {scn.note}</p>
+          </div>
+
+          {error && (
+            <div style={{ background: "var(--neg-soft)", color: "var(--neg)", borderRadius: 10, padding: "8px 12px", fontSize: 12.5, fontWeight: 600 }}>
+              {error}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <footer className="dk-modal-foot">
+          <button type="button" className="fl-btn ghost sm" onClick={onClose}>Cancelar</button>
+          <button type="button" className="fl-btn primary sm" onClick={guardar} disabled={busy}>
+            <Icon name="check" size={15} /> {busy ? "…" : "Guardar corrección"}
+          </button>
+        </footer>
+      </div>
+    </div>
+  );
 }
 
 const CAT_ICON: Record<string, string> = {
@@ -59,20 +351,24 @@ export default function VistaSemanal({
   semanaActiva,
   movimientosInit,
   cierreSemana,
+  consumosInit = [],
 }: {
   mes: string;
   mesLabel: string;
   semanaActiva: Semana;
   movimientosInit: Movimiento[];
   cierreSemana: CierreSemana | null;
+  consumosInit?: ConsumoH3[];
 }) {
   const router = useRouter();
   const [movimientos, setMovimientos] = useState<Movimiento[]>(movimientosInit);
+  const [consumos, setConsumos] = useState<ConsumoH3[]>(consumosInit);
   const [panel, setPanel] = useState<ActivePanel | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<"pendientes" | "ejecutados">("pendientes");
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [corrigiendoConsumo, setCorrigiendoConsumo] = useState<ConsumoH3 | null>(null);
 
   const bolsillos = movimientos.filter((m) => m.tipoSnapshot === "bolsillo");
   const conceptos  = movimientos.filter((m) => m.tipoSnapshot !== "bolsillo");
@@ -447,6 +743,44 @@ export default function VistaSemanal({
           </div>
         )}
 
+        {/* T27 · Historial M4 — registros rápidos */}
+        {consumos.length > 0 && (
+          <>
+            <p className="fl-sectlabel">Historial M4 · Registros rápidos</p>
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              {consumos.map(c => {
+                const fuente = fuenteLabel(c);
+                return (
+                  <div key={c.id} className="dk-rec">
+                    <span className="dk-rec-ic">
+                      <Icon name={c.clasificado ? "wallet" : "alert"} size={17} />
+                    </span>
+                    <div className="dk-rec-tx">
+                      <p className="t">{c.descripcion || "Sin descripción"}</p>
+                      <p className="d">
+                        {c.clasificado ? c.bolsilloId : "Sin clasificar"} · {c.semana} · {fuente}
+                      </p>
+                    </div>
+                    <span className="dk-rec-who">
+                      <span className={`fl-person ${c.ejecutor === "camilo" ? "c" : "a"}`} style={{ width: 22, height: 22, fontSize: 10 }}>
+                        {c.ejecutor === "camilo" ? "C" : "A"}
+                      </span>
+                    </span>
+                    <span className="dk-rec-amt">{copCompact(c.monto)}</span>
+                    <button
+                      type="button"
+                      className="dk-rec-fix"
+                      onClick={() => setCorrigiendoConsumo(c)}
+                    >
+                      <Icon name="pencil" size={13} /> Corregir
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
       </div>
 
       {/* Bottom nav */}
@@ -472,6 +806,17 @@ export default function VistaSemanal({
             </div>
           </div>
         </div>
+      )}
+
+      {/* T27 · Modal M5 — corrección de registro */}
+      {corrigiendoConsumo && (
+        <ModalCorreccion
+          consumo={corrigiendoConsumo}
+          onClose={() => setCorrigiendoConsumo(null)}
+          onSaved={updated => {
+            setConsumos(prev => prev.map(c => c.id === updated.id ? updated : c));
+          }}
+        />
       )}
     </div>
   );
