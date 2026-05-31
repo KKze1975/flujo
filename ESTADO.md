@@ -428,6 +428,53 @@ Archivo fuente: H1_presupuesto_base.csv
 
 ---
 
+## QA Pre Go-Live — 30 mayo 2026
+
+### Bugs identificados
+
+| # | Vista | Flujo | Qué pasó | Severidad |
+|---|---|---|---|---|
+| 1 | Desktop | M1 Planificación | Balance por semana no acumulativo | Media |
+| 2 | Desktop | M1 Planificación | Mover al mes siguiente no recalcula balance | Media |
+| 3 | Desktop | M1 Planificación | No es posible editar monto de concepto | Alta |
+| 4 | Desktop | M1 Planificación | No hay forma de revertir "Mover al mes siguiente" | Alta |
+| 5 | Desktop | M1 Planificación | Falta botón agregar concepto | Alta |
+| 6 | Desktop | M1 Planificación | Falta botón cerrar planificación | Alta |
+| 7 | Desktop | M1 Ejecución | Modal pide ingreso Camilo en lugar de saldos por cuenta | Alta |
+| 8 | Desktop | M1 Ejecución | Sidebar no muestra saldos por cuenta | Alta |
+| 9 | Desktop | M1 Ejecución | Semanas no muestran ingresos | Media |
+| 10 | Desktop | M1 Ejecución | No hay forma de revertir una ejecución | Alta |
+| 11 | Desktop | M1 Ejecución | Falta opción agregar concepto | Alta |
+| 12 | Desktop | M1 Ejecución | Falta opción "No aplica este mes" | Alta |
+| 13 | Desktop | M1 Ejecución | Falta opciones mover concepto a semana/mes | Alta |
+| 14 | Desktop | M1 Ejecución | Falta drag and drop entre columnas | Media |
+| 15 | Desktop | M1 Ejecución | Falta botón cerrar semana | Alta |
+| 16 | Desktop | Navegación | Sidebar izquierdo no navega | Alta |
+| 17 | Desktop | M4 | Falta botón registrar aporte Angie | Alta |
+| 18 | Desktop | M1 Ejecución | Permite ejecutar sin fondos suficientes | Alta |
+| 19 | Desktop | M1 Ejecución + M4 | Falta adjuntar comprobante al ejecutar | Media |
+
+### Mejoras de diseño pre go-live
+
+1. Balance por semana encima de cada columna S1-S4 en el grid
+2. Conceptos agrupados por categoría colapsable
+3. Saldo de cuentas en encabezado de cada semana en Ejecución
+4. Remanente de Angie visible en Ejecución
+5. M4 — historial con opción de corregir y mover registros
+
+### Tickets derivados
+
+| Ticket | Descripción | Bugs | Prioridad |
+|---|---|---|---|
+| T22 | Planificación: acciones y flujo | 3, 4, 5, 6 | Bloqueante go-live |
+| T23 | Ejecución: acciones y flujo | 7, 8, 10, 11, 12, 13, 15 | Bloqueante go-live |
+| T24 | Balance y cálculos | 1, 2, 9 | Bloqueante go-live |
+| T25 | Navegación y regresiones | 14, 16, 17, 19 | Bloqueante go-live |
+| T26 | Validación de fondos | 18 | Importante — no bloqueante inmediato |
+| T27 | Mejoras de diseño pre go-live | Mejoras 1-5 | Sesión de diseño antes de construir |
+
+---
+
 ## Deuda técnica conocida
 
 - Vista M1 Ejecución no refleja cambios hechos en M1 Planificación sin recargar — estado desincronizado entre vistas o caché de fetch
@@ -791,8 +838,8 @@ Archivo fuente: H1_presupuesto_base.csv
 ## Prompt de apertura — próxima sesión
 
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo y el adjunto al proyecto Claude.
-Tipo de sesión: [COMPLETAR AL ABRIR]
-Hora de inicio: [COMPLETAR AL ABRIR]
+Tipo de sesión: [COMPLETAR]
+Hora de inicio: [COMPLETAR]
 Entorno: Windows — PowerShell exclusivamente.
 
 APERTURA: Genera el dashboard con los datos actuales de ESTADO.md antes de cualquier otra cosa.
