@@ -425,7 +425,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | T20 — Fix bugs desktop M1 | Completo — sidebar grid fix, Ejecutar conectado a API, balance semanal en sidebar, modal Ingreso Camilo, bloqueo sin ingreso |
 | T21 — Layout desktop + móvil Planeación y Ejecución | Completo — DoD 7/7 (incl. DoD 6) — MesM1Mobile nueva vista móvil fl-*, toggle Planeación/Ejecución, acciones inline, wrapper responsive auto-detecta viewport |
 | ConceptoBoard — Grid S1-S4 con cards interactivas | Completo — commit d36715d — Planeación y Ejecución desktop |
-| T27 — Diseño pre go-live | Completo — diseño aprobado, pendiente Claude Design para M1 encabezado columna, M2 categoría colapsable, M5 modal corrección |
+| T27 — Diseño pre go-live | Completo — diseño aprobado y validado contra Claude Design · PDF T27 aprobado · listo para construcción |
 
 ---
 
@@ -493,6 +493,7 @@ Archivo fuente: H1_presupuesto_base.csv
 - Bloqueo ejecución sin ingreso no validado visualmente — verificar al inicializar Julio 2026
 - scripts/seed-h1.mjs fue ejecutado — puede eliminarse o conservarse como referencia de re-seed
 - Verificar en producción Vercel que el grid S1-S4 renderiza correctamente después del deploy automático
+- DevOps: rama `dev` + deploy preview de Vercel pendiente — hoy todo push a `main` va directo a producción. Setup estimado 10 min. Prioridad: antes del primer ticket post go-live.
 
 ---
 
@@ -612,7 +613,8 @@ Archivo fuente: H1_presupuesto_base.csv
 | Mayo 2026 | T27 — Rail derecho M1 Ejecución | 3 tarjetas: Presupuestado · Ejecutado · Proyección superávit/déficit |
 | Mayo 2026 | T27 — Agrupación por categoría | Colapsado por default · orden por semana activa + monto descendente · sin conceptos al final atenuado |
 | Mayo 2026 | T27 — Remanente semana y Angie en encabezado S1-S4 | Dos líneas nuevas bajo el encabezado existente · verde positivo · rojo negativo |
-| Mayo 2026 | T27 — Modal corrección M5 | 5 escenarios: monto · ejecutor · fuente de pago · H3 sin clasificar · semana incorrecta · muestra registro original como referencia |
+| Mayo 2026 | T27 — Modal corrección M5 | 5 escenarios: monto · ejecutor · fuente de pago · H3 sin clasificar (vincula a bolsillo, no a concepto H2) · semana incorrecta · muestra registro original como referencia |
+| Mayo 2026 | DevOps MVP: sin pipeline formal | Vercel CI/CD automático es suficiente para 4 usuarios. Tests, staging y alertas = post MVP. Única excepción documentada: rama dev + preview URL antes del primer ticket post go-live. |
 
 ---
 
@@ -957,5 +959,7 @@ Fecha: 31 mayo 2026
 **Qué cambia en el próximo sprint:**
 - Obtener diseño Claude Design para 3 elementos: encabezado columna · categoría colapsable · modal M5
 - Con diseño aprobado: abrir T22 como primer ticket de construcción
+
+Ajuste post Claude Design: escenario H3 sin clasificar vincula exclusivamente a bolsillos activos (Frida / Entretenimiento / Mercado semanal / Mercado mensual / Fondo transporte / Angie) — no a conceptos H2
 
 Flujo - Proyecto de salud financiera familiar - Camilo Villamil - 2026
