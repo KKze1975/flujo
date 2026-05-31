@@ -867,4 +867,25 @@ Fecha: 30 mayo 2026 | 11:27 am – completado (DoD 6 incluido)
 - Smoke test en producción: toggle Planificación/Ejecución, tabs semana, confirmar saldos, ejecutar concepto en móvil
 - Si smoke test pasa → go-live declarado para junio 7, 2026
 
+---
+
+## Retrospectiva — Sesión CONSTRUCCIÓN · ConceptoBoard grid S1-S4
+
+Fecha: 30 mayo 2026 | sesión de recuperación post-corte de tokens
+
+**Qué funcionó:**
+- Diagnóstico de estado sin leer archivos masivamente — git status + tsc + graphify en paralelo cubrió todo
+- ConceptoBoard.tsx estaba completo al retomar (524 líneas, TSC limpio) — sesión anterior avanzó más de lo aparente
+- Smoke test local con Playwright antes del commit — evidencia visual antes de push
+- Verificación en producción via Vercel MCP + Playwright — deploy confirmado sin ambigüedad
+- graphify update post-commit — grafo pasó de 527 a 811 nodos con ConceptoBoard integrado
+
+**Qué no funcionó:**
+- La sesión anterior se cortó por tokens justo antes del commit — trabajo completo quedó sin cerrar
+- graphify no se actualizó en la sesión anterior (ConceptoBoard no estaba en el grafo al retomar)
+
+**Qué cambia en el próximo sprint:**
+- Ante corte de tokens: el código puede estar más avanzado de lo que parece — diagnosticar antes de reescribir
+- Confirmar go-live junio 7, 2026: smoke test en móvil real + ejecutar al menos un concepto de junio via la app
+
 Flujo - Proyecto de salud financiera familiar - Camilo Villamil - 2026
