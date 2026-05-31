@@ -424,6 +424,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | T19 — MesM1 Desktop | Completo — vista desktop con toggle móvil/desktop, @layer base fix para Tailwind v4, validado en browser |
 | T20 — Fix bugs desktop M1 | Completo — sidebar grid fix, Ejecutar conectado a API, balance semanal en sidebar, modal Ingreso Camilo, bloqueo sin ingreso |
 | T21 — Layout desktop + móvil Planeación y Ejecución | Completo — DoD 7/7 (incl. DoD 6) — MesM1Mobile nueva vista móvil fl-*, toggle Planeación/Ejecución, acciones inline, wrapper responsive auto-detecta viewport |
+| ConceptoBoard — Grid S1-S4 con cards interactivas | Completo — commit d36715d — Planeación y Ejecución desktop |
 
 ---
 
@@ -443,6 +444,7 @@ Archivo fuente: H1_presupuesto_base.csv
 - components/ui/BottomNav.tsx creado en handoff — verificar si duplica components en proto-shell o es el componente activo
 - Bloqueo ejecución sin ingreso no validado visualmente — verificar al inicializar Julio 2026
 - scripts/seed-h1.mjs fue ejecutado — puede eliminarse o conservarse como referencia de re-seed
+- Verificar en producción Vercel que el grid S1-S4 renderiza correctamente después del deploy automático
 
 ---
 
