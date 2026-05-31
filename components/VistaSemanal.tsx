@@ -451,6 +451,17 @@ export default function VistaSemanal({
     });
   }
 
+  async function handleSheetSuccess() {
+    setSheetOpen(false);
+    try {
+      const res = await fetch(`/api/mes/${mes}/consumos/${semanaActiva}`);
+      if (res.ok) {
+        const data = await res.json() as { consumos: ConsumoH3[] };
+        setConsumos(data.consumos ?? []);
+      }
+    } catch {}
+  }
+
   const lista = tab === "pendientes" ? pendientes : ejecutados;
 
   return (
@@ -802,7 +813,7 @@ export default function VistaSemanal({
               </button>
             </div>
             <div className="sheet-body">
-              <RegistroRapido onClose={() => setSheetOpen(false)} />
+              <RegistroRapido onClose={handleSheetSuccess} />
             </div>
           </div>
         </div>

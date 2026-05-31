@@ -431,6 +431,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | T21 — Layout desktop + móvil Planeación y Ejecución | Completo — DoD 7/7 (incl. DoD 6) — MesM1Mobile nueva vista móvil fl-*, toggle Planeación/Ejecución, acciones inline, wrapper responsive auto-detecta viewport |
 | ConceptoBoard — Grid S1-S4 con cards interactivas | Completo — commit d36715d — Planeación y Ejecución desktop |
 | T27 — Diseño pre go-live | Completo — DoD 6/6 verificado en producción |
+| T28 — Conectar ModalCorreccionM5 a VistaSemanal | Completo — DoD 5/5 verificado — historial M4 refresca tras FAB, modal M5 abre con registro original, 5 escenarios funcionan, PATCH persiste en H3 |
 
 ---
 
@@ -499,10 +500,7 @@ Archivo fuente: H1_presupuesto_base.csv
 - scripts/seed-h1.mjs fue ejecutado — puede eliminarse o conservarse como referencia de re-seed
 - Verificar en producción Vercel que el grid S1-S4 renderiza correctamente después del deploy automático
 - DevOps: rama `dev` + deploy preview de Vercel pendiente — hoy todo push a `main` va directo a producción. Setup estimado 10 min. Prioridad: antes del primer ticket post go-live.
-- ModalCorreccionM5 implementado pero no conectado a VistaSemanal — 
-  historial M4 con botón "Corregir" no aparece después de registrar 
-  un gasto via FAB. DoD 4, 5 y 6 de T27 pendientes de verificación.
-  Ticket requerido antes de go-live.
+- 2 consumos de test en H3 junio 2026 (CONSUMO_1780266997613 S1, CONSUMO_1780267124959 S4) — clasificados, no bloquean cierre — limpiar manualmente antes de go-live si se desea historial limpio
 
 ---
 
@@ -986,5 +984,24 @@ Ajuste post Claude Design: escenario H3 sin clasificar vincula exclusivamente a 
 
 **Qué cambia en el próximo sprint:**
 - Abrir T22 — Planificación: acciones y flujo (bugs 3, 4, 5, 6)
+
+---
+
+## Retrospectiva — T28 Conectar ModalCorreccionM5 a VistaSemanal
+
+Fecha: 31 mayo 2026
+
+**Qué funcionó:**
+- Diagnóstico correcto: el modal Y el historial ya estaban implementados e inlineados en VistaSemanal.tsx — la deuda técnica sobreestimó el trabajo pendiente
+- Fix quirúrgico: 11 líneas en handleSheetSuccess + 1 cambio de prop — sin tocar APIs ni tipos
+- DoD 5/5 verificados vía API antes del commit — monto, clasificación, render HTML confirmados
+- tsc --noEmit limpio al primer intento
+
+**Qué no funcionó:**
+- graphify no tenía el nodo ModalCorreccionM5 — el grafo no se había actualizado post T27; diagnóstico tuvo que recurrir al filesystem directamente
+- 2 consumos de test quedaron en H3 junio 2026 — sin endpoint DELETE, solo clasificables
+
+**Qué cambia en el próximo sprint:**
+- Próximo ticket: T22 — Planificación: acciones y flujo (bugs 3, 4, 5, 6)
 
 Flujo - Proyecto de salud financiera familiar - Camilo Villamil - 2026
