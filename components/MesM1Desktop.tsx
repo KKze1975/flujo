@@ -7,6 +7,7 @@ import type {
   Actor, IngresoCamilo, IngresoAngie, CuentaDestino,
 } from "@/lib/data/types";
 import Icon from "@/components/ui/Icon";
+import ConceptoBoard from "@/components/m1/ConceptoBoard";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -431,6 +432,12 @@ export default function MesM1Desktop({
   }, [conceptosActivosMes, movs, wkPlan]);
 
   const filteredPlanCount = gruposPlan.reduce((s, [, items]) => s + items.length, 0);
+
+  // ── Board callback ────────────────────────────────────────────────────────
+
+  const handleMovUpdate = (updated: Movimiento) => {
+    setMovs(prev => prev.map(m => m.id === updated.id ? updated : m));
+  };
 
   // ── Handlers ─────────────────────────────────────────────────────────────
 
@@ -878,10 +885,10 @@ export default function MesM1Desktop({
           <div className="dk-grid">
 
             {view === "planificacion" ? (
-              <div className="dk-panel">
-                <div className="dk-panel-head">
-                  <h3>Conceptos — Planificación</h3>
-                  <span className="cnt">{filteredPlanCount} conceptos</span>
+              <div className="dk-board-panel">
+                <div className="dk-board-head">
+                  <h3>Distribución de fijos por semana</h3>
+                  <span className="cnt">{movs.length} conceptos</span>
                   <div className="dk-filters">
                     {(["todas", "S1", "S2", "S3", "S4"] as const).map(f => (
                       <button key={f} className={`dk-fchip${wkPlan === f ? " on" : ""}`} onClick={() => setWkPlan(f)}>
@@ -890,48 +897,20 @@ export default function MesM1Desktop({
                     ))}
                   </div>
                 </div>
-                <table className="dk-table">
-                  <thead>
-                    <tr>
-                      <th>Concepto</th>
-                      <th>Categoría</th>
-                      <th className="num">Monto</th>
-                      <th>Semana</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {gruposPlan.flatMap(([cat, items]) => [
-                      <tr className="dk-grouprow" key={`g-${cat}`}>
-                        <td colSpan={4}>
-                          {cat} · {COP(items.reduce((s, c) => s + (c.frecuencia === "semanal" ? c.monto * 4 : c.monto), 0), { compact: true })}
-                        </td>
-                      </tr>,
-                      ...items.map(concepto => (
-                        <PlanRow
-                          key={concepto.id}
-                          concepto={concepto}
-                          movs={movs}
-                          onSemanaChange={handleCambiarSemana}
-                          saving={savingSemanaConcept === concepto.id}
-                        />
-                      )),
-                    ])}
-                  </tbody>
-                  <tfoot>
-                    <tr className="dk-foot">
-                      <td className="lbl">Total comprometido</td>
-                      <td />
-                      <td className="num tot">{COP(totalComprometido)}</td>
-                      <td />
-                    </tr>
-                  </tfoot>
-                </table>
+                <ConceptoBoard
+                  key="plan"
+                  movimientos={movs}
+                  mes={mes}
+                  mode="planeacion"
+                  focus={wkPlan}
+                  onMovimientoUpdate={handleMovUpdate}
+                />
               </div>
             ) : (
-              <div className="dk-panel">
-                <div className="dk-panel-head">
-                  <h3>Conceptos fijos</h3>
-                  <span className="cnt">{filtrados.length} conceptos</span>
+              <div className="dk-board-panel">
+                <div className="dk-board-head">
+                  <h3>Pagos fijos por semana</h3>
+                  <span className="cnt">{movs.filter(m => m.estado === "ejecutado").length}/{movs.length} ejecutados</span>
                   <div className="dk-filters">
                     {(["todas", "S1", "S2", "S3", "S4"] as const).map(f => (
                       <button key={f} className={`dk-fchip${wk === f ? " on" : ""}`} onClick={() => setWk(f)}>
@@ -940,55 +919,14 @@ export default function MesM1Desktop({
                     ))}
                   </div>
                 </div>
-                <table className="dk-table">
-                  <thead>
-                    <tr>
-                      <th>Concepto</th>
-                      <th>Categoría</th>
-                      {wk === "todas" && <th>Sem.</th>}
-                      <th className="num">Monto</th>
-                      <th>Estado</th>
-                      <th style={{ textAlign: "right" }}>Acción</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map((r, i) =>
-                      r.kind === "group" ? (
-                        <tr className="dk-grouprow" key={`g-${r.semana}`}>
-                          <td colSpan={wk === "todas" ? 6 : 5}>{r.label}</td>
-                        </tr>
-                      ) : (
-                        <EjecucionRow
-                          key={r.mov.id}
-                          mov={r.mov}
-                          showWk={wk === "todas"}
-                          wkLabel={r.mov.semana ? dates[r.mov.semana] : ""}
-                          exec={isExec(r.mov)}
-                          panel={ejecutarPanel?.movId === r.mov.id ? ejecutarPanel : null}
-                          onOpenPanel={() => setEjecutarPanel({
-                            movId: r.mov.id, monto: String(r.mov.montoPresupuestado),
-                            ejecutor: "camilo", fuenteEnMano: false, fuenteNequi: false,
-                            fuenteCamilo: false, fuenteAngie: false,
-                          })}
-                          onPanelChange={setEjecutarPanel}
-                          onConfirm={confirmarEjecucion}
-                          onCancel={() => setEjecutarPanel(null)}
-                          busy={busy}
-                          blocked={ejecutarBloqueado}
-                        />
-                      )
-                    )}
-                  </tbody>
-                  <tfoot>
-                    <tr className="dk-foot">
-                      <td className="lbl">Total{wk !== "todas" ? ` · ${wk}` : ""}</td>
-                      <td />
-                      {wk === "todas" && <td />}
-                      <td className="num tot">{COP(filtrados.reduce((s, m) => s + m.montoPresupuestado, 0))}</td>
-                      <td colSpan={2} />
-                    </tr>
-                  </tfoot>
-                </table>
+                <ConceptoBoard
+                  key="exec"
+                  movimientos={movs}
+                  mes={mes}
+                  mode="ejecucion"
+                  focus={wk}
+                  onMovimientoUpdate={handleMovUpdate}
+                />
               </div>
             )}
 
