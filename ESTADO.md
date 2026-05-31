@@ -499,6 +499,10 @@ Archivo fuente: H1_presupuesto_base.csv
 - scripts/seed-h1.mjs fue ejecutado — puede eliminarse o conservarse como referencia de re-seed
 - Verificar en producción Vercel que el grid S1-S4 renderiza correctamente después del deploy automático
 - DevOps: rama `dev` + deploy preview de Vercel pendiente — hoy todo push a `main` va directo a producción. Setup estimado 10 min. Prioridad: antes del primer ticket post go-live.
+- ModalCorreccionM5 implementado pero no conectado a VistaSemanal — 
+  historial M4 con botón "Corregir" no aparece después de registrar 
+  un gasto via FAB. DoD 4, 5 y 6 de T27 pendientes de verificación.
+  Ticket requerido antes de go-live.
 
 ---
 
