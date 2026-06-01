@@ -433,6 +433,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | T27 — Diseño pre go-live | Completo — DoD 6/6 verificado en producción |
 | T28 — Conectar ModalCorreccionM5 a VistaSemanal | Completo — DoD 8/8 verificado en producción (H3 + H2) |
 | T31 — Fix categorías H1 | Completo — 5 conceptos: Mesada Lucas/Emma + Colegio hijos → Hijos; Empleada Mireyita + Provisión Mireyita → Servicio Domestico |
+| T29 — Planificación bugs B1 B2 B3 B4 B7p | Completo (pendiente DoD en producción) — Energía B1 data+render fix; B2 actualiza todas semanas del concepto; B3 acepta monto=0; B4 botones cambio semana; B7p rail oculto en Planificación |
 | T22 — Planificación: acciones y flujo | Completo — bugs 3,4,5,6 resueltos — commit 48406fe |
 | T23 — Ejecución: acciones y flujo | Completo — DoD 7/7 verificado en producción |
 | T24 — Balance y cálculos | Completo — DoD 2/2 verificado en producción — bug #2 falso positivo |
@@ -528,7 +529,7 @@ Archivo fuente: H1_presupuesto_base.csv
 
 | Ticket | Descripción | Bugs/Features | Prioridad |
 |---|---|---|---|
-| T29 | Planificación: bugs de edición y mover | B1, B2, B3, B4, B7p | Bloqueante go-live |
+| T29 | Planificación: bugs de edición y mover | B1, B2, B3, B4, B7p | Completo — pendiente verificación DoD en producción |
 | T30 | Ejecución: saldos reactivos + estados visuales | B5, B6, B7e, F3, F4 | Bloqueante go-live |
 | T31 | Fix H1: Mesadas y Empleada fuera de Mercado | F2 | Completo |
 | T26 | Modal reasignación de fondos | F6 expandido | Post go-live — requiere diseño |
