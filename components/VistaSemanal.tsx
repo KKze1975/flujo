@@ -320,6 +320,240 @@ function ModalCorreccion({
   );
 }
 
+// ── M5 Modal H2 (ejecutados) ─────────────────────────────────────────────────
+
+type M5ScenarioH2 = "monto" | "ejecutor" | "fuente" | "semana";
+
+const SCN_H2_LABEL: Record<M5ScenarioH2, { eye: string; title: string; note: string }> = {
+  monto:    { eye: "Error de monto",            title: "Corregir el monto",         note: "Ajusta el valor ejecutado; el original queda como referencia." },
+  ejecutor: { eye: "Ejecutor incorrecto",       title: "¿Quién ejecutó el gasto?",  note: "Cambia la persona que pagó." },
+  fuente:   { eye: "Fuente de pago incorrecta", title: "Cambiar la fuente de pago", note: "Selecciona de dónde salió realmente el dinero." },
+  semana:   { eye: "Semana incorrecta",         title: "Mover de semana",           note: "Reasigna el movimiento a la semana correcta del mes." },
+};
+
+function fuenteLabelMov(m: Movimiento): string {
+  if (m.fuenteCamilo) return "NU Camilo";
+  if (m.fuenteAngie)  return "NU Angie";
+  if (m.fuenteNequi)  return "ARQ";
+  if (m.fuenteEnMano) return "En mano";
+  return "—";
+}
+
+function OriginalRecordH2({ mov }: { mov: Movimiento }) {
+  const fuente = fuenteLabelMov(mov);
+  return (
+    <div className="dk-orig">
+      <p className="dk-orig-lbl"><Icon name="receipt" size={12} /> Registro original</p>
+      <div className="dk-orig-main">
+        <span className="dk-orig-ic"><Icon name={CAT_ICON[mov.categoriaSnapshot] ?? "wallet"} size={16} /></span>
+        <div className="dk-orig-tx">
+          <p className="t">{mov.nombreSnapshot}</p>
+          <p className="d">{mov.fechaEjecucion ?? "—"}</p>
+        </div>
+        <span className="dk-orig-amt">{COP(mov.montoEjecutado ?? mov.montoPresupuestado)}</span>
+      </div>
+      <div className="dk-orig-tags">
+        <span className="dk-otag">{mov.categoriaSnapshot}</span>
+        <span className="dk-otag">Semana {mov.semana ?? "—"}</span>
+        <span className="dk-otag">{fuente}</span>
+        <span className="dk-otag">
+          <span className={`fl-person ${mov.ejecutor === "camilo" ? "c" : "a"}`} style={{ width: 14, height: 14, fontSize: 8 }}>
+            {mov.ejecutor === "camilo" ? "C" : "A"}
+          </span>
+          {mov.ejecutor === "camilo" ? "Camilo" : "Angie"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function ModalCorreccionH2({
+  movimiento,
+  mes,
+  onClose,
+  onSaved,
+}: {
+  movimiento: Movimiento;
+  mes: string;
+  onClose: () => void;
+  onSaved: (updated: Movimiento) => void;
+}) {
+  const [scenario, setScenario] = useState<M5ScenarioH2>("monto");
+  const [monto, setMonto] = useState(movimiento.montoEjecutado ?? movimiento.montoPresupuestado);
+  const [ejecutor, setEjecutor] = useState<Actor>(movimiento.ejecutor ?? "camilo");
+  const [fuentes, setFuentes] = useState({
+    fuenteCamilo: movimiento.fuenteCamilo,
+    fuenteAngie:  movimiento.fuenteAngie,
+    fuenteNequi:  movimiento.fuenteNequi,
+    fuenteEnMano: movimiento.fuenteEnMano,
+  });
+  const [semana, setSemana] = useState<Semana>(movimiento.semana ?? "S1");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const scn = SCN_H2_LABEL[scenario];
+  const semanas: Semana[] = ["S1", "S2", "S3", "S4"];
+
+  async function guardar() {
+    setBusy(true);
+    setError(null);
+    let body: Record<string, unknown>;
+    if (scenario === "semana") {
+      body = { tipo: "reasignar_semana", semana };
+    } else {
+      body = {
+        tipo: "ejecutar",
+        montoEjecutado: scenario === "monto"    ? monto    : (movimiento.montoEjecutado ?? movimiento.montoPresupuestado),
+        ejecutor:       scenario === "ejecutor" ? ejecutor : (movimiento.ejecutor ?? "camilo"),
+        fuenteEnMano:   scenario === "fuente"   ? fuentes.fuenteEnMano : movimiento.fuenteEnMano,
+        fuenteNequi:    scenario === "fuente"   ? fuentes.fuenteNequi  : movimiento.fuenteNequi,
+        fuenteCamilo:   scenario === "fuente"   ? fuentes.fuenteCamilo : movimiento.fuenteCamilo,
+        fuenteAngie:    scenario === "fuente"   ? fuentes.fuenteAngie  : movimiento.fuenteAngie,
+      };
+    }
+    try {
+      const res = await fetch(`/api/mes/${mes}/movimientos/${movimiento.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Error al guardar");
+      onSaved(data as Movimiento);
+      onClose();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Error desconocido");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function toggleFuenteH2(key: M5FuenteKey) {
+    setFuentes(prev => ({ ...prev, [key]: !prev[key] }));
+  }
+
+  return (
+    <div className="dk-modal-backdrop" onClick={onClose}>
+      <div className="dk-modal" onClick={e => e.stopPropagation()}>
+        <header className="dk-modal-head">
+          <div className="lhs">
+            <p className="eyebrow"><Icon name="pencil" size={11} /> {scn.eye}</p>
+            <h3>{scn.title}</h3>
+          </div>
+          <button type="button" className="dk-modal-x" onClick={onClose}>
+            <Icon name="x" size={15} />
+          </button>
+        </header>
+
+        <div className="dk-modal-body">
+          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+            {(["monto", "ejecutor", "fuente", "semana"] as M5ScenarioH2[]).map(s => (
+              <button key={s} type="button"
+                className={`fl-btn ghost sm${scenario === s ? " primary" : ""}`}
+                style={{
+                  fontSize: 10.5, padding: "4px 10px",
+                  background: scenario === s ? "var(--primary-soft)" : "var(--surface-2)",
+                  color:      scenario === s ? "var(--primary)"      : "var(--ink-soft)",
+                  border:     scenario === s ? "1.5px solid var(--primary)" : "1.5px solid var(--line)",
+                }}
+                onClick={() => setScenario(s)}
+              >
+                {SCN_H2_LABEL[s].eye}
+              </button>
+            ))}
+          </div>
+
+          <OriginalRecordH2 mov={movimiento} />
+
+          <div className="dk-corr">
+            {scenario === "monto" && (
+              <>
+                <p className="dk-exp-lbl">Monto ejecutado corregido</p>
+                <div className="dk-amtrow">
+                  <input className="dk-amt-in" type="number" value={monto}
+                    onChange={e => setMonto(Number(e.target.value) || 0)}
+                    style={{ width: "100%", textAlign: "right", fontFeatureSettings: '"tnum" 1', fontWeight: 600 }}
+                  />
+                </div>
+                {monto !== (movimiento.montoEjecutado ?? movimiento.montoPresupuestado) && (
+                  <div className="dk-diff">
+                    <span className="was">{COP(movimiento.montoEjecutado ?? movimiento.montoPresupuestado)}</span>
+                    <span className="arr"><Icon name="arrow" size={13} /></span>
+                    <span className="now">{COP(monto)}</span>
+                  </div>
+                )}
+              </>
+            )}
+
+            {scenario === "ejecutor" && (
+              <>
+                <p className="dk-exp-lbl">Ejecutó</p>
+                <div className="dk-seg2">
+                  {(["camilo", "angie"] as Actor[]).map(a => (
+                    <button key={a} type="button" className={ejecutor === a ? "on" : ""} onClick={() => setEjecutor(a)}>
+                      <span className={`fl-person ${a === "camilo" ? "c" : "a"}`} style={{ width: 18, height: 18, fontSize: 9 }}>
+                        {a === "camilo" ? "C" : "A"}
+                      </span>
+                      {a === "camilo" ? "Camilo" : "Angie"}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {scenario === "fuente" && (
+              <>
+                <p className="dk-exp-lbl">Fuente de pago</p>
+                <div className="dk-srcs">
+                  {FUENTES_M5.map(({ key, label, persona }) => (
+                    <button key={key} type="button"
+                      className={`dk-src${fuentes[key] ? " on" : ""}`}
+                      onClick={() => toggleFuenteH2(key)}>
+                      {persona
+                        ? <span className={`fl-person ${persona}`} style={{ width: 22, height: 22, fontSize: 10 }}>{persona === "c" ? "C" : "A"}</span>
+                        : <span className="dk-src-ic"><Icon name="wallet" size={13} /></span>}
+                      <span className="nm">{label}</span>
+                      <span className="dk-rb"><Icon name="check" size={11} /></span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {scenario === "semana" && (
+              <>
+                <p className="dk-exp-lbl">Semana del movimiento</p>
+                <div className="dk-seg2" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
+                  {semanas.map(s => (
+                    <button key={s} type="button" className={semana === s ? "on" : ""} onClick={() => setSemana(s)}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            <p className="dk-corr-note"><Icon name="info" size={13} /> {scn.note}</p>
+          </div>
+
+          {error && (
+            <div style={{ background: "var(--neg-soft)", color: "var(--neg)", borderRadius: 10, padding: "8px 12px", fontSize: 12.5, fontWeight: 600 }}>
+              {error}
+            </div>
+          )}
+        </div>
+
+        <footer className="dk-modal-foot">
+          <button type="button" className="fl-btn ghost sm" onClick={onClose}>Cancelar</button>
+          <button type="button" className="fl-btn primary sm" onClick={guardar} disabled={busy}>
+            <Icon name="check" size={15} /> {busy ? "…" : "Guardar corrección"}
+          </button>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
 const CAT_ICON: Record<string, string> = {
   "Casa": "home",
   "Servicios Públicos": "bolt",
@@ -369,6 +603,7 @@ export default function VistaSemanal({
   const [tab, setTab] = useState<"pendientes" | "ejecutados">("pendientes");
   const [sheetOpen, setSheetOpen] = useState(false);
   const [corrigiendoConsumo, setCorrigiendoConsumo] = useState<ConsumoH3 | null>(null);
+  const [corrigiendoMovimiento, setCorrigiendoMovimiento] = useState<Movimiento | null>(null);
 
   const bolsillos = movimientos.filter((m) => m.tipoSnapshot === "bolsillo");
   const conceptos  = movimientos.filter((m) => m.tipoSnapshot !== "bolsillo");
@@ -632,6 +867,19 @@ export default function VistaSemanal({
                     </div>
                   )}
 
+                  {/* Acción corregir para ejecutados */}
+                  {tab === "ejecutados" && (
+                    <div style={{ display: "flex", marginTop: 10 }}>
+                      <button
+                        type="button"
+                        className="dk-rec-fix"
+                        onClick={() => setCorrigiendoMovimiento(mov)}
+                      >
+                        <Icon name="pencil" size={13} /> Corregir
+                      </button>
+                    </div>
+                  )}
+
                   {/* Panel OK */}
                   {panel?.tipo === "ok" && panel.id === mov.id && (
                     <div style={{
@@ -819,13 +1067,25 @@ export default function VistaSemanal({
         </div>
       )}
 
-      {/* T27 · Modal M5 — corrección de registro */}
+      {/* T27 · Modal M5 — corrección de registro H3 */}
       {corrigiendoConsumo && (
         <ModalCorreccion
           consumo={corrigiendoConsumo}
           onClose={() => setCorrigiendoConsumo(null)}
           onSaved={updated => {
             setConsumos(prev => prev.map(c => c.id === updated.id ? updated : c));
+          }}
+        />
+      )}
+
+      {/* T28 · Modal M5 — corrección de ejecutado H2 */}
+      {corrigiendoMovimiento && (
+        <ModalCorreccionH2
+          movimiento={corrigiendoMovimiento}
+          mes={mes}
+          onClose={() => setCorrigiendoMovimiento(null)}
+          onSaved={updated => {
+            setMovimientos(prev => prev.map(m => m.id === updated.id ? updated : m));
           }}
         />
       )}

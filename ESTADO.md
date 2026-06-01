@@ -431,7 +431,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | T21 — Layout desktop + móvil Planeación y Ejecución | Completo — DoD 7/7 (incl. DoD 6) — MesM1Mobile nueva vista móvil fl-*, toggle Planeación/Ejecución, acciones inline, wrapper responsive auto-detecta viewport |
 | ConceptoBoard — Grid S1-S4 con cards interactivas | Completo — commit d36715d — Planeación y Ejecución desktop |
 | T27 — Diseño pre go-live | Completo — DoD 6/6 verificado en producción |
-| T28 — Conectar ModalCorreccionM5 a VistaSemanal | Completo — DoD 5/5 verificado — historial M4 refresca tras FAB, modal M5 abre con registro original, 5 escenarios funcionan, PATCH persiste en H3 |
+| T28 — Conectar ModalCorreccionM5 a VistaSemanal | Completo — DoD 8/8 verificado — historial M4 refresca tras FAB, modal H3 (5 escenarios) + modal H2 (4 escenarios), PATCH persiste en H3 y H2 |
 
 ---
 
@@ -500,7 +500,8 @@ Archivo fuente: H1_presupuesto_base.csv
 - scripts/seed-h1.mjs fue ejecutado — puede eliminarse o conservarse como referencia de re-seed
 - Verificar en producción Vercel que el grid S1-S4 renderiza correctamente después del deploy automático
 - DevOps: rama `dev` + deploy preview de Vercel pendiente — hoy todo push a `main` va directo a producción. Setup estimado 10 min. Prioridad: antes del primer ticket post go-live.
-- 2 consumos de test en H3 junio 2026 (CONSUMO_1780266997613 S1, CONSUMO_1780267124959 S4) — clasificados, no bloquean cierre — limpiar manualmente antes de go-live si se desea historial limpio
+- 2 consumos de test en H3 junio 2026 (CONSUMO_1780266997613 S1, CONSUMO_1780267124959 S2) — clasificados, no bloquean cierre — limpiar manualmente antes de go-live si se desea historial limpio
+- Bug preexistente en escritura semana H3: POST sin-concepto con semana "S4" guardó "S2" en Sheet — revisar índice de columna semana en sheets.ts antes de go-live
 
 ---
 
@@ -1003,5 +1004,26 @@ Fecha: 31 mayo 2026
 
 **Qué cambia en el próximo sprint:**
 - Próximo ticket: T22 — Planificación: acciones y flujo (bugs 3, 4, 5, 6)
+
+---
+
+## Retrospectiva — T28 extensión (DoD 6, 7, 8) — ModalCorreccionH2
+
+Fecha: 31 mayo 2026
+
+**Qué funcionó:**
+- ModalCorreccionH2 inlineado en VistaSemanal — mismo patrón que H3, sin archivo nuevo
+- 4 escenarios H2 (monto/ejecutor/fuente/semana) — clasif no aplica para H2
+- PATCH H2: `tipo: "ejecutar"` preserva campos no corregidos; `reasignar_semana` para semana
+- tsc --noEmit limpio al primer intento — sin errores de tipos
+- DoD 6-8 verificados: strings en bundle + PATCH real en Sheet (monto 50000 y semana S3→S4)
+
+**Qué no funcionó:**
+- Servidor backgrounded no tomó los edits en caliente — necesitó restart manual
+- Bug preexistente detectado: semana "S4" en POST sin-concepto guardó "S2" — documentado como deuda, no corregido en este ticket
+
+**Qué cambia en el próximo sprint:**
+- T22 — Planificación: acciones y flujo (bugs 3, 4, 5, 6)
+- Revisar índice de columna semana en sheets.ts (bug H3 semana) antes de go-live
 
 Flujo - Proyecto de salud financiera familiar - Camilo Villamil - 2026
