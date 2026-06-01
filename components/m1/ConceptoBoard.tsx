@@ -16,6 +16,7 @@ const CAT_ICON: Record<string, string> = {
   "Salud": "heart", "Mercado y Alimentación": "bag",
   "Compromisos Financieros": "wallet", "Recreación": "film",
   "Transporte": "car", "Metas Familiares": "trophy", "Frida": "paw",
+  "Hijos": "heart", "Servicio Domestico": "home",
 };
 
 const FUENTES_PAGO = [
@@ -220,12 +221,13 @@ function DkExecForm({
 // ── DkPlanForm ────────────────────────────────────────────────────────────────
 
 function DkPlanForm({
-  mov, busy, onSave, onCancel,
+  mov, busy, onSave, onCancel, onSemanaChange,
 }: {
   mov: Movimiento;
   busy: boolean;
   onSave: (exc: null | "no" | "next", editedMonto: number) => void;
   onCancel: () => void;
+  onSemanaChange?: (s: Semana) => void;
 }) {
   const initialExc: null | "no" | "next" =
     mov.estado === "no_aplica" ? "no" :
@@ -234,15 +236,11 @@ function DkPlanForm({
   const [editedMonto, setEditedMonto] = useState(String(mov.montoPresupuestado));
   const off = exc !== null;
   const montoNum = Number(editedMonto);
-  const montoChanged = montoNum > 0 && montoNum !== mov.montoPresupuestado;
+  // B3: acepta monto = 0 como valor válido
+  const montoChanged = !isNaN(montoNum) && montoNum !== mov.montoPresupuestado;
 
   return (
     <div className="dk-exp" onClick={e => e.stopPropagation()}>
-      <p className="dk-exp-hint">
-        <Icon name="arrow" size={12} style={{ flexShrink: 0, transform: "rotate(90deg)", color: "var(--primary)" }} />
-        Para cambiar de semana, arrastra la tarjeta a otra columna.
-      </p>
-
       <div className={`dk-exp-sec${off ? " off" : ""}`}>
         <p className="dk-exp-lbl">Monto planeado</p>
         <div className="dk-amtrow">
@@ -263,6 +261,23 @@ function DkPlanForm({
         </div>
       </div>
 
+      {/* B4: mover a semana */}
+      {onSemanaChange && (
+        <div className="dk-exp-opts">
+          <p className="dk-exp-lbl" style={{ marginBottom: 4 }}>Mover a semana</p>
+          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+            {SEMANAS.map(s => (
+              <button key={s} type="button" className="dk-fchip"
+                style={{ fontSize: 11, padding: "3px 8px" }}
+                disabled={busy || mov.semana === s}
+                onClick={() => onSemanaChange(s)}>
+                → {s}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="dk-exp-opts">
         <button type="button" className={`dk-opt${exc === "no" ? " on" : ""}`}
           onClick={() => setExc(exc === "no" ? null : "no")}>
@@ -279,9 +294,10 @@ function DkPlanForm({
       </div>
 
       <div className="dk-exp-actions">
+        {/* B3: disabled solo si monto no es número válido (acepta 0) */}
         <button type="button" className="fl-btn primary sm block"
-          disabled={busy || (montoNum <= 0 && !off)}
-          onClick={() => onSave(exc, montoNum > 0 ? montoNum : mov.montoPresupuestado)}>
+          disabled={busy || (isNaN(montoNum) && !off)}
+          onClick={() => onSave(exc, !isNaN(montoNum) ? montoNum : mov.montoPresupuestado)}>
           <Icon name="check" size={15} /> {busy ? "…" : "Guardar"}
         </button>
         <button type="button" className="dk-exp-cancel" onClick={onCancel}>Cancelar</button>
@@ -294,7 +310,7 @@ function DkPlanForm({
 
 function ConceptCard({
   mov, mode, isOpen, busy,
-  onToggle, onConfirmExec, onSavePlan, onEjecucionAction,
+  onToggle, onConfirmExec, onSavePlan, onEjecucionAction, onSemanaChange,
   dragId, onDragStart, onDragEnd,
 }: {
   mov: Movimiento;
@@ -305,6 +321,7 @@ function ConceptCard({
   onConfirmExec: (s: ExecState) => void;
   onSavePlan: (exc: null | "no" | "next", editedMonto: number) => void;
   onEjecucionAction?: (action: EjecucionAction) => void;
+  onSemanaChange?: (s: Semana) => void;
   dragId: string | null;
   onDragStart: (id: string, sem: Semana) => void;
   onDragEnd: () => void;
@@ -370,7 +387,7 @@ function ConceptCard({
       {isOpen ? (
         mode === "ejecucion"
           ? <DkExecForm mov={mov} busy={busy} onConfirm={onConfirmExec} onCancel={onToggle} onEjecucionAction={onEjecucionAction} />
-          : <DkPlanForm mov={mov} busy={busy} onSave={onSavePlan}    onCancel={onToggle} />
+          : <DkPlanForm mov={mov} busy={busy} onSave={onSavePlan}    onCancel={onToggle} onSemanaChange={onSemanaChange} />
       ) : (
         <div className="dk-cc-foot">
           <span className="dk-cc-who">
@@ -425,11 +442,12 @@ const ALL_CATS: Categoria[] = [
   "Casa", "Servicios Públicos", "Membresías y Suscripciones", "Educación",
   "Salud", "Mercado y Alimentación", "Compromisos Financieros",
   "Recreación", "Transporte", "Metas Familiares", "Frida",
+  "Hijos", "Servicio Domestico",
 ];
 
 function CatGroup({
   cat, items, mode, defaultOpen, empty,
-  openCard, onToggle, onConfirmExec, onSavePlan, onEjecucionAction, busy,
+  openCard, onToggle, onConfirmExec, onSavePlan, onEjecucionAction, onSemanaChange, busy,
   dragId, onDragStart, onDragEnd,
 }: {
   cat: Categoria; items: Movimiento[]; mode: BoardMode;
@@ -438,6 +456,7 @@ function CatGroup({
   onConfirmExec: (id: string, s: ExecState) => void;
   onSavePlan: (id: string, exc: null | "no" | "next", editedMonto: number) => void;
   onEjecucionAction?: (id: string, action: EjecucionAction) => void;
+  onSemanaChange?: (id: string, s: Semana) => void;
   busy: boolean; dragId: string | null;
   onDragStart: (id: string, sem: Semana) => void; onDragEnd: () => void;
 }) {
@@ -475,6 +494,7 @@ function CatGroup({
               onConfirmExec={s => onConfirmExec(mov.id, s)}
               onSavePlan={(exc, monto) => onSavePlan(mov.id, exc, monto)}
               onEjecucionAction={onEjecucionAction ? (a) => onEjecucionAction(mov.id, a) : undefined}
+              onSemanaChange={onSemanaChange ? (s) => onSemanaChange(mov.id, s) : undefined}
               dragId={dragId}
               onDragStart={onDragStart}
               onDragEnd={onDragEnd}
@@ -490,7 +510,7 @@ function CatGroup({
 
 function WeekColumn({
   semana, items, dates, mode, focus, activeSemana,
-  openCard, onToggle, onConfirmExec, onSavePlan, onEjecucionAction, busy,
+  openCard, onToggle, onConfirmExec, onSavePlan, onEjecucionAction, onSemanaChange, busy,
   dragId, onDragStart, onDragEnd, onDrop, dropHover, setDropHover,
   remanenteAngie,
 }: {
@@ -501,6 +521,7 @@ function WeekColumn({
   onConfirmExec: (movId: string, s: ExecState) => void;
   onSavePlan: (movId: string, exc: null | "no" | "next", editedMonto: number) => void;
   onEjecucionAction?: (movId: string, action: EjecucionAction) => void;
+  onSemanaChange?: (movId: string, s: Semana) => void;
   busy: boolean;
   dragId: string | null;
   onDragStart: (id: string, sem: Semana) => void;
@@ -520,8 +541,7 @@ function WeekColumn({
   const isFocus = focus === semana;
   const allDone = ejecutados.length === items.length && items.length > 0;
   const isActiva = semana === activeSemana;
-  const canDrop = !!dragId && dragId !== "";
-  const isDropTarget = canDrop && dropHover === semana;
+  const isDropTarget = dropHover === semana;
 
   // Group items by category; order active-week categories first (by total desc), then empty ones at end
   const catGroups = useMemo(() => {
@@ -556,8 +576,16 @@ function WeekColumn({
         mode === "ejecucion" && isActiva ? "activa" : "",
         isDropTarget ? "drop-hover" : "",
       ].filter(Boolean).join(" ")}
-      onDragOver={canDrop ? e => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; if (dropHover !== semana) setDropHover(semana); } : undefined}
-      onDrop={canDrop ? e => { e.preventDefault(); onDrop(semana); } : undefined}
+      onDragOver={e => {
+        if (!e.dataTransfer.types.includes("text/plain")) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        if (dropHover !== semana) setDropHover(semana);
+      }}
+      onDragLeave={e => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) setDropHover(null);
+      }}
+      onDrop={e => { e.preventDefault(); setDropHover(null); if (dragId) onDrop(semana); }}
     >
       <div className="dk-wk-head">
         <div className="dk-wk-noderow">
@@ -588,7 +616,7 @@ function WeekColumn({
 
       <div className="dk-wk-body">
         {items.length === 0 && !catGroups.emptyCats.length && (
-          <div className="dk-wk-empty">{canDrop ? "Suelta aquí" : "Sin conceptos"}</div>
+          <div className="dk-wk-empty">{dragId ? "Suelta aquí" : "Sin conceptos"}</div>
         )}
         {/* T27 · Categorías colapsables */}
         {catGroups.withItems.map(cat => (
@@ -598,6 +626,7 @@ function WeekColumn({
             openCard={openCard} onToggle={onToggle}
             onConfirmExec={onConfirmExec} onSavePlan={onSavePlan}
             onEjecucionAction={onEjecucionAction}
+            onSemanaChange={onSemanaChange}
             busy={busy} dragId={dragId}
             onDragStart={onDragStart} onDragEnd={onDragEnd}
           />
@@ -610,6 +639,7 @@ function WeekColumn({
             openCard={openCard} onToggle={onToggle}
             onConfirmExec={onConfirmExec} onSavePlan={onSavePlan}
             onEjecucionAction={onEjecucionAction}
+            onSemanaChange={onSemanaChange}
             busy={busy} dragId={dragId}
             onDragStart={onDragStart} onDragEnd={onDragEnd}
           />
@@ -650,11 +680,13 @@ export default function ConceptoBoard({
   const byWeek = useMemo(() => {
     const map: Record<Semana, Movimiento[]> = { S1: [], S2: [], S3: [], S4: [] };
     for (const mov of movs) {
+      // B1: en planificación ocultar no_aplica y pospuesto_mes_siguiente
+      if (mode === "planeacion" && (mov.estado === "no_aplica" || mov.estado === "pospuesto_mes_siguiente")) continue;
       const s = (localSemanas[mov.id] ?? mov.semana) as Semana | null;
       if (s && map[s]) map[s].push(mov);
     }
     return map;
-  }, [movs, localSemanas]);
+  }, [movs, localSemanas, mode]);
 
   const patchar = async (id: string, body: Record<string, unknown>, onSuccess?: (m: Movimiento) => void) => {
     setBusy(true);
@@ -706,7 +738,8 @@ export default function ConceptoBoard({
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? "Error al actualizar monto");
-        setMovs(prev => prev.map(m => m.id === movId ? { ...m, montoPresupuestado: editedMonto } : m));
+        // B2: actualizar TODOS los movimientos del concepto, no solo el editado
+        setMovs(prev => prev.map(m => m.conceptoId === mov.conceptoId ? { ...m, montoPresupuestado: editedMonto } : m));
         onMovimientoUpdate({ ...mov, montoPresupuestado: editedMonto });
       } catch (e: unknown) {
         setError(e instanceof Error ? e.message : "Error desconocido");
@@ -732,6 +765,11 @@ export default function ConceptoBoard({
     else if (action.tipo === "no_aplica") patchar(movId, { tipo: "no_aplica" });
     else if (action.tipo === "mover_mes_siguiente") patchar(movId, { tipo: "mover_mes_siguiente" });
     else patchar(movId, { tipo: "reasignar_semana", semana: action.semana });
+  };
+
+  // B4: cambio de semana desde DkPlanForm (planificación)
+  const handleSemanaChangePlan = (movId: string, semana: Semana) => {
+    patchar(movId, { tipo: "reasignar_semana", semana });
   };
 
   const handleDrop = (toSemana: Semana) => {
@@ -764,6 +802,7 @@ export default function ConceptoBoard({
             onConfirmExec={handleConfirmExec}
             onSavePlan={handleSavePlan}
             onEjecucionAction={mode === "ejecucion" ? handleEjecucionAction : undefined}
+            onSemanaChange={mode === "planeacion" ? handleSemanaChangePlan : undefined}
             busy={busy}
             dragId={dragId}
             onDragStart={(id) => setDragId(id)}

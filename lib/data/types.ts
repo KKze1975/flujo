@@ -19,7 +19,9 @@ export type Categoria =
   | "Recreación"
   | "Transporte"
   | "Metas Familiares"
-  | "Frida";
+  | "Frida"
+  | "Hijos"
+  | "Servicio Domestico";
 export type SemanaDefault = "S1" | "S2" | "S3" | "S4" | "variable";
 
 // ── H1 ─────────────────────────────────────────────────────────────────────

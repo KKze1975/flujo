@@ -64,6 +64,7 @@ const CATEGORIAS_ORDER: Categoria[] = [
   "Casa", "Servicios Públicos", "Membresías y Suscripciones", "Educación",
   "Salud", "Mercado y Alimentación", "Compromisos Financieros",
   "Recreación", "Transporte", "Metas Familiares", "Frida",
+  "Hijos", "Servicio Domestico",
 ];
 
 const CAT_ICON: Record<Categoria, string> = {
@@ -72,6 +73,7 @@ const CAT_ICON: Record<Categoria, string> = {
   "Salud": "heart", "Mercado y Alimentación": "bag",
   "Compromisos Financieros": "wallet", "Recreación": "film",
   "Transporte": "car", "Metas Familiares": "trophy", "Frida": "paw",
+  "Hijos": "heart", "Servicio Domestico": "home",
 };
 
 const CUENTAS_H4C: Array<{
@@ -995,21 +997,23 @@ export default function MesM1Desktop({
               </div>
             )}
 
-            {/* Rail */}
-            <div className="dk-rail">
-              <div className="dk-card">
-                <h4><Icon name="chart" size={15} /> Por categoría</h4>
-                {byCat.map(([cat, amt]) => (
-                  <div className="dk-catbar" key={cat}>
-                    <div className="row">
-                      <span className="n">{cat}</span>
-                      <span className="v">{COP(amt, { compact: true })}</span>
+            {/* Rail — solo en Ejecución (B7p) */}
+            {view === "ejecucion" && (
+              <div className="dk-rail">
+                <div className="dk-card">
+                  <h4><Icon name="chart" size={15} /> Por categoría</h4>
+                  {byCat.map(([cat, amt]) => (
+                    <div className="dk-catbar" key={cat}>
+                      <div className="row">
+                        <span className="n">{cat}</span>
+                        <span className="v">{COP(amt, { compact: true })}</span>
+                      </div>
+                      <div className="fl-bar"><i style={{ width: `${(amt / catMax) * 100}%` }} /></div>
                     </div>
-                    <div className="fl-bar"><i style={{ width: `${(amt / catMax) * 100}%` }} /></div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
           </div>
         </div>
