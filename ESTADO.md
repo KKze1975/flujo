@@ -432,7 +432,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | ConceptoBoard — Grid S1-S4 con cards interactivas | Completo — commit d36715d — Planeación y Ejecución desktop |
 | T27 — Diseño pre go-live | Completo — DoD 6/6 verificado en producción |
 | T28 — Conectar ModalCorreccionM5 a VistaSemanal | Completo — DoD 8/8 verificado en producción (H3 + H2) |
-| T22 — Planificación: acciones y flujo | Completo — DoD 4/4 — commit 48406fe |
+| T22 — Planificación: acciones y flujo | Completo — bugs 3,4,5,6 resueltos — commit 48406fe |
 
 ---
 
@@ -474,7 +474,7 @@ Archivo fuente: H1_presupuesto_base.csv
 
 | Ticket | Descripción | Bugs | Prioridad |
 |---|---|---|---|
-| T22 | Planificación: acciones y flujo | 3, 4, 5, 6 | Completo — commit 48406fe |
+| T22 | Planificación: acciones y flujo | 3, 4, 5, 6 | Completo |
 | T23 | Ejecución: acciones y flujo | 7, 8, 10, 11, 12, 13, 15 | Bloqueante go-live |
 | T24 | Balance y cálculos | 1, 2, 9 | Bloqueante go-live |
 | T25 | Navegación y regresiones | 14, 16, 17, 19 | Bloqueante go-live |
@@ -1033,20 +1033,17 @@ Fecha: 31 mayo 2026
 
 ## Retrospectiva — T22 Planificación: acciones y flujo
 
-Fecha: 2026-06-01
-
 **Qué funcionó:**
-- Exploración con graphify + agentes Explore reveló que 3 de 4 bugs ya existían en VistaPlanificacion (móvil) pero NO en ConceptoBoard (desktop) — diagnóstico correcto antes de escribir código
-- Bug 4 resolvió un bug adicional silencioso: exc === "next" llamaba tipo "posponer" en lugar de "mover_mes_siguiente" — corregido en el mismo cambio
-- canAct en ConceptCard simplificado: planeacion ahora permite abrir cualquier tarjeta no-ejecutada — consistente con la semántica del flujo
-- conceptosLocal en MesM1Desktop: sidebar y balance se actualizan al agregar concepto sin recargar
-- tsc --noEmit limpio al primer intento — TypeScript sin errores
+- 4 bugs resueltos en una sola sesión
+- DkPlanForm extendido sin reescritura — cambios quirúrgicos
+- ModalAgregarConcepto reutilizado sin duplicar código
+- tsc --noEmit limpio al primer intento
 
 **Qué no funcionó:**
-- Nada
+- Primer agente de exploración analizó VistaPlanificacion (móvil) en lugar de ConceptoBoard (desktop) — requirió dos rondas adicionales para llegar al componente correcto
+- Campo FK era conceptoId no idConcepto — detectado con grep antes de tsc
 
 **Qué cambia en el próximo sprint:**
-- Verificar en producción los 4 flujos: editar monto, revertir pospuesto, agregar concepto, cerrar planificación
-- Próximo ticket: T23 — Ejecución: acciones y flujo (bugs 7, 8, 10, 11, 12, 13, 15)
+- T23 — Ejecución: acciones y flujo (bugs 7, 8, 10, 11, 12, 13, 15)
 
 Flujo - Proyecto de salud financiera familiar - Camilo Villamil - 2026
