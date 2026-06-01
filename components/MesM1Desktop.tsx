@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import React from "react";
+import { useRouter } from "next/navigation";
 import type {
   Movimiento, Concepto, SaldoCuenta, Semana, Categoria,
   Actor, IngresoCamilo, IngresoAngie, CuentaDestino,
@@ -11,6 +12,7 @@ import ConceptoBoard from "@/components/m1/ConceptoBoard";
 import ModalAgregarConcepto from "@/components/m1/ModalAgregarConcepto";
 import ModalConfirmarSaldos from "@/components/m1/ModalConfirmarSaldos";
 import ModalCerrarSemana from "@/components/m1/ModalCerrarSemana";
+import ModalAporteAngie from "@/components/m1/ModalAporteAngie";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -298,9 +300,11 @@ export default function MesM1Desktop({
   gastosSinClasificar?: Record<Semana, number>;
   onSwitchToMobile: () => void;
 }) {
+  const router = useRouter();
   const [view, setView] = useState<"planificacion" | "ejecucion">("planificacion");
   const [showConfirmarSaldos, setShowConfirmarSaldos] = useState(false);
   const [showCerrarSemana, setShowCerrarSemana] = useState(false);
+  const [showAporteAngie, setShowAporteAngie] = useState(false);
 
   // Shared state
   const [movs, setMovs] = useState<Movimiento[]>(movimientosProp);
@@ -599,13 +603,13 @@ export default function MesM1Desktop({
         </div>
 
         <nav className="dk-nav">
-          <button className="dk-navitem on"><Icon name="list" size={19} /> Inicio de mes</button>
-          <button className="dk-navitem">
+          <button className="dk-navitem on" onClick={() => router.push("/meses")}><Icon name="list" size={19} /> Inicio de mes</button>
+          <button className="dk-navitem" onClick={() => router.push(`/mes/${mes}/semana`)}>
             <Icon name="calendar" size={19} /> Esta semana
             <span className="badge">{pendientes}</span>
           </button>
-          <button className="dk-navitem"><Icon name="wallet" size={19} /> Bolsillos</button>
-          <button className="dk-navitem"><Icon name="archive" size={19} /> Historial</button>
+          <button className="dk-navitem" disabled style={{ opacity: 0.4, cursor: "not-allowed" }}><Icon name="wallet" size={19} /> Bolsillos</button>
+          <button className="dk-navitem" onClick={() => router.push("/meses?modo=historial")}><Icon name="archive" size={19} /> Historial</button>
         </nav>
 
         <p className="dk-navlabel">Mes</p>
@@ -843,6 +847,9 @@ export default function MesM1Desktop({
             )}
             {view === "ejecucion" && (
               <>
+                <button className="fl-btn ghost sm" onClick={() => setShowAporteAngie(true)}>
+                  <span className="fl-person a" style={{ width: 16, height: 16, fontSize: 8 }}>A</span> Aporte Angie
+                </button>
                 <button className="fl-btn ghost sm" onClick={() => setShowAgregarConcepto(true)}>
                   <Icon name="plus" size={15} /> Agregar concepto
                 </button>
@@ -1007,6 +1014,21 @@ export default function MesM1Desktop({
           </div>
         </div>
       </div>
+
+      {/* ── Modal Aporte Angie (Bug #17) ── */}
+      {showAporteAngie && (
+        <ModalAporteAngie
+          mes={mes}
+          existing={ingresosAngieProp}
+          onClose={() => setShowAporteAngie(false)}
+          onSave={(ingresos) => {
+            const newAportes: Record<Semana, string> = { S1: "", S2: "", S3: "", S4: "" };
+            for (const a of ingresos) newAportes[a.semana] = String(a.monto);
+            setAportes(newAportes);
+            setShowAporteAngie(false);
+          }}
+        />
+      )}
 
       {/* ── Modal Confirmar Saldos (Bug #7) ── */}
       {showConfirmarSaldos && (

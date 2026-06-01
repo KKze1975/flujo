@@ -314,7 +314,7 @@ function ConceptCard({
   const isNoAp = mov.estado === "no_aplica";
   const isPosp = mov.estado === "pospuesto" || mov.estado === "pospuesto_mes_siguiente";
   const canAct = mode === "planeacion" ? !isExec : true;
-  const canDrag = mode === "planeacion" && !isOpen && !isPosp && !isNoAp && !isExec;
+  const canDrag = !isOpen && !isPosp && !isNoAp && !isExec;
   const isDragging = dragId === mov.id;
 
   const cls = [

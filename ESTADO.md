@@ -510,6 +510,9 @@ Archivo fuente: H1_presupuesto_base.csv
 - 2 consumos de test en H3 junio 2026 (CONSUMO_1780266997613 S1, CONSUMO_1780267124959 S2) — clasificados, no bloquean cierre — limpiar manualmente antes de go-live si se desea historial limpio
 - Bug preexistente en escritura semana H3: POST sin-concepto con semana "S4" guardó "S2" en Sheet — revisar índice de columna semana en sheets.ts antes de go-live
 - Botón "Corregir" en ejecutados H2 (VistaSemanal) no verificado visualmente en móvil real — bundle confirma implementación pero falta captura pixel. Verificar antes de go-live.
+- Bug #19 — Comprobante al ejecutar: campo comprobanteUrl existe en Movimiento y H2. Storage = Google Drive (Drive API + endpoint de upload). Fuera del MVP — implementar post go-live.
+- remanenteAngiePerSemana en MesM1Desktop no se actualiza cuando ModalAporteAngie guarda nuevos aportes — usa ingresosAngieProp (prop inmutable en sesión). Impacto: sidebar Ejecución no refleja el nuevo aporte hasta recargar. Fix: extraer ingresosAngie a estado local.
+- Drag and drop en modo Ejecución habilitado (T25) pero sin restricción visual de drop en semana ya cerrada — no bloquea go-live.
 
 ---
 
