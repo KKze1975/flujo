@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Junio 2026 | Fase: T24 completo — go-live junio 7, 2026
+Actualizado: Junio 2026 | Fase: T25 completo — go-live junio 7, 2026
 
 ---
 
@@ -435,6 +435,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | T22 — Planificación: acciones y flujo | Completo — bugs 3,4,5,6 resueltos — commit 48406fe |
 | T23 — Ejecución: acciones y flujo | Completo — DoD 7/7 verificado en producción |
 | T24 — Balance y cálculos | Completo — DoD 2/2 verificado en producción — bug #2 falso positivo |
+| T25 — Navegación y regresiones | Completo — DoD 2/3 verificado en producción — #14 drag and drop movido a deuda técnica |
 
 ---
 
@@ -467,6 +468,7 @@ Archivo fuente: H1_presupuesto_base.csv
 **Resueltos en T22:** bugs 3, 4, 5, 6 — Planificación: acciones y flujo
 **Resueltos en T23:** bugs 7, 8, 10, 11, 12, 13, 15 — Ejecución: acciones y flujo
 **Resueltos en T24:** bugs 1, 9 — Balance y cálculos | bug 2 — falso positivo, lógica ya era correcta
+**Resueltos en T25:** bugs 16, 17 — Navegación y regresiones | bug 14 — movido a deuda técnica (evento no propaga)
 
 ### Mejoras de diseño pre go-live
 
@@ -510,9 +512,10 @@ Archivo fuente: H1_presupuesto_base.csv
 - 2 consumos de test en H3 junio 2026 (CONSUMO_1780266997613 S1, CONSUMO_1780267124959 S2) — clasificados, no bloquean cierre — limpiar manualmente antes de go-live si se desea historial limpio
 - Bug preexistente en escritura semana H3: POST sin-concepto con semana "S4" guardó "S2" en Sheet — revisar índice de columna semana en sheets.ts antes de go-live
 - Botón "Corregir" en ejecutados H2 (VistaSemanal) no verificado visualmente en móvil real — bundle confirma implementación pero falta captura pixel. Verificar antes de go-live.
-- Bug #19 — Comprobante al ejecutar: campo comprobanteUrl existe en Movimiento y H2. Storage = Google Drive (Drive API + endpoint de upload). Fuera del MVP — implementar post go-live.
-- remanenteAngiePerSemana en MesM1Desktop no se actualiza cuando ModalAporteAngie guarda nuevos aportes — usa ingresosAngieProp (prop inmutable en sesión). Impacto: sidebar Ejecución no refleja el nuevo aporte hasta recargar. Fix: extraer ingresosAngie a estado local.
-- Drag and drop en modo Ejecución habilitado (T25) pero sin restricción visual de drop en semana ya cerrada — no bloquea go-live.
+- Drag and drop entre columnas en Ejecución desktop — canDrag/canDrop habilitados en ConceptoBoard pero el evento no propaga. Investigar antes de habilitar en producción.
+- remanenteAngiePerSemana no reactivo post ModalAporteAngie — requiere invalidar estado después de guardar aporte.
+- Drag en Ejecución sin bloqueo por semana cerrada — cuando se habilite drag, agregar validación.
+- Comprobantes al ejecutar — storage Google Drive, requiere Drive API + endpoint upload. Post go-live.
 
 ---
 
@@ -1089,5 +1092,23 @@ Fecha: 2026-06-01
 
 **Qué cambia en el próximo sprint:**
 - T25 — Navegación y regresiones (bugs 14, 16, 17, 19)
+
+---
+
+## Retrospectiva — T25 Navegación y regresiones
+
+Fecha: 2026-06-01
+
+**Qué funcionó:**
+- ModalAporteAngie reutilizado sin lógica nueva — DoD 3 en una línea
+- Sidebar navegación conectado con useRouter — 4 rutas, Bolsillos deshabilitado visualmente
+- Decisión de storage para comprobantes tomada (Google Drive) y documentada antes de cerrar
+
+**Qué no funcionó:**
+- Drag and drop no funcional pese a canDrag/canDrop habilitados — causa no identificada, movido a deuda técnica
+- DoD verificación en producción requirió dos ciclos de deploy por #14
+
+**Qué cambia en el próximo sprint:**
+- T22 — Planificación: acciones y flujo (bugs 3, 4, 5, 6)
 
 Flujo - Proyecto de salud financiera familiar - Camilo Villamil - 2026
