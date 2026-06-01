@@ -469,6 +469,10 @@ export default function MesM1Desktop({
 
   const handleMovUpdate = (updated: Movimiento) => {
     setMovs(prev => prev.map(m => m.id === updated.id ? updated : m));
+    // DoD4: sincroniza monto a conceptosLocal para que balancePlanificacion reaccione
+    setConceptosLocal(prev => prev.map(c =>
+      c.id === updated.conceptoId ? { ...c, monto: updated.montoPresupuestado } : c
+    ));
   };
 
   const handleSwitchToEjecucion = () => {
