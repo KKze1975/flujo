@@ -20,7 +20,8 @@ type PatchBody =
   | { tipo: "no_aplica" }
   | { tipo: "reasignar_semana"; semana: Semana }
   | { tipo: "mover_mes_siguiente" }
-  | { tipo: "revertir_mes_siguiente" };
+  | { tipo: "revertir_mes_siguiente" }
+  | { tipo: "revertir_ejecucion" };
 
 export async function PATCH(
   req: NextRequest,
@@ -39,7 +40,7 @@ export async function PATCH(
     return Response.json({ error: "Body inválido." }, { status: 400 });
   }
 
-  if (!body?.tipo || !["ejecutar", "posponer", "no_aplica", "reasignar_semana", "mover_mes_siguiente", "revertir_mes_siguiente"].includes(body.tipo)) {
+  if (!body?.tipo || !["ejecutar", "posponer", "no_aplica", "reasignar_semana", "mover_mes_siguiente", "revertir_mes_siguiente", "revertir_ejecucion"].includes(body.tipo)) {
     return Response.json({ error: "tipo inválido." }, { status: 400 });
   }
 
@@ -91,6 +92,18 @@ export async function PATCH(
       patch = { estado: "pospuesto_mes_siguiente" };
     } else if (body.tipo === "revertir_mes_siguiente") {
       patch = { estado: "pendiente", razonPostergacion: null };
+    } else if (body.tipo === "revertir_ejecucion") {
+      patch = {
+        estado: "pendiente",
+        montoEjecutado: null,
+        desviacion: null,
+        ejecutor: null,
+        fuenteEnMano: false,
+        fuenteNequi: false,
+        fuenteCamilo: false,
+        fuenteAngie: false,
+        fechaEjecucion: null,
+      };
     } else {
       patch = { estado: "no_aplica" };
     }

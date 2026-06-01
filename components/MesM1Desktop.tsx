@@ -9,6 +9,8 @@ import type {
 import Icon from "@/components/ui/Icon";
 import ConceptoBoard from "@/components/m1/ConceptoBoard";
 import ModalAgregarConcepto from "@/components/m1/ModalAgregarConcepto";
+import ModalConfirmarSaldos from "@/components/m1/ModalConfirmarSaldos";
+import ModalCerrarSemana from "@/components/m1/ModalCerrarSemana";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -283,6 +285,7 @@ export default function MesM1Desktop({
   ingresoCamilo: ingresoCamiloProp = null,
   ingresosAngie: ingresosAngieProp = [],
   cierresSemana: cierresSemanaProps = [],
+  gastosSinClasificar = { S1: 0, S2: 0, S3: 0, S4: 0 },
   onSwitchToMobile,
 }: {
   movimientos: Movimiento[];
@@ -292,9 +295,12 @@ export default function MesM1Desktop({
   ingresoCamilo?: IngresoCamilo | null;
   ingresosAngie?: IngresoAngie[];
   cierresSemana?: import("@/lib/data/types").CierreSemana[];
+  gastosSinClasificar?: Record<Semana, number>;
   onSwitchToMobile: () => void;
 }) {
   const [view, setView] = useState<"planificacion" | "ejecucion">("planificacion");
+  const [showConfirmarSaldos, setShowConfirmarSaldos] = useState(false);
+  const [showCerrarSemana, setShowCerrarSemana] = useState(false);
 
   // Shared state
   const [movs, setMovs] = useState<Movimiento[]>(movimientosProp);
@@ -458,6 +464,17 @@ export default function MesM1Desktop({
   const handleMovUpdate = (updated: Movimiento) => {
     setMovs(prev => prev.map(m => m.id === updated.id ? updated : m));
   };
+
+  const handleSwitchToEjecucion = () => {
+    if (!saldosOk) {
+      setShowConfirmarSaldos(true);
+    } else {
+      setView("ejecucion");
+    }
+  };
+
+  const semanaParaCerrar: Semana = wk !== "todas" ? wk : activeSemana;
+  const gastosPendientesClasificar = gastosSinClasificar[semanaParaCerrar] ?? 0;
 
   // ── Handlers ─────────────────────────────────────────────────────────────
 
@@ -773,7 +790,8 @@ export default function MesM1Desktop({
           {/* Toggle Planificación / Ejecución */}
           <div style={{ display: "flex", borderRadius: 999, background: "var(--line)", padding: 2 }}>
             {(["planificacion", "ejecucion"] as const).map(v => (
-              <button key={v} type="button" onClick={() => setView(v)}
+              <button key={v} type="button"
+                onClick={() => v === "ejecucion" ? handleSwitchToEjecucion() : setView(v)}
                 style={{
                   borderRadius: 999, padding: "6px 16px", fontSize: 12, fontWeight: 600,
                   border: "none", cursor: "pointer",
@@ -818,8 +836,22 @@ export default function MesM1Desktop({
                 <button className="fl-btn ghost sm" onClick={() => setShowAgregarConcepto(true)}>
                   <Icon name="plus" size={15} /> Agregar concepto
                 </button>
-                <button className="fl-btn primary sm" onClick={() => setView("ejecucion")}>
+                <button className="fl-btn primary sm" onClick={handleSwitchToEjecucion}>
                   <Icon name="flag" size={15} /> Cerrar planificación →
+                </button>
+              </>
+            )}
+            {view === "ejecucion" && (
+              <>
+                <button className="fl-btn ghost sm" onClick={() => setShowAgregarConcepto(true)}>
+                  <Icon name="plus" size={15} /> Agregar concepto
+                </button>
+                <button
+                  className="fl-btn ghost sm"
+                  disabled={gastosPendientesClasificar > 0}
+                  title={gastosPendientesClasificar > 0 ? `${gastosPendientesClasificar} gasto(s) sin clasificar en ${semanaParaCerrar}` : undefined}
+                  onClick={() => setShowCerrarSemana(true)}>
+                  <Icon name="check" size={15} /> Cerrar {semanaParaCerrar}
                 </button>
               </>
             )}
@@ -975,6 +1007,30 @@ export default function MesM1Desktop({
           </div>
         </div>
       </div>
+
+      {/* ── Modal Confirmar Saldos (Bug #7) ── */}
+      {showConfirmarSaldos && (
+        <ModalConfirmarSaldos
+          mes={mes}
+          existing={saldosLocal}
+          onConfirmed={(saldos) => {
+            setSaldosLocal(saldos);
+            setSaldosOk(true);
+            setShowConfirmarSaldos(false);
+            setView("ejecucion");
+          }}
+        />
+      )}
+
+      {/* ── Modal Cerrar Semana (Bug #15) ── */}
+      {showCerrarSemana && (
+        <ModalCerrarSemana
+          mes={mes}
+          semana={semanaParaCerrar}
+          onClose={() => setShowCerrarSemana(false)}
+          onSuccess={() => setShowCerrarSemana(false)}
+        />
+      )}
 
       {/* ── Modal Agregar Concepto (solo Planificación) ── */}
       {showAgregarConcepto && (

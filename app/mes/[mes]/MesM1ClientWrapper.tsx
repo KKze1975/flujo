@@ -46,6 +46,7 @@ export default function MesM1ClientWrapper({
         ingresoCamilo={ingresoCamilo}
         ingresosAngie={ingresosAngie}
         cierresSemana={cierresSemana}
+        gastosSinClasificar={gastosSinClasificarInit}
         onSwitchToMobile={() => setViewMode("mobile")}
       />
     );

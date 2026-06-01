@@ -68,15 +68,22 @@ type ExecState = {
   fuenteCamilo: boolean; fuenteAngie: boolean;
 };
 
+type EjecucionAction =
+  | { tipo: "revertir" }
+  | { tipo: "no_aplica" }
+  | { tipo: "mover_semana"; semana: Semana }
+  | { tipo: "mover_mes_siguiente" };
+
 // ── DkExecForm ────────────────────────────────────────────────────────────────
 
 function DkExecForm({
-  mov, busy, onConfirm, onCancel,
+  mov, busy, onConfirm, onCancel, onEjecucionAction,
 }: {
   mov: Movimiento;
   busy: boolean;
   onConfirm: (s: ExecState) => void;
   onCancel: () => void;
+  onEjecucionAction?: (action: EjecucionAction) => void;
 }) {
   const [state, setState] = useState<ExecState>({
     movId: mov.id,
@@ -89,6 +96,34 @@ function DkExecForm({
   const monto = Number(state.monto);
   const diff = !isNaN(monto) ? monto - mov.montoPresupuestado : 0;
 
+  // Executed card — show revert UI only
+  if (mov.estado === "ejecutado") {
+    return (
+      <div className="dk-exp" onClick={e => e.stopPropagation()}>
+        <div className="dk-exp-sec">
+          <p className="dk-exp-lbl">Ejecutado</p>
+          <div className="dk-amtrow">
+            <span className="dk-amt-in" style={{ display: "flex", alignItems: "center", color: "var(--pos)" }}>
+              {copFull(mov.montoEjecutado ?? mov.montoPresupuestado)}
+            </span>
+          </div>
+          {mov.fechaEjecucion && (
+            <p style={{ margin: "4px 0 0", fontSize: 11, color: "var(--ink-faint)" }}>{mov.fechaEjecucion}</p>
+          )}
+        </div>
+        <div className="dk-exp-actions">
+          <button type="button" className="fl-btn ghost sm block"
+            disabled={busy}
+            onClick={() => onEjecucionAction?.({ tipo: "revertir" })}>
+            <Icon name="x" size={15} /> {busy ? "…" : "Revertir ejecución"}
+          </button>
+          <button type="button" className="dk-exp-cancel" onClick={onCancel}>Cancelar</button>
+        </div>
+      </div>
+    );
+  }
+
+  // Pending card — full execution form + secondary actions
   return (
     <div className="dk-exp" onClick={e => e.stopPropagation()}>
       <div className="dk-exp-sec">
@@ -154,6 +189,30 @@ function DkExecForm({
         </button>
         <button type="button" className="dk-exp-cancel" onClick={onCancel}>Cancelar</button>
       </div>
+
+      {onEjecucionAction && (
+        <div className="dk-exp-opts" style={{ marginTop: 8 }}>
+          <button type="button" className="dk-opt"
+            onClick={() => onEjecucionAction({ tipo: "no_aplica" })}>
+            <span className="dk-opt-bx"><Icon name="x" size={12} /></span>
+            <span className="tx">No aplica este mes</span>
+          </button>
+          <button type="button" className="dk-opt"
+            onClick={() => onEjecucionAction({ tipo: "mover_mes_siguiente" })}>
+            <span className="dk-opt-bx"><Icon name="arrow" size={12} /></span>
+            <span className="tx">Mover al mes siguiente</span>
+          </button>
+          <div style={{ display: "flex", gap: 4, marginTop: 4, flexWrap: "wrap" }}>
+            {SEMANAS.map(s => (
+              <button key={s} type="button" className="dk-fchip"
+                style={{ fontSize: 11, padding: "3px 8px" }}
+                onClick={() => onEjecucionAction({ tipo: "mover_semana", semana: s })}>
+                → {s}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -235,7 +294,7 @@ function DkPlanForm({
 
 function ConceptCard({
   mov, mode, isOpen, busy,
-  onToggle, onConfirmExec, onSavePlan,
+  onToggle, onConfirmExec, onSavePlan, onEjecucionAction,
   dragId, onDragStart, onDragEnd,
 }: {
   mov: Movimiento;
@@ -245,6 +304,7 @@ function ConceptCard({
   onToggle: () => void;
   onConfirmExec: (s: ExecState) => void;
   onSavePlan: (exc: null | "no" | "next", editedMonto: number) => void;
+  onEjecucionAction?: (action: EjecucionAction) => void;
   dragId: string | null;
   onDragStart: (id: string, sem: Semana) => void;
   onDragEnd: () => void;
@@ -253,7 +313,7 @@ function ConceptCard({
   const isDue  = !isExec && mode === "ejecucion";
   const isNoAp = mov.estado === "no_aplica";
   const isPosp = mov.estado === "pospuesto" || mov.estado === "pospuesto_mes_siguiente";
-  const canAct = mode === "ejecucion" ? !isExec : !isExec;
+  const canAct = mode === "planeacion" ? !isExec : true;
   const canDrag = mode === "planeacion" && !isOpen && !isPosp && !isNoAp && !isExec;
   const isDragging = dragId === mov.id;
 
@@ -309,7 +369,7 @@ function ConceptCard({
 
       {isOpen ? (
         mode === "ejecucion"
-          ? <DkExecForm mov={mov} busy={busy} onConfirm={onConfirmExec} onCancel={onToggle} />
+          ? <DkExecForm mov={mov} busy={busy} onConfirm={onConfirmExec} onCancel={onToggle} onEjecucionAction={onEjecucionAction} />
           : <DkPlanForm mov={mov} busy={busy} onSave={onSavePlan}    onCancel={onToggle} />
       ) : (
         <div className="dk-cc-foot">
@@ -369,7 +429,7 @@ const ALL_CATS: Categoria[] = [
 
 function CatGroup({
   cat, items, mode, defaultOpen, empty,
-  openCard, onToggle, onConfirmExec, onSavePlan, busy,
+  openCard, onToggle, onConfirmExec, onSavePlan, onEjecucionAction, busy,
   dragId, onDragStart, onDragEnd,
 }: {
   cat: Categoria; items: Movimiento[]; mode: BoardMode;
@@ -377,6 +437,7 @@ function CatGroup({
   openCard: string | null; onToggle: (id: string) => void;
   onConfirmExec: (id: string, s: ExecState) => void;
   onSavePlan: (id: string, exc: null | "no" | "next", editedMonto: number) => void;
+  onEjecucionAction?: (id: string, action: EjecucionAction) => void;
   busy: boolean; dragId: string | null;
   onDragStart: (id: string, sem: Semana) => void; onDragEnd: () => void;
 }) {
@@ -413,6 +474,7 @@ function CatGroup({
               onToggle={() => onToggle(mov.id)}
               onConfirmExec={s => onConfirmExec(mov.id, s)}
               onSavePlan={(exc, monto) => onSavePlan(mov.id, exc, monto)}
+              onEjecucionAction={onEjecucionAction ? (a) => onEjecucionAction(mov.id, a) : undefined}
               dragId={dragId}
               onDragStart={onDragStart}
               onDragEnd={onDragEnd}
@@ -428,7 +490,7 @@ function CatGroup({
 
 function WeekColumn({
   semana, items, dates, mode, focus, activeSemana,
-  openCard, onToggle, onConfirmExec, onSavePlan, busy,
+  openCard, onToggle, onConfirmExec, onSavePlan, onEjecucionAction, busy,
   dragId, onDragStart, onDragEnd, onDrop, dropHover, setDropHover,
   remanenteAngie,
 }: {
@@ -438,6 +500,7 @@ function WeekColumn({
   onToggle: (id: string) => void;
   onConfirmExec: (movId: string, s: ExecState) => void;
   onSavePlan: (movId: string, exc: null | "no" | "next", editedMonto: number) => void;
+  onEjecucionAction?: (movId: string, action: EjecucionAction) => void;
   busy: boolean;
   dragId: string | null;
   onDragStart: (id: string, sem: Semana) => void;
@@ -534,6 +597,7 @@ function WeekColumn({
             mode={mode} defaultOpen={false} empty={false}
             openCard={openCard} onToggle={onToggle}
             onConfirmExec={onConfirmExec} onSavePlan={onSavePlan}
+            onEjecucionAction={onEjecucionAction}
             busy={busy} dragId={dragId}
             onDragStart={onDragStart} onDragEnd={onDragEnd}
           />
@@ -545,6 +609,7 @@ function WeekColumn({
             mode={mode} defaultOpen={false} empty
             openCard={openCard} onToggle={onToggle}
             onConfirmExec={onConfirmExec} onSavePlan={onSavePlan}
+            onEjecucionAction={onEjecucionAction}
             busy={busy} dragId={dragId}
             onDragStart={onDragStart} onDragEnd={onDragEnd}
           />
@@ -662,6 +727,13 @@ export default function ConceptoBoard({
     }
   };
 
+  const handleEjecucionAction = (movId: string, action: EjecucionAction) => {
+    if (action.tipo === "revertir") patchar(movId, { tipo: "revertir_ejecucion" });
+    else if (action.tipo === "no_aplica") patchar(movId, { tipo: "no_aplica" });
+    else if (action.tipo === "mover_mes_siguiente") patchar(movId, { tipo: "mover_mes_siguiente" });
+    else patchar(movId, { tipo: "reasignar_semana", semana: action.semana });
+  };
+
   const handleDrop = (toSemana: Semana) => {
     if (!dragId) return;
     const fromSemana = (SEMANAS).find(s => byWeek[s].some(m => m.id === dragId));
@@ -691,6 +763,7 @@ export default function ConceptoBoard({
             onToggle={id => setOpenCard(prev => prev === id ? null : id)}
             onConfirmExec={handleConfirmExec}
             onSavePlan={handleSavePlan}
+            onEjecucionAction={mode === "ejecucion" ? handleEjecucionAction : undefined}
             busy={busy}
             dragId={dragId}
             onDragStart={(id) => setDragId(id)}
