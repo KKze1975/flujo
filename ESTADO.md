@@ -86,7 +86,7 @@ de pago. El usuario confirma o corrige. Registra quien ejecuta el pago.
 |---|---|---|
 | id_concepto | string | {CATEGORIA_UPPERCASE}_{unix_timestamp} — generado por la app |
 | nombre | string | Nombre legible |
-| categoria | string | Casa / Servicios Públicos / Membresías y Suscripciones / Educación / Salud / Mercado y Alimentación / Compromisos Financieros / Recreación / Transporte / Metas Familiares / Frida |
+| categoria | string | Casa / Servicios Públicos / Membresías y Suscripciones / Educación / Salud / Mercado y Alimentación / Compromisos Financieros / Recreación / Transporte / Metas Familiares / Frida / Hijos / Servicio Domestico |
 | tipo | enum | fijo / bolsillo / discrecional |
 | frecuencia | enum | mensual / bimestral / semanal |
 | mes_activo_bimestral | string | Solo bimestral — meses separados por coma. Null en otros casos |
@@ -97,11 +97,11 @@ de pago. El usuario confirma o corrige. Registra quien ejecuta el pago.
 | fecha_retiro | date | Nullable |
 | notas | string | Nullable |
 
-### Categorías aprobadas (11)
+### Categorías aprobadas (13)
 
 Casa / Servicios Públicos / Membresías y Suscripciones / Educación / Salud /
 Mercado y Alimentación / Compromisos Financieros / Recreación / Transporte /
-Metas Familiares / Frida
+Metas Familiares / Frida / Hijos / Servicio Domestico
 
 ### H2 — Mes Activo
 
@@ -432,6 +432,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | ConceptoBoard — Grid S1-S4 con cards interactivas | Completo — commit d36715d — Planeación y Ejecución desktop |
 | T27 — Diseño pre go-live | Completo — DoD 6/6 verificado en producción |
 | T28 — Conectar ModalCorreccionM5 a VistaSemanal | Completo — DoD 8/8 verificado en producción (H3 + H2) |
+| T31 — Fix categorías H1 | Completo — 5 conceptos: Mesada Lucas/Emma + Colegio hijos → Hijos; Empleada Mireyita + Provisión Mireyita → Servicio Domestico |
 | T22 — Planificación: acciones y flujo | Completo — bugs 3,4,5,6 resueltos — commit 48406fe |
 | T23 — Ejecución: acciones y flujo | Completo — DoD 7/7 verificado en producción |
 | T24 — Balance y cálculos | Completo — DoD 2/2 verificado en producción — bug #2 falso positivo |
@@ -529,7 +530,7 @@ Archivo fuente: H1_presupuesto_base.csv
 |---|---|---|---|
 | T29 | Planificación: bugs de edición y mover | B1, B2, B3, B4, B7p | Bloqueante go-live |
 | T30 | Ejecución: saldos reactivos + estados visuales | B5, B6, B7e, F3, F4 | Bloqueante go-live |
-| T31 | Fix H1: Mesadas y Empleada fuera de Mercado | F2 | Bloqueante go-live — script |
+| T31 | Fix H1: Mesadas y Empleada fuera de Mercado | F2 | Completo |
 | T26 | Modal reasignación de fondos | F6 expandido | Post go-live — requiere diseño |
 | T32 | Estado "aprobado" por concepto en Planificación | F1 | Post go-live |
 | T33 | Mesadas con anticipos, préstamos y descuentos | F7 | Post go-live |
@@ -548,7 +549,8 @@ Archivo fuente: H1_presupuesto_base.csv
 - RegistroRapido desde FAB de VistaSemanal no ofrece opción explícita de guardar como "pendiente de clasificación"
 - 2 vulnerabilidades moderadas en dependencias npm — pendiente npm audit después del MVP
 - Claude Code auto-update failed — resolver con: npm i -g @anthropic-ai/claude-code
-- H6 tiene columnas cat_* desactualizadas — actualizar para reflejar las 11 categorías aprobadas
+- H6 tiene columnas cat_* desactualizadas — agregar cat_hijos y cat_servicio_domestico para reflejar las 13 categorías aprobadas (era 11)
+- Frontend: vistas que agrupan por categoría deben leer categoría desde datos — verificar que no haya categorías hardcodeadas en CatGroup.tsx o similares
 - Concepto mensual pospuesto genera doble fila en mes siguiente — revisar si es comportamiento deseado
 - Uber One, NY Times, El País, Game Pass agregados via B4 en primera ejecución — verificar que quedaron correctamente en H1
 - components/ui/BottomNav.tsx creado en handoff — verificar si duplica components en proto-shell o es el componente activo
