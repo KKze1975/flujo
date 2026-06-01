@@ -431,7 +431,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | T21 — Layout desktop + móvil Planeación y Ejecución | Completo — DoD 7/7 (incl. DoD 6) — MesM1Mobile nueva vista móvil fl-*, toggle Planeación/Ejecución, acciones inline, wrapper responsive auto-detecta viewport |
 | ConceptoBoard — Grid S1-S4 con cards interactivas | Completo — commit d36715d — Planeación y Ejecución desktop |
 | T27 — Diseño pre go-live | Completo — DoD 6/6 verificado en producción |
-| T28 — Conectar ModalCorreccionM5 a VistaSemanal | Completo — DoD 8/8 verificado — historial M4 refresca tras FAB, modal H3 (5 escenarios) + modal H2 (4 escenarios), PATCH persiste en H3 y H2 |
+| T28 — Conectar ModalCorreccionM5 a VistaSemanal | Completo — DoD 8/8 verificado en producción (H3 + H2) |
 
 ---
 
@@ -502,6 +502,7 @@ Archivo fuente: H1_presupuesto_base.csv
 - DevOps: rama `dev` + deploy preview de Vercel pendiente — hoy todo push a `main` va directo a producción. Setup estimado 10 min. Prioridad: antes del primer ticket post go-live.
 - 2 consumos de test en H3 junio 2026 (CONSUMO_1780266997613 S1, CONSUMO_1780267124959 S2) — clasificados, no bloquean cierre — limpiar manualmente antes de go-live si se desea historial limpio
 - Bug preexistente en escritura semana H3: POST sin-concepto con semana "S4" guardó "S2" en Sheet — revisar índice de columna semana en sheets.ts antes de go-live
+- Botón "Corregir" en ejecutados H2 (VistaSemanal) no verificado visualmente en móvil real — bundle confirma implementación pero falta captura pixel. Verificar antes de go-live.
 
 ---
 
@@ -995,8 +996,9 @@ Fecha: 31 mayo 2026
 **Qué funcionó:**
 - Diagnóstico correcto: el modal Y el historial ya estaban implementados e inlineados en VistaSemanal.tsx — la deuda técnica sobreestimó el trabajo pendiente
 - Fix quirúrgico: 11 líneas en handleSheetSuccess + 1 cambio de prop — sin tocar APIs ni tipos
-- DoD 5/5 verificados vía API antes del commit — monto, clasificación, render HTML confirmados
+- DoD 8/8 verificados vía API antes del commit — monto, clasificación, render HTML confirmados
 - tsc --noEmit limpio al primer intento
+- Extensión T28: ModalCorreccionM5 extendido a ejecutados H2 — PATCH H2 operativo, validaciones 400/404 correctas en producción
 
 **Qué no funcionó:**
 - graphify no tenía el nodo ModalCorreccionM5 — el grafo no se había actualizado post T27; diagnóstico tuvo que recurrir al filesystem directamente
