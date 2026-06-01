@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Junio 2026 | Fase: T23 completo — go-live junio 7, 2026
+Actualizado: Junio 2026 | Fase: T24 completo — go-live junio 7, 2026
 
 ---
 
@@ -434,6 +434,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | T28 — Conectar ModalCorreccionM5 a VistaSemanal | Completo — DoD 8/8 verificado en producción (H3 + H2) |
 | T22 — Planificación: acciones y flujo | Completo — bugs 3,4,5,6 resueltos — commit 48406fe |
 | T23 — Ejecución: acciones y flujo | Completo — DoD 7/7 verificado en producción |
+| T24 — Balance y cálculos | Completo — DoD 2/2 verificado en producción — bug #2 falso positivo |
 
 ---
 
@@ -465,6 +466,7 @@ Archivo fuente: H1_presupuesto_base.csv
 
 **Resueltos en T22:** bugs 3, 4, 5, 6 — Planificación: acciones y flujo
 **Resueltos en T23:** bugs 7, 8, 10, 11, 12, 13, 15 — Ejecución: acciones y flujo
+**Resueltos en T24:** bugs 1, 9 — Balance y cálculos | bug 2 — falso positivo, lógica ya era correcta
 
 ### Mejoras de diseño pre go-live
 
@@ -1067,5 +1069,22 @@ Fecha: 2026-06-01
 
 **Qué cambia en el próximo sprint:**
 - T24 — Balance y cálculos (bugs 1, 2, 9)
+
+---
+
+## Retrospectiva — T24 Balance y cálculos
+
+Fecha: 2026-06-01
+
+**Qué funcionó:**
+- Diagnóstico preciso via lectura quirúrgica — dos fixes de render, sin tocar lógica
+- Bug #2 descartado correctamente antes de escribir código — verificación en producción evitó trabajo innecesario
+- DoD 2/2 verificados en producción antes de cerrar
+
+**Qué no funcionó:**
+- Nada
+
+**Qué cambia en el próximo sprint:**
+- T25 — Navegación y regresiones (bugs 14, 16, 17, 19)
 
 Flujo - Proyecto de salud financiera familiar - Camilo Villamil - 2026
