@@ -520,7 +520,7 @@ function WeekColumn({
   const isFocus = focus === semana;
   const allDone = ejecutados.length === items.length && items.length > 0;
   const isActiva = semana === activeSemana;
-  const canDrop = mode === "planeacion" && !!dragId && dragId !== "";
+  const canDrop = !!dragId && dragId !== "";
   const isDropTarget = canDrop && dropHover === semana;
 
   // Group items by category; order active-week categories first (by total desc), then empty ones at end
