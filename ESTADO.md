@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Junio 2026 | Fase: T25 completo — go-live junio 7, 2026
+Actualizado: Junio 2026 | Fase: QA completo — T29, T30, T31 bloqueantes go-live junio 7, 2026
 
 ---
 
@@ -489,6 +489,53 @@ Archivo fuente: H1_presupuesto_base.csv
 | T26 | Validación de fondos | 18 | Importante — no bloqueante inmediato |
 | T27 | Mejoras de diseño pre go-live | Mejoras 1-5 | Diseño aprobado — pendiente Claude Design |
 
+### QA Post-T25 — 1 junio 2026
+
+#### Hallazgos Planificación
+
+| # | Tipo | Descripción |
+|---|---|---|
+| B1 | Bug | Concepto "Energía" aparece duplicado |
+| B2 | Bug | Al cambiar valor de Empleada no se actualizan los valores por semana |
+| B3 | Bug | No acepta valor cero para un concepto |
+| B4 | Bug | Mover entre semanas roto — se rompió al agrupar por categorías |
+| B7p | Bug | "Por categoría" en rail derecho — retirar en Planificación |
+| F1 | Feature | Estado "aprobado" por concepto al revisar en planificación |
+| F2 | Fix datos | Mesadas y Empleada fuera de categoría Mercado — fix en H1 via script |
+
+#### Hallazgos Ejecución
+
+| # | Tipo | Descripción |
+|---|---|---|
+| B5 | Bug | Al ingresar saldo no actualiza rail izquierdo "Por semana" |
+| B6 | Bug | Saldo de cuentas en rail izquierdo no se actualiza al ejecutar conceptos |
+| B7e | Bug | "Por categoría" en rail derecho — retirar en Ejecución |
+| F3 | Feature | Ingresos planeados vs confirmados diferenciados en "Por semana" |
+| F4 | Feature | Color verde en ficha de categoría cuando todos sus conceptos ejecutados |
+| F5 | Feature | Adjuntar comprobante — Google Drive — post go-live |
+| F6 | Feature | Validación + reasignación de fondos antes de ejecutar — post go-live |
+| F7 | Feature | Mesadas con anticipos, préstamos y descuentos — post go-live |
+
+#### Decisiones de diseño tomadas
+
+| Decisión | Detalle |
+|---|---|
+| Split de concepto entre semanas (MVP) | Bajar monto + crear nuevo concepto via B4 — sin cambio de esquema |
+| Reasignación de fondos (D2) | Modal antes de ejecutar cuando no hay disponibilidad — requiere sesión de diseño — post go-live |
+
+#### Tickets derivados
+
+| Ticket | Descripción | Bugs/Features | Prioridad |
+|---|---|---|---|
+| T29 | Planificación: bugs de edición y mover | B1, B2, B3, B4, B7p | Bloqueante go-live |
+| T30 | Ejecución: saldos reactivos + estados visuales | B5, B6, B7e, F3, F4 | Bloqueante go-live |
+| T31 | Fix H1: Mesadas y Empleada fuera de Mercado | F2 | Bloqueante go-live — script |
+| T26 | Modal reasignación de fondos | F6 expandido | Post go-live — requiere diseño |
+| T32 | Estado "aprobado" por concepto en Planificación | F1 | Post go-live |
+| T33 | Mesadas con anticipos, préstamos y descuentos | F7 | Post go-live |
+| T34 | Comprobantes al ejecutar | F5 | Post go-live — Google Drive |
+| T35 | Split nativo de concepto en semanas | D1 futuro | Post go-live — requiere diseño |
+
 ---
 
 ## Deuda técnica conocida
@@ -637,6 +684,10 @@ Archivo fuente: H1_presupuesto_base.csv
 | Mayo 2026 | T27 — Remanente semana y Angie en encabezado S1-S4 | Dos líneas nuevas bajo el encabezado existente · verde positivo · rojo negativo |
 | Mayo 2026 | T27 — Modal corrección M5 | 5 escenarios: monto · ejecutor · fuente de pago · H3 sin clasificar (vincula a bolsillo, no a concepto H2) · semana incorrecta · muestra registro original como referencia |
 | Mayo 2026 | DevOps MVP: sin pipeline formal | Vercel CI/CD automático es suficiente para 4 usuarios. Tests, staging y alertas = post MVP. Única excepción documentada: rama dev + preview URL antes del primer ticket post go-live. |
+| Junio 2026 | Split concepto entre semanas MVP | Bajar monto + crear nuevo concepto via B4 — sin cambio de esquema H2 |
+| Junio 2026 | Reasignación de fondos D2 | Modal guiado antes de ejecutar cuando no hay disponibilidad — post go-live |
+| Junio 2026 | Comprobantes storage | Google Drive — Drive API + endpoint upload — post go-live |
+| Junio 2026 | Mesadas y Empleada | Mover fuera de categoría Mercado en H1 via script antes de go-live |
 
 ---
 
