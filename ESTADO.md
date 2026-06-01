@@ -433,6 +433,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | T27 — Diseño pre go-live | Completo — DoD 6/6 verificado en producción |
 | T28 — Conectar ModalCorreccionM5 a VistaSemanal | Completo — DoD 8/8 verificado en producción (H3 + H2) |
 | T22 — Planificación: acciones y flujo | Completo — bugs 3,4,5,6 resueltos — commit 48406fe |
+| T23 — Ejecución: acciones y flujo | Completo — bugs 7,8,10,11,12,13,15 resueltos — commit a013d7b |
 
 ---
 
@@ -475,7 +476,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | Ticket | Descripción | Bugs | Prioridad |
 |---|---|---|---|
 | T22 | Planificación: acciones y flujo | 3, 4, 5, 6 | Completo |
-| T23 | Ejecución: acciones y flujo | 7, 8, 10, 11, 12, 13, 15 | Bloqueante go-live |
+| T23 | Ejecución: acciones y flujo | 7, 8, 10, 11, 12, 13, 15 | Completo |
 | T24 | Balance y cálculos | 1, 2, 9 | Bloqueante go-live |
 | T25 | Navegación y regresiones | 14, 16, 17, 19 | Bloqueante go-live |
 | T26 | Validación de fondos | 18 | Importante — no bloqueante inmediato |
@@ -1045,5 +1046,24 @@ Fecha: 31 mayo 2026
 
 **Qué cambia en el próximo sprint:**
 - T23 — Ejecución: acciones y flujo (bugs 7, 8, 10, 11, 12, 13, 15)
+
+---
+
+## Retrospectiva — T23 Ejecución: acciones y flujo
+
+**Qué funcionó:**
+- 7 bugs resueltos en una sola sesión
+- EjecucionAction discriminated union: patrón limpio que propagó por toda la cadena sin ambigüedad
+- DkExecForm bifurcado (ejecutado vs pendiente) — sin duplicar el formulario
+- gastosSinClasificar pasado desde ClientWrapper — sin fetch adicional
+- Bug 8 resuelto como efecto de Bug 7 — cero código extra
+- tsc --noEmit limpio al primer intento
+
+**Qué no funcionó:**
+- Nada
+
+**Qué cambia en el próximo sprint:**
+- Verificar DoD en producción: ModalConfirmarSaldos al abrir Ejecución, revertir ejecutado, cerrar semana
+- Próximo ticket: T24 — Balance y cálculos (bugs 1, 2, 9)
 
 Flujo - Proyecto de salud financiera familiar - Camilo Villamil - 2026
