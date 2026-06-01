@@ -165,11 +165,17 @@ function DkPlanForm({
 }: {
   mov: Movimiento;
   busy: boolean;
-  onSave: (exc: null | "no" | "next") => void;
+  onSave: (exc: null | "no" | "next", editedMonto: number) => void;
   onCancel: () => void;
 }) {
-  const [exc, setExc] = useState<null | "no" | "next">(null);
+  const initialExc: null | "no" | "next" =
+    mov.estado === "no_aplica" ? "no" :
+    (mov.estado === "pospuesto" || mov.estado === "pospuesto_mes_siguiente") ? "next" : null;
+  const [exc, setExc] = useState<null | "no" | "next">(initialExc);
+  const [editedMonto, setEditedMonto] = useState(String(mov.montoPresupuestado));
   const off = exc !== null;
+  const montoNum = Number(editedMonto);
+  const montoChanged = montoNum > 0 && montoNum !== mov.montoPresupuestado;
 
   return (
     <div className="dk-exp" onClick={e => e.stopPropagation()}>
@@ -181,9 +187,20 @@ function DkPlanForm({
       <div className={`dk-exp-sec${off ? " off" : ""}`}>
         <p className="dk-exp-lbl">Monto planeado</p>
         <div className="dk-amtrow">
-          <span className="dk-amt-in" style={{ display: "flex", alignItems: "center" }}>
-            {copFull(mov.montoPresupuestado)}
-          </span>
+          <input
+            type="number"
+            className="dk-amt-in"
+            value={editedMonto}
+            onChange={e => setEditedMonto(e.target.value)}
+            onClick={e => e.stopPropagation()}
+            disabled={off}
+          />
+          {montoChanged && (
+            <button type="button" className="dk-amt-reset"
+              onClick={() => setEditedMonto(String(mov.montoPresupuestado))}>
+              ↺ {copFull(mov.montoPresupuestado)}
+            </button>
+          )}
         </div>
       </div>
 
@@ -204,8 +221,8 @@ function DkPlanForm({
 
       <div className="dk-exp-actions">
         <button type="button" className="fl-btn primary sm block"
-          disabled={busy}
-          onClick={() => onSave(exc)}>
+          disabled={busy || (montoNum <= 0 && !off)}
+          onClick={() => onSave(exc, montoNum > 0 ? montoNum : mov.montoPresupuestado)}>
           <Icon name="check" size={15} /> {busy ? "…" : "Guardar"}
         </button>
         <button type="button" className="dk-exp-cancel" onClick={onCancel}>Cancelar</button>
@@ -227,7 +244,7 @@ function ConceptCard({
   busy: boolean;
   onToggle: () => void;
   onConfirmExec: (s: ExecState) => void;
-  onSavePlan: (exc: null | "no" | "next") => void;
+  onSavePlan: (exc: null | "no" | "next", editedMonto: number) => void;
   dragId: string | null;
   onDragStart: (id: string, sem: Semana) => void;
   onDragEnd: () => void;
@@ -236,8 +253,8 @@ function ConceptCard({
   const isDue  = !isExec && mode === "ejecucion";
   const isNoAp = mov.estado === "no_aplica";
   const isPosp = mov.estado === "pospuesto" || mov.estado === "pospuesto_mes_siguiente";
-  const canAct = mode === "ejecucion" ? !isExec : !isNoAp && !isPosp;
-  const canDrag = mode === "planeacion" && !isOpen && canAct;
+  const canAct = mode === "ejecucion" ? !isExec : !isExec;
+  const canDrag = mode === "planeacion" && !isOpen && !isPosp && !isNoAp && !isExec;
   const isDragging = dragId === mov.id;
 
   const cls = [
@@ -359,7 +376,7 @@ function CatGroup({
   defaultOpen: boolean; empty: boolean;
   openCard: string | null; onToggle: (id: string) => void;
   onConfirmExec: (id: string, s: ExecState) => void;
-  onSavePlan: (id: string, exc: null | "no" | "next") => void;
+  onSavePlan: (id: string, exc: null | "no" | "next", editedMonto: number) => void;
   busy: boolean; dragId: string | null;
   onDragStart: (id: string, sem: Semana) => void; onDragEnd: () => void;
 }) {
@@ -395,7 +412,7 @@ function CatGroup({
               isOpen={openCard === mov.id}
               onToggle={() => onToggle(mov.id)}
               onConfirmExec={s => onConfirmExec(mov.id, s)}
-              onSavePlan={exc => onSavePlan(mov.id, exc)}
+              onSavePlan={(exc, monto) => onSavePlan(mov.id, exc, monto)}
               dragId={dragId}
               onDragStart={onDragStart}
               onDragEnd={onDragEnd}
@@ -420,7 +437,7 @@ function WeekColumn({
   openCard: string | null;
   onToggle: (id: string) => void;
   onConfirmExec: (movId: string, s: ExecState) => void;
-  onSavePlan: (movId: string, exc: null | "no" | "next") => void;
+  onSavePlan: (movId: string, exc: null | "no" | "next", editedMonto: number) => void;
   busy: boolean;
   dragId: string | null;
   onDragStart: (id: string, sem: Semana) => void;
@@ -607,10 +624,42 @@ export default function ConceptoBoard({
     });
   };
 
-  const handleSavePlan = (movId: string, exc: null | "no" | "next") => {
-    if (exc === "no") patchar(movId, { tipo: "no_aplica" });
-    else if (exc === "next") patchar(movId, { tipo: "posponer", razonPostergacion: null });
-    else setOpenCard(null);
+  const handleSavePlan = async (movId: string, exc: null | "no" | "next", editedMonto: number) => {
+    const mov = movs.find(m => m.id === movId);
+    if (!mov) return;
+    const originalPosp = mov.estado === "pospuesto" || mov.estado === "pospuesto_mes_siguiente";
+    const montoChanged = editedMonto !== mov.montoPresupuestado;
+
+    if (montoChanged) {
+      setBusy(true);
+      setError(null);
+      try {
+        const res = await fetch(`/api/conceptos/${mov.conceptoId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ monto: editedMonto }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? "Error al actualizar monto");
+        setMovs(prev => prev.map(m => m.id === movId ? { ...m, montoPresupuestado: editedMonto } : m));
+        onMovimientoUpdate({ ...mov, montoPresupuestado: editedMonto });
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : "Error desconocido");
+        setBusy(false);
+        return;
+      }
+      setBusy(false);
+    }
+
+    if (exc === "no") {
+      patchar(movId, { tipo: "no_aplica" });
+    } else if (exc === "next") {
+      if (!originalPosp) patchar(movId, { tipo: "mover_mes_siguiente" });
+      else setOpenCard(null);
+    } else {
+      if (originalPosp) patchar(movId, { tipo: "revertir_mes_siguiente" });
+      else setOpenCard(null);
+    }
   };
 
   const handleDrop = (toSemana: Semana) => {

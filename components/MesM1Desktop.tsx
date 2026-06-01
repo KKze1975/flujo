@@ -8,6 +8,7 @@ import type {
 } from "@/lib/data/types";
 import Icon from "@/components/ui/Icon";
 import ConceptoBoard from "@/components/m1/ConceptoBoard";
+import ModalAgregarConcepto from "@/components/m1/ModalAgregarConcepto";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -297,6 +298,8 @@ export default function MesM1Desktop({
 
   // Shared state
   const [movs, setMovs] = useState<Movimiento[]>(movimientosProp);
+  const [conceptosLocal, setConceptosLocal] = useState<Concepto[]>(conceptosProp);
+  const [showAgregarConcepto, setShowAgregarConcepto] = useState(false);
   const [saldosLocal, setSaldosLocal] = useState<SaldoCuenta[]>(saldos);
   const [ingresoCamiloLocal, setIngresoCamiloLocal] = useState<IngresoCamilo | null>(ingresoCamiloProp);
   const [error, setError] = useState<string | null>(null);
@@ -394,7 +397,7 @@ export default function MesM1Desktop({
   const ingresoTotal = ingresoCamiloNum + aportesNum;
 
   const conceptosActivosMes = useMemo(() => {
-    return conceptosProp.filter(c => {
+    return conceptosLocal.filter(c => {
       if (c.estado !== "activo") return false;
       const movsC = movs.filter(m => m.conceptoId === c.id);
       if (movsC.length > 0 && movsC.every(m => m.estado === "no_aplica" || m.estado === "pospuesto_mes_siguiente")) return false;
@@ -403,7 +406,7 @@ export default function MesM1Desktop({
       }
       return true;
     });
-  }, [conceptosProp, movs, mesNombre]);
+  }, [conceptosLocal, movs, mesNombre]);
 
   const totalComprometido = useMemo(() =>
     conceptosActivosMes.reduce((sum, c) => sum + (c.frecuencia === "semanal" ? c.monto * 4 : c.monto), 0),
@@ -811,9 +814,14 @@ export default function MesM1Desktop({
               </>
             )}
             {view === "planificacion" && (
-              <button className="fl-btn primary sm" onClick={() => setView("ejecucion")}>
-                <Icon name="flag" size={15} /> Ir a Ejecución
-              </button>
+              <>
+                <button className="fl-btn ghost sm" onClick={() => setShowAgregarConcepto(true)}>
+                  <Icon name="plus" size={15} /> Agregar concepto
+                </button>
+                <button className="fl-btn primary sm" onClick={() => setView("ejecucion")}>
+                  <Icon name="flag" size={15} /> Cerrar planificación →
+                </button>
+              </>
             )}
           </div>
         </header>
@@ -967,6 +975,19 @@ export default function MesM1Desktop({
           </div>
         </div>
       </div>
+
+      {/* ── Modal Agregar Concepto (solo Planificación) ── */}
+      {showAgregarConcepto && (
+        <ModalAgregarConcepto
+          mes={mes}
+          onClose={() => setShowAgregarConcepto(false)}
+          onSave={(concepto, movimiento) => {
+            setConceptosLocal(prev => [...prev, concepto]);
+            setMovs(prev => [...prev, movimiento]);
+            setShowAgregarConcepto(false);
+          }}
+        />
+      )}
 
       {/* ── Modal Ingreso Camilo (solo Ejecución) ── */}
       {ingresoModalOpen && (
