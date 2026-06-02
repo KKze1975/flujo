@@ -752,6 +752,13 @@ export default function MesM1Desktop({
                 <span style={{ color: "var(--ink-soft)" }}>Total</span>
                 <span style={{ color: "var(--ink)" }}>{COP(totalSaldosLocal, { compact: true })}</span>
               </div>
+              {/* B3: mostrar ingreso Camilo en sección Saldos */}
+              {ingresoCamiloLocal && ingresoCamiloLocal.montoCop > 0 && (
+                <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 6, marginTop: 4, borderTop: "1px dashed var(--line)", fontSize: 11, fontWeight: 700 }}>
+                  <span style={{ color: "var(--ink-faint)" }}>Ingreso mes</span>
+                  <span style={{ color: "var(--pos)" }}>{COP(ingresoCamiloLocal.montoCop, { compact: true })}</span>
+                </div>
+              )}
             </div>
 
             <p className="dk-navlabel" style={{ marginTop: 16 }}>Por semana</p>
@@ -769,6 +776,12 @@ export default function MesM1Desktop({
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "var(--ink-faint)" }}>
                     <span>
+                      {/* B3: ingreso Camilo visible en S1 */}
+                      {semana === "S1" && ingresoCamiloLocal && ingresoCamiloLocal.montoCop > 0 && (
+                        <span style={{ color: "var(--pos)", marginRight: 4 }}>
+                          C:{COP(ingresoCamiloLocal.montoCop, { compact: true })}
+                        </span>
+                      )}
                       <span style={{ color: isConfirmado ? "var(--pos)" : "var(--ink-faint)" }}>
                         A:{COP(aporteAngie, { compact: true })}{isConfirmado ? " ✓" : " (plan)"}
                       </span>
@@ -988,7 +1001,7 @@ export default function MesM1Desktop({
               <div className="dk-board-panel">
                 <div className="dk-board-head">
                   <h3>Pagos fijos por semana</h3>
-                  <span className="cnt">{movs.filter(m => m.estado === "ejecutado").length}/{movs.length} ejecutados</span>
+                  <span className="cnt">{movs.filter(m => m.estado === "ejecutado").length}/{movs.filter(m => m.estado !== "no_aplica" && m.estado !== "pospuesto_mes_siguiente").length} ejecutados</span>
                   <div className="dk-filters">
                     {(["todas", "S1", "S2", "S3", "S4"] as const).map(f => (
                       <button key={f} className={`dk-fchip${wk === f ? " on" : ""}`} onClick={() => setWk(f)}>

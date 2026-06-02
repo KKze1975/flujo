@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import type { Movimiento, Semana, Actor, Categoria } from "@/lib/data/types";
 import Icon from "@/components/ui/Icon";
 
@@ -539,7 +539,9 @@ function WeekColumn({
   const tot = items.reduce((s, m) => s + m.montoPresupuestado, 0);
   const ejecutados = items.filter(m => m.estado === "ejecutado");
   const ejecutadoMonto = ejecutados.reduce((s, m) => s + (m.montoEjecutado ?? m.montoPresupuestado), 0);
-  const pct = items.length ? Math.round((ejecutados.length / items.length) * 100) : 0;
+  // B4: excluir no_aplica/pospuesto del denominador
+  const activos = items.filter(m => m.estado !== "no_aplica" && m.estado !== "pospuesto_mes_siguiente");
+  const pct = activos.length ? Math.round((ejecutados.length / activos.length) * 100) : 0;
   const porPagar = items.filter(m => m.estado === "pendiente").reduce((s, m) => s + m.montoPresupuestado, 0);
   const remanenteSemana = tot - ejecutadoMonto;
   const dim = focus !== "todas" && focus !== semana;
@@ -675,6 +677,15 @@ export default function ConceptoBoard({
 }) {
   const [movs, setMovs] = useState<Movimiento[]>(movimientos);
   const [openCard, setOpenCard] = useState<string | null>(null);
+
+  // B1+B2: sincronizar conceptos nuevos que el padre agrega externamente
+  useEffect(() => {
+    setMovs(prev => {
+      const existingIds = new Set(prev.map(m => m.id));
+      const incoming = movimientos.filter(m => !existingIds.has(m.id));
+      return incoming.length > 0 ? [...prev, ...incoming] : prev;
+    });
+  }, [movimientos]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
