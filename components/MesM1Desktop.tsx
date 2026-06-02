@@ -468,8 +468,15 @@ export default function MesM1Desktop({
   // ── Board callback ────────────────────────────────────────────────────────
 
   const handleMovUpdate = (updated: Movimiento) => {
-    setMovs(prev => prev.map(m => m.id === updated.id ? updated : m));
-    // DoD4: sincroniza monto a conceptosLocal para que balancePlanificacion reaccione
+    // Actualiza el movimiento editado; también sincroniza montoPresupuestado en
+    // todos los del mismo concepto — simétrico con el B2 fix de ConceptoBoard
+    setMovs(prev => prev.map(m =>
+      m.id === updated.id
+        ? updated
+        : m.conceptoId === updated.conceptoId
+          ? { ...m, montoPresupuestado: updated.montoPresupuestado }
+          : m
+    ));
     setConceptosLocal(prev => prev.map(c =>
       c.id === updated.conceptoId ? { ...c, monto: updated.montoPresupuestado } : c
     ));
@@ -720,7 +727,7 @@ export default function MesM1Desktop({
                     </span>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "var(--ink-faint)" }}>
-                    <span>{i === 0 ? `C:${COP(ingresoCamiloNum, { compact: true })}` : `↪ ${COP(remanente, { compact: true })}`} A:{COP(aporteAngie, { compact: true })}</span>
+                    <span>{i === 0 ? `C:${COP(remanente, { compact: true })}` : `↪ ${COP(remanente, { compact: true })}`} A:{COP(aporteAngie, { compact: true })}</span>
                     <span>{COP(comprometido, { compact: true })}</span>
                   </div>
                 </button>
