@@ -381,7 +381,7 @@ export default function MesM1Desktop({
       if (cierre) {
         result[s] = cierre.remanenteAngie;
       } else {
-        result[s] = Number(aportes[s]) || ingresosAngieProp.find(i => i.semana === s)?.monto ?? 0;
+        result[s] = Number(aportes[s]) || (ingresosAngieProp.find(i => i.semana === s)?.monto ?? 0);
       }
     }
     return result;
