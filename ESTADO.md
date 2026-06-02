@@ -542,6 +542,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | T34 | Comprobantes al ejecutar | F5 | Post go-live — Google Drive |
 | T35 | Split nativo de concepto en semanas | D1 futuro | Post go-live — requiere diseño |
 | T36 | Vista granular H3 en VistaSemanal | M4-B2 | Post go-live — requiere diseño |
+| T37 | FAB aporte Angie en vista semanal móvil | G1 | Bloqueante go-live |
 
 ---
 
@@ -645,6 +646,7 @@ Archivo fuente: H1_presupuesto_base.csv
 - proyeccion KPI superior usa saldos SSR en lugar de saldosLocal — cosmético, no afecta trazabilidad.
 - M4-B1: Foto en móvil falla con error JSON al adjuntar — falla en conversión base64 pre-API, antes de llamar a Claude. Desktop funciona correctamente. Post go-live.
 - M4-B2: VistaSemanal no muestra historial granular de H3 por semana — registros M4 no auditables en la vista semanal. Los datos se guardan correctamente en H3. Post go-live.
+- FAB aporte Angie ausente en vista semanal móvil — botón existe en M1 desktop pero no en VistaSemanal móvil. Bloqueante go-live — pendiente ticket.
 
 ---
 
