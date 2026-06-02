@@ -366,6 +366,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | .env.local | Creado — credenciales Google + ANTHROPIC_API_KEY (gitignored) |
 | ESTADO.md | En el repo — fuente de verdad |
 | scripts/seed-h1.mjs | Creado — cargó 40 conceptos reales en H1 (uso único) |
+| scripts/reset-junio-completo.mjs | Creado — limpieza completa de junio 2026: H2 clear + H3B + H4A + H4B + H4C + H5A + H5B — commit 54cf653 |
 | scripts/update-h1-montos.mjs | Creado — actualizó montos y retiró concepto |
 | scripts/setup-h2.mjs | Creado — creó pestaña H2 con 22 headers |
 | scripts/check-h2.mjs | Creado — verifica DoD en H2 |
@@ -401,7 +402,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | Ticket 13 — Home con métricas | Completo — 6 tarjetas: panel métricas + snapshot semana activa, botón registro rápido |
 | Ticket 14 — M4 Registro rápido | Completo — texto natural + foto de factura, Claude interpreta con conceptos H2 reales, propuesta editable, PATCH H2, fallback H3 clasificado:false |
 | Mayo 2026 | H2 activo — M1 cerrado, ejecución en paralelo con Sheets |
-| Junio 2026 | H2 activo — 62 movimientos inicializados, go-live objetivo — primeros registros M4 verificados |
+| Junio 2026 | Sheet en cero — reset completo ejecutado 2026-06-02 — listo para QA usuario. H2 vacía pendiente reinit desde app. |
 | PantallaMeses | Operativa — tarjetas con métricas, inicialización automática, navegación a MesM1 |
 | API POST /mes/[mes]/conceptos | Operativo — crea H1 + H2 atómico para B4 |
 | API H4 | Operativo — upsert ingreso Camilo y aportes Angie por semana |
@@ -1189,5 +1190,41 @@ Fecha: 2026-06-02
 
 **Qué cambia en el próximo sprint:**
 - Go-live: junio 7, 2026 — T29, T30, T31 completos. Pendiente: smoke test en producción.
+
+---
+
+## Reset junio 2026 — pre-QA go-live
+
+Fecha: 2026-06-02
+
+Script: `scripts/reset-junio-completo.mjs` — commit 54cf653
+
+### Log ejecutado
+
+```
+H2   → 63 filas borradas  [vacía — pendiente reinit desde app]
+H3B  →  0 filas           (sin consumos de junio)
+H4A  →  1 fila borrada    (ingreso Camilo)
+H4B  →  4 filas borradas  (aportes Angie S1–S4)
+H4C  →  4 filas borradas  (saldos iniciales)
+H5A  →  0 filas           (sin cierres de semana)
+H5B  →  0 filas           (tab no existe)
+```
+
+### Estado post-reset
+
+| Hoja | Estado |
+|---|---|
+| H1 | Intacto — 41 conceptos activos |
+| H2 | Vacía (headers intactos) — reinit pendiente desde app |
+| H3 | Sin consumos de junio — Rango A (bolsillos) intacto |
+| H4A | Sin ingreso Camilo de junio — mayo conservado |
+| H4B | Sin aportes Angie de junio — mayo conservado |
+| H4C | Sin saldos de junio |
+| H5A | Sin cierres de semana |
+| H5B | Tab no existe |
+| H6 | Intacto |
+
+**Próximo paso:** Abrir la app → navegar a Junio 2026 → la app reinicializa H2 automáticamente → comenzar QA.
 
 Flujo - Proyecto de salud financiera familiar - Camilo Villamil - 2026
