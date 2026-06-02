@@ -434,6 +434,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | T28 — Conectar ModalCorreccionM5 a VistaSemanal | Completo — DoD 8/8 verificado en producción (H3 + H2) |
 | T31 — Fix categorías H1 + H2 | Completo — DoD 5/5 + ext 14 filas H2 corregidas — commits ada938d, 469c0a2, dbdd592 |
 | T29 — Planificación bugs B1 B2 B3 B4 B7p | Completo — DoD 5/5 — commits 25fd70e, f3a6896 |
+| T30 — Ejecución: saldos reactivos + estados visuales | Completo — DoD 5/5 — commit e889270 |
 | T22 — Planificación: acciones y flujo | Completo — bugs 3,4,5,6 resueltos — commit 48406fe |
 | T23 — Ejecución: acciones y flujo | Completo — DoD 7/7 verificado en producción |
 | T24 — Balance y cálculos | Completo — DoD 2/2 verificado en producción — bug #2 falso positivo |
@@ -530,7 +531,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | Ticket | Descripción | Bugs/Features | Prioridad |
 |---|---|---|---|
 | T29 | Planificación: bugs de edición y mover | B1, B2, B3, B4, B7p | Completo — DoD 5/5 |
-| T30 | Ejecución: saldos reactivos + estados visuales | B5, B6, B7e, F3, F4 | Bloqueante go-live — no iniciado |
+| T30 | Ejecución: saldos reactivos + estados visuales | B5, B6, B7e, F3, F4 | Completo — DoD 5/5 — commit e889270 |
 | T31 | Fix H1 + H2: categorías Hijos y Servicio Domestico | F2 | Completo — DoD 5/5 + ext 14 filas H2 |
 | T26 | Modal reasignación de fondos | F6 expandido | Post go-live — requiere diseño |
 | T32 | Estado "aprobado" por concepto en Planificación | F1 | Post go-live |
@@ -552,7 +553,7 @@ Archivo fuente: H1_presupuesto_base.csv
 - Claude Code auto-update failed — resolver con: npm i -g @anthropic-ai/claude-code
 - H6: agregar cat_hijos y cat_servicio_domestico — columnas cat_* desactualizadas, reflejar las 13 categorías aprobadas
 - Frontend: vistas que agrupan por categoría deben leer categoría desde datos — verificar que no haya categorías hardcodeadas en CatGroup.tsx o similares
-- Rail izquierdo "Por semana" en Planificación — saldo puede no actualizar en alguna acción específica (no confirmado post-fix f3a6896). Diagnosticar al abrir T30.
+- Rail izquierdo "Por semana" en Planificación — diagnosticado en T30: `balancePlanificacion` ya depende de `aportes` (reactivo). No es bug activo — falso positivo resuelto.
 - Rail derecho Planificación — espacio liberado por B7p pendiente de asignar (actualmente vacío en modo Planificación).
 - Concepto mensual pospuesto genera doble fila en mes siguiente — revisar si es comportamiento deseado
 - Uber One, NY Times, El País, Game Pass agregados via B4 en primera ejecución — verificar que quedaron correctamente en H1
@@ -1166,5 +1167,27 @@ Fecha: 2026-06-01
 
 **Qué cambia en el próximo sprint:**
 - T22 — Planificación: acciones y flujo (bugs 3, 4, 5, 6)
+
+---
+
+## Retrospectiva — T30 Ejecución: saldos reactivos + estados visuales
+
+Fecha: 2026-06-02
+
+**Qué funcionó:**
+- Diagnóstico preciso antes de escribir código: los 3 bugs tenían raíces distintas (prop congelada, callback faltante, bloque a eliminar)
+- Contexto pendiente de Planificación diagnosticado y descartado correctamente — era falso positivo
+- B5: un cambio de 2 líneas corrigió el problema de reactividad (`aportes` como dep)
+- B6: `onAfterExec` añadido como prop opcional — sin cambiar la interfaz existente de `ConceptoBoard`
+- B7e: eliminación limpia del bloque rail derecho — sin residuos
+- F3: `isConfirmado` derivado de `cierresSemanaProps` (sin estado extra)
+- F4: `allDone` computado in situ en `CatGroup` — sin prop adicional
+- tsc --noEmit limpio al primer intento
+
+**Qué no funcionó:**
+- Nada
+
+**Qué cambia en el próximo sprint:**
+- Go-live: junio 7, 2026 — T29, T30, T31 completos. Pendiente: smoke test en producción.
 
 Flujo - Proyecto de salud financiera familiar - Camilo Villamil - 2026
