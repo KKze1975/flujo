@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Junio 2026 | Fase: Go-live ready — QA M4 completo — go-live aprobado
+Actualizado: Junio 2026 | Fase: QA go-live completo — 3 bloqueantes identificados — T37 T38 T26
 
 ---
 
@@ -543,6 +543,8 @@ Archivo fuente: H1_presupuesto_base.csv
 | T35 | Split nativo de concepto en semanas | D1 futuro | Post go-live — requiere diseño |
 | T36 | Vista granular H3 en VistaSemanal | M4-B2 | Post go-live — requiere diseño |
 | T37 | FAB aporte Angie en vista semanal móvil | G1 | Bloqueante go-live |
+| T38 | Desglose ejecutado por cuenta en rail Saldos | G2 | Bloqueante go-live |
+| T26 | Validación de fondos + modal reasignación antes de ejecutar | #18 | Bloqueante go-live — requiere diseño |
 
 ---
 
@@ -647,6 +649,8 @@ Archivo fuente: H1_presupuesto_base.csv
 - M4-B1: Foto en móvil falla con error JSON al adjuntar — falla en conversión base64 pre-API, antes de llamar a Claude. Desktop funciona correctamente. Post go-live.
 - M4-B2: VistaSemanal no muestra historial granular de H3 por semana — registros M4 no auditables en la vista semanal. Los datos se guardan correctamente en H3. Post go-live.
 - FAB aporte Angie ausente en vista semanal móvil — botón existe en M1 desktop pero no en VistaSemanal móvil. Bloqueante go-live — pendiente ticket.
+- T38: Rail Saldos no muestra desglose de ejecutado por cuenta — solo muestra disponible actual.
+- T26: No hay validación de fondos al ejecutar — permite ejecutar contra cuenta sin saldo disponible.
 
 ---
 
