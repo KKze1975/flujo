@@ -31,10 +31,11 @@ export default async function SemanaPage({
   const semana = semanaActual();
   const provider = getProvider();
 
-  const [movimientos, cierres, consumos] = await Promise.all([
+  const [movimientos, cierres, consumos, ingresosAngie] = await Promise.all([
     provider.getMovimientosByMesYSemana(mes, semana).catch(() => []),
     provider.getCierresSemana(mes).catch(() => []),
     provider.getConsumosByMesYSemana(mes, semana).catch(() => []),
+    provider.getIngresosAngie(mes).catch(() => []),
   ]);
 
   const cierreSemana = cierres.find((c) => c.semana === semana) ?? null;
@@ -47,6 +48,7 @@ export default async function SemanaPage({
       movimientosInit={movimientos}
       cierreSemana={cierreSemana}
       consumosInit={consumos}
+      ingresosAngie={ingresosAngie}
     />
   );
 }

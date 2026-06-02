@@ -6,7 +6,8 @@ import Icon from "@/components/ui/Icon";
 import Ring from "@/components/ui/Ring";
 import BottomNav from "@/components/ui/BottomNav";
 import RegistroRapido from "@/components/m4/RegistroRapido";
-import type { Movimiento, CierreSemana, Semana, Actor, ConsumoH3 } from "@/lib/data/types";
+import ModalAporteAngie from "@/components/m1/ModalAporteAngie";
+import type { Movimiento, CierreSemana, Semana, Actor, ConsumoH3, IngresoAngie } from "@/lib/data/types";
 
 type Fuente = "en_mano" | "nequi" | "camilo" | "angie";
 
@@ -586,6 +587,7 @@ export default function VistaSemanal({
   movimientosInit,
   cierreSemana,
   consumosInit = [],
+  ingresosAngie = [],
 }: {
   mes: string;
   mesLabel: string;
@@ -593,6 +595,7 @@ export default function VistaSemanal({
   movimientosInit: Movimiento[];
   cierreSemana: CierreSemana | null;
   consumosInit?: ConsumoH3[];
+  ingresosAngie?: IngresoAngie[];
 }) {
   const router = useRouter();
   const [movimientos, setMovimientos] = useState<Movimiento[]>(movimientosInit);
@@ -604,6 +607,8 @@ export default function VistaSemanal({
   const [sheetOpen, setSheetOpen] = useState(false);
   const [corrigiendoConsumo, setCorrigiendoConsumo] = useState<ConsumoH3 | null>(null);
   const [corrigiendoMovimiento, setCorrigiendoMovimiento] = useState<Movimiento | null>(null);
+  const [showAporteAngie, setShowAporteAngie] = useState(false);
+  const [ingresosAngieLocal, setIngresosAngieLocal] = useState<IngresoAngie[]>(ingresosAngie);
 
   const bolsillos = movimientos.filter((m) => m.tipoSnapshot === "bolsillo");
   const conceptos  = movimientos.filter((m) => m.tipoSnapshot !== "bolsillo");
@@ -1042,6 +1047,17 @@ export default function VistaSemanal({
 
       </div>
 
+      {/* FAB aporte Angie — T37 */}
+      <button
+        className="fl-fab"
+        onClick={() => setShowAporteAngie(true)}
+        aria-label="Registrar aporte Angie"
+        type="button"
+        style={{ position: "fixed", bottom: 88, right: 20, width: 48, height: 48, fontSize: 20 }}
+      >
+        <Icon name="wallet" size={22} fill />
+      </button>
+
       {/* Bottom nav */}
       <BottomNav
         onFabClick={() => setSheetOpen(true)}
@@ -1074,6 +1090,19 @@ export default function VistaSemanal({
           onClose={() => setCorrigiendoConsumo(null)}
           onSaved={updated => {
             setConsumos(prev => prev.map(c => c.id === updated.id ? updated : c));
+          }}
+        />
+      )}
+
+      {/* T37 · Modal aporte Angie */}
+      {showAporteAngie && (
+        <ModalAporteAngie
+          mes={mes}
+          existing={ingresosAngieLocal}
+          onClose={() => setShowAporteAngie(false)}
+          onSave={(nuevosIngresos) => {
+            setIngresosAngieLocal(nuevosIngresos);
+            setShowAporteAngie(false);
           }}
         />
       )}
