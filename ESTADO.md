@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Junio 2026 | Fase: Go-live — T38 completo — T37 y T26 bloqueantes activos
+Actualizado: Junio 2026 | Fase: Go-live — T37 y T26 aprobados para construir
 
 ---
 
@@ -542,9 +542,9 @@ Archivo fuente: H1_presupuesto_base.csv
 | T34 | Comprobantes al ejecutar | F5 | Post go-live — Google Drive |
 | T35 | Split nativo de concepto en semanas | D1 futuro | Post go-live — requiere diseño |
 | T36 | Vista granular H3 en VistaSemanal | M4-B2 | Post go-live — requiere diseño |
-| T37 | FAB aporte Angie en VistaSemanal — modal acumulativo + refetch foco M1 | G1 | En progreso — modal incorrecto, requiere rediseño |
+| T37 | FAB aporte Angie en VistaSemanal — modal acumulativo + refetch foco M1 | G1 | Aprobado para construir — DoD 7 puntos |
 | T38 | Desglose inicial/ejecutado/disponible por cuenta en rail Saldos | G2 | Completo — commit feat/T38 |
-| T26 | Validación de fondos + modal reasignación antes de ejecutar | #18 | Bloqueante go-live — requiere diseño |
+| T26 | Validación de fondos + modal reasignación antes de ejecutar | #18 | Aprobado para construir — DoD 9 puntos |
 
 ---
 
@@ -648,9 +648,9 @@ Archivo fuente: H1_presupuesto_base.csv
 - proyeccion KPI superior usa saldos SSR en lugar de saldosLocal — cosmético, no afecta trazabilidad.
 - M4-B1: Foto en móvil falla con error JSON al adjuntar — falla en conversión base64 pre-API, antes de llamar a Claude. Desktop funciona correctamente. Post go-live.
 - M4-B2: VistaSemanal no muestra historial granular de H3 por semana — registros M4 no auditables en la vista semanal. Los datos se guardan correctamente en H3. Post go-live.
-- FAB aporte Angie ausente en vista semanal móvil — botón existe en M1 desktop pero no en VistaSemanal móvil. Bloqueante go-live — pendiente ticket.
+- T37: FAB aporte Angie en VistaSemanal — Aprobado para construir — especificación completa en QA tickets.
 - T38: Rail Saldos no muestra desglose de ejecutado por cuenta — solo muestra disponible actual.
-- T26: No hay validación de fondos al ejecutar — permite ejecutar contra cuenta sin saldo disponible.
+- T26: No hay validación de fondos al ejecutar — Aprobado para construir — especificación completa en QA tickets.
 
 ---
 
@@ -1024,10 +1024,30 @@ Fecha: 2026-06-02
 
 ---
 
+## Retrospectiva — Sesión DISEÑO · T37 + T26
+
+Fecha: 2026-06-02
+
+**Qué funcionó:**
+- Dos especificaciones completas en una sola sesión
+- T37: flujo acumulativo con Opción B (fila por registro) — trazabilidad sin historial visible
+- T26: tres caminos de resolución explícitos — sin detección automática (descartada correctamente)
+- Supuestos implícitos validados antes de cerrar cada especificación
+
+**Qué no funcionó:**
+- T26 resultó más complejo de lo anticipado — tres escenarios colapsados en un ticket
+
+**Qué cambia en el próximo sprint:**
+- Próxima sesión: CONSTRUCCIÓN — T37 primero, T26 segundo
+- T37 es prerequisito de T26 (Opción 2 del modal T26 usa el flujo de T37)
+
+---
+
 ## Prompt de apertura — próxima sesión
 
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo y el adjunto al proyecto Claude.
-Tipo de sesión: [COMPLETAR]
+Tipo de sesión: CONSTRUCCIÓN
+Tickets activos: T37 → T26 (en ese orden — T37 es prerequisito de T26)
 Hora de inicio: [COMPLETAR]
 Entorno: Windows — PowerShell exclusivamente.
 
