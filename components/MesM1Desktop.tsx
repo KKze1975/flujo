@@ -743,17 +743,35 @@ export default function MesM1Desktop({
           <>
             <p className="dk-navlabel" style={{ marginTop: 20 }}>Saldos</p>
             <div style={{ background: "var(--surface-2)", borderRadius: 14, padding: "10px 12px", marginBottom: 4 }}>
-              {CUENTAS_H4C.map(({ cuenta, label: cuentaLabel, persona }) => {
+              {CUENTAS_H4C.map(({ cuenta, label: cuentaLabel, persona, fuenteKey }) => {
                 const entry = saldosLocal.find(s => s.cuenta === cuenta);
+                const ejecutado = movs
+                  .filter(m => m.estado === "ejecutado" && m[fuenteKey])
+                  .reduce((sum, m) => sum + (m.montoEjecutado ?? m.montoPresupuestado), 0);
+                const disponible = entry?.saldoInicial ?? 0;
+                const inicial = disponible + ejecutado;
                 return (
-                  <div key={cuenta} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", borderBottom: "1px solid var(--line)" }}>
-                    {persona
-                      ? <span className={`fl-person ${persona}`} style={{ width: 18, height: 18, fontSize: 9 }}>{persona === "c" ? "C" : "A"}</span>
-                      : <span style={{ width: 18, height: 18, borderRadius: 6, background: "var(--line)", display: "grid", placeItems: "center" }}><Icon name="wallet" size={10} /></span>}
-                    <span style={{ flex: 1, fontSize: 11.5, color: "var(--ink-soft)", fontWeight: 600 }}>{cuentaLabel}</span>
-                    <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>
-                      {entry ? COP(entry.saldoInicial, { compact: true }) : "—"}
-                    </span>
+                  <div key={cuenta} style={{ padding: "6px 0", borderBottom: "1px solid var(--line)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                      {persona
+                        ? <span className={`fl-person ${persona}`} style={{ width: 18, height: 18, fontSize: 9 }}>{persona === "c" ? "C" : "A"}</span>
+                        : <span style={{ width: 18, height: 18, borderRadius: 6, background: "var(--line)", display: "grid", placeItems: "center" }}><Icon name="wallet" size={10} /></span>}
+                      <span style={{ fontSize: 11.5, color: "var(--ink-soft)", fontWeight: 600 }}>{cuentaLabel}</span>
+                    </div>
+                    <div style={{ paddingLeft: 26, display: "flex", flexDirection: "column", gap: 2 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5 }}>
+                        <span style={{ color: "var(--ink-faint)" }}>Inicial</span>
+                        <span style={{ color: "var(--ink-soft)", fontVariantNumeric: "tabular-nums" }}>{entry ? COP(inicial, { compact: true }) : "—"}</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5 }}>
+                        <span style={{ color: "var(--ink-faint)" }}>Ejecutado</span>
+                        <span style={{ color: "var(--ink-soft)", fontVariantNumeric: "tabular-nums" }}>{COP(ejecutado, { compact: true })}</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, fontWeight: 700 }}>
+                        <span style={{ color: "var(--ink-soft)" }}>Disponible</span>
+                        <span style={{ color: disponible > 0 ? "var(--pos)" : "var(--neg)", fontVariantNumeric: "tabular-nums" }}>{entry ? COP(disponible, { compact: true }) : "—"}</span>
+                      </div>
+                    </div>
                   </div>
                 );
               })}
