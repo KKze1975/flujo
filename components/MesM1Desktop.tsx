@@ -752,7 +752,10 @@ export default function MesM1Desktop({
                 const ejecutado = movs
                   .filter(m => m.estado === "ejecutado" && m[fuenteKey])
                   .reduce((sum, m) => sum + (m.montoEjecutado ?? m.montoPresupuestado), 0);
-                const disponible = entry?.saldoInicial ?? 0;
+                const recargas = (cuenta === "nu_angie" || cuenta === "en_mano")
+                  ? recargasAngieProp.filter(r => r.cuentaDestino === cuenta).reduce((sum, r) => sum + r.monto, 0)
+                  : 0;
+                const disponible = (entry?.saldoInicial ?? 0) + recargas;
                 const inicial = disponible + ejecutado;
                 return (
                   <div key={cuenta} style={{ padding: "6px 0", borderBottom: "1px solid var(--line)" }}>
