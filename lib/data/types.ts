@@ -111,6 +111,19 @@ export interface Consumo {
 export type CuentaDestino = "en_mano" | "nequi" | "camilo" | "angie";
 export type CuentaH4C = "nu_camilo" | "nu_angie" | "arq" | "en_mano";
 
+export type CuentaDestinoAngie = "nu_angie" | "en_mano";
+
+export interface RecargaAngie {
+  id: string;
+  mes: string;
+  semana: Semana;
+  monto: number;
+  fecha: string;
+  registradoPor: string;
+  cuentaDestino: CuentaDestinoAngie;
+  notas: string | null;
+}
+
 export interface SaldoCuenta {
   id: string;
   mes: string;                  // "2026-05"

@@ -1099,11 +1099,8 @@ export default function VistaSemanal({
         <ModalRegistroIngresoAngie
           mes={mes}
           semana={semanaActiva}
-          registros={ingresosAngieLocal.filter(r => r.semana === semanaActiva)}
           onClose={() => setShowAporteAngie(false)}
-          onRegistered={(nuevo) => {
-            setIngresosAngieLocal(prev => [...prev, nuevo]);
-          }}
+          onRegistered={() => {}}
         />
       )}
 

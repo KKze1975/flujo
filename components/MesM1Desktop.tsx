@@ -5,7 +5,7 @@ import React from "react";
 import { useRouter } from "next/navigation";
 import type {
   Movimiento, Concepto, SaldoCuenta, Semana, Categoria,
-  Actor, IngresoCamilo, IngresoAngie, CuentaDestino,
+  Actor, IngresoCamilo, IngresoAngie, RecargaAngie, CuentaDestino,
 } from "@/lib/data/types";
 import Icon from "@/components/ui/Icon";
 import ConceptoBoard from "@/components/m1/ConceptoBoard";
@@ -288,6 +288,7 @@ export default function MesM1Desktop({
   mes,
   ingresoCamilo: ingresoCamiloProp = null,
   ingresosAngie: ingresosAngieProp = [],
+  recargasAngie: recargasAngieProp = [],
   cierresSemana: cierresSemanaProps = [],
   gastosSinClasificar = { S1: 0, S2: 0, S3: 0, S4: 0 },
   onSwitchToMobile,
@@ -298,6 +299,7 @@ export default function MesM1Desktop({
   mes: string;
   ingresoCamilo?: IngresoCamilo | null;
   ingresosAngie?: IngresoAngie[];
+  recargasAngie?: RecargaAngie[];
   cierresSemana?: import("@/lib/data/types").CierreSemana[];
   gastosSinClasificar?: Record<Semana, number>;
   onSwitchToMobile: () => void;
@@ -383,11 +385,11 @@ export default function MesM1Desktop({
       if (cierre) {
         result[s] = cierre.remanenteAngie;
       } else {
-        result[s] = Number(aportes[s]) || ingresosAngieProp.filter(i => i.semana === s).reduce((sum, i) => sum + i.monto, 0);
+        result[s] = recargasAngieProp.filter(r => r.semana === s).reduce((sum, r) => sum + r.monto, 0);
       }
     }
     return result;
-  }, [cierresSemanaProps, ingresosAngieProp, aportes]);
+  }, [cierresSemanaProps, recargasAngieProp]);
 
   const balanceSemanas = useMemo(() => {
     let remanente = ingresoCamiloLocal?.montoCop ?? 0;

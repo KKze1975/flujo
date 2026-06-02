@@ -7,6 +7,7 @@ import type {
   ConsumoH3,
   IngresoCamilo,
   IngresoAngie,
+  RecargaAngie,
   SaldoCuenta,
   CierreSemana,
   PlanSemana,
@@ -49,6 +50,8 @@ export interface IDataProvider {
   getIngresosAngie(mes: string): Promise<IngresoAngie[]>;
   createIngresoAngie(data: Omit<IngresoAngie, "id">): Promise<IngresoAngie>;
   updateIngresoAngie(id: string, data: Partial<Omit<IngresoAngie, "id">>): Promise<IngresoAngie>;
+  getRecargasAngie(mes: string): Promise<RecargaAngie[]>;
+  createRecargaAngie(data: Omit<RecargaAngie, "id">): Promise<RecargaAngie>;
   getSaldosCuenta(mes: string): Promise<SaldoCuenta[]>;
   upsertSaldosCuenta(mes: string, saldos: { cuenta: SaldoCuenta["cuenta"]; saldoInicial: number }[]): Promise<SaldoCuenta[]>;
 
@@ -66,5 +69,5 @@ export interface IDataProvider {
   createCierreMensual(data: Omit<CierreMensual, "id">): Promise<CierreMensual>;
 }
 
-export type { Semana, Concepto, Movimiento, Bolsillo, Consumo, ConsumoH3, IngresoCamilo, IngresoAngie, SaldoCuenta, CierreSemana, PlanSemana, CierreMensual };
+export type { Semana, Concepto, Movimiento, Bolsillo, Consumo, ConsumoH3, IngresoCamilo, IngresoAngie, RecargaAngie, SaldoCuenta, CierreSemana, PlanSemana, CierreMensual };
 export * from "./types";

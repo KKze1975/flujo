@@ -199,6 +199,23 @@ Rango C — Saldos iniciales
 | saldo_inicial | number | COP |
 | fecha_confirmacion | date | |
 
+### H4D — Recargas confirmadas Angie
+
+Rango en tab H4: V:AC (8 columnas)
+
+| Columna | Tipo | Detalle |
+|---|---|---|
+| id_recarga | string | RECARGA_ANG_{unix_timestamp} |
+| mes | string | 2026-06 |
+| semana | enum | S1 / S2 / S3 / S4 |
+| monto | number | COP |
+| fecha | date | Fecha de registro |
+| registrado_por | string | Actor que registra |
+| cuenta_destino | enum | nu_angie / en_mano |
+| notas | string | Nullable |
+
+**Decisión:** H4B = plan/meta (solo PUT upsert desde M1 Planificación). H4D = recargas confirmadas (POST append desde VistaSemanal). `remanenteAngiePerSemana` en M1 Ejecución lee H4D, no H4B.
+
 ### H5 — Semanas
 
 Rango A — Cierre de semana

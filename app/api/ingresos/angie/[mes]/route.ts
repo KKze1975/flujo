@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { getProvider } from "@/lib/data/provider";
-import type { Semana } from "@/lib/data/types";
+import type { Semana, CuentaDestinoAngie } from "@/lib/data/types";
 
 const MES_REGEX = /^\d{4}-\d{2}$/;
 const SEMANAS: Semana[] = ["S1", "S2", "S3", "S4"];
@@ -38,7 +38,7 @@ export async function POST(
     return Response.json({ error: "Formato de mes inválido." }, { status: 400 });
   }
 
-  let body: { semana: Semana; monto: number };
+  let body: { semana: Semana; monto: number; cuentaDestino?: CuentaDestinoAngie; notas?: string };
   try {
     body = await req.json();
   } catch {
@@ -51,12 +51,14 @@ export async function POST(
 
   const hoy = new Date().toISOString().split("T")[0];
   try {
-    const created = await getProvider().createIngresoAngie({
+    const created = await getProvider().createRecargaAngie({
       mes,
       semana: body.semana,
       monto: body.monto,
       fecha: hoy,
-      notas: null,
+      registradoPor: "angie",
+      cuentaDestino: body.cuentaDestino ?? "nu_angie",
+      notas: body.notas ?? null,
     });
     return Response.json(created, { status: 201 });
   } catch (e: unknown) {
