@@ -333,7 +333,9 @@ export default function MesM1Desktop({
   const [wkPlan, setWkPlan] = useState<"todas" | Semana>(() => getActiveSemana(mes));
   const [aportes, setAportes] = useState<Record<Semana, string>>(() => {
     const init: Record<Semana, string> = { S1: "", S2: "", S3: "", S4: "" };
-    for (const a of ingresosAngieProp) init[a.semana] = String(a.monto);
+    for (const a of ingresosAngieProp) {
+      init[a.semana] = String((Number(init[a.semana]) || 0) + a.monto);
+    }
     return init;
   });
   const [savingAportes, setSavingAportes] = useState(false);
@@ -381,7 +383,7 @@ export default function MesM1Desktop({
       if (cierre) {
         result[s] = cierre.remanenteAngie;
       } else {
-        result[s] = Number(aportes[s]) || (ingresosAngieProp.find(i => i.semana === s)?.monto ?? 0);
+        result[s] = Number(aportes[s]) || ingresosAngieProp.filter(i => i.semana === s).reduce((sum, i) => sum + i.monto, 0);
       }
     }
     return result;

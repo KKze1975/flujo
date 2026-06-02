@@ -6,7 +6,7 @@ import Icon from "@/components/ui/Icon";
 import Ring from "@/components/ui/Ring";
 import BottomNav from "@/components/ui/BottomNav";
 import RegistroRapido from "@/components/m4/RegistroRapido";
-import ModalAporteAngie from "@/components/m1/ModalAporteAngie";
+import ModalRegistroIngresoAngie from "@/components/m1/ModalRegistroIngresoAngie";
 import type { Movimiento, CierreSemana, Semana, Actor, ConsumoH3, IngresoAngie } from "@/lib/data/types";
 
 type Fuente = "en_mano" | "nequi" | "camilo" | "angie";
@@ -1094,15 +1094,15 @@ export default function VistaSemanal({
         />
       )}
 
-      {/* T37 · Modal aporte Angie */}
+      {/* T37 · Modal registro ingreso Angie */}
       {showAporteAngie && (
-        <ModalAporteAngie
+        <ModalRegistroIngresoAngie
           mes={mes}
-          existing={ingresosAngieLocal}
+          semana={semanaActiva}
+          registros={ingresosAngieLocal.filter(r => r.semana === semanaActiva)}
           onClose={() => setShowAporteAngie(false)}
-          onSave={(nuevosIngresos) => {
-            setIngresosAngieLocal(nuevosIngresos);
-            setShowAporteAngie(false);
+          onRegistered={(nuevo) => {
+            setIngresosAngieLocal(prev => [...prev, nuevo]);
           }}
         />
       )}

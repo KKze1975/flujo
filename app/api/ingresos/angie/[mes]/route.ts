@@ -29,6 +29,44 @@ export async function GET(
   }
 }
 
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ mes: string }> }
+) {
+  const { mes } = await params;
+  if (!MES_REGEX.test(mes)) {
+    return Response.json({ error: "Formato de mes inválido." }, { status: 400 });
+  }
+
+  let body: { semana: Semana; monto: number };
+  try {
+    body = await req.json();
+  } catch {
+    return Response.json({ error: "Body inválido." }, { status: 400 });
+  }
+
+  if (!SEMANAS.includes(body.semana) || typeof body.monto !== "number" || body.monto <= 0) {
+    return Response.json({ error: "semana y monto requeridos." }, { status: 400 });
+  }
+
+  const hoy = new Date().toISOString().split("T")[0];
+  try {
+    const created = await getProvider().createIngresoAngie({
+      mes,
+      semana: body.semana,
+      monto: body.monto,
+      fecha: hoy,
+      notas: null,
+    });
+    return Response.json(created, { status: 201 });
+  } catch (e: unknown) {
+    return Response.json(
+      { error: e instanceof Error ? e.message : "Error interno" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ mes: string }> }
