@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Junio 2026 | Fase: Go-live ready — T32b completo — pendiente verificación visual Vercel
+Actualizado: Junio 2026 | Fase: Go-live ready — QA M4 completo — go-live aprobado
 
 ---
 
@@ -541,6 +541,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | T33 | Mesadas con anticipos, préstamos y descuentos | F7 | Post go-live |
 | T34 | Comprobantes al ejecutar | F5 | Post go-live — Google Drive |
 | T35 | Split nativo de concepto en semanas | D1 futuro | Post go-live — requiere diseño |
+| T36 | Vista granular H3 en VistaSemanal | M4-B2 | Post go-live — requiere diseño |
 
 ---
 
@@ -642,6 +643,8 @@ Archivo fuente: H1_presupuesto_base.csv
 - Build Vercel: tsc local no detectó error de Turbopack (mezcla || y ?? sin paréntesis — commit be4bb39). Revisar configuración tsc/turbopack antes del primer ticket post go-live.
 - balanceSemanas Ejecución: indicador (plan) vs ✓ siempre muestra (plan) para semanas sin cierre formal — cierresSemanaProps es SSR puro, no reactivo. Cosmético — no afecta cálculos.
 - proyeccion KPI superior usa saldos SSR en lugar de saldosLocal — cosmético, no afecta trazabilidad.
+- M4-B1: Foto en móvil falla con error JSON al adjuntar — falla en conversión base64 pre-API, antes de llamar a Claude. Desktop funciona correctamente. Post go-live.
+- M4-B2: VistaSemanal no muestra historial granular de H3 por semana — registros M4 no auditables en la vista semanal. Los datos se guardan correctamente en H3. Post go-live.
 
 ---
 
