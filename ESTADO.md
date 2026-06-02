@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Junio 2026 | Fase: QA go-live completo — 3 bloqueantes identificados — T37 T38 T26
+Actualizado: Junio 2026 | Fase: Go-live — T38 completo — T37 y T26 bloqueantes activos
 
 ---
 
@@ -542,8 +542,8 @@ Archivo fuente: H1_presupuesto_base.csv
 | T34 | Comprobantes al ejecutar | F5 | Post go-live — Google Drive |
 | T35 | Split nativo de concepto en semanas | D1 futuro | Post go-live — requiere diseño |
 | T36 | Vista granular H3 en VistaSemanal | M4-B2 | Post go-live — requiere diseño |
-| T37 | FAB aporte Angie en vista semanal móvil | G1 | Bloqueante go-live |
-| T38 | Desglose ejecutado por cuenta en rail Saldos | G2 | Bloqueante go-live |
+| T37 | FAB aporte Angie en VistaSemanal — modal acumulativo + refetch foco M1 | G1 | En progreso — modal incorrecto, requiere rediseño |
+| T38 | Desglose inicial/ejecutado/disponible por cuenta en rail Saldos | G2 | Completo — commit feat/T38 |
 | T26 | Validación de fondos + modal reasignación antes de ejecutar | #18 | Bloqueante go-live — requiere diseño |
 
 ---
@@ -1001,6 +1001,26 @@ Archivo fuente: H1_presupuesto_base.csv
 **Qué cambia en el próximo sprint:**
 - git config --global con camilovillamil@gmail.com ya configurado — futuros deploys no tendrán este problema
 - Repo público — sin impacto en seguridad real
+
+---
+
+## Retrospectiva — Sesión QA go-live + T38 + T37 parcial
+
+Fecha: 2026-06-02
+
+**Qué funcionó:**
+- QA Planificación y Ejecución — sin bloqueantes
+- T33b fix saldos — diagnóstico correcto, fix en una sesión
+- T38 — desglose por cuenta en rail Saldos — DoD completo en una sesión
+- balanceSemanas carry-over verificado en producción
+
+**Qué no funcionó:**
+- T37 subestimado — ModalAporteAngie no sirve para el flujo de Angie. Requiere modal nuevo + lógica acumulativa + refetch al foco
+- T26 no tiene diseño — no se puede abrir como ticket de construcción
+
+**Qué cambia en el próximo sprint:**
+- Próxima sesión: DISEÑO de T37 (modal acumulativo Angie) + DISEÑO de T26 (validación de fondos)
+- Sin código hasta tener ambos diseños aprobados
 
 ---
 
