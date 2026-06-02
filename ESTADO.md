@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Junio 2026 | Fase: T32b completo — go-live pendiente re-QA
+Actualizado: Junio 2026 | Fase: QA go-live 2 — M1 completo verificado — bloqueante T32b confirmado
 
 ---
 
@@ -576,6 +576,35 @@ Archivo fuente: H1_presupuesto_base.csv
 
 ---
 
+## QA Go-Live 2 — 2 junio 2026
+
+### Resultado: BLOQUEADO — T32b pendiente
+
+### Verificado como correcto
+
+- Ingresos actualizan balance mes y rail izquierdo ✓
+- Carry over entre semanas consistente ✓
+- Editar monto → todas las semanas actualizan ✓
+- Mover concepto entre semanas con botones S1-S4 ✓
+- Rail derecho sin "Por categoría" Planificación y Ejecución ✓
+- Categorías Hijos y Servicio Domestico correctas ✓
+- Confirmar saldos bloquea sin saldos ✓
+- Ejecutar concepto reduce saldo cuenta en sidebar ✓
+- Categoría todos ejecutados → header verde ✓
+- Revertir ejecución disponible ✓
+- Cerrar semana disponible ✓
+
+### Bloqueantes confirmados (T32b)
+
+- B1/B2: Agregar concepto en Planificación no funciona
+- B3: Rail izquierdo Por semana muestra valores plan en lugar de ejecutado real — dos manifestaciones: aporte Angie no actualiza rail Saldos, y Por semana no refleja ingresos confirmados vs planeados
+
+### Nuevos items deuda técnica
+
+- E6: Cierre semana pide registrar remanente manualmente — debería preguntar dónde está el remanente y confirmar
+
+---
+
 ## Deuda técnica conocida
 
 - Vista M1 Ejecución no refleja cambios hechos en M1 Planificación sin recargar — estado desincronizado entre vistas o caché de fetch
@@ -609,6 +638,7 @@ Archivo fuente: H1_presupuesto_base.csv
 - QA go-live E2: Opción de nota en ejecución junto al comprobante — post go-live.
 - QA go-live E4: Concepto ejecutable vía carga de bolsillo — lógica a definir, post go-live.
 - QA go-live E5: Lógica cuando se gasta menos en concepto de bolsillo (ej. Frida) — post go-live.
+- QA go-live E6: Cierre semana pide remanente manual — debería preguntar ubicación y confirmar — post go-live.
 - Build Vercel: tsc local no detectó error de Turbopack (mezcla || y ?? sin paréntesis — commit be4bb39). Revisar configuración tsc/turbopack antes del primer ticket post go-live.
 
 ---
