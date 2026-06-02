@@ -21,6 +21,22 @@ export default async function MesPage({
     provider.getSaldosCuenta(mes).catch(() => []),
   ]);
 
+  const cuentaToFuente = {
+    en_mano: "fuenteEnMano",
+    nu_camilo: "fuenteCamilo",
+    nu_angie: "fuenteAngie",
+    arq: null,
+  } as const;
+
+  const saldosConDescuento = saldosCuenta.map(s => {
+    const fuenteKey = cuentaToFuente[s.cuenta];
+    if (!fuenteKey) return s;
+    const ejecutado = movimientos
+      .filter(m => m.estado === "ejecutado" && m[fuenteKey])
+      .reduce((sum, m) => sum + (m.montoEjecutado ?? m.montoPresupuestado), 0);
+    return { ...s, saldoInicial: Math.max(0, s.saldoInicial - ejecutado) };
+  });
+
   if (movimientos.length === 0) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
@@ -38,7 +54,7 @@ export default async function MesPage({
       ingresosAngie={ingresosAngie}
       cierresSemana={cierresSemana}
       gastosSinClasificarInit={gastosSinClasificar}
-      saldosInit={saldosCuenta}
+      saldosInit={saldosConDescuento}
     />
   );
 }
