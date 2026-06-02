@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Junio 2026 | Fase: QA go-live 2 — M1 completo verificado — bloqueante T32b confirmado
+Actualizado: Junio 2026 | Fase: Go-live ready — T32b completo — pendiente verificación visual Vercel
 
 ---
 
@@ -535,7 +535,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | T29 | Planificación: bugs de edición y mover | B1, B2, B3, B4, B7p | Completo — DoD 5/5 |
 | T30 | Ejecución: saldos reactivos + estados visuales | B5, B6, B7e, F3, F4 | Completo — DoD 5/5 — commit e889270 |
 | T31 | Fix H1 + H2: categorías Hijos y Servicio Domestico | F2 | Completo — DoD 5/5 + ext 14 filas H2 |
-| T32b | Fix bloqueantes QA go-live | B1, B2, B3, B4 | Completo — DoD 4/4 — commit 5460967 |
+| T32b | Fix bloqueantes QA go-live | B1, B2, B3, B4 | Completo — DoD 6/6 — commits 5460967, 0507256 |
 | T26 | Modal reasignación de fondos | F6 expandido | Post go-live — requiere diseño |
 | T32 | Estado "aprobado" por concepto en Planificación | F1 | Post go-live |
 | T33 | Mesadas con anticipos, préstamos y descuentos | F7 | Post go-live |
@@ -640,6 +640,8 @@ Archivo fuente: H1_presupuesto_base.csv
 - QA go-live E5: Lógica cuando se gasta menos en concepto de bolsillo (ej. Frida) — post go-live.
 - QA go-live E6: Cierre semana pide remanente manual — debería preguntar ubicación y confirmar — post go-live.
 - Build Vercel: tsc local no detectó error de Turbopack (mezcla || y ?? sin paréntesis — commit be4bb39). Revisar configuración tsc/turbopack antes del primer ticket post go-live.
+- balanceSemanas Ejecución: indicador (plan) vs ✓ siempre muestra (plan) para semanas sin cierre formal — cierresSemanaProps es SSR puro, no reactivo. Cosmético — no afecta cálculos.
+- proyeccion KPI superior usa saldos SSR en lugar de saldosLocal — cosmético, no afecta trazabilidad.
 
 ---
 
@@ -1315,5 +1317,25 @@ Fecha: 2026-06-02
 
 **Qué cambia en el próximo sprint:**
 - Re-QA en producción antes de declarar go-live.
+
+---
+
+## Retrospectiva — T32b Fix bloqueantes QA go-live (segunda iteración)
+
+Fecha: 2026-06-02
+
+**Qué funcionó:**
+- B1/B2 ya estaban resueltos en commit 5460967 — verificación en producción evitó trabajo innecesario
+- Diagnóstico de B3 por lectura quirúrgica de código — causa raíz identificada sin tocar el servidor
+- Fix acotado: solo balanceSemanas reemplazado — balancePlanificacion y remanenteAngiePerSemana intactos
+- carry-over verificado visualmente antes de declarar DoD
+
+**Qué no funcionó:**
+- ESTADO.md tenía contradicción entre encabezado y tabla de tickets — generó confusión al abrir la sesión
+- B3 tenía dos manifestaciones distintas (NU Angie en Saldos vs carry-over) — solo la segunda era bug real
+
+**Qué cambia en el próximo sprint:**
+- Go-live: verificar en Vercel producción, luego declarar go-live para junio 7, 2026
+- Rama dev + preview URL antes del primer ticket post go-live (deuda DevOps documentada)
 
 Flujo - Proyecto de salud financiera familiar - Camilo Villamil - 2026
