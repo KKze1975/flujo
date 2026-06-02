@@ -559,7 +559,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | T34 | Comprobantes al ejecutar | F5 | Post go-live — Google Drive |
 | T35 | Split nativo de concepto en semanas | D1 futuro | Post go-live — requiere diseño |
 | T36 | Vista granular H3 en VistaSemanal | M4-B2 | Post go-live — requiere diseño |
-| T37 | FAB aporte Angie en VistaSemanal — modal acumulativo + refetch foco M1 | G1 | Aprobado para construir — DoD 7 puntos |
+| T37 | FAB aporte Angie en VistaSemanal — modal acumulativo + refetch foco M1 | G1 | En QA — DoD 7/7 verificados — pendiente QA completo antes de cerrar — commits e0a59ab, 3f44734, 26cbb0e |
 | T38 | Desglose inicial/ejecutado/disponible por cuenta en rail Saldos | G2 | Completo — commit feat/T38 |
 | T26 | Validación de fondos + modal reasignación antes de ejecutar | #18 | Aprobado para construir — DoD 9 puntos |
 
@@ -668,6 +668,7 @@ Archivo fuente: H1_presupuesto_base.csv
 - T37: FAB aporte Angie en VistaSemanal — Aprobado para construir — especificación completa en QA tickets.
 - T38: Rail Saldos no muestra desglose de ejecutado por cuenta — solo muestra disponible actual.
 - T26: No hay validación de fondos al ejecutar — Aprobado para construir — especificación completa en QA tickets.
+- T37-DT1: Fila Total en rail Saldos de M1 Ejecución no suma recargas H4D — totalSaldosLocal excluye recargas Angie. El Total visible no coincide con la suma de las 4 cuentas cuando hay recargas registradas. Post go-live.
 
 ---
 
@@ -1041,6 +1042,27 @@ Fecha: 2026-06-02
 
 ---
 
+## Retrospectiva — Sesión DISEÑO + CONSTRUCCIÓN · T37
+
+Fecha: 2026-06-02
+
+**Qué funcionó:**
+- Diseño T37 y T26 completados en una sesión
+- Rediseño parcial de T37 al descubrir que H4B es solo plan
+- H4D como rango nuevo — patrón consistente con H4A/B/C
+- DoD 7/7 verificados en producción
+
+**Qué no funcionó:**
+- Modelo de datos de H4B no estaba claro al inicio del diseño
+- T37 requirió dos iteraciones de arquitectura antes de estabilizarse
+- Total en rail Saldos desincronizado — deuda técnica T37-DT1
+
+**Qué cambia en el próximo sprint:**
+- QA completo de T37 antes de abrir T26
+- Verificar que no hay otros valores que excluyan H4D
+
+---
+
 ## Retrospectiva — Sesión DISEÑO · T37 + T26
 
 Fecha: 2026-06-02
@@ -1063,8 +1085,8 @@ Fecha: 2026-06-02
 ## Prompt de apertura — próxima sesión
 
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo y el adjunto al proyecto Claude.
-Tipo de sesión: CONSTRUCCIÓN
-Tickets activos: T37 → T26 (en ese orden — T37 es prerequisito de T26)
+Tipo de sesión: QA + CONSTRUCCIÓN
+Tickets: QA T37 → cerrar T37 → abrir T26
 Hora de inicio: [COMPLETAR]
 Entorno: Windows — PowerShell exclusivamente.
 
