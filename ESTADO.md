@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Junio 2026 | Fase: QA go-live ejecutado — 3 bloqueantes identificados — go-live pendiente T32b
+Actualizado: Junio 2026 | Fase: T32b completo — go-live pendiente re-QA
 
 ---
 
@@ -535,7 +535,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | T29 | Planificación: bugs de edición y mover | B1, B2, B3, B4, B7p | Completo — DoD 5/5 |
 | T30 | Ejecución: saldos reactivos + estados visuales | B5, B6, B7e, F3, F4 | Completo — DoD 5/5 — commit e889270 |
 | T31 | Fix H1 + H2: categorías Hijos y Servicio Domestico | F2 | Completo — DoD 5/5 + ext 14 filas H2 |
-| T32b | Fix bloqueantes QA go-live | B1, B2, B3, B4 | Bloqueante go-live |
+| T32b | Fix bloqueantes QA go-live | B1, B2, B3, B4 | Completo — DoD 4/4 — commit 5460967 |
 | T26 | Modal reasignación de fondos | F6 expandido | Post go-live — requiere diseño |
 | T32 | Estado "aprobado" por concepto en Planificación | F1 | Post go-live |
 | T33 | Mesadas con anticipos, préstamos y descuentos | F7 | Post go-live |
@@ -1266,5 +1266,23 @@ H5B  →  0 filas           (tab no existe)
 | H6 | Intacto |
 
 **Próximo paso:** Abrir la app → navegar a Junio 2026 → la app reinicializa H2 automáticamente → comenzar QA.
+
+---
+
+## Retrospectiva — T32b Fix bloqueantes QA go-live
+
+Fecha: 2026-06-02
+
+**Qué funcionó:**
+- B1+B2: root cause preciso antes de escribir código — prop-to-state mismatch en ConceptoBoard. `useEffect` con filtro por ID resuelve sin romper ediciones in-board.
+- B3: fix display-only (no cambia modelo de datos) — ingreso visible en "Saldos" y en S1 de "Por semana" con cero riesgo de double-counting.
+- B4: fix de una línea en dos lugares — denominador correcto en header y en WeekColumn.
+- tsc --noEmit limpio al primer intento.
+
+**Qué no funcionó:**
+- Nada
+
+**Qué cambia en el próximo sprint:**
+- Re-QA en producción antes de declarar go-live.
 
 Flujo - Proyecto de salud financiera familiar - Camilo Villamil - 2026
