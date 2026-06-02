@@ -387,15 +387,24 @@ export default function MesM1Desktop({
     return result;
   }, [cierresSemanaProps, ingresosAngieProp, aportes]);
 
-  const balanceSemanas = useMemo(() => SEMANAS.map(s => {
-    const items = movs.filter(m => m.semana === s);
-    const comprometido = items.reduce((sum, m) => sum + m.montoPresupuestado, 0);
-    const ejecutado = items.filter(m => m.estado === "ejecutado").reduce((sum, m) => sum + (m.montoEjecutado ?? m.montoPresupuestado), 0);
-    const pendiente = items.filter(m => m.estado === "pendiente").length;
-    // F3: semana cerrada = ingreso Angie confirmado; sin cierre = planeado
-    const isConfirmado = cierresSemanaProps.some(c => c.semana === s);
-    return { semana: s, comprometido, ejecutado, diferencia: ejecutado - comprometido, pendiente, aporteAngie: remanenteAngiePerSemana[s], isConfirmado };
-  }), [movs, remanenteAngiePerSemana, cierresSemanaProps]);
+  const balanceSemanas = useMemo(() => {
+    let remanente = ingresoCamiloLocal?.montoCop ?? 0;
+    return SEMANAS.map((s) => {
+      const items = movs.filter((m) => m.semana === s);
+      const comprometido = items.reduce((sum, m) => sum + m.montoPresupuestado, 0);
+      const ejecutado = items
+        .filter((m) => m.estado === "ejecutado")
+        .reduce((sum, m) => sum + (m.montoEjecutado ?? m.montoPresupuestado), 0);
+      const pendiente = items.filter((m) => m.estado === "pendiente").length;
+      const aporteAngie = remanenteAngiePerSemana[s] ?? 0;
+      const disponible = remanente + aporteAngie;
+      const diferencia = disponible - ejecutado;
+      // F3: semana cerrada = ingreso Angie confirmado; sin cierre = planeado
+      const isConfirmado = cierresSemanaProps.some((c) => c.semana === s);
+      remanente = diferencia;
+      return { semana: s, remanente: disponible, aporteAngie, comprometido, ejecutado, diferencia, pendiente, isConfirmado };
+    });
+  }, [movs, ingresoCamiloLocal, remanenteAngiePerSemana, cierresSemanaProps]);
 
 
   // ── Planificación derivations ─────────────────────────────────────────────
@@ -763,7 +772,7 @@ export default function MesM1Desktop({
 
             <p className="dk-navlabel" style={{ marginTop: 16 }}>Por semana</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 4 }}>
-              {balanceSemanas.map(({ semana, comprometido, ejecutado, diferencia, pendiente, aporteAngie, isConfirmado }) => (
+              {balanceSemanas.map(({ semana, remanente, comprometido, ejecutado, diferencia, pendiente, aporteAngie, isConfirmado }, i) => (
                 <div key={semana} style={{ background: "var(--surface-2)", borderRadius: 12, padding: "8px 12px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
                     <span style={{ fontSize: 11, fontWeight: 700, color: "var(--ink-soft)" }}>{semana}</span>
@@ -776,15 +785,25 @@ export default function MesM1Desktop({
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "var(--ink-faint)" }}>
                     <span>
-                      {/* B3: ingreso Camilo visible en S1 */}
-                      {semana === "S1" && ingresoCamiloLocal && ingresoCamiloLocal.montoCop > 0 && (
-                        <span style={{ color: "var(--pos)", marginRight: 4 }}>
-                          C:{COP(ingresoCamiloLocal.montoCop, { compact: true })}
-                        </span>
+                      {i === 0 ? (
+                        <>
+                          {ingresoCamiloLocal && ingresoCamiloLocal.montoCop > 0 && (
+                            <span style={{ color: "var(--pos)", marginRight: 4 }}>
+                              C:{COP(ingresoCamiloLocal.montoCop, { compact: true })}
+                            </span>
+                          )}
+                          <span style={{ color: isConfirmado ? "var(--pos)" : "var(--ink-faint)" }}>
+                            A:{COP(aporteAngie, { compact: true })}{isConfirmado ? " ✓" : " (plan)"}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span style={{ marginRight: 4 }}>↪ {COP(remanente - aporteAngie, { compact: true })}</span>
+                          <span style={{ color: isConfirmado ? "var(--pos)" : "var(--ink-faint)" }}>
+                            A:{COP(aporteAngie, { compact: true })}{isConfirmado ? " ✓" : " (plan)"}
+                          </span>
+                        </>
                       )}
-                      <span style={{ color: isConfirmado ? "var(--pos)" : "var(--ink-faint)" }}>
-                        A:{COP(aporteAngie, { compact: true })}{isConfirmado ? " ✓" : " (plan)"}
-                      </span>
                       {" · "}{COP(comprometido, { compact: true })}
                     </span>
                     <span>{pendiente > 0 ? `${pendiente} pend.` : "✓"}</span>
