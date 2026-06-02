@@ -462,12 +462,15 @@ function CatGroup({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const tot = items.reduce((s, m) => s + m.montoPresupuestado, 0);
+  // F4: verde cuando todos los conceptos de la categoría están ejecutados
+  const allDone = mode === "ejecucion" && !empty && items.length > 0 && items.every(m => m.estado === "ejecutado");
 
   return (
     <div className={`dk-catgroup${open && !empty ? " open" : ""}${empty ? " empty" : ""}`}>
       <button
         type="button"
         className="dk-cathead"
+        style={allDone ? { color: "var(--pos)" } : undefined}
         onClick={empty ? undefined : () => setOpen(o => !o)}
       >
         <span className="dk-cat-ic">
@@ -479,7 +482,9 @@ function CatGroup({
             {empty ? "Sin conceptos" : `${items.length} concepto${items.length !== 1 ? "s" : ""}`}
           </span>
         </span>
-        <span className="dk-cat-amt">{empty ? "—" : copCompact(tot)}</span>
+        <span className="dk-cat-amt" style={allDone ? { color: "var(--pos)" } : undefined}>
+          {empty ? "—" : copCompact(tot)}{allDone ? " ✓" : ""}
+        </span>
         <span className="dk-cat-chev">
           <Icon name="arrow" size={14} />
         </span>
@@ -658,6 +663,7 @@ export default function ConceptoBoard({
   focus,
   onMovimientoUpdate,
   remanenteAngiePerSemana,
+  onAfterExec,
 }: {
   movimientos: Movimiento[];
   mes: string;
@@ -665,6 +671,7 @@ export default function ConceptoBoard({
   focus: "todas" | Semana;
   onMovimientoUpdate: (updated: Movimiento) => void;
   remanenteAngiePerSemana?: Record<Semana, number>;
+  onAfterExec?: (monto: number, fuenteCamilo: boolean, fuenteAngie: boolean, fuenteNequi: boolean, fuenteEnMano: boolean) => void;
 }) {
   const [movs, setMovs] = useState<Movimiento[]>(movimientos);
   const [openCard, setOpenCard] = useState<string | null>(null);
@@ -718,6 +725,8 @@ export default function ConceptoBoard({
       tipo: "ejecutar", montoEjecutado: monto, ejecutor: s.ejecutor,
       fuenteEnMano: s.fuenteEnMano, fuenteNequi: s.fuenteNequi,
       fuenteCamilo: s.fuenteCamilo, fuenteAngie: s.fuenteAngie,
+    }, () => {
+      onAfterExec?.(monto, s.fuenteCamilo, s.fuenteAngie, s.fuenteNequi, s.fuenteEnMano);
     });
   };
 

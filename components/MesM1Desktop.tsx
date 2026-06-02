@@ -373,6 +373,7 @@ export default function MesM1Desktop({
   }, [wk, filtrados, movs, dates]);
 
   // T27 · Remanente Angie por semana — movido antes de balanceSemanas (dep)
+  // B5: depende de `aportes` (reactivo) en lugar de ingresosAngieProp (SSR congelado)
   const remanenteAngiePerSemana = useMemo(() => {
     const result: Record<import("@/lib/data/types").Semana, number> = { S1: 0, S2: 0, S3: 0, S4: 0 };
     for (const s of SEMANAS) {
@@ -380,27 +381,22 @@ export default function MesM1Desktop({
       if (cierre) {
         result[s] = cierre.remanenteAngie;
       } else {
-        const ingreso = ingresosAngieProp.find(i => i.semana === s);
-        result[s] = ingreso?.monto ?? 0;
+        result[s] = Number(aportes[s]) || ingresosAngieProp.find(i => i.semana === s)?.monto ?? 0;
       }
     }
     return result;
-  }, [cierresSemanaProps, ingresosAngieProp]);
+  }, [cierresSemanaProps, ingresosAngieProp, aportes]);
 
   const balanceSemanas = useMemo(() => SEMANAS.map(s => {
     const items = movs.filter(m => m.semana === s);
     const comprometido = items.reduce((sum, m) => sum + m.montoPresupuestado, 0);
     const ejecutado = items.filter(m => m.estado === "ejecutado").reduce((sum, m) => sum + (m.montoEjecutado ?? m.montoPresupuestado), 0);
     const pendiente = items.filter(m => m.estado === "pendiente").length;
-    return { semana: s, comprometido, ejecutado, diferencia: ejecutado - comprometido, pendiente, aporteAngie: remanenteAngiePerSemana[s] };
-  }), [movs, remanenteAngiePerSemana]);
+    // F3: semana cerrada = ingreso Angie confirmado; sin cierre = planeado
+    const isConfirmado = cierresSemanaProps.some(c => c.semana === s);
+    return { semana: s, comprometido, ejecutado, diferencia: ejecutado - comprometido, pendiente, aporteAngie: remanenteAngiePerSemana[s], isConfirmado };
+  }), [movs, remanenteAngiePerSemana, cierresSemanaProps]);
 
-  const byCat = useMemo(() => {
-    const map: Partial<Record<string, number>> = {};
-    for (const m of movs) map[m.categoriaSnapshot] = (map[m.categoriaSnapshot] ?? 0) + m.montoPresupuestado;
-    return Object.entries(map as Record<string, number>).sort((a, b) => b[1] - a[1]).slice(0, 5);
-  }, [movs]);
-  const catMax = byCat[0]?.[1] ?? 1;
 
   // ── Planificación derivations ─────────────────────────────────────────────
 
@@ -760,7 +756,7 @@ export default function MesM1Desktop({
 
             <p className="dk-navlabel" style={{ marginTop: 16 }}>Por semana</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 4 }}>
-              {balanceSemanas.map(({ semana, comprometido, ejecutado, diferencia, pendiente, aporteAngie }) => (
+              {balanceSemanas.map(({ semana, comprometido, ejecutado, diferencia, pendiente, aporteAngie, isConfirmado }) => (
                 <div key={semana} style={{ background: "var(--surface-2)", borderRadius: 12, padding: "8px 12px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
                     <span style={{ fontSize: 11, fontWeight: 700, color: "var(--ink-soft)" }}>{semana}</span>
@@ -772,7 +768,12 @@ export default function MesM1Desktop({
                     <i style={{ width: comprometido > 0 ? `${Math.min(100, Math.round((ejecutado / comprometido) * 100))}%` : "0%", background: diferencia < 0 ? "var(--warn)" : "var(--primary)" }} />
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "var(--ink-faint)" }}>
-                    <span>A:{COP(aporteAngie, { compact: true })} · {COP(comprometido, { compact: true })}</span>
+                    <span>
+                      <span style={{ color: isConfirmado ? "var(--pos)" : "var(--ink-faint)" }}>
+                        A:{COP(aporteAngie, { compact: true })}{isConfirmado ? " ✓" : " (plan)"}
+                      </span>
+                      {" · "}{COP(comprometido, { compact: true })}
+                    </span>
                     <span>{pendiente > 0 ? `${pendiente} pend.` : "✓"}</span>
                   </div>
                 </div>
@@ -1004,27 +1005,22 @@ export default function MesM1Desktop({
                   focus={wk}
                   onMovimientoUpdate={handleMovUpdate}
                   remanenteAngiePerSemana={remanenteAngiePerSemana}
+                  onAfterExec={(monto, fuenteCamilo, fuenteAngie, fuenteNequi, fuenteEnMano) => {
+                    const fuenteMap: Record<string, boolean> = { fuenteCamilo, fuenteAngie, fuenteNequi, fuenteEnMano };
+                    const activeCuentas = CUENTAS_H4C
+                      .filter(({ fuenteKey }) => fuenteMap[fuenteKey])
+                      .map(({ cuenta }) => cuenta);
+                    if (activeCuentas.length > 0) {
+                      const perCuenta = monto / activeCuentas.length;
+                      setSaldosLocal(prev => prev.map(s =>
+                        activeCuentas.includes(s.cuenta) ? { ...s, saldoInicial: Math.max(0, s.saldoInicial - perCuenta) } : s
+                      ));
+                    }
+                  }}
                 />
               </div>
             )}
 
-            {/* Rail — solo en Ejecución (B7p) */}
-            {view === "ejecucion" && (
-              <div className="dk-rail">
-                <div className="dk-card">
-                  <h4><Icon name="chart" size={15} /> Por categoría</h4>
-                  {byCat.map(([cat, amt]) => (
-                    <div className="dk-catbar" key={cat}>
-                      <div className="row">
-                        <span className="n">{cat}</span>
-                        <span className="v">{COP(amt, { compact: true })}</span>
-                      </div>
-                      <div className="fl-bar"><i style={{ width: `${(amt / catMax) * 100}%` }} /></div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
           </div>
         </div>
