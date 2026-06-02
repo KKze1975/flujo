@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Junio 2026 | Fase: QA completo — T29, T30, T31 bloqueantes go-live junio 7, 2026
+Actualizado: Junio 2026 | Fase: QA go-live ejecutado — 3 bloqueantes identificados — go-live pendiente T32b
 
 ---
 
@@ -436,6 +436,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | T31 — Fix categorías H1 + H2 | Completo — DoD 5/5 + ext 14 filas H2 corregidas — commits ada938d, 469c0a2, dbdd592 |
 | T29 — Planificación bugs B1 B2 B3 B4 B7p | Completo — DoD 5/5 — commits 25fd70e, f3a6896 |
 | T30 — Ejecución: saldos reactivos + estados visuales | Completo — DoD 5/5 — commit e889270 |
+| Fix build Vercel — Turbopack error mezcla || y ?? | Commit be4bb39 — MesM1Desktop.tsx línea 384 |
 | T22 — Planificación: acciones y flujo | Completo — bugs 3,4,5,6 resueltos — commit 48406fe |
 | T23 — Ejecución: acciones y flujo | Completo — DoD 7/7 verificado en producción |
 | T24 — Balance y cálculos | Completo — DoD 2/2 verificado en producción — bug #2 falso positivo |
@@ -534,11 +535,44 @@ Archivo fuente: H1_presupuesto_base.csv
 | T29 | Planificación: bugs de edición y mover | B1, B2, B3, B4, B7p | Completo — DoD 5/5 |
 | T30 | Ejecución: saldos reactivos + estados visuales | B5, B6, B7e, F3, F4 | Completo — DoD 5/5 — commit e889270 |
 | T31 | Fix H1 + H2: categorías Hijos y Servicio Domestico | F2 | Completo — DoD 5/5 + ext 14 filas H2 |
+| T32b | Fix bloqueantes QA go-live | B1, B2, B3, B4 | Bloqueante go-live |
 | T26 | Modal reasignación de fondos | F6 expandido | Post go-live — requiere diseño |
 | T32 | Estado "aprobado" por concepto en Planificación | F1 | Post go-live |
 | T33 | Mesadas con anticipos, préstamos y descuentos | F7 | Post go-live |
 | T34 | Comprobantes al ejecutar | F5 | Post go-live — Google Drive |
 | T35 | Split nativo de concepto en semanas | D1 futuro | Post go-live — requiere diseño |
+
+---
+
+## QA Go-Live — 2 junio 2026
+
+### Resultado: BLOQUEADO — 3 bugs críticos
+
+### Bloqueantes (T32b)
+
+| # | Vista | Descripción |
+|---|---|---|
+| B1 | Planificación | Agregar concepto no genera fila ni modifica saldos |
+| B2 | Planificación | Concepto nuevo no visible en Planificación post-creación |
+| B3 | Ejecución | Cargar ingreso mes no actualiza rails Saldos ni Por semana |
+| B4 | Ejecución | Contador ejecutados incluye pospuestos/no aplica en denominador |
+
+### Deuda técnica identificada en QA
+
+| # | Descripción |
+|---|---|
+| P3 | Navegación categoría/concepto confusa — diferenciación visual adicional |
+| P5 | Buscador de concepto por mes o semana |
+| E2 | Opción de nota en ejecución junto al comprobante |
+| E4 | Concepto ejecutable vía carga de bolsillo — lógica a definir |
+| E5 | Lógica cuando se gasta menos en concepto de bolsillo (ej. Frida) |
+
+### Comportamientos verificados como correctos
+
+- Ingresos actualizan balance mes y balance por semana ✓
+- Carry over de saldos entre semanas consistente ✓
+- Valores H1 al inicializar mes son correctos — vienen del presupuesto base ✓
+- Conceptos agregados en Planificación aparecen en Ejecución ✓
 
 ---
 
@@ -570,6 +604,12 @@ Archivo fuente: H1_presupuesto_base.csv
 - remanenteAngiePerSemana no reactivo post ModalAporteAngie — requiere invalidar estado después de guardar aporte.
 - Drag en Ejecución sin bloqueo por semana cerrada — cuando se habilite drag, agregar validación.
 - Comprobantes al ejecutar — storage Google Drive, requiere Drive API + endpoint upload. Post go-live.
+- QA go-live P3: Navegación categoría/concepto confusa — diferenciación visual adicional pendiente.
+- QA go-live P5: Buscador de concepto por mes o semana — post go-live.
+- QA go-live E2: Opción de nota en ejecución junto al comprobante — post go-live.
+- QA go-live E4: Concepto ejecutable vía carga de bolsillo — lógica a definir, post go-live.
+- QA go-live E5: Lógica cuando se gasta menos en concepto de bolsillo (ej. Frida) — post go-live.
+- Build Vercel: tsc local no detectó error de Turbopack (mezcla || y ?? sin paréntesis — commit be4bb39). Revisar configuración tsc/turbopack antes del primer ticket post go-live.
 
 ---
 
