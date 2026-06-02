@@ -1010,6 +1010,7 @@ Leé archivos fuente solo para el archivo específico que vas a editar.
 
 CIERRE: Actualizar ESTADO.md con hora de cierre y retrospectiva.
 Regla: bugs se documentan como deuda técnica — no se corrigen dentro del ticket.
+Regenerar kanban: `node scripts/generate-kanban.mjs`
 
 ---
 

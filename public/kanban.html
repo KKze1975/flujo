@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flujo · Kanban</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f4f8; color: #111827; min-height: 100vh; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
+  </style>
+</head>
+<body>
+  <div style="max-width:1280px;margin:0 auto;padding:24px 16px 48px">
+
+    <!-- Header -->
+    <div style="background:#1e3a5f;color:#fff;border-radius:12px;padding:20px 24px;margin-bottom:24px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">
+        <div>
+          <h1 style="font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:8px">Flujo · Kanban</h1>
+          <span style="background:rgba(255,255,255,.15);border-radius:5px;padding:3px 10px;font-size:12.5px;opacity:.9">📍 QA go-live 2 — M1 completo verificado — bloqueante T32b confirmado</span>
+        </div>
+        <div style="font-size:11px;opacity:.55;padding-top:4px;white-space:nowrap">Generado 2 de junio de 2026 a las 12:50 p. m.</div>
+      </div>
+    </div>
+
+    <!-- Kanban 3 columnas -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:28px">
+      <div style="display:flex;flex-direction:column;min-width:0;background:#f8fafc;border-radius:10px;padding:16px;">
+    <div style="font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#fff;background:#16a34a;border-radius:6px;padding:6px 12px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;"><span>Completado</span><span style="font-size:17px;font-weight:800">30</span></div>
+    <div style="overflow-y:auto;max-height:540px;padding-right:2px;">
+      <div style="background:#fff;border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid #16a34a;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+      <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em">Ticket 7 — Pantalla M1</div>
+      <div style="font-size:12px;color:#374151;line-height:1.45">Completo — commit y push realizados</div>
+    </div>
+      <div style="background:#fff;border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid #16a34a;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+      <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em">Ticket 8 — Modo Planificación M1 + B4</div>
+      <div style="font-size:12px;color:#374151;line-height:1.45">Completo y verificado en browser</div>
+    </div>
+      <div style="background:#fff;border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid #16a34a;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+      <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em">Ticket 9 — Prueba integrada M1 Planificación + Ejecución</div>
+      <div style="font-size:12px;color:#374151;line-height:1.45">Completo — DoD 7/7 cubiertos via API</div>
+    </div>
+      <div style="background:#fff;border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid #16a34a;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+      <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em">MesM1.tsx</div>
+      <div style="font-size:12px;color:#374151;line-height:1.45">Completo — lista 39 conceptos, acciones PATCH H2, modales H1/H4, visual Zoho-style con Inter</div>
+    </div>
+      <div style="background:#fff;border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid #16a34a;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+      <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em">VistaPlanificacion.tsx</div>
+      <div style="font-size:12px;color:#374151;line-height:1.45">Completo — planificación, balance semanas, no aplica/posponer, agregar concepto (B4)</div>
+    </div>
+      <div style="background:#fff;border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid #16a34a;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+      <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em">ModalAgregarConcepto.tsx</div>
+      <div style="font-size:12px;color:#374151;line-height:1.45">Completo — tres ciclos de vida: solo este mes / cuotas / permanente</div>
+    </div>
+      <div style="background:#fff;border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid #16a34a;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+      <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em">Ticket 10 — Cerrar M1 ejecución</div>
+      <div style="font-size:12px;color:#374151;line-height:1.45">Completo — botón funcional, primera ejecución real S1 mayo 2026</div>
+    </div>
+      <div style="background:#fff;border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid #16a34a;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+      <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em">Ticket 11 — Fix razonPostergacion</div>
+      <div style="font-size:12px;color:#374151;line-height:1.45">Completo — input en panel posponer, persiste en H2</div>
+    </div>
+      <div style="background:#fff;border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid #16a34a;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+      <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em">Ticket 12 — Pantalla de meses</div>
+      <div style="font-size:12px;color:#374151;line-height:1.45">Completo — Home operativo, junio 2026 inicializado con carry-over</div>
+    </div>
+      <div style="background:#fff;border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid #16a34a;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+      <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em">Ticket 13 — Home con métricas</div>
+      <div style="font-size:12px;color:#374151;line-height:1.45">Completo — 6 tarjetas: panel métricas + snapshot semana activa, botón registro rápido</div>
+    </div>
+      <div style="background:#fff;border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid #16a34a;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+      <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em">Ticket 14 — M4 Registro rápido</div>
+      <div style="font-size:12px;color:#374151;line-height:1.45">Completo — texto natural + foto de factura, Claude interpreta con conceptos H2 reales, propuesta editable, PATCH H2, fallback H3 clasificado:false</div>
+    </div>
+      <div style="background:#fff;border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid #16a34a;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+      <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em">Junio 2026</div>
+      <div style="font-size:12px;color:#374151;line-height:1.45">Sheet en cero — reset completo ejecutado 2026-06-02 — listo para QA usuario. H2 vacía pendiente reinit desde app.</div>
+    </div>
+      <div style="background:#fff;border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid #16a34a;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+      <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em">Ticket 15 — Filtro por semana + Cierre semanal</div>
+      <div style="font-size:12px;color:#374151;line-height:1.45">Completo — DoD 5/5 verificado</div>
+    </div>
+      <div style="background:#fff;border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid #16a34a;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+      <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em">Ticket 16 — Saldos por cuenta</div>
+      <div style="font-size:12px;color:#374151;line-height:1.45">Completo — DoD 5/5 verificado en Sheet</div>
+    </div>
+      <div style="background:#fff;border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid #16a34a;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+      <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em">T16b — Rediseño Home como hub</div>
+      <div style="font-size:12px;color:#374151;line-height:1.45">Completo — DoD 6/6 verificado</div>
+    </div>
+      <div style="background:#fff;border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid #16a34a;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+      <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em">T17 — Vista semanal M4</div>
+      <div style="font-size:12px;color:#374151;line-height:1.45">Completo — DoD 6/6 verificado en producción</div>
+    </div>
+      <div style="background:#fff;border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid #16a34a;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+      <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em">Ticket Handoff Claude Design</div>
+      <div style="font-size:12px;color:#374151;line-height:1.45">Completo — sistema visual fl-* migrado, deploy Vercel activo, validado en hardware real (29 mayo 2026)</div>
+    </div>
+      <div style="background:#fff;border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid #16a34a;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+      <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em">T19 — MesM1 Desktop</div>
+      <div style="font-size:12px;color:#374151;line-height:1.45">Completo — vista desktop con toggle móvil/desktop, @layer base fix para Tailwind v4, validado en browser</div>
+    </div>
+      <div style="background:#fff;border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid #16a34a;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+      <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em">T20 — Fix bugs desktop M1</div>
+      <div style="font-size:12px;color:#374151;line-height:1.45">Completo — sidebar grid fix, Ejecutar conectado a API, balance semanal en sidebar, modal Ingreso Camilo, bloqueo sin ingreso</div>
+    </div>
+      <div style="background:#fff;border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid #16a34a;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+      <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em">T21 — Layout desktop + móvil Planeación y Ejecución</div>
+      <div style="font-size:12px;color:#374151;line-height:1.45">Completo — DoD 7/7 (incl. DoD 6) — MesM1Mobile nueva vista móvil fl-*, toggle Planeación/Ejecución, acciones inline, wrapper responsive auto-detecta viewport</div>
+    </div>
+      <div style="background:#fff;border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid #16a34a;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+      <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em">ConceptoBoard — Grid S1-S4 con cards interactivas</div>
+      <div style="font-size:12px;color:#374151;line-height:1.45">Completo — commit d36715d — Planeación y Ejecución desktop</div>
+    </div>
+      <div style="background:#fff;border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid #16a34a;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+      <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em">T27 — Diseño pre go-live</div>
+      <div style="font-size:12px;color:#374151;line-height:1.45">Completo — DoD 6/6 verificado en producción</div>
+    </div>
+      <div style="background:#fff;border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid #16a34a;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+      <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em">T28 — Conectar ModalCorreccionM5 a VistaSemanal</div>
+      <div style="font-size:12px;color:#374151;line-height:1.45">Completo — DoD 8/8 verificado en producción (H3 + H2)</div>
+    </div>
+      <div style="background:#fff;border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid #16a34a;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+      <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em">T31 — Fix categorías H1 + H2</div>
+      <div style="font-size:12px;color:#374151;line-height:1.45">Completo — DoD 5/5 + ext 14 filas H2 corregidas — commits ada938d, 469c0a2, dbdd592</div>
+    </div>
+      <div style="background:#fff;border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid #16a34a;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+      <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em">T29 — Planificación bugs B1 B2 B3 B4 B7p</div>
+      <div style="font-size:12px;color:#374151;line-height:1.45">Completo — DoD 5/5 — commits 25fd70e, f3a6896</div>
+    </div>
+      <div style="background:#fff;border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid #16a34a;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+      <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em">T30 — Ejecución: saldos reactivos + estados visuales</div>
+      <div style="font-size:12px;color:#374151;line-height:1.45">Completo — DoD 5/5 — commit e889270</div>
+    </div>
+      <div style="background:#fff;border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid #16a34a;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+      <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em">T22 — Planificación: acciones y flujo</div>
+      <div style="font-size:12px;color:#374151;line-height:1.45">Completo — bugs 3,4,5,6 resueltos — commit 48406fe</div>
+    </div>
+      <div style="background:#fff;border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid #16a34a;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+      <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em">T23 — Ejecución: acciones y flujo</div>
+      <div style="font-size:12px;color:#374151;line-height:1.45">Completo — DoD 7/7 verificado en producción</div>
+    </div>
+      <div style="background:#fff;border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid #16a34a;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+      <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em">T24 — Balance y cálculos</div>
+      <div style="font-size:12px;color:#374151;line-height:1.45">Completo — DoD 2/2 verificado en producción — bug #2 falso positivo</div>
+    </div>
+      <div style="background:#fff;border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid #16a34a;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+      <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em">T25 — Navegación y regresiones</div>
+      <div style="font-size:12px;color:#374151;line-height:1.45">Completo — DoD 2/3 verificado en producción — #14 drag and drop movido a deuda técnica</div>
+    </div>
+    </div>
+  </div>
+      <div style="display:flex;flex-direction:column;min-width:0;background:#f8fafc;border-radius:10px;padding:16px;">
+    <div style="font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#fff;background:#d97706;border-radius:6px;padding:6px 12px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;"><span>Próximo</span><span style="font-size:17px;font-weight:800">2</span></div>
+    <div style="overflow-y:auto;max-height:540px;padding-right:2px;">
+      <div style="background:#fff;border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid #d97706;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+      <div style="font-size:11px;font-weight:700;color:#d97706;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em">Re-QA go-live</div>
+      <div style="font-size:12px;color:#374151;line-height:1.45">Verificar en producción post T32b — B1/B2 Planificación + B3 Por semana</div>
+    </div>
+      <div style="background:#fff;border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid #d97706;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+      <div style="font-size:11px;font-weight:700;color:#d97706;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em">T36 DevOps</div>
+      <div style="font-size:12px;color:#374151;line-height:1.45">DevOps: rama `dev` + deploy preview de Vercel pendiente — hoy todo push a `main` va directo a producción. Setup estimado 10 min. Prioridad: antes del primer ticket post go-live.</div>
+    </div>
+    </div>
+  </div>
+      <div style="display:flex;flex-direction:column;min-width:0;background:#f8fafc;border-radius:10px;padding:16px;">
+    <div style="font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#fff;background:#6b7280;border-radius:6px;padding:6px 12px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;"><span>Post go-live</span><span style="font-size:17px;font-weight:800">5</span></div>
+    <div style="overflow-y:auto;max-height:540px;padding-right:2px;">
+      <div style="background:#fff;border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid #6b7280;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+      <div style="font-size:11px;font-weight:700;color:#6b7280;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em">T26</div>
+      <div style="font-size:12px;color:#374151;line-height:1.45">Validación de fondos · Importante — no bloqueante inmediato</div>
+    </div>
+      <div style="background:#fff;border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid #6b7280;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+      <div style="font-size:11px;font-weight:700;color:#6b7280;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em">T32</div>
+      <div style="font-size:12px;color:#374151;line-height:1.45">Estado &quot;aprobado&quot; por concepto en Planificación · Post go-live</div>
+    </div>
+      <div style="background:#fff;border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid #6b7280;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+      <div style="font-size:11px;font-weight:700;color:#6b7280;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em">T33</div>
+      <div style="font-size:12px;color:#374151;line-height:1.45">Mesadas con anticipos, préstamos y descuentos · Post go-live</div>
+    </div>
+      <div style="background:#fff;border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid #6b7280;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+      <div style="font-size:11px;font-weight:700;color:#6b7280;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em">T34</div>
+      <div style="font-size:12px;color:#374151;line-height:1.45">Comprobantes al ejecutar · Post go-live — Google Drive</div>
+    </div>
+      <div style="background:#fff;border-radius:8px;padding:11px 13px;margin-bottom:8px;border-left:3px solid #6b7280;box-shadow:0 1px 2px rgba(0,0,0,.07)">
+      <div style="font-size:11px;font-weight:700;color:#6b7280;margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em">T35</div>
+      <div style="font-size:12px;color:#374151;line-height:1.45">Split nativo de concepto en semanas · Post go-live — requiere diseño</div>
+    </div>
+    </div>
+  </div>
+    </div>
+
+    <!-- Deuda técnica -->
+    <div style="background:#f8fafc;border-radius:10px;padding:20px 22px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <span style="font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#6b7280">Deuda técnica conocida</span>
+        <span style="font-size:16px;font-weight:800;color:#374151">33</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px">
+    <div style="background:#fff;border-radius:8px;padding:12px 14px;border:1px solid #e5e7eb;display:flex;flex-direction:column;gap:6px">
+      <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:#ede9fe;color:#5b21b6">UX</span>
+      <div style="font-size:11.5px;color:#374151;line-height:1.45">Vista M1 Ejecución no refleja cambios hechos en M1 Planificación sin recargar — estado desincronizado entre vistas o caché de fetch</div>
+    </div>
+    <div style="background:#fff;border-radius:8px;padding:12px 14px;border:1px solid #e5e7eb;display:flex;flex-direction:column;gap:6px">
+      <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:#d1fae5;color:#065f46">Datos</span>
+      <div style="font-size:11.5px;color:#374151;line-height:1.45">Vista Ejecución desktop sin agrupación por categorías colapsable — H3</div>
+    </div>
+    <div style="background:#fff;border-radius:8px;padding:12px 14px;border:1px solid #e5e7eb;display:flex;flex-direction:column;gap:6px">
+      <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:#d1fae5;color:#065f46">Datos</span>
+      <div style="font-size:11.5px;color:#374151;line-height:1.45">Botones barra izquierda desktop no navegan — sin navegación a Home — H6</div>
+    </div>
+    <div style="background:#fff;border-radius:8px;padding:12px 14px;border:1px solid #e5e7eb;display:flex;flex-direction:column;gap:6px">
+      <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:#fce7f3;color:#9d174d">UI</span>
+      <div style="font-size:11.5px;color:#374151;line-height:1.45">Tabla de conceptos en MesM1 (thead/tbody/tr/td) usa clases Tailwind y hex hardcodeados — pendiente migración a tokens fl-*</div>
+    </div>
+    <div style="background:#fff;border-radius:8px;padding:12px 14px;border:1px solid #e5e7eb;display:flex;flex-direction:column;gap:6px">
+      <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:#ede9fe;color:#5b21b6">UX</span>
+      <div style="font-size:11.5px;color:#374151;line-height:1.45">VistaSemanal no refleja en tiempo real los gastos registrados via FAB RegistroRapido — requiere reload manual</div>
+    </div>
+    <div style="background:#fff;border-radius:8px;padding:12px 14px;border:1px solid #e5e7eb;display:flex;flex-direction:column;gap:6px">
+      <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:#f1f5f9;color:#475569">General</span>
+      <div style="font-size:11.5px;color:#374151;line-height:1.45">RegistroRapido desde FAB de VistaSemanal no ofrece opción explícita de guardar como &quot;pendiente de clasificación&quot;</div>
+    </div>
+    <div style="background:#fff;border-radius:8px;padding:12px 14px;border:1px solid #e5e7eb;display:flex;flex-direction:column;gap:6px">
+      <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:#dbeafe;color:#1e40af">DevOps</span>
+      <div style="font-size:11.5px;color:#374151;line-height:1.45">2 vulnerabilidades moderadas en dependencias npm — pendiente npm audit después del MVP</div>
+    </div>
+    <div style="background:#fff;border-radius:8px;padding:12px 14px;border:1px solid #e5e7eb;display:flex;flex-direction:column;gap:6px">
+      <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:#dbeafe;color:#1e40af">DevOps</span>
+      <div style="font-size:11.5px;color:#374151;line-height:1.45">Claude Code auto-update failed — resolver con: npm i -g @anthropic-ai/claude-code</div>
+    </div>
+    <div style="background:#fff;border-radius:8px;padding:12px 14px;border:1px solid #e5e7eb;display:flex;flex-direction:column;gap:6px">
+      <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:#d1fae5;color:#065f46">Datos</span>
+      <div style="font-size:11.5px;color:#374151;line-height:1.45">H6: agregar cat_hijos y cat_servicio_domestico — columnas cat_* desactualizadas, reflejar las 13 categorías aprobadas</div>
+    </div>
+    <div style="background:#fff;border-radius:8px;padding:12px 14px;border:1px solid #e5e7eb;display:flex;flex-direction:column;gap:6px">
+      <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:#d1fae5;color:#065f46">Datos</span>
+      <div style="font-size:11.5px;color:#374151;line-height:1.45">Frontend: vistas que agrupan por categoría deben leer categoría desde datos — verificar que no haya categorías hardcodeadas en CatGroup.tsx o similares</div>
+    </div>
+    <div style="background:#fff;border-radius:8px;padding:12px 14px;border:1px solid #e5e7eb;display:flex;flex-direction:column;gap:6px">
+      <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:#fef3c7;color:#92400e">Infra</span>
+      <div style="font-size:11.5px;color:#374151;line-height:1.45">Rail izquierdo &quot;Por semana&quot; en Planificación — diagnosticado en T30: `balancePlanificacion` ya depende de `aportes` (reactivo). No es bug activo — falso positivo resuelto.</div>
+    </div>
+    <div style="background:#fff;border-radius:8px;padding:12px 14px;border:1px solid #e5e7eb;display:flex;flex-direction:column;gap:6px">
+      <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:#f1f5f9;color:#475569">General</span>
+      <div style="font-size:11.5px;color:#374151;line-height:1.45">Rail derecho Planificación — espacio liberado por B7p pendiente de asignar (actualmente vacío en modo Planificación).</div>
+    </div>
+    <div style="background:#fff;border-radius:8px;padding:12px 14px;border:1px solid #e5e7eb;display:flex;flex-direction:column;gap:6px">
+      <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:#f1f5f9;color:#475569">General</span>
+      <div style="font-size:11.5px;color:#374151;line-height:1.45">Concepto mensual pospuesto genera doble fila en mes siguiente — revisar si es comportamiento deseado</div>
+    </div>
+    <div style="background:#fff;border-radius:8px;padding:12px 14px;border:1px solid #e5e7eb;display:flex;flex-direction:column;gap:6px">
+      <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:#d1fae5;color:#065f46">Datos</span>
+      <div style="font-size:11.5px;color:#374151;line-height:1.45">Uber One, NY Times, El País, Game Pass agregados via B4 en primera ejecución — verificar que quedaron correctamente en H1</div>
+    </div>
+    <div style="background:#fff;border-radius:8px;padding:12px 14px;border:1px solid #e5e7eb;display:flex;flex-direction:column;gap:6px">
+      <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:#f1f5f9;color:#475569">General</span>
+      <div style="font-size:11.5px;color:#374151;line-height:1.45">components/ui/BottomNav.tsx creado en handoff — verificar si duplica components en proto-shell o es el componente activo</div>
+    </div>
+    <div style="background:#fff;border-radius:8px;padding:12px 14px;border:1px solid #e5e7eb;display:flex;flex-direction:column;gap:6px">
+      <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:#fce7f3;color:#9d174d">UI</span>
+      <div style="font-size:11.5px;color:#374151;line-height:1.45">Bloqueo ejecución sin ingreso no validado visualmente — verificar al inicializar Julio 2026</div>
+    </div>
+    <div style="background:#fff;border-radius:8px;padding:12px 14px;border:1px solid #e5e7eb;display:flex;flex-direction:column;gap:6px">
+      <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:#d1fae5;color:#065f46">Datos</span>
+      <div style="font-size:11.5px;color:#374151;line-height:1.45">scripts/seed-h1.mjs fue ejecutado — puede eliminarse o conservarse como referencia de re-seed</div>
+    </div>
+    <div style="background:#fff;border-radius:8px;padding:12px 14px;border:1px solid #e5e7eb;display:flex;flex-direction:column;gap:6px">
+      <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:#fce7f3;color:#9d174d">UI</span>
+      <div style="font-size:11.5px;color:#374151;line-height:1.45">Verificar en producción Vercel que el grid S1-S4 renderiza correctamente después del deploy automático</div>
+    </div>
+    <div style="background:#fff;border-radius:8px;padding:12px 14px;border:1px solid #e5e7eb;display:flex;flex-direction:column;gap:6px">
+      <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:#dbeafe;color:#1e40af">DevOps</span>
+      <div style="font-size:11.5px;color:#374151;line-height:1.45">DevOps: rama `dev` + deploy preview de Vercel pendiente — hoy todo push a `main` va directo a producción. Setup estimado 10 min. Prioridad: antes del primer ticket post go-live.</div>
+    </div>
+    <div style="background:#fff;border-radius:8px;padding:12px 14px;border:1px solid #e5e7eb;display:flex;flex-direction:column;gap:6px">
+      <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:#d1fae5;color:#065f46">Datos</span>
+      <div style="font-size:11.5px;color:#374151;line-height:1.45">2 consumos de test en H3 junio 2026 (CONSUMO_1780266997613 S1, CONSUMO_1780267124959 S2) — clasificados, no bloquean cierre — limpiar manualmente antes de go-live si se desea historial limpio</div>
+    </div>
+    <div style="background:#fff;border-radius:8px;padding:12px 14px;border:1px solid #e5e7eb;display:flex;flex-direction:column;gap:6px">
+      <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:#d1fae5;color:#065f46">Datos</span>
+      <div style="font-size:11.5px;color:#374151;line-height:1.45">Bug preexistente en escritura semana H3: POST sin-concepto con semana &quot;S4&quot; guardó &quot;S2&quot; en Sheet — revisar índice de columna semana en sheets.ts antes de go-live</div>
+    </div>
+    <div style="background:#fff;border-radius:8px;padding:12px 14px;border:1px solid #e5e7eb;display:flex;flex-direction:column;gap:6px">
+      <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:#fce7f3;color:#9d174d">UI</span>
+      <div style="font-size:11.5px;color:#374151;line-height:1.45">Botón &quot;Corregir&quot; en ejecutados H2 (VistaSemanal) no verificado visualmente en móvil real — bundle confirma implementación pero falta captura pixel. Verificar antes de go-live.</div>
+    </div>
+    <div style="background:#fff;border-radius:8px;padding:12px 14px;border:1px solid #e5e7eb;display:flex;flex-direction:column;gap:6px">
+      <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:#d1fae5;color:#065f46">Datos</span>
+      <div style="font-size:11.5px;color:#374151;line-height:1.45">Drag and drop entre columnas en Ejecución desktop — canDrag/canDrop habilitados en ConceptoBoard pero el evento no propaga. Investigar antes de habilitar en producción.</div>
+    </div>
+    <div style="background:#fff;border-radius:8px;padding:12px 14px;border:1px solid #e5e7eb;display:flex;flex-direction:column;gap:6px">
+      <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:#ede9fe;color:#5b21b6">UX</span>
+      <div style="font-size:11.5px;color:#374151;line-height:1.45">remanenteAngiePerSemana no reactivo post ModalAporteAngie — requiere invalidar estado después de guardar aporte.</div>
+    </div>
+    <div style="background:#fff;border-radius:8px;padding:12px 14px;border:1px solid #e5e7eb;display:flex;flex-direction:column;gap:6px">
+      <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:#ede9fe;color:#5b21b6">UX</span>
+      <div style="font-size:11.5px;color:#374151;line-height:1.45">Drag en Ejecución sin bloqueo por semana cerrada — cuando se habilite drag, agregar validación.</div>
+    </div>
+    <div style="background:#fff;border-radius:8px;padding:12px 14px;border:1px solid #e5e7eb;display:flex;flex-direction:column;gap:6px">
+      <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:#f1f5f9;color:#475569">General</span>
+      <div style="font-size:11.5px;color:#374151;line-height:1.45">Comprobantes al ejecutar — storage Google Drive, requiere Drive API + endpoint upload. Post go-live.</div>
+    </div>
+    <div style="background:#fff;border-radius:8px;padding:12px 14px;border:1px solid #e5e7eb;display:flex;flex-direction:column;gap:6px">
+      <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:#fce7f3;color:#9d174d">UI</span>
+      <div style="font-size:11.5px;color:#374151;line-height:1.45">QA go-live P3: Navegación categoría/concepto confusa — diferenciación visual adicional pendiente.</div>
+    </div>
+    <div style="background:#fff;border-radius:8px;padding:12px 14px;border:1px solid #e5e7eb;display:flex;flex-direction:column;gap:6px">
+      <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:#ede9fe;color:#5b21b6">UX</span>
+      <div style="font-size:11.5px;color:#374151;line-height:1.45">QA go-live P5: Buscador de concepto por mes o semana — post go-live.</div>
+    </div>
+    <div style="background:#fff;border-radius:8px;padding:12px 14px;border:1px solid #e5e7eb;display:flex;flex-direction:column;gap:6px">
+      <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:#f1f5f9;color:#475569">General</span>
+      <div style="font-size:11.5px;color:#374151;line-height:1.45">QA go-live E2: Opción de nota en ejecución junto al comprobante — post go-live.</div>
+    </div>
+    <div style="background:#fff;border-radius:8px;padding:12px 14px;border:1px solid #e5e7eb;display:flex;flex-direction:column;gap:6px">
+      <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:#f1f5f9;color:#475569">General</span>
+      <div style="font-size:11.5px;color:#374151;line-height:1.45">QA go-live E4: Concepto ejecutable vía carga de bolsillo — lógica a definir, post go-live.</div>
+    </div>
+    <div style="background:#fff;border-radius:8px;padding:12px 14px;border:1px solid #e5e7eb;display:flex;flex-direction:column;gap:6px">
+      <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:#f1f5f9;color:#475569">General</span>
+      <div style="font-size:11.5px;color:#374151;line-height:1.45">QA go-live E5: Lógica cuando se gasta menos en concepto de bolsillo (ej. Frida) — post go-live.</div>
+    </div>
+    <div style="background:#fff;border-radius:8px;padding:12px 14px;border:1px solid #e5e7eb;display:flex;flex-direction:column;gap:6px">
+      <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:#f1f5f9;color:#475569">General</span>
+      <div style="font-size:11.5px;color:#374151;line-height:1.45">QA go-live E6: Cierre semana pide remanente manual — debería preguntar ubicación y confirmar — post go-live.</div>
+    </div>
+    <div style="background:#fff;border-radius:8px;padding:12px 14px;border:1px solid #e5e7eb;display:flex;flex-direction:column;gap:6px">
+      <span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600;background:#fef3c7;color:#92400e">Infra</span>
+      <div style="font-size:11.5px;color:#374151;line-height:1.45">Build Vercel: tsc local no detectó error de Turbopack (mezcla || y ?? sin paréntesis — commit be4bb39). Revisar configuración tsc/turbopack antes del primer ticket post go-live.</div>
+    </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>
