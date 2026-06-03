@@ -666,6 +666,7 @@ export default function ConceptoBoard({
   onMovimientoUpdate,
   remanenteAngiePerSemana,
   onAfterExec,
+  onBeforeExec,
 }: {
   movimientos: Movimiento[];
   mes: string;
@@ -674,6 +675,7 @@ export default function ConceptoBoard({
   onMovimientoUpdate: (updated: Movimiento) => void;
   remanenteAngiePerSemana?: Record<Semana, number>;
   onAfterExec?: (monto: number, fuenteCamilo: boolean, fuenteAngie: boolean, fuenteNequi: boolean, fuenteEnMano: boolean) => void;
+  onBeforeExec?: (mov: Movimiento, s: ExecState) => boolean;
 }) {
   const [movs, setMovs] = useState<Movimiento[]>(movimientos);
   const [openCard, setOpenCard] = useState<string | null>(null);
@@ -732,6 +734,8 @@ export default function ConceptoBoard({
   const handleConfirmExec = (movId: string, s: ExecState) => {
     const monto = Number(s.monto);
     if (!monto || isNaN(monto)) return;
+    const mov = movs.find(m => m.id === movId);
+    if (mov && onBeforeExec && !onBeforeExec(mov, s)) return;
     patchar(movId, {
       tipo: "ejecutar", montoEjecutado: monto, ejecutor: s.ejecutor,
       fuenteEnMano: s.fuenteEnMano, fuenteNequi: s.fuenteNequi,

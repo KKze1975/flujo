@@ -327,6 +327,7 @@ export default function MesM1Desktop({
   const [validacionFondos, setValidacionFondos] = useState<{
     mov: Movimiento; panel: EjecutarPanel; cuentaDeficit: CuentaH4C;
   } | null>(null);
+  const [execBoardKey, setExecBoardKey] = useState(0);
 
   // Ingreso Camilo (sidebar en planificación, modal en ejecución)
   const [ingresoModalOpen, setIngresoModalOpen] = useState(false);
@@ -604,6 +605,20 @@ export default function MesM1Desktop({
     }
   };
 
+  const handleBeforeExec = (mov: Movimiento, s: EjecutarPanel): boolean => {
+    const monto = Number(s.monto);
+    if (!monto || isNaN(monto)) return true;
+    const seleccionadas = CUENTAS_H4C.filter(({ fuenteKey }) => s[fuenteKey]);
+    if (!seleccionadas.length) return true;
+    const totalDisp = seleccionadas.reduce((sum, { cuenta }) => sum + disponiblePorCuenta(cuenta), 0);
+    if (totalDisp >= monto) return true;
+    const cuentaConDeficit = seleccionadas.reduce((w, c) =>
+      disponiblePorCuenta(c.cuenta) < disponiblePorCuenta(w.cuenta) ? c : w
+    );
+    setValidacionFondos({ mov, panel: { ...s }, cuentaDeficit: cuentaConDeficit.cuenta });
+    return false;
+  };
+
   const confirmarEjecucion = () => {
     if (!ejecutarPanel) return;
     const monto = Number(ejecutarPanel.monto);
@@ -665,6 +680,7 @@ export default function MesM1Desktop({
         s.cuenta === nuevaCuenta ? { ...s, saldoInicial: Math.max(0, s.saldoInicial - monto) } : s
       ));
       setValidacionFondos(null);
+      setExecBoardKey(k => k + 1);
     });
   };
 
@@ -672,6 +688,7 @@ export default function MesM1Desktop({
     if (!validacionFondos) return;
     patchar(validacionFondos.panel.movId, { tipo: "posponer", razonPostergacion: null }, () => {
       setValidacionFondos(null);
+      setExecBoardKey(k => k + 1);
     });
   };
 
@@ -1118,13 +1135,14 @@ export default function MesM1Desktop({
                   </div>
                 </div>
                 <ConceptoBoard
-                  key="exec"
+                  key={"exec-" + execBoardKey}
                   movimientos={movs}
                   mes={mes}
                   mode="ejecucion"
                   focus={wk}
                   onMovimientoUpdate={handleMovUpdate}
                   remanenteAngiePerSemana={remanenteAngiePerSemana}
+                  onBeforeExec={handleBeforeExec}
                   onAfterExec={(monto, fuenteCamilo, fuenteAngie, fuenteNequi, fuenteEnMano) => {
                     const fuenteMap: Record<string, boolean> = { fuenteCamilo, fuenteAngie, fuenteNequi, fuenteEnMano };
                     const activeCuentas = CUENTAS_H4C
