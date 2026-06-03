@@ -561,7 +561,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | T36 | Vista granular H3 en VistaSemanal | M4-B2 | Post go-live — requiere diseño |
 | T37 | FAB aporte Angie en VistaSemanal — modal acumulativo + refetch foco M1 | G1 | Completo — DoD 7/7 — commits e0a59ab, 3f44734, 26cbb0e, fix registradoPor |
 | T38 | Desglose inicial/ejecutado/disponible por cuenta en rail Saldos | G2 | Completo — commit feat/T38 |
-| T26 | Modal validación de fondos | #18 | Aprobado para construir — DoD 9 puntos |
+| T26 | Modal validación de fondos | #18 | Completo — DoD 9/9 — commits 00d19b5, aa52772 |
 
 ---
 
@@ -1119,11 +1119,31 @@ Cierra modal. Marca concepto como pospuesto en H2. No ejecuta.
 
 ---
 
+## Retrospectiva — Sesión QA + CONSTRUCCIÓN · T37 cierre + T26
+
+Fecha: 2026-06-03
+
+**Qué funcionó:**
+- Diagnóstico correcto de T37 antes de tocar código — solo T37-DT1 como valor desincronizado
+- Fix T37 pre-cierre (registradoPor dinámico) en una línea — tsc limpio al primer intento
+- T26 construido en una sesión con DoD 9/9 verificado en producción
+- Spec T26 persistida en ESTADO.md antes de cerrar el ticket
+- Reset junio consolidado — H4D integrado en reset-junio-completo.mjs
+
+**Qué no funcionó:**
+- T26 DoD #1 falló en primera verificación: la validación interceptaba EjecucionRow (vista legacy) en lugar de ConceptoBoard (vista activa en desktop)
+- Causa: la arquitectura desktop tiene dos caminos de ejecución — el nuevo (ConceptoBoard grid S1-S4) y el legacy (EjecucionRow tabla). La validación se insertó en el legacy.
+- Fix requirió diagnóstico adicional y un segundo commit
+
+**Qué cambia en el próximo sprint:**
+- Al agregar lógica de negocio a M1 desktop, verificar si el punto de entrada es ConceptoBoard o EjecucionRow — ConceptoBoard es la vista activa
+
+---
+
 ## Prompt de apertura — próxima sesión
 
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo y el adjunto al proyecto Claude.
-Tipo de sesión: CONSTRUCCIÓN
-Tickets: T26 — Modal validación de fondos
+Tipo de sesión: [COMPLETAR]
 Hora de inicio: [COMPLETAR]
 Entorno: Windows — PowerShell exclusivamente.
 
