@@ -1121,7 +1121,7 @@ Cierra modal. Marca concepto como pospuesto en H2. No ejecuta.
 
 ## Retrospectiva — Sesión QA + CONSTRUCCIÓN · T37 cierre + T26
 
-Fecha: 2026-06-03
+Fecha: 2026-06-03 | Cierre: 09:04
 
 **Qué funcionó:**
 - Diagnóstico correcto de T37 antes de tocar código — solo T37-DT1 como valor desincronizado
