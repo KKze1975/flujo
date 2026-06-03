@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Junio 2026 | Fase: Go-live — T37 y T26 aprobados para construir
+Actualizado: Junio 2026 | Fase: PAUSADO — Auditoría de datos pendiente
 
 ---
 
@@ -626,6 +626,53 @@ Archivo fuente: H1_presupuesto_base.csv
 
 ---
 
+## QA Go-Live 3 — 3 junio 2026
+
+### Resultado: PAUSADO — Defecto arquitectónico identificado
+
+### T37 — verificado en producción
+- DoD 2/6: Modal registra recarga, múltiples recargas acumulan ✓
+- DoD 3/6: Confirmado ✓
+- DoD 4/6: Confirmado ✓
+- DoD 5/6: Confirmado ✓
+- DoD 6/6: Sin regresiones en VistaSemanal ✓
+- DoD 1/6: AMBIGUO — 180.000 registrado en modal pero M1 muestra 40.000. Pendiente verificar H4D en Sheet.
+
+### T26 — verificado en producción
+- Modal aparece cuando no hay fondos ✓
+- Camino 3: cancelar (click fuera) ✓
+- Camino 1: aceptar déficit — NO RENDERIZADO — bug
+- Camino 2: reasignar desde otro concepto — NO RENDERIZADO — bug
+
+### Flujos existentes — regresiones
+- M1 Planificación desktop: editar monto / agregar concepto / mover semana ✓
+- M1 Ejecución: mover a S3 ROTO — regresión (funciona S1/S2/S4, falla S3)
+- Cierre semana: pide remanente explícito — deuda E6 preexistente confirmada
+- VistaSemanal: bolsillos / historial H3 / corrección M5 ✓
+- M1 móvil: toggle Planeación/Ejecución / acciones inline ✓
+- M4: no verificado en esta sesión
+
+### Defecto arquitectónico identificado
+
+Múltiples puntos de entrada para ingresos Angie (H4B, H4D, modal T26)
+no convergen en una única fuente de verdad. Cada vista calcula
+remanenteAngiePerSemana desde fuentes distintas generando divergencia
+de números entre vistas.
+
+Manifestaciones observadas:
+- Recarga 180.000 en modal → M1 muestra 40.000 (monto H2, no H4D)
+- Rail Saldos no reactivo post-recarga FAB
+- T26 caminos 1 y 2 incompletos
+
+### Decisión
+
+Go-live junio 7 PAUSADO.
+Causa: defecto arquitectónico — no patcheable ticket a ticket.
+Próxima sesión: DISEÑO — Auditoría de datos.
+Objetivo: cartografiar fuentes de verdad, redefinir modelo, alinear frontend.
+
+---
+
 ## Deuda técnica conocida
 
 - Vista M1 Ejecución no refleja cambios hechos en M1 Planificación sin recargar — estado desincronizado entre vistas o caché de fetch
@@ -668,6 +715,9 @@ Archivo fuente: H1_presupuesto_base.csv
 - T38: Rail Saldos no muestra desglose de ejecutado por cuenta — solo muestra disponible actual.
 - T26: No hay validación de fondos al ejecutar — Aprobado para construir — especificación completa en QA tickets.
 - T37-DT1: Fila Total en rail Saldos de M1 Ejecución no suma recargas H4D — totalSaldosLocal excluye recargas Angie. El Total visible no coincide con la suma de las 4 cuentas cuando hay recargas registradas. Post go-live.
+- QA 3 junio: Mover concepto a S3 roto — regresión introducida en T29/T30/T32b — ticket pendiente
+- QA 3 junio: T26 caminos 1 y 2 no renderizados en modal validación fondos — ticket pendiente
+- QA 3 junio: remanenteAngiePerSemana diverge entre M1 y VistaSemanal — raíz arquitectónica
 
 ---
 
@@ -1143,21 +1193,11 @@ Fecha: 2026-06-03 | Cierre: 09:04
 ## Prompt de apertura — próxima sesión
 
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo y el adjunto al proyecto Claude.
-Tipo de sesión: [COMPLETAR]
-Hora de inicio: [COMPLETAR]
-Entorno: Windows — PowerShell exclusivamente.
-
+Tipo de sesión: DISEÑO — Auditoría de datos
+Objetivo: cartografiar fuentes de verdad del modelo (H1-H6), identificar ambigüedades, redefinir contrato de datos para ingresos Angie y balance por semana.
+Regla: no se propone solución técnica hasta tener el mapa completo.
 APERTURA: Genera el dashboard con los datos actuales de ESTADO.md antes de cualquier otra cosa.
-
-Navegación de código: el proyecto tiene un grafo en graphify-out/. Antes de leer archivos fuente para entender estructura, usá:
-- `graphify query "<pregunta>"` para preguntas sobre el código
-- `graphify path "<A>" "<B>"` para entender cómo se conectan dos símbolos
-- `graphify explain "<símbolo>"` para ver todas las conexiones de un nodo
-Leé archivos fuente solo para el archivo específico que vas a editar.
-
-CIERRE: Actualizar ESTADO.md con hora de cierre y retrospectiva.
-Regla: bugs se documentan como deuda técnica — no se corrigen dentro del ticket.
-Regenerar kanban: `node scripts/generate-kanban.mjs`
+CIERRE: Actualizar ESTADO.md con decisiones de diseño tomadas.
 
 ---
 
