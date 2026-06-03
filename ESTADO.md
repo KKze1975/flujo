@@ -508,7 +508,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | T23 — Ejecución: acciones y flujo | Completo — DoD 7/7 verificado en producción |
 | T24 — Balance y cálculos | Completo — DoD 2/2 verificado en producción — bug #2 falso positivo |
 | T25 — Navegación y regresiones | Completo — DoD 2/3 verificado en producción — #14 drag and drop movido a deuda técnica |
-| T39 — Migración de esquema · correcciones modelo de datos | Completo — DoD 8/8 verificados — commit [AGREGAR] |
+| T39 — Migración de esquema · correcciones modelo de datos | Completo — DoD 8/8 verificados — commit 6ed3e8b |
 
 ---
 
