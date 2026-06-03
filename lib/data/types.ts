@@ -66,6 +66,9 @@ export interface Movimiento {
   comprobanteUrl: string | null;
   pendienteAprobacion: boolean;
   notas: string | null;
+  montoEjecutadoCamilo?: number;
+  montoEjecutadoAngie?: number;
+  idRecargaOrigen?: string;
 }
 
 // ── H3 ─────────────────────────────────────────────────────────────────────
@@ -85,6 +88,8 @@ export interface ConsumoH3 {
   fecha: string;
   comprobanteUrl: string | null;
   clasificado: boolean;
+  sobreTecho?: boolean;
+  idRecargaOrigen?: string;
 }
 
 export interface Bolsillo {
@@ -130,6 +135,8 @@ export interface SaldoCuenta {
   cuenta: CuentaH4C;
   saldoInicial: number;         // COP
   fechaConfirmacion: string;    // "2026-05-01"
+  incluyeRemanente?: boolean;
+  idCierreOrigen?: string;
 }
 
 export interface IngresoCamilo {
@@ -168,6 +175,8 @@ export interface CierreSemana {
   gastosSinClasificar: number;
   cerradoPor: Actor;
   notas: string | null;
+  destinoRemanente?: string;
+  remanenteEjecutado?: number;
 }
 
 export interface PlanSemana {

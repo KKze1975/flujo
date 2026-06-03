@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Junio 2026 | Fase: Go-live — Auditoría de datos completada
+Actualizado: Junio 2026 | Fase: Go-live — T39 completo — T40 es prerequisito de T37 y T26
 
 ---
 
@@ -508,6 +508,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | T23 — Ejecución: acciones y flujo | Completo — DoD 7/7 verificado en producción |
 | T24 — Balance y cálculos | Completo — DoD 2/2 verificado en producción — bug #2 falso positivo |
 | T25 — Navegación y regresiones | Completo — DoD 2/3 verificado en producción — #14 drag and drop movido a deuda técnica |
+| T39 — Migración de esquema · correcciones modelo de datos | Completo — DoD 8/8 verificados — commit [AGREGAR] |
 
 ---
 
@@ -768,6 +769,10 @@ Objetivo: cartografiar fuentes de verdad, redefinir modelo, alinear frontend.
 - QA 3 junio: Mover concepto a S3 roto — regresión introducida en T29/T30/T32b — ticket pendiente
 - QA 3 junio: T26 caminos 1 y 2 no renderizados en modal validación fondos — ticket pendiente
 - QA 3 junio: remanenteAngiePerSemana diverge entre M1 y VistaSemanal — raíz arquitectónica
+- T39-DT1: rowToMovimiento no mapea campos nuevos H2 (montoEjecutadoCamilo, montoEjecutadoAngie, idRecargaOrigen) — rangos de lectura H2 desactualizados. Corresponde a T40.
+- T39-DT2: rowToConsumoH3 / consumoH3ToRow no mapean sobreTecho, idRecargaOrigen — rango H3!A:N debe expandirse a H3!A:P. Corresponde a T40.
+- T39-DT3: rowToSaldoCuenta / saldoCuentaToRow no mapean incluyeRemanente, idCierreOrigen — rango H4!P:T debe expandirse a H4!P:V. Corresponde a T40.
+- T39-DT4: destinoRemanente, remanenteEjecutado en H5A — rowToCierreSemana no mapea campos nuevos. Corresponde a T40.
 
 ---
 
@@ -903,6 +908,7 @@ Objetivo: cartografiar fuentes de verdad, redefinir modelo, alinear frontend.
 | Junio 2026 | Exceso recarga sobre techo → remanente automático | Sin campo especial — entra a H5A |
 | Junio 2026 | Prereq cierre semana: conciliación Angie completa | id_recarga_origen null = 0 antes de cerrar |
 | Junio 2026 | Prereq cierre mes: 4 semanas cerradas + todos confirmados | Sin excepciones — regla estricta |
+| Junio 2026 | H4D desplazado de V:AC a X:AE | H4C expandido a P:V (7 cols) — colisión con H4D resuelta desplazando H4D 2 columnas a la derecha. Separador nuevo en W. |
 
 ---
 
@@ -1254,15 +1260,21 @@ Fecha: 2026-06-03 | Cierre: 09:04
 
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo y el adjunto al proyecto Claude.
 Tipo de sesión: CONSTRUCCIÓN
-Tickets: T37 → T26
+Ticket activo: T40 — Mapeo de campos nuevos en sheets.ts · lógica de lectura y escritura
 Hora de inicio: [COMPLETAR]
 Entorno: Windows — PowerShell exclusivamente.
 
 APERTURA: Genera el dashboard con los datos actuales de ESTADO.md antes de cualquier otra cosa.
 
-ANTES DE ABRIR T37: verificar que el código implementa las reglas de negocio aprobadas en sesión de auditoría de datos 3 junio 2026. Específicamente: prereqs de cierre de semana y balance por semana.
+Contexto T40: T39 agregó 8 columnas nuevas al esquema (H2, H3B, H4C, H5A) y desplazó H4D a X:AE.
+Las funciones de mapeo (rowTo* y *ToRow) y los rangos de lectura aún no reflejan esos cambios.
+T40 implementa el mapeo completo. T40 es prerequisito de T37 y T26.
 
-Navegación de código: graphify query / path / explain antes de leer archivos fuente.
+Navegación de código: el proyecto tiene un grafo en graphify-out/. Antes de leer archivos fuente para entender estructura, usá:
+- graphify query "<pregunta>" para preguntas sobre el código
+- graphify path "<A>" "<B>" para entender cómo se conectan dos símbolos
+- graphify explain "<símbolo>" para ver todas las conexiones de un nodo
+Leé archivos fuente solo para el archivo específico que vas a editar.
 
 CIERRE: Actualizar ESTADO.md con hora de cierre y retrospectiva.
 Regla: bugs se documentan como deuda técnica — no se corrigen dentro del ticket.
@@ -1613,5 +1625,25 @@ Fecha: 2026-06-03
 - Antes de construir T37 y T26: verificar que el código implementa las reglas de negocio aprobadas hoy
 - Campos nuevos en H2, H3B, H4C, H5A requieren migración de esquema antes de go-live
 - Actualizar prompt de apertura para próxima sesión
+
+---
+
+## Retrospectiva — T39 Migración de esquema · correcciones modelo de datos
+
+Fecha: 2026-06-03
+
+**Qué funcionó:**
+- Diagnóstico pre-ejecución completo — colisión H4C/H4D identificada antes de tocar el Sheet
+- Script migrate-t39.mjs idempotente — verificó datos existentes en H4D antes de moverlos
+- 5 filas H4D migradas a X:AE sin pérdida de datos
+- tsc --noEmit limpio al primer intento
+- DoD 8/8 verificados en Sheet real
+
+**Qué no funcionó:**
+- DoD 5 del prompt tenía error interno — decía limpiar U1 pero U1 es incluye_remanente en el nuevo layout. Detectado y corregido durante la sesión sin pérdida de trabajo.
+
+**Qué cambia en el próximo sprint:**
+- T40 — Mapeo de campos nuevos en funciones rowTo* y *ToRow + rangos de lectura actualizados
+- T40 es prerequisito de T37 y T26 — no abrir esos tickets hasta que T40 esté cerrado
 
 Flujo - Proyecto de salud financiera familiar - Camilo Villamil - 2026

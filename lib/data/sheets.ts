@@ -145,6 +145,7 @@ export class SheetsDataProvider implements IDataProvider {
     "ejecutor", "fuente_en_mano", "fuente_nequi", "fuente_camilo", "fuente_angie",
     "fecha_ejecucion", "razon_desviacion", "razon_postergacion",
     "comprobante_url", "pendiente_aprobacion", "notas",
+    "monto_ejecutado_camilo", "monto_ejecutado_angie", "id_recarga_origen",
   ];
 
   private rowToMovimiento(row: string[], headers: string[]): Movimiento {
@@ -375,6 +376,7 @@ export class SheetsDataProvider implements IDataProvider {
   // H4C helpers
   private readonly H4C_HEADERS = [
     "id_saldo", "mes", "cuenta", "saldo_inicial", "fecha_confirmacion",
+    "incluye_remanente", "id_cierre_origen",
   ];
 
   private rowToSaldoCuenta(row: string[], headers: string[]): SaldoCuenta {
@@ -422,7 +424,7 @@ export class SheetsDataProvider implements IDataProvider {
         data: [
           { range: "H4!A1:G1", values: [this.H4A_HEADERS] },
           { range: "H4!I1:N1", values: [this.H4B_HEADERS] },
-          { range: "H4!P1:T1", values: [this.H4C_HEADERS] },
+          { range: "H4!P1:V1", values: [this.H4C_HEADERS] },
         ],
       },
     });
@@ -440,7 +442,7 @@ export class SheetsDataProvider implements IDataProvider {
     }
     await this.sheets.spreadsheets.values.update({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: "H4!P1:T1",
+      range: "H4!P1:V1",
       valueInputOption: "RAW",
       requestBody: { values: [this.H4C_HEADERS] },
     });
@@ -663,7 +665,7 @@ export class SheetsDataProvider implements IDataProvider {
     try {
       const res = await this.sheets.spreadsheets.values.get({
         spreadsheetId: process.env.GOOGLE_SHEET_ID,
-        range: "H4!V1",
+        range: "H4!X1",
       });
       if (res.data.values?.[0]?.[0] === "id_recarga") return;
     } catch {
@@ -671,7 +673,7 @@ export class SheetsDataProvider implements IDataProvider {
     }
     await this.sheets.spreadsheets.values.update({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: "H4!V1:AC1",
+      range: "H4!X1:AE1",
       valueInputOption: "RAW",
       requestBody: { values: [this.H4D_HEADERS] },
     });
@@ -682,7 +684,7 @@ export class SheetsDataProvider implements IDataProvider {
     try {
       const res = await this.sheets.spreadsheets.values.get({
         spreadsheetId: process.env.GOOGLE_SHEET_ID,
-        range: "H4!V:AC",
+        range: "H4!X:AE",
       });
       const rows = (res.data.values ?? []) as string[][];
       if (rows.length < 2) return [];
@@ -702,7 +704,7 @@ export class SheetsDataProvider implements IDataProvider {
     const recarga: RecargaAngie = { id, ...data };
     await this.sheets.spreadsheets.values.append({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: "H4!V:AC",
+      range: "H4!X:AE",
       valueInputOption: "RAW",
       requestBody: { values: [this.recargaAngieToRow(recarga)] },
     });
@@ -760,6 +762,7 @@ export class SheetsDataProvider implements IDataProvider {
     "id_consumo", "id_bolsillo", "mes", "semana", "descripcion",
     "monto", "ejecutor", "fuente_en_mano", "fuente_nequi",
     "fuente_camilo", "fuente_angie", "fecha", "comprobante_url", "clasificado",
+    "sobre_techo", "id_recarga_origen",
   ];
 
   private rowToConsumoH3(row: string[], headers: string[]): ConsumoH3 {
@@ -842,6 +845,7 @@ export class SheetsDataProvider implements IDataProvider {
     "remanente_angie", "ubicacion_remanente_angie",
     "conceptos_pospuestos", "conceptos_no_aplica", "gastos_sin_clasificar",
     "cerrado_por", "notas",
+    "destino_remanente", "remanente_ejecutado",
   ];
 
   private cierreSemanaToRow(c: CierreSemana): string[] {
