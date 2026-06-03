@@ -5,11 +5,12 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import type {
   Movimiento, Concepto, IngresoCamilo, IngresoAngie,
-  SaldoCuenta, CierreSemana, Semana, Actor,
+  SaldoCuenta, CierreSemana, Semana, Actor, RecargaAngie, CuentaH4C,
 } from "@/lib/data/types";
 import Icon from "@/components/ui/Icon";
 import BottomNav from "@/components/ui/BottomNav";
 import ModalConfirmarSaldos from "@/components/m1/ModalConfirmarSaldos";
+import ModalValidacionFondos from "@/components/m1/ModalValidacionFondos";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -94,12 +95,20 @@ type EjecutarPanel = {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
+const FUENTE_A_CUENTA: Record<string, CuentaH4C> = {
+  fuenteCamilo: "nu_camilo",
+  fuenteAngie: "nu_angie",
+  fuenteNequi: "arq",
+  fuenteEnMano: "en_mano",
+};
+
 export default function MesM1Mobile({
   mes,
   movimientos: movimientosProp,
   conceptos: _conceptos,
   ingresoCamilo: ingresoCamiloProp,
   ingresosAngie: ingresosAngieProp,
+  recargasAngie: recargasAngieProp = [],
   cierresSemana: _cierresSemana,
   gastosSinClasificarInit: _gastos,
   saldosInit,
@@ -110,6 +119,7 @@ export default function MesM1Mobile({
   conceptos: Concepto[];
   ingresoCamilo: IngresoCamilo | null;
   ingresosAngie: IngresoAngie[];
+  recargasAngie?: RecargaAngie[];
   cierresSemana: CierreSemana[];
   gastosSinClasificarInit: Record<Semana, number>;
   saldosInit: SaldoCuenta[];
@@ -126,6 +136,9 @@ export default function MesM1Mobile({
   const [showSaldosModal, setShowSaldosModal] = useState(false);
   const [expandedPlanId, setExpandedPlanId] = useState<string | null>(null);
   const [ejecutarPanel, setEjecutarPanel] = useState<EjecutarPanel | null>(null);
+  const [validacionFondos, setValidacionFondos] = useState<{
+    mov: Movimiento; panel: EjecutarPanel; cuentaDeficit: CuentaH4C;
+  } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -167,7 +180,7 @@ export default function MesM1Mobile({
 
   // ── PATCH ─────────────────────────────────────────────────────────────────
 
-  const patchar = async (id: string, body: Record<string, unknown>) => {
+  const patchar = async (id: string, body: Record<string, unknown>, onSuccess?: () => void) => {
     setBusy(true);
     setError(null);
     try {
@@ -181,6 +194,7 @@ export default function MesM1Mobile({
       setMovs(prev => prev.map(m => m.id === id ? data as Movimiento : m));
       setExpandedPlanId(null);
       setEjecutarPanel(null);
+      onSuccess?.();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Error desconocido");
     } finally {
@@ -188,10 +202,36 @@ export default function MesM1Mobile({
     }
   };
 
+  const disponiblePorCuenta = (cuenta: CuentaH4C): number => {
+    const entry = saldos.find(s => s.cuenta === cuenta);
+    const recargas = (cuenta === "nu_angie" || cuenta === "en_mano")
+      ? recargasAngieProp.filter(r => r.cuentaDestino === cuenta).reduce((sum, r) => sum + r.monto, 0)
+      : 0;
+    return (entry?.saldoInicial ?? 0) + recargas;
+  };
+
   const confirmarEjecucion = () => {
     if (!ejecutarPanel) return;
     const monto = Number(ejecutarPanel.monto);
     if (!monto || isNaN(monto)) return;
+
+    // T26 — validar saldo antes de ejecutar
+    const fuentes = Object.keys(FUENTE_A_CUENTA) as (keyof typeof FUENTE_A_CUENTA)[];
+    const seleccionadas = fuentes.filter(k => ejecutarPanel[k as keyof EjecutarPanel]);
+    if (seleccionadas.length > 0) {
+      const totalDisp = seleccionadas.reduce((sum, k) => sum + disponiblePorCuenta(FUENTE_A_CUENTA[k]), 0);
+      if (totalDisp < monto) {
+        const mov = movs.find(m => m.id === ejecutarPanel.movId);
+        const cuentaConMayorDeficit = seleccionadas.reduce((worst, cur) =>
+          disponiblePorCuenta(FUENTE_A_CUENTA[cur]) < disponiblePorCuenta(FUENTE_A_CUENTA[worst]) ? cur : worst
+        );
+        if (mov) {
+          setValidacionFondos({ mov, panel: { ...ejecutarPanel }, cuentaDeficit: FUENTE_A_CUENTA[cuentaConMayorDeficit] });
+          return;
+        }
+      }
+    }
+
     patchar(ejecutarPanel.movId, {
       tipo: "ejecutar", montoEjecutado: monto,
       ejecutor: ejecutarPanel.ejecutor,
@@ -199,6 +239,26 @@ export default function MesM1Mobile({
       fuenteNequi: ejecutarPanel.fuenteNequi,
       fuenteCamilo: ejecutarPanel.fuenteCamilo,
       fuenteAngie: ejecutarPanel.fuenteAngie,
+    });
+  };
+
+  const ejecutarConCuenta = (nuevaCuenta: CuentaH4C) => {
+    if (!validacionFondos) return;
+    const { panel } = validacionFondos;
+    const monto = Number(panel.monto);
+    patchar(panel.movId, {
+      tipo: "ejecutar", montoEjecutado: monto, ejecutor: panel.ejecutor,
+      fuenteEnMano: nuevaCuenta === "en_mano",
+      fuenteNequi: nuevaCuenta === "arq",
+      fuenteCamilo: nuevaCuenta === "nu_camilo",
+      fuenteAngie: nuevaCuenta === "nu_angie",
+    }, () => setValidacionFondos(null));
+  };
+
+  const posponerDesdeModal = () => {
+    if (!validacionFondos) return;
+    patchar(validacionFondos.panel.movId, { tipo: "posponer", razonPostergacion: null }, () => {
+      setValidacionFondos(null);
     });
   };
 
@@ -565,6 +625,22 @@ export default function MesM1Mobile({
           onConfirmed={(s) => { setSaldos(s); setShowSaldosModal(false); }}
         />,
         document.body
+      )}
+
+      {/* T26 · Modal Validación de Fondos */}
+      {validacionFondos && (
+        <ModalValidacionFondos
+          mov={validacionFondos.mov}
+          mes={mes}
+          semana={validacionFondos.mov.semana ?? "S1"}
+          montoEjecutado={Number(validacionFondos.panel.monto)}
+          cuentaDeficit={validacionFondos.cuentaDeficit}
+          todasCuentas={CUENTAS_H4C.map(({ cuenta }) => ({ cuenta, disponible: disponiblePorCuenta(cuenta) }))}
+          actor={validacionFondos.panel.ejecutor}
+          onEjecutarConCuenta={ejecutarConCuenta}
+          onPosponer={posponerDesdeModal}
+          onClose={() => setValidacionFondos(null)}
+        />
       )}
     </div>
   );

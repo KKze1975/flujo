@@ -26,11 +26,12 @@ const CUENTAS: { value: CuentaDestinoAngie; label: string }[] = [
 interface Props {
   mes: string;
   semana: Semana;
+  actor?: string;
   onClose: () => void;
-  onRegistered: () => void;
+  onRegistered: (recarga: RecargaAngie) => void;
 }
 
-export default function ModalRegistroIngresoAngie({ mes, semana, onClose, onRegistered }: Props) {
+export default function ModalRegistroIngresoAngie({ mes, semana, actor = "angie", onClose, onRegistered }: Props) {
   const [monto, setMonto] = useState("");
   const [cuentaDestino, setCuentaDestino] = useState<CuentaDestinoAngie>("nu_angie");
   const [notas, setNotas] = useState("");
@@ -73,6 +74,7 @@ export default function ModalRegistroIngresoAngie({ mes, semana, onClose, onRegi
           semana,
           monto: montoNum,
           cuentaDestino,
+          registradoPor: actor,
           notas: notas.trim() || null,
         }),
       });
@@ -83,7 +85,7 @@ export default function ModalRegistroIngresoAngie({ mes, semana, onClose, onRegi
       setTotal(prev => prev + nueva.monto);
       setMonto("");
       setNotas("");
-      onRegistered();
+      onRegistered(nueva);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Error desconocido");
     } finally {

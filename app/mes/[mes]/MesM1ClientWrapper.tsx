@@ -62,6 +62,7 @@ export default function MesM1ClientWrapper({
       conceptos={conceptos}
       ingresoCamilo={ingresoCamilo}
       ingresosAngie={ingresosAngie}
+      recargasAngie={recargasAngie}
       cierresSemana={cierresSemana}
       gastosSinClasificarInit={gastosSinClasificarInit}
       saldosInit={saldosInit}

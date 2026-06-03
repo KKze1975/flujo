@@ -5,7 +5,7 @@ import React from "react";
 import { useRouter } from "next/navigation";
 import type {
   Movimiento, Concepto, SaldoCuenta, Semana, Categoria,
-  Actor, IngresoCamilo, IngresoAngie, RecargaAngie, CuentaDestino,
+  Actor, IngresoCamilo, IngresoAngie, RecargaAngie, CuentaDestino, CuentaH4C,
 } from "@/lib/data/types";
 import Icon from "@/components/ui/Icon";
 import ConceptoBoard from "@/components/m1/ConceptoBoard";
@@ -13,6 +13,7 @@ import ModalAgregarConcepto from "@/components/m1/ModalAgregarConcepto";
 import ModalConfirmarSaldos from "@/components/m1/ModalConfirmarSaldos";
 import ModalCerrarSemana from "@/components/m1/ModalCerrarSemana";
 import ModalAporteAngie from "@/components/m1/ModalAporteAngie";
+import ModalValidacionFondos from "@/components/m1/ModalValidacionFondos";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -323,6 +324,9 @@ export default function MesM1Desktop({
   const [wk, setWk] = useState<"todas" | Semana>(() => getActiveSemana(mes));
   const [saldosOk, setSaldosOk] = useState(saldos.length >= 4);
   const [ejecutarPanel, setEjecutarPanel] = useState<EjecutarPanel | null>(null);
+  const [validacionFondos, setValidacionFondos] = useState<{
+    mov: Movimiento; panel: EjecutarPanel; cuentaDeficit: CuentaH4C;
+  } | null>(null);
 
   // Ingreso Camilo (sidebar en planificación, modal en ejecución)
   const [ingresoModalOpen, setIngresoModalOpen] = useState(false);
@@ -363,6 +367,14 @@ export default function MesM1Desktop({
   const splitTotal = saldoC + saldoA || 1;
   const totalSaldosLocal = saldosLocal.reduce((s, c) => s + c.saldoInicial, 0);
   const ejecutarBloqueado = !ingresoCamiloLocal || ingresoCamiloLocal.montoCop === 0;
+
+  const disponiblePorCuenta = (cuenta: CuentaH4C): number => {
+    const entry = saldosLocal.find(s => s.cuenta === cuenta);
+    const recargas = (cuenta === "nu_angie" || cuenta === "en_mano")
+      ? recargasAngieProp.filter(r => r.cuentaDestino === cuenta).reduce((sum, r) => sum + r.monto, 0)
+      : 0;
+    return (entry?.saldoInicial ?? 0) + recargas;
+  };
 
   const rows = useMemo<TableRow[]>(() => {
     if (wk !== "todas") return filtrados.map(mov => ({ kind: "item", mov }));
@@ -596,7 +608,28 @@ export default function MesM1Desktop({
     if (!ejecutarPanel) return;
     const monto = Number(ejecutarPanel.monto);
     if (!monto || isNaN(monto)) return;
-    const panel = { ...ejecutarPanel };
+
+    // T26 — validar saldo antes de ejecutar
+    const seleccionadas = CUENTAS_H4C.filter(({ fuenteKey }) => ejecutarPanel[fuenteKey]);
+    if (seleccionadas.length > 0) {
+      const totalDisp = seleccionadas.reduce((sum, { cuenta }) => sum + disponiblePorCuenta(cuenta), 0);
+      if (totalDisp < monto) {
+        const mov = movs.find(m => m.id === ejecutarPanel.movId);
+        const cuentaConMayorDeficit = seleccionadas.reduce((worst, cur) =>
+          disponiblePorCuenta(cur.cuenta) < disponiblePorCuenta(worst.cuenta) ? cur : worst
+        );
+        if (mov) {
+          setValidacionFondos({ mov, panel: { ...ejecutarPanel }, cuentaDeficit: cuentaConMayorDeficit.cuenta });
+          return;
+        }
+      }
+    }
+
+    doEjecutar(ejecutarPanel);
+  };
+
+  const doEjecutar = (panel: EjecutarPanel) => {
+    const monto = Number(panel.monto);
     patchar(panel.movId, {
       tipo: "ejecutar", montoEjecutado: monto, ejecutor: panel.ejecutor,
       fuenteEnMano: panel.fuenteEnMano, fuenteNequi: panel.fuenteNequi,
@@ -609,6 +642,36 @@ export default function MesM1Desktop({
           activeCuentas.includes(s.cuenta) ? { ...s, saldoInicial: Math.max(0, s.saldoInicial - perCuenta) } : s
         ));
       }
+    });
+  };
+
+  const ejecutarConCuenta = (nuevaCuenta: CuentaH4C) => {
+    if (!validacionFondos) return;
+    const { panel } = validacionFondos;
+    const monto = Number(panel.monto);
+    const newPanel: EjecutarPanel = {
+      ...panel,
+      fuenteEnMano: nuevaCuenta === "en_mano",
+      fuenteNequi: nuevaCuenta === "arq",
+      fuenteCamilo: nuevaCuenta === "nu_camilo",
+      fuenteAngie: nuevaCuenta === "nu_angie",
+    };
+    patchar(panel.movId, {
+      tipo: "ejecutar", montoEjecutado: monto, ejecutor: panel.ejecutor,
+      fuenteEnMano: newPanel.fuenteEnMano, fuenteNequi: newPanel.fuenteNequi,
+      fuenteCamilo: newPanel.fuenteCamilo, fuenteAngie: newPanel.fuenteAngie,
+    }, () => {
+      setSaldosLocal(prev => prev.map(s =>
+        s.cuenta === nuevaCuenta ? { ...s, saldoInicial: Math.max(0, s.saldoInicial - monto) } : s
+      ));
+      setValidacionFondos(null);
+    });
+  };
+
+  const posponerDesdeModal = () => {
+    if (!validacionFondos) return;
+    patchar(validacionFondos.panel.movId, { tipo: "posponer", razonPostergacion: null }, () => {
+      setValidacionFondos(null);
     });
   };
 
@@ -1132,6 +1195,22 @@ export default function MesM1Desktop({
             setMovs(prev => [...prev, movimiento]);
             setShowAgregarConcepto(false);
           }}
+        />
+      )}
+
+      {/* ── T26 · Modal Validación de Fondos ── */}
+      {validacionFondos && (
+        <ModalValidacionFondos
+          mov={validacionFondos.mov}
+          mes={mes}
+          semana={validacionFondos.mov.semana ?? "S1"}
+          montoEjecutado={Number(validacionFondos.panel.monto)}
+          cuentaDeficit={validacionFondos.cuentaDeficit}
+          todasCuentas={CUENTAS_H4C.map(({ cuenta }) => ({ cuenta, disponible: disponiblePorCuenta(cuenta) }))}
+          actor={validacionFondos.panel.ejecutor}
+          onEjecutarConCuenta={ejecutarConCuenta}
+          onPosponer={posponerDesdeModal}
+          onClose={() => setValidacionFondos(null)}
         />
       )}
 
