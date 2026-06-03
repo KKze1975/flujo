@@ -561,7 +561,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | T36 | Vista granular H3 en VistaSemanal | M4-B2 | Post go-live — requiere diseño |
 | T37 | FAB aporte Angie en VistaSemanal — modal acumulativo + refetch foco M1 | G1 | Completo — DoD 7/7 — commits e0a59ab, 3f44734, 26cbb0e, fix registradoPor |
 | T38 | Desglose inicial/ejecutado/disponible por cuenta en rail Saldos | G2 | Completo — commit feat/T38 |
-| T26 | Validación de fondos + modal reasignación antes de ejecutar | #18 | Aprobado para construir — DoD 9 puntos |
+| T26 | Modal validación de fondos | #18 | Aprobado para construir — DoD 9 puntos |
 
 ---
 
@@ -1078,6 +1078,44 @@ Fecha: 2026-06-02
 **Qué cambia en el próximo sprint:**
 - Próxima sesión: CONSTRUCCIÓN — T37 primero, T26 segundo
 - T37 es prerequisito de T26 (Opción 2 del modal T26 usa el flujo de T37)
+
+---
+
+## Especificación T26 — Modal validación de fondos
+
+**Disparador:** usuario presiona "Ejecutar" y la cuenta seleccionada no tiene saldo suficiente.
+
+**Comportamiento:** bloquea la ejecución — no ignorable.
+
+**Aplica en:** M1 Ejecución desktop · M1 Ejecución móvil · M4 (cuando el gasto se vincula a H2)
+
+**Encabezado del modal:**
+Nombre del concepto + cuenta con déficit + disponible vs necesario.
+Ejemplo: "NU Camilo · Disponible $150.000 · Necesario $320.000"
+
+**Opción 1 — Cambiar cuenta de pago:**
+Muestra cuentas disponibles con saldo actual. Usuario selecciona y confirma. Ejecución procede con nueva cuenta. Deshabilitada si ninguna cuenta tiene saldo suficiente.
+
+**Opción 2 — Registrar ingreso Angie:**
+Label según actor logueado: "Registrar aporte de Angie" (Camilo) / "Registrar mi ingreso" (Angie). Abre ModalRegistroIngresoAngie con registradoPor = actor logueado. Post-registro: actualiza saldo visible en modal antes de confirmar ejecución.
+
+**Opción 3 — Posponer:**
+Cierra modal. Marca concepto como pospuesto en H2. No ejecuta.
+
+**Supuestos:**
+- Sin reasignación entre conceptos — post go-live
+- Modal idéntico para Camilo y Angie — texto Opción 2 se adapta según actor
+
+**DoD:**
+1. Ejecutar con cuenta sin saldo → modal aparece, no ejecuta
+2. Encabezado muestra concepto + cuenta + disponible vs necesario
+3. Opción 1 muestra cuentas restantes con saldo actual
+4. Opción 1 deshabilitada si ninguna cuenta alcanza
+5. Opción 1 ejecuta con nueva cuenta al confirmar
+6. Opción 2 abre ModalRegistroIngresoAngie con registradoPor correcto
+7. Registro Opción 2 persiste en H4D con registradoPor correcto
+8. Post-registro Opción 2: saldo actualizado visible antes de confirmar
+9. Opción 3 cierra modal y marca pospuesto en H2
 
 ---
 
