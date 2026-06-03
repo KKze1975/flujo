@@ -194,7 +194,21 @@ async function resetH4C() {
   return borradas;
 }
 
-// ── 6. H5A — Cierres de semana ────────────────────────────────────────────────
+// ── 6. H4D — Recargas Angie ───────────────────────────────────────────────────
+
+async function resetH4D() {
+  console.log(`\n── 6. H4D — Recargas Angie ─────────────────────────────────`);
+  const borradas = await deleteJunioRows({
+    rangeRead:  "H4!V:AC",
+    rangeClear: "H4!V2:AC10000",
+    rangeWrite: "H4!V2",
+    label: "H4D (recargas Angie)",
+  });
+  if (borradas > 0) await verifyZeroJunio({ rangeRead: "H4!V:AC", label: "H4D" });
+  return borradas;
+}
+
+// ── 7. H5A — Cierres de semana ──────────────────────────────────────────────────
 
 async function resetH5A() {
   console.log(`\n── 6. H5A — Cierres de semana ──────────────────────────────`);
@@ -208,7 +222,7 @@ async function resetH5A() {
   return borradas;
 }
 
-// ── 7. H5B — Planes semana siguiente ─────────────────────────────────────────
+// ── 8. H5B — Planes semana siguiente ─────────────────────────────────────────
 
 async function resetH5B() {
   console.log(`\n── 7. H5B — Planes semana siguiente ────────────────────────`);
@@ -227,7 +241,7 @@ async function resetH5B() {
 async function main() {
   console.log(`\n${"═".repeat(62)}`);
   console.log(`  RESET JUNIO 2026 — COMPLETO`);
-  console.log(`  Borra mes="${MES}" en: H2 H3B H4A H4B H4C H5A H5B`);
+  console.log(`  Borra mes="${MES}" en: H2 H3B H4A H4B H4C H4D H5A H5B`);
   console.log(`  NO toca: H1 · H6`);
   console.log(`  H2 queda vacía — reinicializar desde la app.`);
   console.log(`${"═".repeat(62)}`);
@@ -237,6 +251,7 @@ async function main() {
   const h4a = await resetH4A();
   const h4b = await resetH4B();
   const h4c = await resetH4C();
+  const h4d = await resetH4D();
   const h5a = await resetH5A();
   const h5b = await resetH5B();
 
@@ -247,6 +262,7 @@ async function main() {
   console.log(`  H4A  → ${h4a} fila(s) borradas  (ingreso Camilo)`);
   console.log(`  H4B  → ${h4b} fila(s) borradas  (aportes Angie)`);
   console.log(`  H4C  → ${h4c} fila(s) borradas  (saldos iniciales)`);
+  console.log(`  H4D  → ${h4d} fila(s) borradas  (recargas Angie)`);
   console.log(`  H5A  → ${h5a} fila(s) borradas  (cierres semana)`);
   console.log(`  H5B  → ${h5b} fila(s) borradas  (planes semana siguiente)`);
   console.log(`${"═".repeat(62)}\n`);
