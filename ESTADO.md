@@ -559,7 +559,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | T34 | Comprobantes al ejecutar | F5 | Post go-live — Google Drive |
 | T35 | Split nativo de concepto en semanas | D1 futuro | Post go-live — requiere diseño |
 | T36 | Vista granular H3 en VistaSemanal | M4-B2 | Post go-live — requiere diseño |
-| T37 | FAB aporte Angie en VistaSemanal — modal acumulativo + refetch foco M1 | G1 | En QA — DoD 7/7 verificados — pendiente QA completo antes de cerrar — commits e0a59ab, 3f44734, 26cbb0e |
+| T37 | FAB aporte Angie en VistaSemanal — modal acumulativo + refetch foco M1 | G1 | Completo — DoD 7/7 — commits e0a59ab, 3f44734, 26cbb0e, fix registradoPor |
 | T38 | Desglose inicial/ejecutado/disponible por cuenta en rail Saldos | G2 | Completo — commit feat/T38 |
 | T26 | Validación de fondos + modal reasignación antes de ejecutar | #18 | Aprobado para construir — DoD 9 puntos |
 
@@ -665,7 +665,6 @@ Archivo fuente: H1_presupuesto_base.csv
 - proyeccion KPI superior usa saldos SSR en lugar de saldosLocal — cosmético, no afecta trazabilidad.
 - M4-B1: Foto en móvil falla con error JSON al adjuntar — falla en conversión base64 pre-API, antes de llamar a Claude. Desktop funciona correctamente. Post go-live.
 - M4-B2: VistaSemanal no muestra historial granular de H3 por semana — registros M4 no auditables en la vista semanal. Los datos se guardan correctamente en H3. Post go-live.
-- T37: FAB aporte Angie en VistaSemanal — Aprobado para construir — especificación completa en QA tickets.
 - T38: Rail Saldos no muestra desglose de ejecutado por cuenta — solo muestra disponible actual.
 - T26: No hay validación de fondos al ejecutar — Aprobado para construir — especificación completa en QA tickets.
 - T37-DT1: Fila Total en rail Saldos de M1 Ejecución no suma recargas H4D — totalSaldosLocal excluye recargas Angie. El Total visible no coincide con la suma de las 4 cuentas cuando hay recargas registradas. Post go-live.
@@ -1085,8 +1084,8 @@ Fecha: 2026-06-02
 ## Prompt de apertura — próxima sesión
 
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo y el adjunto al proyecto Claude.
-Tipo de sesión: QA + CONSTRUCCIÓN
-Tickets: QA T37 → cerrar T37 → abrir T26
+Tipo de sesión: CONSTRUCCIÓN
+Tickets: T26 — Modal validación de fondos
 Hora de inicio: [COMPLETAR]
 Entorno: Windows — PowerShell exclusivamente.
 

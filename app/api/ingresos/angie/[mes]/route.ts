@@ -38,7 +38,7 @@ export async function POST(
     return Response.json({ error: "Formato de mes inválido." }, { status: 400 });
   }
 
-  let body: { semana: Semana; monto: number; cuentaDestino?: CuentaDestinoAngie; notas?: string };
+  let body: { semana: Semana; monto: number; cuentaDestino?: CuentaDestinoAngie; registradoPor?: string; notas?: string };
   try {
     body = await req.json();
   } catch {
@@ -56,7 +56,7 @@ export async function POST(
       semana: body.semana,
       monto: body.monto,
       fecha: hoy,
-      registradoPor: "angie",
+      registradoPor: body.registradoPor ?? "angie",
       cuentaDestino: body.cuentaDestino ?? "nu_angie",
       notas: body.notas ?? null,
     });
