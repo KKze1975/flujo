@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Junio 2026 | Fase: PAUSADO — Auditoría de datos pendiente
+Actualizado: Junio 2026 | Fase: Go-live — Auditoría de datos completada
 
 ---
 
@@ -113,9 +113,9 @@ Metas Familiares / Frida / Hijos / Servicio Domestico
 | nombre_snapshot | string | Copia del nombre de H1 al crear — inmutable |
 | categoria_snapshot | string | Copia de categoría al crear |
 | tipo_snapshot | enum | Copia de tipo al crear |
-| semana | enum | S1 / S2 / S3 / S4 |
+| semana | enum | S1 / S2 / S3 / S4 / sin_asignar |
 | monto_presupuestado | number | COP |
-| monto_ejecutado | number | COP — Null si no ejecutado |
+| monto_ejecutado | — | Calculado: monto_ejecutado_camilo + monto_ejecutado_angie |
 | desviacion | number | monto_ejecutado - monto_presupuestado. Null si no ejecutado |
 | estado | enum | pendiente / ejecutado / pospuesto / no_aplica |
 | ejecutor | enum | camilo / angie |
@@ -129,6 +129,11 @@ Metas Familiares / Frida / Hijos / Servicio Domestico
 | comprobante_url | string | Nullable |
 | pendiente_aprobacion | boolean | |
 | notas | string | Nullable |
+| monto_ejecutado_camilo | number | COP · nullable — parte del monto ejecutado por Camilo |
+| monto_ejecutado_angie | number | COP · nullable — parte del monto ejecutado por Angie |
+| id_recarga_origen | string | FK a H4D · nullable — null = pendiente de conciliar |
+
+**Decisión:** monto_ejecutado_camilo + monto_ejecutado_angie revisión cuando se construya módulo hijos.
 
 ### H3 — Bolsillos
 
@@ -161,6 +166,8 @@ Rango B — Consumos
 | fecha | date | |
 | comprobante_url | string | Nullable |
 | clasificado | boolean | False si pendiente de clasificación |
+| sobre_techo | boolean | True cuando consumo acumulado supera techo en H3A |
+| id_recarga_origen | string | FK a H4D · nullable — null = pendiente de conciliar |
 
 ### H4 — Ingresos
 
@@ -198,6 +205,8 @@ Rango C — Saldos iniciales
 | cuenta | enum | nu_camilo / nu_angie / arq / en_mano |
 | saldo_inicial | number | COP |
 | fecha_confirmacion | date | |
+| incluye_remanente | boolean | True si saldo inicial incluye remanente del mes anterior |
+| id_cierre_origen | string | FK a H5A · nullable |
 
 ### H4D — Recargas confirmadas Angie
 
@@ -214,7 +223,7 @@ Rango en tab H4: V:AC (8 columnas)
 | cuenta_destino | enum | nu_angie / en_mano |
 | notas | string | Nullable |
 
-**Decisión:** H4B = plan/meta (solo PUT upsert desde M1 Planificación). H4D = recargas confirmadas (POST append desde VistaSemanal). `remanenteAngiePerSemana` en M1 Ejecución lee H4D, no H4B.
+**Decisión:** H4B = solo referencia del plan (no fuente operativa). H4D = fuente de verdad del ingreso real de Angie. Balance y cierres leen H4D, no H4B.
 
 ### H5 — Semanas
 
@@ -236,6 +245,8 @@ Rango A — Cierre de semana
 | gastos_sin_clasificar | number | Debe ser 0 al cerrar |
 | cerrado_por | enum | camilo / angie |
 | notas | string | Nullable |
+| destino_remanente | enum | carry_over / ahorro / gasto · default: carry_over |
+| remanente_ejecutado | boolean | True cuando remanente sale de H5A |
 
 Rango B — Plan semana siguiente
 
@@ -279,6 +290,45 @@ Rango B — Plan semana siguiente
 | semanas_cerradas | number | |
 | cerrado_por | enum | camilo / angie |
 | notas | string | Nullable |
+
+---
+
+## Reglas de negocio del modelo — APROBADAS
+
+Sesión: Auditoría de datos · 3 junio 2026
+
+### Balance disponible
+- Solo ingresos H4A / H4D con `estado = confirmado` contribuyen al balance disponible por semana
+
+### Prerequisitos cierre de semana
+1. Todos los H4D de la semana con `estado = confirmado`
+2. `COUNT(H3B WHERE clasificado = false) = 0`
+3. `COUNT(H2 + H3B WHERE fuente_angie = TRUE AND id_recarga_origen = null) = 0`
+
+### Al cierre de semana
+- Usuario define `destino_remanente` · default `carry_over`
+- Si `destino_remanente = ahorro` → cierre escribe consumo en H3B contra bolsillo que usuario elige
+- Si `destino_remanente = carry_over` → H4C mes siguiente: `incluye_remanente = true` + `id_cierre_origen = id_cierre`
+- Si `destino_remanente = gasto` → cierre escribe consumo en H3B contra bolsillo remanente
+
+### Prerequisitos cierre de mes
+1. `COUNT(H5A WHERE mes = mes_actual) = 4`
+2. Todos los H4A y H4D del mes con `estado = confirmado`
+
+### Inicialización de mes nuevo
+- Concepto bimestral: solo crear fila en H2 si mes_actual ∈ `mes_activo_bimestral`
+- Concepto con `estado = pospuesto` del mes anterior: entra con `semana = sin_asignar`
+
+### Prerequisito cierre de planificación
+- `COUNT(H2 WHERE mes = mes_actual AND semana = sin_asignar) = 0`
+
+### Bolsillos
+- Si consumo acumulado > techo H3A: `sobre_techo = true` · UI alerta · no bloquea
+- Si monto_recarga > (techo - consumo_acumulado): exceso entra automáticamente a remanente H5A
+
+### Ejecución
+- `monto_ejecutado` H2 = `monto_ejecutado_camilo` + `monto_ejecutado_angie`
+- Transferencia entre actores: registrar salida cuenta origen + entrada cuenta destino · sin campo especial
 
 ---
 
@@ -843,6 +893,16 @@ Objetivo: cartografiar fuentes de verdad, redefinir modelo, alinear frontend.
 | Junio 2026 | Reasignación de fondos D2 | Modal guiado antes de ejecutar cuando no hay disponibilidad — post go-live |
 | Junio 2026 | Comprobantes storage | Google Drive — Drive API + endpoint upload — post go-live |
 | Junio 2026 | Mesadas y Empleada | Mover fuera de categoría Mercado en H1 via script antes de go-live |
+| Junio 2026 | H4D es fuente de verdad ingreso real Angie | H4B es solo plan — balance y cierres leen H4D |
+| Junio 2026 | Balance solo cuenta ingresos confirmados | Ingreso pendiente no contribuye al disponible |
+| Junio 2026 | Remanente con destino explícito | destino_remanente enum — default carry_over — usuario puede cambiar al cierre |
+| Junio 2026 | H4C registra origen del saldo inicial | incluye_remanente + id_cierre_origen para trazabilidad entre meses |
+| Junio 2026 | Concepto pospuesto entra con semana = sin_asignar | Usuario asigna semana explícitamente — sin default S1 |
+| Junio 2026 | Ejecución parcial por dos actores en H2 | monto_ejecutado_camilo + monto_ejecutado_angie — revisión con módulo hijos |
+| Junio 2026 | Sobregiro bolsillo no bloquea | sobre_techo = true + alerta UI — decisión queda en el usuario |
+| Junio 2026 | Exceso recarga sobre techo → remanente automático | Sin campo especial — entra a H5A |
+| Junio 2026 | Prereq cierre semana: conciliación Angie completa | id_recarga_origen null = 0 antes de cerrar |
+| Junio 2026 | Prereq cierre mes: 4 semanas cerradas + todos confirmados | Sin excepciones — regla estricta |
 
 ---
 
@@ -1193,11 +1253,20 @@ Fecha: 2026-06-03 | Cierre: 09:04
 ## Prompt de apertura — próxima sesión
 
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo y el adjunto al proyecto Claude.
-Tipo de sesión: DISEÑO — Auditoría de datos
-Objetivo: cartografiar fuentes de verdad del modelo (H1-H6), identificar ambigüedades, redefinir contrato de datos para ingresos Angie y balance por semana.
-Regla: no se propone solución técnica hasta tener el mapa completo.
+Tipo de sesión: CONSTRUCCIÓN
+Tickets: T37 → T26
+Hora de inicio: [COMPLETAR]
+Entorno: Windows — PowerShell exclusivamente.
+
 APERTURA: Genera el dashboard con los datos actuales de ESTADO.md antes de cualquier otra cosa.
-CIERRE: Actualizar ESTADO.md con decisiones de diseño tomadas.
+
+ANTES DE ABRIR T37: verificar que el código implementa las reglas de negocio aprobadas en sesión de auditoría de datos 3 junio 2026. Específicamente: prereqs de cierre de semana y balance por semana.
+
+Navegación de código: graphify query / path / explain antes de leer archivos fuente.
+
+CIERRE: Actualizar ESTADO.md con hora de cierre y retrospectiva.
+Regla: bugs se documentan como deuda técnica — no se corrigen dentro del ticket.
+Regenerar kanban: node scripts/generate-kanban.mjs
 
 ---
 
@@ -1522,5 +1591,27 @@ Fecha: 2026-06-02
 **Qué cambia en el próximo sprint:**
 - Go-live: verificar en Vercel producción, luego declarar go-live para junio 7, 2026
 - Rama dev + preview URL antes del primer ticket post go-live (deuda DevOps documentada)
+
+---
+
+## Retrospectiva — Sesión DISEÑO · Auditoría de datos
+
+Fecha: 2026-06-03
+
+**Qué funcionó:**
+- Acceso al Sheet real desde Google Drive — auditoría contra datos reales, no solo ESTADO.md
+- Metodología de flujo primero (envelope budgeting) antes de analizar el modelo — reveló supuestos implícitos
+- Matriz de combinaciones como mecanismo de estrés del modelo — más eficiente que casuística manual
+- 14 casos analizados, 13 huecos identificados, 13 resueltos con 6 correcciones
+- Decisiones tomadas una a una con aprobación explícita — ninguna ambigua
+
+**Qué no funcionó:**
+- Tendencia inicial a ir al detalle de los datos antes de tener el mapa conceptual — corregido a tiempo
+- Gráfico inicial basado en ESTADO.md sin verificar contra Sheet real
+
+**Qué cambia en el próximo sprint:**
+- Antes de construir T37 y T26: verificar que el código implementa las reglas de negocio aprobadas hoy
+- Campos nuevos en H2, H3B, H4C, H5A requieren migración de esquema antes de go-live
+- Actualizar prompt de apertura para próxima sesión
 
 Flujo - Proyecto de salud financiera familiar - Camilo Villamil - 2026
