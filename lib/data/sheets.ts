@@ -232,7 +232,7 @@ export class SheetsDataProvider implements IDataProvider {
     try {
       const res = await this.sheets.spreadsheets.values.get({
         spreadsheetId: process.env.GOOGLE_SHEET_ID,
-        range: "H2!A:V",
+        range: "H2!A:Y",
       });
       rows = (res.data.values ?? []) as string[][];
     } catch {
@@ -254,7 +254,7 @@ export class SheetsDataProvider implements IDataProvider {
     try {
       const res = await this.sheets.spreadsheets.values.get({
         spreadsheetId: process.env.GOOGLE_SHEET_ID,
-        range: "H2!A:V",
+        range: "H2!A:Y",
       });
       rows = (res.data.values ?? []) as string[][];
     } catch {
@@ -277,7 +277,7 @@ export class SheetsDataProvider implements IDataProvider {
     );
     await this.sheets.spreadsheets.values.append({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: "H2!A:V",
+      range: "H2!A:Y",
       valueInputOption: "RAW",
       requestBody: { values: rows },
     });
@@ -296,7 +296,7 @@ export class SheetsDataProvider implements IDataProvider {
     try {
       const res = await this.sheets.spreadsheets.values.get({
         spreadsheetId: process.env.GOOGLE_SHEET_ID,
-        range: "H2!A:V",
+        range: "H2!A:Y",
       });
       rows = (res.data.values ?? []) as string[][];
     } catch {
@@ -318,7 +318,7 @@ export class SheetsDataProvider implements IDataProvider {
     const sheetRow = rowIndex + 2; // +1 header row, +1 for 1-based indexing
     await this.sheets.spreadsheets.values.update({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: `H2!A${sheetRow}:V${sheetRow}`,
+      range: `H2!A${sheetRow}:Y${sheetRow}`,
       valueInputOption: "RAW",
       requestBody: { values: [newRow] },
     });
