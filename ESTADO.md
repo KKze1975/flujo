@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Junio 2026 | Fase: Go-live — T37 y T26 aprobados para construir — T40 completo
+Actualizado: Junio 2026 | Fase: Go-live — T40, T41, T42 completos — QA en curso
 
 ---
 
@@ -510,6 +510,10 @@ Archivo fuente: H1_presupuesto_base.csv
 | T25 — Navegación y regresiones | Completo — DoD 2/3 verificado en producción — #14 drag and drop movido a deuda técnica |
 | T39 — Migración de esquema · correcciones modelo de datos | Completo — DoD 8/8 verificados — commit 6ed3e8b |
 | T40 — Mapeo campos nuevos H2/H3/H4C/H5 | Completo — commit b6af48d — DoD 6/6 — tsc limpio — sin regresiones |
+| T41 — Reactividad balanceSemanas | Completo — commit 82cd1de — recargasAngieLocal useState — DoD 3/3 |
+| T42 — Fix rail Saldos (Inicial + Disponible + Recargado) | Completo — commits 1f29b9c, 3dc8889, dd6db4a — DoD verificado en Vercel |
+| Fix H2 rangos A:V → A:Y | Completo — commit b363eaf — detectado en QA post-T40 |
+| Fix H3 rango + placeholders sin-concepto | Completo — commit 8faab11 — auditoría post-T40 |
 
 ---
 
@@ -775,6 +779,8 @@ Objetivo: cartografiar fuentes de verdad, redefinir modelo, alinear frontend.
 - T39-DT3: rowToSaldoCuenta / saldoCuentaToRow no mapean incluyeRemanente, idCierreOrigen — rango H4!P:T debe expandirse a H4!P:V. Corresponde a T40.
 - T39-DT4: destinoRemanente, remanenteEjecutado en H5A — rowToCierreSemana no mapea campos nuevos. Corresponde a T40.
 - git add -A en T40 capturó archivos sin trackear de sesiones anteriores (design-handoff/, screenshots, reset-junio.mjs) — agregar a .gitignore o limpiar antes del siguiente ticket
+- Rail Saldos: label "(plan)" en A:$X de Por Semana no distingue entre sin recargas vs con recargas sin cierre — mostrar "(real)" cuando hay recargas H4D registradas. Post go-live.
+- Rail Saldos: totalSaldosLocal suma saldosConDescuento (descontados server) en lugar de saldosBrutos — el Total visible puede no coincidir con la suma de Inicial de las 4 cuentas. Post go-live.
 
 ---
 
@@ -912,6 +918,9 @@ Objetivo: cartografiar fuentes de verdad, redefinir modelo, alinear frontend.
 | Junio 2026 | Prereq cierre mes: 4 semanas cerradas + todos confirmados | Sin excepciones — regla estricta |
 | Junio 2026 | H4D desplazado de V:AC a X:AE | H4C expandido a P:V (7 cols) — colisión con H4D resuelta desplazando H4D 2 columnas a la derecha. Separador nuevo en W. |
 | Junio 2026 | T40: campos nuevos como : type \| null en lugar de ?: type | Campos siempre presentes en JSON con null para registros históricos — consistente con el resto del sistema |
+| Junio 2026 | Rail Saldos NU Angie muestra fila Recargado | Recargas H4D son ingresos del mes, no saldo inicial — naturaleza diferente a saldo Camilo |
+| Junio 2026 | disponible = bruto - ejecutado + recargas | Fórmula correcta — evita doble conteo cuando saldosConDescuento clampea a 0 |
+| Junio 2026 | T41: recargasAngieLocal como useState | Prop SSR congelada no refleja recargas registradas en sesión — mismo patrón que movs |
 
 ---
 
@@ -1262,16 +1271,12 @@ Fecha: 2026-06-03 | Cierre: 09:04
 ## Prompt de apertura — próxima sesión
 
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo y el adjunto al proyecto Claude.
-Tipo de sesión: CONSTRUCCIÓN
-Ticket activo: T40 — Mapeo de campos nuevos en sheets.ts · lógica de lectura y escritura
+Tipo de sesión: QA
+Objetivo: continuar QA go-live — flujo Angie en VistaSemanal (registro de ingresos y gastos durante la semana)
 Hora de inicio: [COMPLETAR]
 Entorno: Windows — PowerShell exclusivamente.
 
 APERTURA: Genera el dashboard con los datos actuales de ESTADO.md antes de cualquier otra cosa.
-
-Contexto T40: T39 agregó 8 columnas nuevas al esquema (H2, H3B, H4C, H5A) y desplazó H4D a X:AE.
-Las funciones de mapeo (rowTo* y *ToRow) y los rangos de lectura aún no reflejan esos cambios.
-T40 implementa el mapeo completo. T40 es prerequisito de T37 y T26.
 
 Navegación de código: el proyecto tiene un grafo en graphify-out/. Antes de leer archivos fuente para entender estructura, usá:
 - graphify query "<pregunta>" para preguntas sobre el código
@@ -1648,5 +1653,25 @@ Fecha: 2026-06-03
 **Qué cambia en el próximo sprint:**
 - T40 — Mapeo de campos nuevos en funciones rowTo* y *ToRow + rangos de lectura actualizados
 - T40 es prerequisito de T37 y T26 — no abrir esos tickets hasta que T40 esté cerrado
+
+---
+
+## Retrospectiva — Sesión CONSTRUCCIÓN · T40 + QA post-T40
+
+Fecha: 2026-06-03
+
+**Qué funcionó:**
+- T40 cerrado limpio — DoD 6/6, tsc limpio, sin regresiones en smoke test
+- Auditoría de rangos post-T40 encontró 2 roturas reales (H2 escritura, H3 sin-concepto) antes de que llegaran a producción con datos reales
+- T41 y T42 resueltos dentro del QA — no se acumularon como deuda
+- Rail Saldos corregido completamente: Inicial, Disponible, fila Recargado
+
+**Qué no funcionó:**
+- T40 introdujo roturas de rangos de escritura que tsc no detecta — solo se evidencian en runtime con datos reales
+- El QA reveló bugs de display en rail Saldos que no habían sido detectados antes
+
+**Qué cambia en el próximo sprint:**
+- Después de cualquier cambio de esquema, auditoría de rangos es obligatoria antes del commit
+- Próxima sesión: continuar QA — flujo Angie en VistaSemanal
 
 Flujo - Proyecto de salud financiera familiar - Camilo Villamil - 2026
