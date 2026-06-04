@@ -313,6 +313,7 @@ export default function MesM1Desktop({
 
   // Shared state
   const [movs, setMovs] = useState<Movimiento[]>(movimientosProp);
+  const [recargasAngieLocal, setRecargasAngieLocal] = useState<RecargaAngie[]>(recargasAngieProp);
   const [conceptosLocal, setConceptosLocal] = useState<Concepto[]>(conceptosProp);
   const [showAgregarConcepto, setShowAgregarConcepto] = useState(false);
   const [saldosLocal, setSaldosLocal] = useState<SaldoCuenta[]>(saldos);
@@ -372,7 +373,7 @@ export default function MesM1Desktop({
   const disponiblePorCuenta = (cuenta: CuentaH4C): number => {
     const entry = saldosLocal.find(s => s.cuenta === cuenta);
     const recargas = (cuenta === "nu_angie" || cuenta === "en_mano")
-      ? recargasAngieProp.filter(r => r.cuentaDestino === cuenta).reduce((sum, r) => sum + r.monto, 0)
+      ? recargasAngieLocal.filter(r => r.cuentaDestino === cuenta).reduce((sum, r) => sum + r.monto, 0)
       : 0;
     return (entry?.saldoInicial ?? 0) + recargas;
   };
@@ -398,11 +399,11 @@ export default function MesM1Desktop({
       if (cierre) {
         result[s] = cierre.remanenteAngie;
       } else {
-        result[s] = recargasAngieProp.filter(r => r.semana === s).reduce((sum, r) => sum + r.monto, 0);
+        result[s] = recargasAngieLocal.filter(r => r.semana === s).reduce((sum, r) => sum + r.monto, 0);
       }
     }
     return result;
-  }, [cierresSemanaProps, recargasAngieProp]);
+  }, [cierresSemanaProps, recargasAngieLocal]);
 
   const balanceSemanas = useMemo(() => {
     let remanente = ingresoCamiloLocal?.montoCop ?? 0;
@@ -833,7 +834,7 @@ export default function MesM1Desktop({
                   .filter(m => m.estado === "ejecutado" && m[fuenteKey])
                   .reduce((sum, m) => sum + (m.montoEjecutado ?? m.montoPresupuestado), 0);
                 const recargas = (cuenta === "nu_angie" || cuenta === "en_mano")
-                  ? recargasAngieProp.filter(r => r.cuentaDestino === cuenta).reduce((sum, r) => sum + r.monto, 0)
+                  ? recargasAngieLocal.filter(r => r.cuentaDestino === cuenta).reduce((sum, r) => sum + r.monto, 0)
                   : 0;
                 const disponible = (entry?.saldoInicial ?? 0) + recargas;
                 const inicial = disponible + ejecutado;
@@ -1229,6 +1230,7 @@ export default function MesM1Desktop({
           onEjecutarConCuenta={ejecutarConCuenta}
           onPosponer={posponerDesdeModal}
           onClose={() => setValidacionFondos(null)}
+          onRecargaRegistrada={(r) => setRecargasAngieLocal(prev => [...prev, r])}
         />
       )}
 

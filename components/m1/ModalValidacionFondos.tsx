@@ -33,11 +33,13 @@ interface Props {
   onEjecutarConCuenta: (cuenta: CuentaH4C) => void;
   onPosponer: () => void;
   onClose: () => void;
+  onRecargaRegistrada?: (r: RecargaAngie) => void;
 }
 
 export default function ModalValidacionFondos({
   mov, mes, semana, montoEjecutado, cuentaDeficit,
   todasCuentas, actor, onEjecutarConCuenta, onPosponer, onClose,
+  onRecargaRegistrada,
 }: Props) {
   const [showIngreso, setShowIngreso] = useState(false);
   const [cuentaElegida, setCuentaElegida] = useState<CuentaH4C | null>(null);
@@ -59,6 +61,7 @@ export default function ModalValidacionFondos({
   function handleRecargaRegistrada(recarga: RecargaAngie) {
     const key = recarga.cuentaDestino as CuentaH4C;
     setSaldoExtra(prev => ({ ...prev, [key]: (prev[key] ?? 0) + recarga.monto }));
+    onRecargaRegistrada?.(recarga);
     setShowIngreso(false);
   }
 
