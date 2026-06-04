@@ -17,6 +17,7 @@ export default function MesM1ClientWrapper({
   cierresSemana,
   gastosSinClasificarInit,
   saldosInit,
+  saldosBrutos,
 }: {
   mes: string;
   movimientos: Movimiento[];
@@ -27,6 +28,7 @@ export default function MesM1ClientWrapper({
   cierresSemana: CierreSemana[];
   gastosSinClasificarInit: Record<Semana, number>;
   saldosInit: SaldoCuenta[];
+  saldosBrutos: SaldoCuenta[];
 }) {
   // Default to mobile; corrected by effect before first paint on client
   const [viewMode, setViewMode] = useState<ViewMode>("mobile");
@@ -45,6 +47,7 @@ export default function MesM1ClientWrapper({
         movimientos={movimientos}
         conceptos={conceptos}
         saldos={saldosInit}
+        saldosBrutos={saldosBrutos}
         ingresoCamilo={ingresoCamilo}
         ingresosAngie={ingresosAngie}
         recargasAngie={recargasAngie}

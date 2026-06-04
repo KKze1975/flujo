@@ -57,6 +57,7 @@ export default async function MesPage({
       cierresSemana={cierresSemana}
       gastosSinClasificarInit={gastosSinClasificar}
       saldosInit={saldosConDescuento}
+      saldosBrutos={saldosCuenta}
     />
   );
 }

@@ -286,6 +286,7 @@ export default function MesM1Desktop({
   movimientos: movimientosProp,
   conceptos: conceptosProp,
   saldos,
+  saldosBrutos = [],
   mes,
   ingresoCamilo: ingresoCamiloProp = null,
   ingresosAngie: ingresosAngieProp = [],
@@ -297,6 +298,7 @@ export default function MesM1Desktop({
   movimientos: Movimiento[];
   conceptos: Concepto[];
   saldos: SaldoCuenta[];
+  saldosBrutos?: SaldoCuenta[];
   mes: string;
   ingresoCamilo?: IngresoCamilo | null;
   ingresosAngie?: IngresoAngie[];
@@ -837,7 +839,7 @@ export default function MesM1Desktop({
                   ? recargasAngieLocal.filter(r => r.cuentaDestino === cuenta).reduce((sum, r) => sum + r.monto, 0)
                   : 0;
                 const disponible = (entry?.saldoInicial ?? 0) + recargas;
-                const inicial = disponible + ejecutado;
+                const inicial = saldosBrutos.find(s => s.cuenta === cuenta)?.saldoInicial ?? (disponible + ejecutado);
                 return (
                   <div key={cuenta} style={{ padding: "6px 0", borderBottom: "1px solid var(--line)" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
