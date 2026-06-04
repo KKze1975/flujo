@@ -52,6 +52,7 @@ type Body = {
   monto: number;
   ejecutor: "camilo" | "angie";
   fuente: "en_mano" | "nequi" | "camilo" | "angie";
+  bolsilloId?: string;
 };
 
 export async function POST(req: NextRequest) {
@@ -78,7 +79,7 @@ export async function POST(req: NextRequest) {
   const hoy = new Date().toISOString().split("T")[0];
   const row = [
     id,
-    "PENDIENTE_CLASIFICACION",
+    body.bolsilloId ?? "PENDIENTE_CLASIFICACION",
     body.mes,
     body.semana,
     body.descripcion ?? "",

@@ -9,7 +9,7 @@ const CATEGORIAS_VALIDAS: Categoria[] = [
   "Salud", "Mercado y Alimentación", "Compromisos Financieros",
   "Recreación", "Transporte", "Metas Familiares", "Frida",
 ];
-const TIPOS_VALIDOS: TipoConcepto[] = ["fijo", "bolsillo", "discrecional"];
+const TIPOS_VALIDOS: TipoConcepto[] = ["fijo", "pago_fraccionado", "discrecional"];
 const CICLOS_VALIDOS = ["solo_este_mes", "cuotas", "permanente"] as const;
 type CicloVida = (typeof CICLOS_VALIDOS)[number];
 

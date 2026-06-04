@@ -150,25 +150,47 @@ export default function RegistroRapido({ onClose }: { onClose?: () => void }) {
     setEstado("confirmando");
     try {
       if (payload.movimientoId) {
-        const res = await fetch(`/api/mes/${mesActivo}/movimientos/${payload.movimientoId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            tipo: "ejecutar",
-            montoEjecutado: payload.monto,
-            fuenteEnMano: payload.fuente === "en_mano",
-            fuenteNequi: payload.fuente === "nequi",
-            fuenteCamilo: payload.fuente === "camilo",
-            fuenteAngie: payload.fuente === "angie",
-            ejecutor: payload.ejecutor,
-          }),
-        });
-        if (!res.ok) {
-          const d = await res.json() as { error?: string };
-          throw new Error(d.error ?? "Error al ejecutar el movimiento.");
-        }
         const mov = movimientos.find((m) => m.id === payload.movimientoId);
-        setResultado({ nombreConcepto: mov?.nombreSnapshot ?? null, clasificado: true });
+        if (mov?.tipoSnapshot === "pago_fraccionado") {
+          // Consumo fraccionado → H3B, no PATCH H2
+          const res = await fetch("/api/registro/sin-concepto", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              mes: mesActivo,
+              semana: payload.semana,
+              descripcion: payload.descripcion,
+              monto: payload.monto,
+              ejecutor: payload.ejecutor,
+              fuente: payload.fuente,
+              bolsilloId: mov.conceptoId,
+            }),
+          });
+          if (!res.ok) {
+            const d = await res.json() as { error?: string };
+            throw new Error(d.error ?? "Error al guardar el consumo.");
+          }
+          setResultado({ nombreConcepto: mov.nombreSnapshot, clasificado: false });
+        } else {
+          const res = await fetch(`/api/mes/${mesActivo}/movimientos/${payload.movimientoId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              tipo: "ejecutar",
+              montoEjecutado: payload.monto,
+              fuenteEnMano: payload.fuente === "en_mano",
+              fuenteNequi: payload.fuente === "nequi",
+              fuenteCamilo: payload.fuente === "camilo",
+              fuenteAngie: payload.fuente === "angie",
+              ejecutor: payload.ejecutor,
+            }),
+          });
+          if (!res.ok) {
+            const d = await res.json() as { error?: string };
+            throw new Error(d.error ?? "Error al ejecutar el movimiento.");
+          }
+          setResultado({ nombreConcepto: mov?.nombreSnapshot ?? null, clasificado: true });
+        }
       } else {
         const res = await fetch("/api/registro/sin-concepto", {
           method: "POST",

@@ -626,8 +626,8 @@ export default function VistaSemanal({
   const [showAporteAngie, setShowAporteAngie] = useState(false);
   const [ingresosAngieLocal, setIngresosAngieLocal] = useState<IngresoAngie[]>(ingresosAngie);
 
-  const bolsillos = movimientos.filter((m) => m.tipoSnapshot === "bolsillo");
-  const conceptos  = movimientos.filter((m) => m.tipoSnapshot !== "bolsillo");
+  const bolsillos = movimientos.filter((m) => m.tipoSnapshot === "pago_fraccionado");
+  const conceptos  = movimientos.filter((m) => m.tipoSnapshot !== "pago_fraccionado");
   const pendientes = conceptos.filter((m) => m.estado === "pendiente");
   const ejecutados = conceptos.filter((m) => m.estado !== "pendiente");
 

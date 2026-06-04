@@ -13,7 +13,7 @@ const CATEGORIAS: Categoria[] = [
 
 const TIPOS: { key: TipoConcepto; label: string }[] = [
   { key: "fijo", label: "Fijo" },
-  { key: "bolsillo", label: "Bolsillo" },
+  { key: "pago_fraccionado", label: "Pago fraccionado" },
   { key: "discrecional", label: "Discrecional" },
 ];
 

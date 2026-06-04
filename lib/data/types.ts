@@ -2,7 +2,7 @@
 
 export type Semana = "S1" | "S2" | "S3" | "S4";
 export type Actor = "camilo" | "angie";
-export type TipoConcepto = "fijo" | "bolsillo" | "discrecional";
+export type TipoConcepto = "fijo" | "pago_fraccionado" | "discrecional";
 export type Frecuencia = "mensual" | "bimestral" | "semanal";
 export type EstadoConcepto = "activo" | "retirado";
 export type EstadoMovimiento = "pendiente" | "ejecutado" | "pospuesto" | "no_aplica" | "pospuesto_mes_siguiente";
