@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Junio 2026 | Fase: Go-live — T43 completo — QA en curso
+Actualizado: Junio 2026 | Fase: Go-live — T44 + B-QA-01 completos — QA: bloqueantes go-live resueltos
 
 ---
 
@@ -515,6 +515,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | Fix H2 rangos A:V → A:Y | Completo — commit b363eaf — detectado en QA post-T40 |
 | Fix H3 rango + placeholders sin-concepto | Completo — commit 8faab11 — auditoría post-T40 |
 | T43 — Módulo trazabilidad /admin/trazabilidad | Completo — commit e7b0e91 — DoD 8/8 — tsc limpio — sin regresiones |
+| T44 — Fix H4 spillover + createRecargaAngie determinista | Completo — commit 84b23eb — DoD 8/8 — tsc limpio — sin regresiones |
 
 ---
 
@@ -772,9 +773,15 @@ Objetivo: cartografiar fuentes de verdad, redefinir modelo, alinear frontend.
 - T38: Rail Saldos no muestra desglose de ejecutado por cuenta — solo muestra disponible actual.
 - T26: No hay validación de fondos al ejecutar — Aprobado para construir — especificación completa en QA tickets.
 - T37-DT1: Fila Total en rail Saldos de M1 Ejecución no suma recargas H4D — totalSaldosLocal excluye recargas Angie. El Total visible no coincide con la suma de las 4 cuentas cuando hay recargas registradas. Post go-live.
-- QA 3 junio: Mover concepto a S3 roto — regresión introducida en T29/T30/T32b — ticket pendiente
-- QA 3 junio: T26 caminos 1 y 2 no renderizados en modal validación fondos — ticket pendiente
-- QA 3 junio: remanenteAngiePerSemana diverge entre M1 y VistaSemanal — raíz arquitectónica
+- ~~QA-3jun-1: Mover concepto a S3 roto~~ — RESUELTO: efecto colateral de tickets anteriores (sesión 4 jun)
+- ~~QA-3jun-2: T26 caminos 1 y 2 no renderizados en modal validación fondos~~ — RESUELTO: verificado en producción (sesión 4 jun)
+- ~~QA-3jun-3: remanenteAngiePerSemana diverge M1 vs VistaSemanal~~ — RESUELTO: raíz era H4D spillover, resuelto en T44 (sesión 4 jun)
+- ~~B-QA-01: Bolsillo agotado desaparece de lista FAB~~ — RESUELTO: badge "sobre techo" en ModalCorreccion M5, sobreTecho=true en H3B (sesión 4 jun)
+- ~~B-QA-02: FAB aporte Angie abría modal incorrecto~~ — RESUELTO en T44 (sesión 4 jun)
+- DT-QA-01: Proyección superávit valor incorrecto (-$20.4M) — probable causa saldos iniciales H4C subrepresentados — post go-live
+- DT-QA-02: Label "Registrar aporte de Angie" en modal T26 no adapta por actor — requiere autenticación real — post go-live
+- DT-QA-03: idRecargaOrigen=null cuando fuenteAngie=true — conciliación pendiente — post go-live
+- DT-QA-04: Dropdown Concepto en H2 en FAB muestra todas las semanas sin filtrar por semana activa — post go-live
 - T39-DT1: rowToMovimiento no mapea campos nuevos H2 (montoEjecutadoCamilo, montoEjecutadoAngie, idRecargaOrigen) — rangos de lectura H2 desactualizados. Corresponde a T40.
 - T39-DT2: rowToConsumoH3 / consumoH3ToRow no mapean sobreTecho, idRecargaOrigen — rango H3!A:N debe expandirse a H3!A:P. Corresponde a T40.
 - T39-DT3: rowToSaldoCuenta / saldoCuentaToRow no mapean incluyeRemanente, idCierreOrigen — rango H4!P:T debe expandirse a H4!P:V. Corresponde a T40.
@@ -1273,7 +1280,7 @@ Fecha: 2026-06-03 | Cierre: 09:04
 
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo y el adjunto al proyecto Claude.
 Tipo de sesión: QA
-Objetivo: continuar QA go-live — flujo Angie en VistaSemanal (registro de ingresos y gastos durante la semana)
+Objetivo: flujo Angie en VistaSemanal — registro de gastos, bolsillos, corrección M5, cierre de semana
 Hora de inicio: [COMPLETAR]
 Entorno: Windows — PowerShell exclusivamente.
 
@@ -1288,6 +1295,44 @@ Leé archivos fuente solo para el archivo específico que vas a editar.
 CIERRE: Actualizar ESTADO.md con hora de cierre y retrospectiva.
 Regla: bugs se documentan como deuda técnica — no se corrigen dentro del ticket.
 Regenerar kanban: node scripts/generate-kanban.mjs
+
+---
+
+## QA Sesión 4 junio 2026
+
+**Estado QA:** Todos los bloqueantes go-live resueltos.
+**Pendiente:** flujo Angie completo en VistaSemanal.
+
+### Tickets completados en esta sesión
+
+| Ticket | Descripción | Commit | DoD |
+|---|---|---|---|
+| T43 | Módulo trazabilidad /admin/trazabilidad | e7b0e91 | 8/8 |
+| T44 | Fix H4 spillover + createRecargaAngie determinista | 84b23eb | 8/8 |
+| B-QA-01 | Bolsillos agotados visibles en FAB con badge "sobre techo" | 82bc317 | 5/5 |
+
+### Bugs resueltos
+
+- **QA-3jun-1:** Mover concepto a S3 — resuelto como efecto colateral de tickets anteriores
+- **QA-3jun-2:** T26 caminos 1 y 2 no renderizados — resuelto, verificado en producción
+- **QA-3jun-3:** remanenteAngie diverge M1 vs VistaSemanal — raíz era H4D spillover, resuelto en T44
+- **B-QA-01:** Bolsillo agotado desaparece de lista FAB — resuelto, badge "sobre techo" en M5 es el flujo correcto
+- **B-QA-02:** FAB aporte Angie abría modal incorrecto — resuelto en T44
+
+### Deuda técnica nueva (post go-live)
+
+- **DT-QA-01:** Proyección superávit valor incorrecto (-$20.4M) — probable causa saldos iniciales H4C subrepresentados
+- **DT-QA-02:** Label "Registrar aporte de Angie" en modal T26 no adapta por actor — requiere autenticación real
+- **DT-QA-03:** idRecargaOrigen=null cuando fuenteAngie=true — conciliación pendiente
+- **DT-QA-04:** Dropdown Concepto en H2 en FAB muestra todas las semanas sin filtrar por semana activa
+
+---
+
+## Lección aprendida — cambios de esquema
+
+Cuando se mueve un rango en el Sheet, auditar escrituras Y lecturas en el mismo ticket.
+
+**Checklist obligatoria:** para cada función que toca el rango — ¿lee? ¿escribe? ¿ambos? Verificar rango correcto en cada caso antes del commit.
 
 ---
 
@@ -1693,5 +1738,44 @@ Fecha: 2026-06-04
 
 **Qué cambia en el próximo sprint:**
 - Al leer specs de endpoints, verificar contra el route handler real — no asumir que el nombre de la ruta describe el contenido
+
+---
+
+## Retrospectiva — T44 Fix H4 spillover + createRecargaAngie determinista
+
+Fecha: 2026-06-04
+
+**Qué funcionó:**
+- Diagnóstico de tres causas independientes (header V1 stale, ghost rows X2:AE6, spillover P11:V13) antes de tocar código
+- Script fix-h4-spillover.mjs con verificación pre/post — ejecutó sin errores, todos los checks OK
+- `ensureH4CHeaders` corregido en dos líneas: cambiar columna de chequeo de P1 a V1, comparación a "id_cierre_origen"
+- `createRecargaAngie` reescrito con `values.update` + cálculo explícito de fila — elimina la no-determinismo de `values.append` de raíz
+- tsc limpio al primer intento
+
+**Qué no funcionó:**
+- Nada
+
+**Qué cambia en el próximo sprint:**
+- Nunca usar `values.append` para rangos con tabla adyacente — siempre calcular fila explícita con `values.update`
+- Cuando `ensureHeaders` usa una columna de chequeo, verificar que esa columna sea la última del rango (la más propensa a quedar stale)
+
+---
+
+## Retrospectiva — B-QA-01 Bolsillos agotados visibles en FAB
+
+Fecha: 2026-06-04
+
+**Qué funcionó:**
+- Diagnóstico acotado: el filtro de BOLSILLOS_ACTIVOS en ModalCorreccion no tenía datos de techo — no era un filtro sino ausencia de información
+- Fix mínimo: pasar `bolsillos` (H2 movimientos) como prop, calcular `sobreTecho` inline en el render del selector
+- Badge "sobre techo" agregado en el render — usuario puede ver el estado y seleccionar de todas formas
+- `sobreTecho` persistido en H3B al clasificar — trazabilidad completa
+- tsc limpio al primer intento
+
+**Qué no funcionó:**
+- Nada
+
+**Qué cambia en el próximo sprint:**
+- En ModalCorreccion, el escenario "clasif" ya tiene datos H2 disponibles — cualquier lógica que dependa de techos puede consultarlos vía prop `bolsillos`
 
 Flujo - Proyecto de salud financiera familiar - Camilo Villamil - 2026
