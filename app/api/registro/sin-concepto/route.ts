@@ -91,12 +91,14 @@ export async function POST(req: NextRequest) {
     hoy,
     "",
     "FALSE",
+    "",
+    "",
   ];
 
   try {
     await sheets.spreadsheets.values.append({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: "H3!A:N",
+      range: "H3!A:P",
       valueInputOption: "RAW",
       requestBody: { values: [row] },
     });
