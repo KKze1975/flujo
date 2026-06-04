@@ -845,7 +845,7 @@ export default function MesM1({
           semana={semanaFiltro}
           onClose={() => setShowCerrarSemana(false)}
           onSuccess={(semana) => {
-            setCierres((prev) => [...prev, { id: "", mes, semana, fechaCierre: "", totalPresupuestado: 0, totalEjecutado: 0, desviacionTotal: 0, remanenteAngie: 0, ubicacionRemanenteAngie: "", conceptosPospuestos: 0, conceptosNoAplica: 0, gastosSinClasificar: 0, cerradoPor: "camilo", notas: null }]);
+            setCierres((prev) => [...prev, { id: "", mes, semana, fechaCierre: "", totalPresupuestado: 0, totalEjecutado: 0, desviacionTotal: 0, remanenteAngie: 0, ubicacionRemanenteAngie: "", conceptosPospuestos: 0, conceptosNoAplica: 0, gastosSinClasificar: 0, cerradoPor: "camilo", notas: null, destinoRemanente: null, remanenteEjecutado: null }]);
             setShowCerrarSemana(false);
           }}
         />,

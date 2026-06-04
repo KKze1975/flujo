@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Flujo · Rediseño — 3 direcciones</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400..800&family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&family=Plus+Jakarta+Sans:wght@400..800&family=Space+Grotesk:wght@400..700&family=Newsreader:opsz,wght@6..72,400..600&family=Schibsted+Grotesk:wght@400..800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="themes.css" />
+<style>
+  html, body { margin: 0; height: 100%; background: #ece8e3; }
+  * { box-sizing: border-box; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="shared.jsx"></script>
+<script type="text/babel" src="screens.jsx"></script>
+
+<script type="text/babel">
+const DIRS = [
+  {
+    theme: "t-calido",
+    name: "Cálido",
+    tagline: "Dirección A",
+    fonts: "Bricolage Grotesque · Hanken Grotesk",
+    blurb: "Humano y de confianza. Frambuesa profunda sobre superficies crema, radios generosos y cifras amables. La app se siente como un asesor cercano, no como una hoja de cálculo.",
+    swatches: [
+      { nm: "Frambuesa", hx: "primary", c: "oklch(0.52 0.17 357)" },
+      { nm: "Crema", hx: "fondo", c: "oklch(0.982 0.012 70)" },
+      { nm: "Tinta", hx: "texto", c: "oklch(0.27 0.03 350)" },
+      { nm: "Verde", hx: "a favor", c: "oklch(0.55 0.13 158)" },
+      { nm: "Coral", hx: "acento", c: "oklch(0.66 0.14 40)" },
+    ],
+  },
+  {
+    theme: "t-preciso",
+    name: "Preciso",
+    tagline: "Dirección B",
+    fonts: "Geist · Geist Mono",
+    blurb: "Minimal y premium. Tinta sobre papel, líneas finas y mucho aire; un único acento cobalto puntúa lo importante. Las cifras en monoespaciada se leen como un estado de cuenta de banco privado.",
+    swatches: [
+      { nm: "Cobalto", hx: "acento", c: "oklch(0.52 0.2 264)" },
+      { nm: "Papel", hx: "fondo", c: "oklch(0.988 0.002 250)" },
+      { nm: "Tinta", hx: "texto", c: "oklch(0.2 0.01 264)" },
+      { nm: "Verde", hx: "a favor", c: "oklch(0.52 0.13 158)" },
+      { nm: "Línea", hx: "bordes", c: "oklch(0.91 0.004 264)" },
+    ],
+  },
+  {
+    theme: "t-vivo",
+    name: "Vivo",
+    tagline: "Dirección C",
+    fonts: "Plus Jakarta Sans · Space Grotesk",
+    blurb: "Energético y cotidiano. Paneles hero en verde profundo, un acento lima-neón que empuja a la acción y chips de categoría a todo color. Rápido, lúdico y hecho para registrar al vuelo.",
+    swatches: [
+      { nm: "Verde", hx: "primario", c: "oklch(0.55 0.15 165)" },
+      { nm: "Neón", hx: "acción", c: "oklch(0.88 0.21 142)" },
+      { nm: "Hero", hx: "oscuro", c: "oklch(0.21 0.04 165)" },
+      { nm: "Tangerina", hx: "acento", c: "oklch(0.7 0.19 45)" },
+      { nm: "Menta", hx: "fondo", c: "oklch(0.97 0.015 150)" },
+    ],
+  },
+  {
+    theme: "t-sereno",
+    name: "Sereno",
+    tagline: "Dirección D · Recomendada",
+    fonts: "Newsreader · Schibsted Grotesk",
+    duo: true,
+    posterH: 1000,
+    blurb: "Calmado y de pareja. Eucalipto y arena, rojos suaves que no alarman y titulares en serif humanista. Camilo y Angie tienen cada uno su color en toda la app — la co-propiedad del presupuesto, hecha visible.",
+    swatches: [
+      { nm: "Eucalipto", hx: "primario", c: "oklch(0.5 0.085 178)" },
+      { nm: "Arena", hx: "fondo", c: "oklch(0.974 0.013 88)" },
+      { nm: "Tinta", hx: "texto", c: "oklch(0.29 0.022 170)" },
+      { nm: "Camilo", hx: "persona", c: "oklch(0.52 0.09 225)" },
+      { nm: "Angie", hx: "persona", c: "oklch(0.6 0.11 45)" },
+    ],
+  },
+];
+
+function App() {
+  return (
+    <DesignCanvas>
+      <DCSection id="sistema" title="El sistema · 3 direcciones"
+        subtitle="Tres maneras de vestir Flujo. Misma estructura, distinta personalidad. Compara y dime cuál seguimos.">
+        {DIRS.map((d) => (
+          <DCArtboard key={d.theme} id={`poster-${d.theme}`} label={`${d.tagline} · ${d.name}`} width={520} height={d.posterH || 812}>
+            <Poster {...d} />
+          </DCArtboard>
+        ))}
+      </DCSection>
+
+      <DCSection id="inicio" title="Pantalla · Inicio"
+        subtitle="El hub: contexto del mes, accesos directos y disponible de la semana de un vistazo.">
+        {DIRS.map((d) => (
+          <DCArtboard key={d.theme} id={`home-${d.theme}`} label={`${d.name}`} width={360} height={824}>
+            <ScreenHome theme={d.theme} />
+          </DCArtboard>
+        ))}
+      </DCSection>
+
+      <DCSection id="semana" title="Pantalla · Semana"
+        subtitle="Bolsillos con techo semanal y la lista de gastos pendientes / ejecutados.">
+        {DIRS.map((d) => (
+          <DCArtboard key={d.theme} id={`semana-${d.theme}`} label={`${d.name}`} width={360} height={824}>
+            <ScreenSemana theme={d.theme} />
+          </DCArtboard>
+        ))}
+      </DCSection>
+
+      <DCSection id="registro" title="Pantalla · Registro con IA"
+        subtitle="Escribes el gasto en lenguaje natural; Claude propone categoría, bolsillo y fuente. Tú confirmas.">
+        {DIRS.map((d) => (
+          <DCArtboard key={d.theme} id={`registro-${d.theme}`} label={`${d.name}`} width={360} height={824}>
+            <ScreenRegistro theme={d.theme} />
+          </DCArtboard>
+        ))}
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

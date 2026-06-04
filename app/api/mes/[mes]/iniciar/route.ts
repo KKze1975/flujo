@@ -82,6 +82,9 @@ export async function POST(
     comprobanteUrl: null,
     pendienteAprobacion: false,
     notas: null,
+    montoEjecutadoCamilo: null,
+    montoEjecutadoAngie: null,
+    idRecargaOrigen: null,
   };
 
   const desdeH1: Omit<Movimiento, "id">[] = conceptos

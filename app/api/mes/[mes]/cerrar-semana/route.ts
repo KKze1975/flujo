@@ -81,6 +81,8 @@ export async function POST(
       gastosSinClasificar,
       cerradoPor,
       notas: notas ?? null,
+      destinoRemanente: null,
+      remanenteEjecutado: null,
     });
 
     // Escribir H5 Rango B — plan semana siguiente

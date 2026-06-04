@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Flujo · Cargando</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400..700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:           oklch(0.982 0.012 70);
+    --surface:      #fff;
+    --surface-2:    oklch(0.972 0.013 60);
+    --ink:          oklch(0.27 0.03 350);
+    --ink-soft:     oklch(0.46 0.02 350);
+    --ink-faint:    oklch(0.64 0.015 350);
+    --line:         oklch(0.92 0.012 350);
+    --primary:      oklch(0.52 0.17 357);
+    --primary-2:    oklch(0.46 0.16 350);
+    --pos:          oklch(0.55 0.13 158);
+    --grad:         linear-gradient(150deg, oklch(0.55 0.17 357) 0%, oklch(0.46 0.16 350) 46%, oklch(0.38 0.13 345) 100%);
+    --font-d: "Bricolage Grotesque", system-ui, sans-serif;
+    --font-b: "Hanken Grotesk", system-ui, sans-serif;
+    --shadow: 0 1px 2px oklch(0.5 0.05 350 / .05), 0 10px 30px oklch(0.5 0.08 350 / .07);
+  }
+  *{ box-sizing: border-box; }
+  html, body{ margin:0; min-height:100%; }
+  body{
+    font-family: var(--font-b);
+    color: var(--ink);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ============================================================
+     SPLASH / PANTALLA DE CARGA
+     ============================================================ */
+  .splash{
+    position: fixed; inset: 0; z-index: 100;
+    background: var(--grad);
+    display: grid; place-items: center;
+    overflow: hidden;
+    transition: opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1), visibility .7s;
+  }
+  /* halo cálido detrás del símbolo */
+  .splash::before{
+    content:""; position:absolute; left:50%; top:46%; transform:translate(-50%,-50%);
+    width: min(78vw, 620px); aspect-ratio: 1; border-radius: 50%;
+    background: radial-gradient(circle, oklch(1 0 0 / .14) 0%, oklch(1 0 0 / 0) 62%);
+    pointer-events: none;
+  }
+  .splash.done{
+    opacity: 0; visibility: hidden;
+    transform: scale(1.05);
+    pointer-events: none;
+  }
+  .splash-inner{
+    position: relative;
+    display: flex; flex-direction: column; align-items: center;
+    gap: clamp(22px, 4vh, 40px);
+    padding: 24px;
+  }
+  .mark{
+    width: clamp(132px, 27vw, 248px);
+    height: auto; display: block;
+    overflow: visible;
+  }
+  .mark path{ stroke-linecap: round; stroke-linejoin: round; fill: none; }
+
+  .wordmark{
+    font-family: var(--font-d);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    font-size: clamp(30px, 6.4vw, 54px);
+    line-height: 1;
+    color: oklch(0.99 0.012 70);
+    opacity: 0;
+    transform: translateY(8px);
+    animation: rise .9s cubic-bezier(.22,1,.36,1) .45s forwards;
+  }
+  .tagline{
+    font-size: clamp(12.5px, 2.6vw, 15px);
+    color: oklch(0.99 0.012 70 / .68);
+    letter-spacing: 0.01em;
+    margin-top: clamp(-12px, -1.2vh, -8px);
+    opacity: 0;
+    animation: rise .9s cubic-bezier(.22,1,.36,1) .62s forwards;
+  }
+  @keyframes rise{ to{ opacity:1; transform:none; } }
+
+  /* barra de progreso fina */
+  .progress{
+    width: clamp(120px, 32vw, 190px); height: 3px; border-radius: 999px;
+    background: oklch(1 0 0 / .18); overflow: hidden;
+    opacity: 0; animation: rise .8s ease .8s forwards;
+  }
+  .progress > i{
+    display:block; height:100%; width:0%; border-radius:999px;
+    background: oklch(0.99 0.012 70 / .92);
+  }
+
+  /* ============================================================
+     APP DE FONDO (se revela al terminar la carga)
+     ============================================================ */
+  .app{ min-height: 100vh; min-height: 100dvh; display:flex; flex-direction:column; }
+
+  .topbar{
+    position: sticky; top: 0; z-index: 20;
+    display:flex; align-items:center; gap: 12px;
+    padding: 14px clamp(16px, 5vw, 48px);
+    background: oklch(0.982 0.012 70 / .82);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--line);
+  }
+  .brand{ display:flex; align-items:center; gap: 10px; }
+  .brand .mk{ width: 34px; height: 34px; display:block; overflow:visible; }
+  .brand .mk path{ stroke-linecap:round; stroke-linejoin:round; fill:none; }
+  .brand .nm{ font-family: var(--font-d); font-weight:700; font-size: 21px; letter-spacing:-0.03em; color: var(--ink); }
+  .topbar .spacer{ flex:1; }
+  .topbar .nav{ display:flex; gap: 4px; }
+  .topbar .nav a{
+    font-size: 14px; font-weight:600; color: var(--ink-soft); text-decoration:none;
+    padding: 8px 14px; border-radius: 999px;
+  }
+  .topbar .nav a.on{ color: var(--primary); background: oklch(0.95 0.03 357); }
+  .avatar{
+    width: 36px; height: 36px; border-radius: 999px; flex:none;
+    display:grid; place-items:center; font-weight:700; font-size:13px;
+    font-family: var(--font-b); color:#fff; background: var(--primary-2);
+  }
+  @media (max-width: 720px){ .topbar .nav{ display:none; } }
+
+  .wrap{
+    width: 100%; max-width: 1120px; margin: 0 auto;
+    padding: clamp(20px, 4vw, 40px) clamp(16px, 5vw, 48px) 64px;
+    display:flex; flex-direction:column; gap: clamp(18px, 3vw, 26px);
+  }
+  .greet h1{
+    font-family: var(--font-d); font-weight:700; letter-spacing:-0.025em;
+    font-size: clamp(26px, 5vw, 40px); line-height:1.05; margin: 0; color: var(--ink);
+  }
+  .greet p{ color: var(--ink-soft); font-size: clamp(14px, 2.4vw, 16px); margin: 8px 0 0; }
+
+  /* hero balance */
+  .hero{
+    background: var(--grad); color:#fff; border-radius: 26px;
+    padding: clamp(22px, 4vw, 34px);
+    box-shadow: 0 14px 40px oklch(0.5 0.1 350 / .18);
+    display:flex; flex-wrap:wrap; gap: 22px 40px; align-items:flex-end;
+  }
+  .hero .lbl{ font-size: 13px; color: oklch(1 0 0 / .72); font-weight:500; margin:0 0 8px; letter-spacing:0.01em; }
+  .hero .big{
+    font-family: var(--font-b); font-variant-numeric: tabular-nums;
+    font-size: clamp(38px, 8vw, 62px); font-weight:700; letter-spacing:-0.03em; line-height:.95; margin:0;
+  }
+  .hero .meta{ display:flex; gap: 26px; margin-left:auto; }
+  .hero .meta .m .k{ font-size:12px; color: oklch(1 0 0 / .68); margin:0 0 5px; }
+  .hero .meta .m .v{ font-family: var(--font-b); font-variant-numeric: tabular-nums; font-weight:700; font-size: clamp(16px,3vw,20px); }
+  @media (max-width: 560px){ .hero .meta{ margin-left:0; width:100%; } }
+
+  .sect-label{ font-size: 12px; letter-spacing:0.14em; text-transform:uppercase; color: var(--ink-faint); font-weight:700; margin: 6px 2px 0; }
+
+  .grid{
+    display:grid; gap: clamp(12px, 2vw, 18px);
+    grid-template-columns: repeat(auto-fill, minmax(232px, 1fr));
+  }
+  .card{
+    background: var(--surface); border-radius: 20px; padding: 18px 20px;
+    box-shadow: var(--shadow); display:flex; flex-direction:column; gap: 14px;
+  }
+  .card .row{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .card .nm{ font-family: var(--font-d); font-weight:700; font-size:16px; color:var(--ink); letter-spacing:-0.01em; }
+  .card .amt{ font-family: var(--font-b); font-variant-numeric: tabular-nums; font-size:13px; color: var(--ink-soft); }
+  .bar{ height:8px; border-radius:999px; background: var(--line); overflow:hidden; }
+  .bar > i{ display:block; height:100%; border-radius:999px; background: var(--primary); }
+  .bar.pos > i{ background: var(--pos); }
+  .pill{ display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:700; padding:4px 10px; border-radius:999px; background: oklch(0.95 0.03 357); color: var(--primary); width:max-content; }
+
+  /* botón reiniciar (para revisión) */
+  .replay{
+    position: fixed; right: 18px; bottom: 18px; z-index: 60;
+    display:flex; align-items:center; gap:8px;
+    font-family: var(--font-b); font-weight:600; font-size:13px;
+    color: var(--ink-soft); background: var(--surface);
+    border: 1px solid var(--line); border-radius: 999px;
+    padding: 9px 15px; cursor:pointer; box-shadow: var(--shadow);
+    transition: opacity .3s;
+  }
+  .replay:hover{ color: var(--primary); }
+  @media (prefers-reduced-motion: reduce){
+    .wordmark, .tagline, .progress{ animation-duration: .01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- ============ APP (fondo) ============ -->
+  <main class="app" id="app">
+    <header class="topbar">
+      <div class="brand">
+        <svg class="mk" data-mark viewBox="0 0 120 120" aria-hidden="true"></svg>
+        <span class="nm">Flujo</span>
+      </div>
+      <span class="spacer"></span>
+      <nav class="nav">
+        <a href="#" class="on">Inicio</a>
+        <a href="#">Movimientos</a>
+        <a href="#">Bolsillos</a>
+        <a href="#">Familia</a>
+      </nav>
+      <div class="avatar">C·A</div>
+    </header>
+
+    <div class="wrap">
+      <div class="greet">
+        <h1>Hola, Camilo y&nbsp;Angie</h1>
+        <p>Mayo va fluyendo bien — van $312.000 por debajo de lo planeado.</p>
+      </div>
+
+      <section class="hero">
+        <div>
+          <p class="lbl">Saldo familiar · mayo</p>
+          <p class="big">$4.820.000</p>
+        </div>
+        <div class="meta">
+          <div class="m"><p class="k">Ingresos</p><p class="v">$8.150.000</p></div>
+          <div class="m"><p class="k">Gastos</p><p class="v">$3.330.000</p></div>
+        </div>
+      </section>
+
+      <p class="sect-label">Bolsillos</p>
+      <section class="grid" id="pockets"></section>
+    </div>
+  </main>
+
+  <!-- ============ SPLASH (encima) ============ -->
+  <div class="splash" id="splash">
+    <div class="splash-inner">
+      <svg class="mark" data-mark-anim viewBox="0 0 120 120" aria-label="Flujo"></svg>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:14px;">
+        <div class="wordmark">Flujo</div>
+        <div class="progress"><i id="pfill"></i></div>
+      </div>
+    </div>
+  </div>
+
+  <button class="replay" id="replay" type="button" aria-label="Ver la carga de nuevo">↻ Ver de nuevo</button>
+
+<script>
+/* ============================================================
+   GEOMETRÍA DEL SÍMBOLO · Variación B (Confluencia)
+   Seis corrientes recogidas atrás, abriéndose hacia delante.
+   ============================================================ */
+const VB = 120, CY = 60, X0 = 22, X1 = 98, N = 9, SP = 14.4;
+const WEIGHTS = [5.4, 6.0, 4.9, 5.8, 4.6, 5.2];
+
+function hexRgb(h){ h=h.replace('#',''); return [0,2,4].map(i=>parseInt(h.slice(i,i+2),16)); }
+function lerpHex(a,b,t){ const A=hexRgb(a),B=hexRgb(b); const c=A.map((v,i)=>Math.round(v+(B[i]-v)*t)); return `rgb(${c[0]},${c[1]},${c[2]})`; }
+function lineColor(i,palette){
+  const t=i/5;
+  if(palette==='cream') return lerpHex('#FBE9F0','#F2C9D8',t);
+  return lerpHex('#C2185B','#8B1A4A',t);
+}
+function smooth(pts){
+  let d=`M ${pts[0][0].toFixed(2)} ${pts[0][1].toFixed(2)}`;
+  for(let i=0;i<pts.length-1;i++){
+    const p0=pts[i-1]||pts[i],p1=pts[i],p2=pts[i+1],p3=pts[i+2]||p2;
+    const c1x=p1[0]+(p2[0]-p0[0])/6,c1y=p1[1]+(p2[1]-p0[1])/6;
+    const c2x=p2[0]-(p3[0]-p1[0])/6,c2y=p2[1]-(p3[1]-p1[1])/6;
+    d+=` C ${c1x.toFixed(2)} ${c1y.toFixed(2)}, ${c2x.toFixed(2)} ${c2y.toFixed(2)}, ${p2[0].toFixed(2)} ${p2[1].toFixed(2)}`;
+  }
+  return d;
+}
+function streamD(i){
+  const amp=5.5, pts=[];
+  for(let s=0;s<N;s++){
+    const t=s/(N-1);
+    const wave=amp*Math.sin(t*Math.PI*1.05);
+    const env=0.52+0.64*t;
+    const y=CY+wave*0.5+(i-2.5)*SP*env;
+    pts.push([X0+(X1-X0)*t,y]);
+  }
+  return smooth(pts);
+}
+const STREAMS = WEIGHTS.map((w,i)=>({ d: streamD(i), w }));
+
+/* pinta un <svg data-mark> con las 6 corrientes */
+function paint(svg, palette){
+  const NS='http://www.w3.org/2000/svg';
+  svg.innerHTML='';
+  return STREAMS.map((ln,i)=>{
+    const p=document.createElementNS(NS,'path');
+    p.setAttribute('d',ln.d);
+    p.setAttribute('stroke',lineColor(i,palette));
+    p.setAttribute('stroke-width',ln.w);
+    svg.appendChild(p);
+    return p;
+  });
+}
+
+/* fondo: marca sólida en color */
+document.querySelectorAll('[data-mark]').forEach(svg=>paint(svg,'brand'));
+
+/* splash: marca crema, animada */
+const animSvg = document.querySelector('[data-mark-anim]');
+const animPaths = paint(animSvg, 'cream');
+animPaths.forEach(p=>{ p._len = p.getTotalLength(); });
+
+/* ============================================================
+   CONTENIDO DEL HOME (placeholder creíble)
+   ============================================================ */
+const POCKETS = [
+  { nm:'Mercado',  used:214000, cap:280000, tag:'Camilo · Angie' },
+  { nm:'Arriendo', used:1650000, cap:1650000, tag:'Pagado', pos:true },
+  { nm:'Luna 🐾',  used:96000, cap:140000, tag:'Mascota' },
+  { nm:'Ahorro',   used:620000, cap:600000, tag:'Meta superada', pos:true },
+  { nm:'Salidas',  used:188000, cap:240000, tag:'Juntos' },
+  { nm:'Servicios',used:201000, cap:230000, tag:'Hogar' },
+];
+const cop = n => '$'+new Intl.NumberFormat('es-CO',{maximumFractionDigits:0}).format(n);
+document.getElementById('pockets').innerHTML = POCKETS.map(b=>{
+  const pct = Math.min(100, Math.round(b.used/b.cap*100));
+  return `<div class="card">
+    <div class="row"><span class="nm">${b.nm}</span><span class="pill">${b.tag}</span></div>
+    <div class="bar ${b.pos?'pos':''}"><i style="width:${pct}%"></i></div>
+    <div class="row"><span class="amt">${cop(b.used)} de ${cop(b.cap)}</span><span class="amt" style="font-weight:700;color:var(--ink)">${pct}%</span></div>
+  </div>`;
+}).join('');
+
+/* ============================================================
+   ANIMACIÓN DE CARGA
+   ============================================================ */
+const splash = document.getElementById('splash');
+const pfill  = document.getElementById('pfill');
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let timer;
+
+function start(){
+  clearTimeout(timer);
+  splash.classList.remove('done');
+
+  /* progreso determinado */
+  pfill.style.transition='none'; pfill.style.width='0%';
+  void pfill.offsetWidth;
+  pfill.style.transition='width 2.35s cubic-bezier(.45,.05,.2,1)';
+  pfill.style.width='100%';
+
+  /* corrientes que fluyen de izquierda a derecha, en cascada */
+  animPaths.forEach((p,i)=>{
+    p.getAnimations().forEach(a=>a.cancel());
+    const len=p._len;
+    p.style.strokeDasharray=len;
+    if(reduce){ p.style.strokeDasharray='none'; p.style.strokeDashoffset='0'; return; }
+    p.animate(
+      [{strokeDashoffset:len},{strokeDashoffset:-len}],
+      { duration:2200, iterations:Infinity, delay:-i*300, easing:'cubic-bezier(.5,0,.5,1)' }
+    );
+  });
+
+  timer=setTimeout(finish, reduce?900:2650);
+}
+function finish(){
+  /* asienta las líneas sólidas y revela la app */
+  animPaths.forEach(p=>{
+    p.getAnimations().forEach(a=>a.cancel());
+    p.style.strokeDasharray='none';
+    p.style.strokeDashoffset='0';
+  });
+  splash.classList.add('done');
+}
+
+document.getElementById('replay').addEventListener('click', start);
+start();
+</script>
+</body>
+</html>

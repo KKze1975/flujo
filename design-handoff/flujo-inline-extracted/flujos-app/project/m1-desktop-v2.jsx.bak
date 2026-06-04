@@ -1,0 +1,387 @@
+/* ============================================================
+   FLUJO · m1-desktop.jsx — Inicio de mes (M1) · escritorio
+   Dos modos: Planeación (distribuir + confirmar) y Ejecución (pagar fijos)
+   ============================================================ */
+
+/* ---- tarjeta de concepto (modo-dependiente) ---- */
+function DkConcept({ it, mode, ex, onExec }) {
+  const who = it.by ? (it.by === "c" ? "Camilo" : "Angie") : "Compartido";
+  return (
+    <div className={`dk-cc ${ex ? "exec" : ""} ${mode === "exec" && !ex ? "due" : ""}`}>
+      <div className="dk-cc-top">
+        <span className="dk-cc-ic"><Icon name={D.catIcon[it.cat] || "wallet"} size={16} /></span>
+        <div className="dk-cc-tx">
+          <p className="dk-cc-nm">
+            {it.n}
+            {it.aprob && <span className="lock" style={{ display: "inline-flex", color: "var(--primary)" }}><Icon name="lock" size={11} /></span>}
+          </p>
+          <p className="dk-cc-cat">{it.cat}</p>
+        </div>
+        <span className="dk-cc-amt">{COP(it.amt, { compact: true })}</span>
+      </div>
+      <div className="dk-cc-foot">
+        <span className="dk-cc-who">
+          {it.by ? <span className={`fl-person ${it.by}`}>{it.by === "c" ? "C" : "A"}</span>
+                 : <span className="sq sq-sm"><Icon name="wallet" size={11} /></span>}
+          {mode === "exec" && ex ? `Pagó ${who}` : who}
+        </span>
+        {mode === "exec"
+          ? (ex
+              ? <span className="dk-done"><Icon name="check" size={12} /> Ejecutado</span>
+              : <button className="dk-exec-btn" onClick={onExec}>Ejecutar</button>)
+          : (ex
+              ? <span className="dk-done soft"><Icon name="check" size={12} /> listo</span>
+              : <span className="fl-badge warn" style={{ fontSize: 10, padding: "2px 7px" }}><span className="dot" /> por pagar</span>)}
+      </div>
+    </div>
+  );
+}
+
+/* ---- columna de semana ---- */
+function DkWeek({ sm, mode, focus, done, isExec, ejecutar, activa }) {
+  const tot = sm.items.reduce((s, it) => s + it.amt, 0);
+  const exec = sm.items.filter((it) => isExec(sm.s, it));
+  const pct = sm.items.length ? Math.round((exec.length / sm.items.length) * 100) : 0;
+  const dim = focus !== "todas" && focus !== sm.s;
+  const isFocus = focus === sm.s;
+  const allDone = exec.length === sm.items.length && sm.items.length > 0;
+  const rangoCorto = (sm.label.split("·")[1] || sm.label).trim();
+  const shareIngreso = Math.round((tot / (D.ingresos.camilo + D.ingresos.angie)) * 100);
+
+  return (
+    <div className={`dk-wk ${dim ? "dim" : ""} ${isFocus ? "focus" : ""} ${mode === "exec" && allDone ? "done" : ""} ${mode === "exec" && activa ? "activa" : ""}`}>
+      <div className="dk-wk-head">
+        <div className="dk-wk-noderow">
+          <div className="dk-wk-node">{sm.s}</div>
+          {mode === "exec" && activa && <span className="dk-wk-tag">Semana activa</span>}
+        </div>
+        <p className="dk-wk-range">{rangoCorto}</p>
+        <p className="dk-wk-sub">{sm.items.length} conceptos · {COP(tot, { compact: true })}</p>
+        {mode === "exec" ? (
+          <>
+            <div className="dk-wk-prog"><i style={{ width: `${pct}%` }} /></div>
+            <p className="dk-wk-progtx">{exec.length}/{sm.items.length} ejecutados · {COP(tot - exec.reduce((s, it) => s + it.amt, 0), { compact: true })} por pagar</p>
+          </>
+        ) : (
+          <>
+            <div className="dk-wk-share"><i style={{ width: `${shareIngreso}%` }} /></div>
+            <p className="dk-wk-progtx">{shareIngreso}% del ingreso del mes</p>
+          </>
+        )}
+      </div>
+
+      <div className="dk-wk-body">
+        {sm.items.length === 0 && <div className="dk-wk-empty">Sin conceptos</div>}
+        {sm.items.map((it) => (
+          <DkConcept key={it.n} it={it} mode={mode} ex={isExec(sm.s, it)} onExec={() => ejecutar(sm.s, it)} />
+        ))}
+      </div>
+
+      <div className="dk-wk-foot">
+        <span className="lbl">Total {sm.s}</span>
+        <span className="val">{COP(tot)}</span>
+      </div>
+    </div>
+  );
+}
+
+function M1Desktop() {
+  const { setViewMode, m1mode, setM1mode } = useNav();
+  const mode = m1mode || "plan";
+  const [focus, setFocus] = useState("todas");
+  const [saldosOk, setSaldosOk] = useState(false);
+  const [cerrada, setCerrada] = useState(false);
+  const [done, setDone] = useState({});
+  const [aprobOk, setAprobOk] = useState(false);
+
+  const isExec = (s, it) => it.estado === "ejecutado" || done[`${s}-${it.n}`];
+  const ejecutar = (s, it) => setDone((d) => ({ ...d, [`${s}-${it.n}`]: true }));
+
+  const all = D.planSemanas.flatMap((sm) => sm.items.map((it) => ({ ...it, semana: sm.s })));
+  const totalFijos = all.reduce((s, it) => s + it.amt, 0);
+  const ejecFijos = all.filter((it) => isExec(it.semana, it)).reduce((s, it) => s + it.amt, 0);
+  const pendList = all.filter((it) => !isExec(it.semana, it));
+  const pendMonto = totalFijos - ejecFijos;
+  const ingresos = D.ingresos.camilo + D.ingresos.angie;
+  const proy = ingresos - D.presupuestado;
+  const pctEjec = Math.round((ejecFijos / totalFijos) * 100);
+  const totalCuentas = D.cuentas.reduce((s, c) => s + c.v, 0);
+
+  const byCat = {};
+  all.forEach((it) => { byCat[it.cat] = (byCat[it.cat] || 0) + it.amt; });
+  const cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const catMax = cats[0] ? cats[0][1] : 1;
+
+  // pendientes de la semana activa (exec)
+  const semActiva = D.planSemanas.find((s) => s.s === D.semana);
+  const pendActiva = semActiva ? semActiva.items.filter((it) => !isExec(D.semana, it)) : [];
+
+  return (
+    <div className="dk t-calido dk-app">
+      {/* ---------- SIDEBAR ---------- */}
+      <aside className="dk-side">
+        <div className="dk-brand">
+          <span className="mark"><Icon name="bolt" size={18} fill /></span>
+          <span className="nm">Flujo</span>
+        </div>
+        <nav className="dk-nav">
+          <button className="dk-navitem on"><Icon name="list" size={19} /> Inicio de mes</button>
+          <button className="dk-navitem"><Icon name="calendar" size={19} /> Esta semana <span className="badge">{pendList.length}</span></button>
+          <button className="dk-navitem"><Icon name="wallet" size={19} /> Bolsillos</button>
+          <button className="dk-navitem"><Icon name="archive" size={19} /> Historial</button>
+        </nav>
+        <p className="dk-navlabel">Mes</p>
+        <nav className="dk-nav">
+          <button className="dk-navitem on" style={{ background: "var(--surface-2)", color: "var(--ink)" }}>
+            <Icon name="sun" size={18} /> {D.mesLabel}
+          </button>
+          <button className="dk-navitem"><Icon name="plus" size={18} /> Iniciar Junio 2026</button>
+        </nav>
+        <div className="dk-user">
+          <span className="av"><span className="fl-person c">C</span><span className="fl-person a">A</span></span>
+          <span className="tx"><p className="t">Familia Villamil</p><p className="d">Camilo &amp; Angie</p></span>
+        </div>
+      </aside>
+
+      {/* ---------- MAIN ---------- */}
+      <div className="dk-main">
+        <header className="dk-topbar">
+          <div>
+            <h1 className="ttl">Inicio de mes <span className="dk-monthpill"><Icon name="sun" size={13} /> {D.mesLabel}</span></h1>
+            <p className="sub">
+              {mode === "plan"
+                ? "Distribuyan el mes en semanas, confirmen saldos y proyecten el superávit."
+                : <>Vayan ejecutando los pagos fijos · semana activa <b style={{ color: "var(--ink)" }}>{D.semana}</b> ({D.semanaRango}).</>}
+            </p>
+          </div>
+
+          <div className="dk-modeseg">
+            <button className={mode === "plan" ? "on" : ""} onClick={() => setM1mode("plan")}><Icon name="list" size={15} /> Planeación</button>
+            <button className={mode === "exec" ? "on" : ""} onClick={() => setM1mode("exec")}><Icon name="check" size={15} /> Ejecución</button>
+          </div>
+
+          <div className="dk-actions">
+            <button className="fl-btn ghost sm" onClick={() => setViewMode("mobile")}>
+              <Icon name="phone" size={15} /> Vista móvil
+            </button>
+            {mode === "plan"
+              ? <button className="fl-btn primary sm" onClick={() => setCerrada(true)} disabled={cerrada}
+                        style={cerrada ? { opacity: 0.5, cursor: "default" } : null}>
+                  <Icon name={cerrada ? "check" : "flag"} size={15} /> {cerrada ? "Plan cerrado" : "Cerrar planificación"}
+                </button>
+              : <button className="fl-btn primary sm"><Icon name="bolt" size={15} fill /> Registrar pago</button>}
+          </div>
+        </header>
+
+        <div className="dk-content">
+          {mode === "plan" ? (
+            /* ============ PLANEACIÓN ============ */
+            <>
+              {cerrada && (
+                <div className="dk-closed">
+                  <Icon name="check" size={18} />
+                  Planificación de {D.mesLabel} cerrada · {all.length} conceptos distribuidos en 4 semanas
+                  <button className="x" onClick={() => setCerrada(false)}>Reabrir</button>
+                </div>
+              )}
+
+              <div className="dk-kpis">
+                <div className="dk-kpi">
+                  <p className="k"><Icon name="wallet" size={14} /> Ingresos del mes</p>
+                  <p className="v">{COP(ingresos)}</p>
+                  <div className="fl-split" style={{ marginTop: 12 }}>
+                    <span className="c" style={{ width: "58%" }} /><span className="a" style={{ width: "42%" }} />
+                  </div>
+                  <div className="fl-legend" style={{ marginTop: 9 }}>
+                    <span className="side"><span className="fl-person c">C</span><span className="vl">{COP(D.ingresos.camilo, { compact: true })}</span></span>
+                    <span className="side"><span className="vl">{COP(D.ingresos.angie, { compact: true })}</span><span className="fl-person a">A</span></span>
+                  </div>
+                </div>
+                <div className="dk-kpi">
+                  <p className="k"><Icon name="list" size={14} /> Presupuestado</p>
+                  <p className="v">{COP(D.presupuestado)}</p>
+                  <p className="h">Fijos {COP(totalFijos, { compact: true })} + bolsillos</p>
+                </div>
+                <div className="dk-kpi">
+                  <p className="k"><Icon name="lock" size={14} /> Total fijos del mes</p>
+                  <p className="v">{COP(totalFijos)}</p>
+                  <p className="h">{all.length} conceptos · {Math.round((totalFijos / ingresos) * 100)}% del ingreso</p>
+                </div>
+                <div className="dk-kpi feature">
+                  <p className="k"><Icon name="trophy" size={14} /> Proyección superávit</p>
+                  <p className="v" style={{ color: proy >= 0 ? "var(--pos)" : "var(--neg)" }}>{proy >= 0 ? "+" : ""}{COP(proy)}</p>
+                  <p className="h">ingresos − presupuesto</p>
+                </div>
+              </div>
+
+              <div className="dk-layout">
+                <div className="dk-board-panel">
+                  <div className="dk-board-head">
+                    <h3>Distribución de fijos por semana</h3>
+                    <span className="cnt">{all.length} conceptos · {COP(totalFijos, { compact: true })}</span>
+                    <div className="dk-filters">
+                      {["todas", "S1", "S2", "S3", "S4"].map((f) => (
+                        <button key={f} className={`dk-fchip ${focus === f ? "on" : ""}`} onClick={() => setFocus(f)}>
+                          {f === "todas" ? "Todas" : f}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="dk-board">
+                    {D.planSemanas.map((sm) => (
+                      <DkWeek key={sm.s} sm={sm} mode="plan" focus={focus} done={done} isExec={isExec} ejecutar={ejecutar} />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="dk-rail">
+                  <div className="dk-card accent">
+                    <h4><Icon name="wallet" size={16} /> Saldos por cuenta <span className="pill">al 1 may</span></h4>
+                    {D.cuentas.map((c) => (
+                      <div className="dk-acct" key={c.k}>
+                        {c.persona ? <span className={`fl-person ${c.persona}`}>{c.persona === "c" ? "C" : "A"}</span>
+                                   : <span className="sq"><Icon name="wallet" size={13} /></span>}
+                        <span className="nm">{c.k}</span>
+                        <span className="v">{COP(c.v)}</span>
+                      </div>
+                    ))}
+                    <div className="dk-acct" style={{ borderTop: "2px solid var(--line)" }}>
+                      <span className="nm" style={{ fontWeight: 700, color: "var(--ink)" }}>Total disponible</span>
+                      <span className="v" style={{ fontSize: 15 }}>{COP(totalCuentas)}</span>
+                    </div>
+                    <button className={`fl-btn ${saldosOk ? "ghost" : "primary"} block sm`}
+                            style={saldosOk ? { marginTop: 14, color: "var(--pos)", borderColor: "var(--pos)" } : { marginTop: 14 }}
+                            onClick={() => setSaldosOk(true)}>
+                      {saldosOk ? <><Icon name="check" size={15} /> Confirmados · 1 may</> : "Confirmar saldos del mes"}
+                    </button>
+                  </div>
+
+                  <div className="dk-card">
+                    <h4><Icon name="lock" size={15} /> Aprobaciones</h4>
+                    <div className="dk-approval">
+                      <span className="ic" style={{ color: "var(--warn)", display: "inline-flex", flex: "none" }}><Icon name="info" size={20} /></span>
+                      <div className="tx"><p className="t">Curso inglés · Angie</p><p className="d">S4 · {COP(220000)} — visto bueno</p></div>
+                      {aprobOk
+                        ? <span className="dk-done"><Icon name="check" size={13} /> ok</span>
+                        : <button className="ok-btn" onClick={() => setAprobOk(true)}>Aprobar</button>}
+                    </div>
+                    <div className="dk-acct" style={{ marginTop: 4 }}>
+                      <span className="fl-person c">C</span>
+                      <span className="nm">Arriendo</span>
+                      <span className="dk-done"><Icon name="check" size={13} /> aprobado</span>
+                    </div>
+                  </div>
+
+                  <div className="dk-card">
+                    <h4><Icon name="chart" size={15} /> Por categoría</h4>
+                    {cats.map(([cat, amt]) => (
+                      <div className="dk-catbar" key={cat}>
+                        <div className="row"><span className="n">{cat}</span><span className="v">{COP(amt, { compact: true })}</span></div>
+                        <div className="fl-bar"><i style={{ width: `${(amt / catMax) * 100}%` }} /></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            /* ============ EJECUCIÓN ============ */
+            <>
+              <div className="dk-kpis">
+                <div className="dk-kpi">
+                  <p className="k"><Icon name="check" size={14} /> Ejecutado · fijos</p>
+                  <p className="v">{COP(ejecFijos)}</p>
+                  <div className="fl-bar" style={{ marginTop: 12 }}><i style={{ width: `${pctEjec}%` }} /></div>
+                  <p className="h">{pctEjec}% de {COP(totalFijos, { compact: true })}</p>
+                </div>
+                <div className="dk-kpi warn">
+                  <p className="k"><Icon name="clock" size={14} /> Por pagar</p>
+                  <p className="v" style={{ color: "var(--warn)" }}>{COP(pendMonto)}</p>
+                  <p className="h">{pendList.length} conceptos pendientes</p>
+                </div>
+                <div className="dk-kpi">
+                  <p className="k"><Icon name="calendar" size={14} /> Esta semana · {D.semana}</p>
+                  <p className="v">{COP(pendActiva.reduce((s, it) => s + it.amt, 0))}</p>
+                  <p className="h">{pendActiva.length} por pagar · cierra en {D.diasRestantes} días</p>
+                </div>
+                <div className="dk-kpi feature">
+                  <p className="k"><Icon name="wallet" size={14} /> Disponible en cuentas</p>
+                  <p className="v">{COP(totalCuentas)}</p>
+                  <p className="h">cubre {Math.round((totalCuentas / Math.max(pendMonto, 1)) * 100)}% de lo pendiente</p>
+                </div>
+              </div>
+
+              <div className="dk-layout">
+                <div className="dk-board-panel">
+                  <div className="dk-board-head">
+                    <h3>Pagos fijos por semana</h3>
+                    <span className="cnt">{ejecFijos > 0 ? `${pctEjec}% ejecutado` : "sin ejecutar"} · {pendList.length} pendientes</span>
+                    <div className="dk-filters">
+                      {["todas", "S1", "S2", "S3", "S4"].map((f) => (
+                        <button key={f} className={`dk-fchip ${focus === f ? "on" : ""}`} onClick={() => setFocus(f)}>
+                          {f === "todas" ? "Todas" : f}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="dk-board">
+                    {D.planSemanas.map((sm) => (
+                      <DkWeek key={sm.s} sm={sm} mode="exec" focus={focus} done={done} isExec={isExec} ejecutar={ejecutar} activa={sm.s === D.semana} />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="dk-rail">
+                  <div className="dk-card accent">
+                    <h4><Icon name="calendar" size={16} /> Por pagar esta semana <span className="pill">{D.semana}</span></h4>
+                    {pendActiva.length === 0
+                      ? <div className="dk-rail-empty"><Icon name="check" size={22} /><p>Semana {D.semana} al día</p></div>
+                      : pendActiva.map((it) => (
+                          <div className="dk-todo" key={it.n}>
+                            <span className="dk-cc-ic"><Icon name={D.catIcon[it.cat] || "wallet"} size={15} /></span>
+                            <div className="tx"><p className="t">{it.n}</p><p className="d">{COP(it.amt)}</p></div>
+                            <button className="dk-exec-btn" onClick={() => ejecutar(D.semana, it)}>Ejecutar</button>
+                          </div>
+                        ))}
+                  </div>
+
+                  <div className="dk-card">
+                    <h4><Icon name="wallet" size={15} /> Fuentes de pago</h4>
+                    {D.cuentas.map((c) => (
+                      <div className="dk-acct" key={c.k}>
+                        {c.persona ? <span className={`fl-person ${c.persona}`}>{c.persona === "c" ? "C" : "A"}</span>
+                                   : <span className="sq"><Icon name="wallet" size={13} /></span>}
+                        <span className="nm">{c.k}</span>
+                        <span className="v">{COP(c.v)}</span>
+                      </div>
+                    ))}
+                    <div className="dk-acct" style={{ borderTop: "2px solid var(--line)" }}>
+                      <span className="nm" style={{ fontWeight: 700, color: "var(--ink)" }}>Total disponible</span>
+                      <span className="v" style={{ fontSize: 15 }}>{COP(totalCuentas)}</span>
+                    </div>
+                  </div>
+
+                  <div className="dk-card">
+                    <h4><Icon name="chart" size={15} /> Progreso por semana</h4>
+                    {D.planSemanas.map((sm) => {
+                      const ex = sm.items.filter((it) => isExec(sm.s, it));
+                      const p = sm.items.length ? Math.round((ex.length / sm.items.length) * 100) : 0;
+                      return (
+                        <div className="dk-catbar" key={sm.s}>
+                          <div className="row"><span className="n">{sm.s} · {ex.length}/{sm.items.length}</span><span className="v">{p}%</span></div>
+                          <div className="fl-bar pos"><i style={{ width: `${p}%` }} /></div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+window.M1Desktop = M1Desktop;

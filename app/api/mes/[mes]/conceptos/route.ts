@@ -89,6 +89,9 @@ export async function POST(
       comprobanteUrl: null,
       pendienteAprobacion: false,
       notas: null,
+      montoEjecutadoCamilo: null,
+      montoEjecutadoAngie: null,
+      idRecargaOrigen: null,
     };
     const [movimiento] = await provider.crearMovimientosMes([movData]);
 

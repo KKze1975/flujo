@@ -49,6 +49,8 @@ export async function POST(
       gastosSinClasificar: 0,
       cerradoPor: "camilo",
       notas: null,
+      destinoRemanente: null,
+      remanenteEjecutado: null,
     });
 
     return Response.json({ ok: true, cierre });
