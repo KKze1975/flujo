@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Junio 2026 | Fase: Go-live — T39 completo — T40 es prerequisito de T37 y T26
+Actualizado: Junio 2026 | Fase: Go-live — T37 y T26 aprobados para construir — T40 completo
 
 ---
 
@@ -509,6 +509,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | T24 — Balance y cálculos | Completo — DoD 2/2 verificado en producción — bug #2 falso positivo |
 | T25 — Navegación y regresiones | Completo — DoD 2/3 verificado en producción — #14 drag and drop movido a deuda técnica |
 | T39 — Migración de esquema · correcciones modelo de datos | Completo — DoD 8/8 verificados — commit 6ed3e8b |
+| T40 — Mapeo campos nuevos H2/H3/H4C/H5 | Completo — commit b6af48d — DoD 6/6 — tsc limpio — sin regresiones |
 
 ---
 
@@ -773,6 +774,7 @@ Objetivo: cartografiar fuentes de verdad, redefinir modelo, alinear frontend.
 - T39-DT2: rowToConsumoH3 / consumoH3ToRow no mapean sobreTecho, idRecargaOrigen — rango H3!A:N debe expandirse a H3!A:P. Corresponde a T40.
 - T39-DT3: rowToSaldoCuenta / saldoCuentaToRow no mapean incluyeRemanente, idCierreOrigen — rango H4!P:T debe expandirse a H4!P:V. Corresponde a T40.
 - T39-DT4: destinoRemanente, remanenteEjecutado en H5A — rowToCierreSemana no mapea campos nuevos. Corresponde a T40.
+- git add -A en T40 capturó archivos sin trackear de sesiones anteriores (design-handoff/, screenshots, reset-junio.mjs) — agregar a .gitignore o limpiar antes del siguiente ticket
 
 ---
 
@@ -909,6 +911,7 @@ Objetivo: cartografiar fuentes de verdad, redefinir modelo, alinear frontend.
 | Junio 2026 | Prereq cierre semana: conciliación Angie completa | id_recarga_origen null = 0 antes de cerrar |
 | Junio 2026 | Prereq cierre mes: 4 semanas cerradas + todos confirmados | Sin excepciones — regla estricta |
 | Junio 2026 | H4D desplazado de V:AC a X:AE | H4C expandido a P:V (7 cols) — colisión con H4D resuelta desplazando H4D 2 columnas a la derecha. Separador nuevo en W. |
+| Junio 2026 | T40: campos nuevos como : type \| null en lugar de ?: type | Campos siempre presentes en JSON con null para registros históricos — consistente con el resto del sistema |
 
 ---
 
