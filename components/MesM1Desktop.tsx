@@ -838,8 +838,9 @@ export default function MesM1Desktop({
                 const recargas = (cuenta === "nu_angie" || cuenta === "en_mano")
                   ? recargasAngieLocal.filter(r => r.cuentaDestino === cuenta).reduce((sum, r) => sum + r.monto, 0)
                   : 0;
-                const disponible = (entry?.saldoInicial ?? 0) + recargas;
-                const inicial = saldosBrutos.find(s => s.cuenta === cuenta)?.saldoInicial ?? (disponible + ejecutado);
+                const bruto = saldosBrutos.find(s => s.cuenta === cuenta)?.saldoInicial ?? 0;
+                const disponible = bruto - ejecutado + recargas;
+                const inicial = bruto;
                 return (
                   <div key={cuenta} style={{ padding: "6px 0", borderBottom: "1px solid var(--line)" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
