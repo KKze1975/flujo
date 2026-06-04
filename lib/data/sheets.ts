@@ -446,9 +446,10 @@ export class SheetsDataProvider implements IDataProvider {
     try {
       const res = await this.sheets.spreadsheets.values.get({
         spreadsheetId: process.env.GOOGLE_SHEET_ID,
-        range: "H4!P1",
+        range: "H4!V1",
       });
-      if (res.data.values?.[0]?.[0] === "id_saldo") return;
+      // Check last H4C column — catches stale "id_recarga" left by pre-T39 H4D migration
+      if (res.data.values?.[0]?.[0] === "id_cierre_origen") return;
     } catch {
       // continúa a escribir
     }
@@ -716,9 +717,20 @@ export class SheetsDataProvider implements IDataProvider {
     await this.ensureH4DHeaders();
     const id = `RECARGA_ANG_${Date.now()}`;
     const recarga: RecargaAngie = { id, ...data };
-    await this.sheets.spreadsheets.values.append({
+    // Use explicit row to avoid values.append table-detection placing data in wrong columns
+    const colRes = await this.sheets.spreadsheets.values.get({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: "H4!X:AE",
+      range: "H4!X:X",
+    });
+    const colValues = colRes.data.values ?? [];
+    let lastRow = 1;
+    for (let i = colValues.length - 1; i >= 0; i--) {
+      if (colValues[i]?.[0]) { lastRow = i + 1; break; }
+    }
+    const nextRow = lastRow + 1;
+    await this.sheets.spreadsheets.values.update({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: `H4!X${nextRow}:AE${nextRow}`,
       valueInputOption: "RAW",
       requestBody: { values: [this.recargaAngieToRow(recarga)] },
     });
