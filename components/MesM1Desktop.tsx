@@ -854,6 +854,12 @@ export default function MesM1Desktop({
                         <span style={{ color: "var(--ink-faint)" }}>Inicial</span>
                         <span style={{ color: "var(--ink-soft)", fontVariantNumeric: "tabular-nums" }}>{entry ? COP(inicial, { compact: true }) : "—"}</span>
                       </div>
+                      {recargas > 0 && (
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5 }}>
+                          <span style={{ color: "var(--ink-faint)" }}>Recargado</span>
+                          <span style={{ color: "var(--pos)", fontVariantNumeric: "tabular-nums" }}>+{COP(recargas, { compact: true })}</span>
+                        </div>
+                      )}
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5 }}>
                         <span style={{ color: "var(--ink-faint)" }}>Ejecutado</span>
                         <span style={{ color: "var(--ink-soft)", fontVariantNumeric: "tabular-nums" }}>{COP(ejecutado, { compact: true })}</span>
