@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Junio 2026 | Fase: Go-live — T40, T41, T42 completos — QA en curso
+Actualizado: Junio 2026 | Fase: Go-live — T43 completo — QA en curso
 
 ---
 
@@ -514,6 +514,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | T42 — Fix rail Saldos (Inicial + Disponible + Recargado) | Completo — commits 1f29b9c, 3dc8889, dd6db4a — DoD verificado en Vercel |
 | Fix H2 rangos A:V → A:Y | Completo — commit b363eaf — detectado en QA post-T40 |
 | Fix H3 rango + placeholders sin-concepto | Completo — commit 8faab11 — auditoría post-T40 |
+| T43 — Módulo trazabilidad /admin/trazabilidad | Completo — commit e7b0e91 — DoD 8/8 — tsc limpio — sin regresiones |
 
 ---
 
@@ -1673,5 +1674,24 @@ Fecha: 2026-06-03
 **Qué cambia en el próximo sprint:**
 - Después de cualquier cambio de esquema, auditoría de rangos es obligatoria antes del commit
 - Próxima sesión: continuar QA — flujo Angie en VistaSemanal
+
+---
+
+## Retrospectiva — T43 Módulo trazabilidad /admin/trazabilidad
+
+Fecha: 2026-06-04
+
+**Qué funcionó:**
+- Hallazgo crítico en fase de planificación: spec apuntaba a `GET /api/ingresos/angie/[mes]` para H4D pero ese endpoint retorna H4B (IngresoAngie). El endpoint correcto es `/recargas/[semana]` × 4 con flatten — detectado leyendo los route handlers antes de escribir código
+- 10 fetches en paralelo con Promise.all — captura instantánea sin waterfalls
+- Lógica de diff genérica con `diffHoja<T extends { id: string }>` — funciona para los 4 tipos sin duplicación
+- tsc limpio al primer intento — 417 líneas, sin errores de tipos
+- DoD 8/8 verificados: HTTP 200 en `/admin/trazabilidad`, regresiones `/` y `/mes/2026-06` OK
+
+**Qué no funcionó:**
+- Nada
+
+**Qué cambia en el próximo sprint:**
+- Al leer specs de endpoints, verificar contra el route handler real — no asumir que el nombre de la ruta describe el contenido
 
 Flujo - Proyecto de salud financiera familiar - Camilo Villamil - 2026
