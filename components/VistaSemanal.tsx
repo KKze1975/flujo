@@ -110,10 +110,12 @@ const SCN_LABEL: Record<M5Scenario, { eye: string; title: string; note: string }
 
 function ModalCorreccion({
   consumo,
+  bolsillos,
   onClose,
   onSaved,
 }: {
   consumo: ConsumoH3;
+  bolsillos: Movimiento[];
   onClose: () => void;
   onSaved: (updated: ConsumoH3) => void;
 }) {
@@ -141,7 +143,14 @@ function ModalCorreccion({
     if (scenario === "monto")    patch = { monto };
     if (scenario === "ejecutor") patch = { ejecutor };
     if (scenario === "fuente")   patch = { ...fuentes };
-    if (scenario === "clasif")   patch = { bolsilloId: bolsilloId ?? consumo.bolsilloId, clasificado: true };
+    if (scenario === "clasif") {
+      const selectedId = bolsilloId ?? consumo.bolsilloId;
+      const matchNombre = BOLSILLOS_ACTIVOS.find((a) => a.id === selectedId)?.nombre.toLowerCase();
+      const h2 = bolsillos.find((m) => m.nombreSnapshot.toLowerCase() === matchNombre);
+      const gastado = h2?.montoEjecutado ?? 0;
+      const techo = h2?.montoPresupuestado ?? 0;
+      patch = { bolsilloId: selectedId, clasificado: true, sobreTecho: techo > 0 && gastado >= techo };
+    }
     if (scenario === "semana")   patch = { semana };
 
     try {
@@ -271,15 +280,22 @@ function ModalCorreccion({
               <>
                 <p className="dk-exp-lbl">Bolsillo activo</p>
                 <div className="dk-h2pick">
-                  {BOLSILLOS_ACTIVOS.map(b => (
-                    <button key={b.id} type="button"
-                      className={`dk-h2${bolsilloId === b.id ? " on" : ""}`}
-                      onClick={() => setBolsilloId(b.id)}>
-                      <span className="dk-h2-ic"><Icon name={b.icon} size={13} /></span>
-                      <span className="nm">{b.nombre}</span>
-                      <span className="dk-rb"><Icon name="check" size={11} /></span>
-                    </button>
-                  ))}
+                  {BOLSILLOS_ACTIVOS.map(b => {
+                    const h2 = bolsillos.find((m) => m.nombreSnapshot.toLowerCase() === b.nombre.toLowerCase());
+                    const gastado = h2?.montoEjecutado ?? 0;
+                    const techo = h2?.montoPresupuestado ?? 0;
+                    const over = techo > 0 && gastado >= techo;
+                    return (
+                      <button key={b.id} type="button"
+                        className={`dk-h2${bolsilloId === b.id ? " on" : ""}`}
+                        onClick={() => setBolsilloId(b.id)}>
+                        <span className="dk-h2-ic"><Icon name={b.icon} size={13} /></span>
+                        <span className="nm">{b.nombre}</span>
+                        {over && <span className="fl-badge neg" style={{ fontSize: 10, padding: "1px 5px", marginLeft: 4 }}>sobre techo</span>}
+                        <span className="dk-rb"><Icon name="check" size={11} /></span>
+                      </button>
+                    );
+                  })}
                 </div>
               </>
             )}
@@ -1087,6 +1103,7 @@ export default function VistaSemanal({
       {corrigiendoConsumo && (
         <ModalCorreccion
           consumo={corrigiendoConsumo}
+          bolsillos={bolsillos}
           onClose={() => setCorrigiendoConsumo(null)}
           onSaved={updated => {
             setConsumos(prev => prev.map(c => c.id === updated.id ? updated : c));

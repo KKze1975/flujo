@@ -17,6 +17,7 @@ export async function PATCH(
     fuenteAngie?: boolean;
     bolsilloId?: string;
     clasificado?: boolean;
+    sobreTecho?: boolean;
     semana?: Semana;
   };
 
@@ -37,6 +38,7 @@ export async function PATCH(
       ...(body.fuenteAngie !== undefined && { fuenteAngie: body.fuenteAngie }),
       ...(body.bolsilloId !== undefined && { bolsilloId: body.bolsilloId }),
       ...(body.clasificado !== undefined && { clasificado: body.clasificado }),
+      ...(body.sobreTecho !== undefined && { sobreTecho: body.sobreTecho }),
       ...(body.semana !== undefined && { semana: body.semana }),
     });
     return Response.json(updated);
