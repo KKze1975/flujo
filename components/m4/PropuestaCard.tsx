@@ -46,7 +46,7 @@ function COP(n: number): string {
 
 export default function PropuestaCard({ interpretacion, movimientos, cargando, onConfirmar, onCancelar }: Props) {
   const movimientosPendientes = movimientos
-    .filter((m) => m.estado === "pendiente")
+    .filter((m) => m.estado === "pendiente" || m.tipoSnapshot === "pago_fraccionado")
     .sort((a, b) => (a.semana ?? "").localeCompare(b.semana ?? "") || a.nombreSnapshot.localeCompare(b.nombreSnapshot));
 
   const sugerencia = interpretacion.concepto_sugerido.toLowerCase();
