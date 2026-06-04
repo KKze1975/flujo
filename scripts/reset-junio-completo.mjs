@@ -143,12 +143,12 @@ async function resetH2() {
 async function resetH3() {
   console.log(`\n── 2. H3 — Consumos ────────────────────────────────────────`);
   const borradas = await deleteJunioRows({
-    rangeRead:  "H3!A:N",
-    rangeClear: "H3!A2:N10000",
+    rangeRead:  "H3!A:P",
+    rangeClear: "H3!A2:P10000",
     rangeWrite: "H3!A2",
     label: "H3 consumos",
   });
-  if (borradas > 0) await verifyZeroJunio({ rangeRead: "H3!A:N", label: "H3" });
+  if (borradas > 0) await verifyZeroJunio({ rangeRead: "H3!A:P", label: "H3" });
   return borradas;
 }
 
@@ -185,12 +185,12 @@ async function resetH4B() {
 async function resetH4C() {
   console.log(`\n── 5. H4C — Saldos iniciales ───────────────────────────────`);
   const borradas = await deleteJunioRows({
-    rangeRead:  "H4!P:T",
-    rangeClear: "H4!P2:T10000",
+    rangeRead:  "H4!P:V",
+    rangeClear: "H4!P2:V10000",
     rangeWrite: "H4!P2",
     label: "H4C (saldos iniciales)",
   });
-  if (borradas > 0) await verifyZeroJunio({ rangeRead: "H4!P:T", label: "H4C" });
+  if (borradas > 0) await verifyZeroJunio({ rangeRead: "H4!P:V", label: "H4C" });
   return borradas;
 }
 
@@ -199,12 +199,12 @@ async function resetH4C() {
 async function resetH4D() {
   console.log(`\n── 6. H4D — Recargas Angie ─────────────────────────────────`);
   const borradas = await deleteJunioRows({
-    rangeRead:  "H4!V:AC",
-    rangeClear: "H4!V2:AC10000",
-    rangeWrite: "H4!V2",
+    rangeRead:  "H4!X:AE",
+    rangeClear: "H4!X2:AE10000",
+    rangeWrite: "H4!X2",
     label: "H4D (recargas Angie)",
   });
-  if (borradas > 0) await verifyZeroJunio({ rangeRead: "H4!V:AC", label: "H4D" });
+  if (borradas > 0) await verifyZeroJunio({ rangeRead: "H4!X:AE", label: "H4D" });
   return borradas;
 }
 

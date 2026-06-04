@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Junio 2026 | Fase: Go-live — T44 + B-QA-01 completos — QA: bloqueantes go-live resueltos
+Actualizado: Junio 2026 | Fase: Go-live — QA sesión 5 jun — T45 abierto — bloqueante go-live identificado
 
 ---
 
@@ -87,7 +87,7 @@ de pago. El usuario confirma o corrige. Registra quien ejecuta el pago.
 | id_concepto | string | {CATEGORIA_UPPERCASE}_{unix_timestamp} — generado por la app |
 | nombre | string | Nombre legible |
 | categoria | string | Casa / Servicios Públicos / Membresías y Suscripciones / Educación / Salud / Mercado y Alimentación / Compromisos Financieros / Recreación / Transporte / Metas Familiares / Frida / Hijos / Servicio Domestico |
-| tipo | enum | fijo / bolsillo / discrecional |
+| tipo | enum | fijo / pago_fraccionado / discrecional |
 | frecuencia | enum | mensual / bimestral / semanal |
 | mes_activo_bimestral | string | Solo bimestral — meses separados por coma. Null en otros casos |
 | monto_referencia | number | COP |
@@ -516,6 +516,8 @@ Archivo fuente: H1_presupuesto_base.csv
 | Fix H3 rango + placeholders sin-concepto | Completo — commit 8faab11 — auditoría post-T40 |
 | T43 — Módulo trazabilidad /admin/trazabilidad | Completo — commit e7b0e91 — DoD 8/8 — tsc limpio — sin regresiones |
 | T44 — Fix H4 spillover + createRecargaAngie determinista | Completo — commit 84b23eb — DoD 8/8 — tsc limpio — sin regresiones |
+| Fix reactividad bolsillos (handleSheetSuccess) | Completo — Promise.all consumos + movimientos — commit pendiente |
+| T45 — Migración pago_fraccionado + flujo FAB | Abierto — bloqueante go-live |
 
 ---
 
@@ -782,6 +784,8 @@ Objetivo: cartografiar fuentes de verdad, redefinir modelo, alinear frontend.
 - DT-QA-02: Label "Registrar aporte de Angie" en modal T26 no adapta por actor — requiere autenticación real — post go-live
 - DT-QA-03: idRecargaOrigen=null cuando fuenteAngie=true — conciliación pendiente — post go-live
 - DT-QA-04: Dropdown Concepto en H2 en FAB muestra todas las semanas sin filtrar por semana activa — post go-live
+- T26-DT1: Post-recarga Angie, botón "Ejecutar con" no cambia automáticamente a la cuenta recién recargada — usuario debe seleccionarla manualmente. Post go-live.
+- DT-M4-01: monto_ejecutado_camilo / monto_ejecutado_angie / id_recarga_origen no se llenan al ejecutar desde RegistroRapido — PATCH solo escribe campos legacy. Post go-live.
 - T39-DT1: rowToMovimiento no mapea campos nuevos H2 (montoEjecutadoCamilo, montoEjecutadoAngie, idRecargaOrigen) — rangos de lectura H2 desactualizados. Corresponde a T40.
 - T39-DT2: rowToConsumoH3 / consumoH3ToRow no mapean sobreTecho, idRecargaOrigen — rango H3!A:N debe expandirse a H3!A:P. Corresponde a T40.
 - T39-DT3: rowToSaldoCuenta / saldoCuentaToRow no mapean incluyeRemanente, idCierreOrigen — rango H4!P:T debe expandirse a H4!P:V. Corresponde a T40.
@@ -929,6 +933,10 @@ Objetivo: cartografiar fuentes de verdad, redefinir modelo, alinear frontend.
 | Junio 2026 | Rail Saldos NU Angie muestra fila Recargado | Recargas H4D son ingresos del mes, no saldo inicial — naturaleza diferente a saldo Camilo |
 | Junio 2026 | disponible = bruto - ejecutado + recargas | Fórmula correcta — evita doble conteo cuando saldosConDescuento clampea a 0 |
 | Junio 2026 | T41: recargasAngieLocal como useState | Prop SSR congelada no refleja recargas registradas en sesión — mismo patrón que movs |
+| 5 jun 2026 | tipo bolsillo renombrado a pago_fraccionado | Semántica incorrecta — bolsillo sugiere contenedor de dinero, el concepto real es límite de gasto con pagos fraccionados |
+| 5 jun 2026 | Celular Angie → tipo fijo | Pago único mensual — no tiene pagos fraccionados |
+| 5 jun 2026 | Gastos pago_fraccionado van a H3B, no PATCH H2 | H2 tiene una fila por concepto — no soporta múltiples consumos del mismo concepto |
+| 5 jun 2026 | Metas financieras (Fondo emergencia, CDT NU) — diseño post go-live | Lógica diferente a gastos operativos — no bloquea go-live |
 
 ---
 
@@ -1279,8 +1287,8 @@ Fecha: 2026-06-03 | Cierre: 09:04
 ## Prompt de apertura — próxima sesión
 
 Retomamos el proyecto Flujo. Lee ESTADO.md en el repo y el adjunto al proyecto Claude.
-Tipo de sesión: QA
-Objetivo: flujo Angie en VistaSemanal — registro de gastos, bolsillos, corrección M5, cierre de semana
+Tipo de sesión: CONSTRUCCIÓN
+Objetivo: T45 — Migración tipo bolsillo → pago_fraccionado + flujo FAB correcto
 Hora de inicio: [COMPLETAR]
 Entorno: Windows — PowerShell exclusivamente.
 
@@ -1295,6 +1303,25 @@ Leé archivos fuente solo para el archivo específico que vas a editar.
 CIERRE: Actualizar ESTADO.md con hora de cierre y retrospectiva.
 Regla: bugs se documentan como deuda técnica — no se corrigen dentro del ticket.
 Regenerar kanban: node scripts/generate-kanban.mjs
+
+---
+
+## Retrospectiva — Sesión QA parcial · 5 junio 2026
+
+**Qué funcionó:**
+- Reset junio ejecutado limpio — script actualizado con rangos post-T39/T40
+- T26 flujo completo verificado en producción — caminos 1, 2 y 3 operativos
+- Fix reactividad bolsillos identificado y aplicado — Promise.all en handleSheetSuccess
+- Diagnóstico arquitectónico correcto — tipo bolsillo como concepto mal nombrado y mal enrutado
+
+**Qué no funcionó:**
+- QA-03 y QA-04 no alcanzados — sesión consumida por hallazgo arquitectónico
+- El tipo bolsillo nunca tuvo una decisión explícita de flujo FAB — llegó al QA con comportamiento incorrecto
+
+**Qué cambia en el próximo sprint:**
+- Próxima sesión: CONSTRUCCIÓN — T45
+- Con T45 cerrado: retomar QA flujo Angie — corrección M5 y cierre de semana
+- Go-live target se corre — fecha por confirmar post-T45
 
 ---
 
