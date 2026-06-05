@@ -793,6 +793,9 @@ Objetivo: cartografiar fuentes de verdad, redefinir modelo, alinear frontend.
 - git add -A en T40 capturó archivos sin trackear de sesiones anteriores (design-handoff/, screenshots, reset-junio.mjs) — agregar a .gitignore o limpiar antes del siguiente ticket
 - Rail Saldos: label "(plan)" en A:$X de Por Semana no distingue entre sin recargas vs con recargas sin cierre — mostrar "(real)" cuando hay recargas H4D registradas. Post go-live.
 - Rail Saldos: totalSaldosLocal suma saldosConDescuento (descontados server) en lugar de saldosBrutos — el Total visible puede no coincidir con la suma de Inicial de las 4 cuentas. Post go-live.
+- H3B sin-concepto/route.ts: H3B_HEADERS declara 14 columnas pero el row tiene 16 — sobre_techo siempre se escribe como "" en lugar de calcularse. Post go-live.
+- M1 Ejecución: conceptos pago_fraccionado muestran estado "pendiente" aunque tengan consumos en H3B — diferenciación visual pendiente. Post go-live.
+- H3 junio: 5 consumos de prueba en MERCADO_Y_ALIMENTACION_1779730807246 — limpiar antes de go-live o dejar como datos reales.
 
 ---
 
@@ -1287,6 +1290,24 @@ Fecha: 2026-06-03 | Cierre: 09:04
 
 ---
 
+## Retrospectiva — Sesión QA parcial · 5 junio 2026
+
+**Qué funcionó:**
+- Reset junio ejecutado limpio — script actualizado con rangos post-T39/T40
+- T26 flujo completo verificado en producción — caminos 1, 2 y 3 operativos
+- Fix reactividad bolsillos identificado y aplicado — Promise.all en handleSheetSuccess
+- Diagnóstico arquitectónico correcto — tipo bolsillo como concepto mal nombrado y mal enrutado
+
+**Qué no funcionó:**
+- QA-03 y QA-04 no alcanzados — sesión consumida por hallazgo arquitectónico
+- El tipo bolsillo nunca tuvo una decisión explícita de flujo FAB — llegó al QA con comportamiento incorrecto
+
+**Qué cambia en el próximo sprint:**
+- Próxima sesión: QA — verificar DoD 4/5/6 T45 + flujo Angie completo (corrección M5, cierre semana)
+- H3 tiene 5 consumos de prueba — decidir si limpiar antes de go-live
+
+---
+
 ## Prompt de apertura — próxima sesión
 
 Retomamos el proyecto Flujo. Lee ESTADO.md adjunto al proyecto Claude.
@@ -1327,25 +1348,6 @@ Fecha: 2026-06-05
 **Qué cambia en el próximo sprint:**
 - Próxima sesión: QA — verificar DoD 4/5/6 de T45 + continuar flujo Angie (corrección M5, cierre semana)
 - H3 tiene 5 consumos de prueba — decidir si limpiar antes de go-live
-
----
-
-## Retrospectiva — Sesión QA parcial · 5 junio 2026
-
-**Qué funcionó:**
-- Reset junio ejecutado limpio — script actualizado con rangos post-T39/T40
-- T26 flujo completo verificado en producción — caminos 1, 2 y 3 operativos
-- Fix reactividad bolsillos identificado y aplicado — Promise.all en handleSheetSuccess
-- Diagnóstico arquitectónico correcto — tipo bolsillo como concepto mal nombrado y mal enrutado
-
-**Qué no funcionó:**
-- QA-03 y QA-04 no alcanzados — sesión consumida por hallazgo arquitectónico
-- El tipo bolsillo nunca tuvo una decisión explícita de flujo FAB — llegó al QA con comportamiento incorrecto
-
-**Qué cambia en el próximo sprint:**
-- Próxima sesión: CONSTRUCCIÓN — T45
-- Con T45 cerrado: retomar QA flujo Angie — corrección M5 y cierre de semana
-- Go-live target se corre — fecha por confirmar post-T45
 
 ---
 
