@@ -1290,20 +1290,21 @@ Fecha: 2026-06-03 | Cierre: 09:04
 
 ---
 
-## Retrospectiva — Sesión QA parcial · 5 junio 2026
+## Retrospectiva — Sesión QA + CONSTRUCCIÓN · T45 cierre · 5 junio 2026
 
 **Qué funcionó:**
-- Reset junio ejecutado limpio — script actualizado con rangos post-T39/T40
-- T26 flujo completo verificado en producción — caminos 1, 2 y 3 operativos
-- Fix reactividad bolsillos identificado y aplicado — Promise.all en handleSheetSuccess
-- Diagnóstico arquitectónico correcto — tipo bolsillo como concepto mal nombrado y mal enrutado
+- Migración datos H1/H2 limpia — script idempotente, 10 + 18 filas actualizadas
+- Diagnóstico de gaps T45 en QA — tres fixes identificados y aplicados en la misma sesión
+- tsc limpio en todos los commits
+- Trazabilidad /admin/trazabilidad confirmó IDs correctos en H3B
 
 **Qué no funcionó:**
-- QA-03 y QA-04 no alcanzados — sesión consumida por hallazgo arquitectónico
-- El tipo bolsillo nunca tuvo una decisión explícita de flujo FAB — llegó al QA con comportamiento incorrecto
+- DoD de T45 incompleto al abrirse — no contempló estado H2 para pago_fraccionado ni filtro PropuestaCard
+- Commit prematuro antes de verificar DoD en browser
+- DoD 4/5/6 no verificados en móvil — sesión terminó antes
 
 **Qué cambia en el próximo sprint:**
-- Próxima sesión: QA — verificar DoD 4/5/6 T45 + flujo Angie completo (corrección M5, cierre semana)
+- Próxima sesión: QA — verificar DoD 4/5/6 T45 en móvil + flujo Angie completo
 - H3 tiene 5 consumos de prueba — decidir si limpiar antes de go-live
 
 ---
