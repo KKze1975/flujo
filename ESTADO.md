@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Junio 2026 | Fase: Go-live — T45 construido — DoD 4/5/6 pendientes verificación en móvil
+Actualizado: Junio 2026 | Fase: Go-live — QA sesión 5 jun — 6 bloqueantes identificados — construcción pendiente
 
 ---
 
@@ -796,6 +796,12 @@ Objetivo: cartografiar fuentes de verdad, redefinir modelo, alinear frontend.
 - H3B sin-concepto/route.ts: H3B_HEADERS declara 14 columnas pero el row tiene 16 — sobre_techo siempre se escribe como "" en lugar de calcularse. Post go-live.
 - M1 Ejecución: conceptos pago_fraccionado muestran estado "pendiente" aunque tengan consumos en H3B — diferenciación visual pendiente. Post go-live.
 - H3 junio: 5 consumos de prueba en MERCADO_Y_ALIMENTACION_1779730807246 — limpiar antes de go-live o dejar como datos reales.
+- BL-01 (bloqueante go-live): ModalCorreccionM5 selector bolsillos usa IDs H2 en lugar de IDs H3A — dato corrupto en Sheet al clasificar. Confirmado en trazabilidad sesión 5 jun.
+- BL-02 (bloqueante go-live): PropuestaCard dropdown concepto muestra conceptos de todas las semanas sin filtrar por semana activa.
+- BL-03 (bloqueante go-live): Registro via FAB aparece sin categoría en historial VistaSemanal.
+- BL-04 (bloqueante go-live): Modal cierre semana — "Remanente Angie" es campo manual vacío, debe calcularse desde H4D menos consumos con fuenteAngie=true.
+- BL-05 (bloqueante go-live): Modal cierre semana — "Aporte S2 planeado" es campo manual vacío, debe traerse de H4B. Rediseño modal requerido antes de go-live.
+- BL-06 (bloqueante go-live): PropuestaCard label "Concepto en H2" para pago_fraccionado — lógica correcta (escribe H3B), label engañoso para el usuario.
 
 ---
 
@@ -1312,8 +1318,8 @@ Fecha: 2026-06-03 | Cierre: 09:04
 ## Prompt de apertura — próxima sesión
 
 Retomamos el proyecto Flujo. Lee ESTADO.md adjunto al proyecto Claude.
-Tipo de sesión: QA
-Objetivo: Verificar DoD 4/5/6 T45 + flujo Angie completo (corrección M5, cierre semana)
+Tipo de sesión: DISEÑO + CONSTRUCCIÓN
+Objetivo: Rediseño modal cierre semana (BL-04, BL-05) + construcción BL-01, BL-02, BL-03, BL-06
 Hora de inicio: [COMPLETAR]
 Entorno: Windows — PowerShell exclusivamente.
 
@@ -1328,6 +1334,8 @@ Leé archivos fuente solo para el archivo específico que vas a editar.
 CIERRE: Actualizar ESTADO.md con hora de cierre y retrospectiva.
 Regla: bugs se documentan como deuda técnica — no se corrigen dentro del ticket.
 Regenerar kanban: node scripts/generate-kanban.mjs
+
+Para cuando termines. No abras trabajo nuevo.
 
 ---
 
@@ -1834,5 +1842,24 @@ Fecha: 2026-06-04
 
 **Qué cambia en el próximo sprint:**
 - En ModalCorreccion, el escenario "clasif" ya tiene datos H2 disponibles — cualquier lógica que dependa de techos puede consultarlos vía prop `bolsillos`
+
+## Retrospectiva — Sesión QA · 5 junio 2026 · 16:14–17:00
+
+**Qué funcionó:**
+- T45 DoD 4/5/6 verificados en producción — lógica correcta, consumos pago_fraccionado escriben en H3B
+- Trazabilidad /admin/trazabilidad como herramienta de QA — antes/después concluyente en cada verificación
+- Flujo M5 ejecutado end-to-end — modal renderiza y completa el flujo
+- Modal cierre semana — renderiza correctamente
+
+**Qué no funcionó:**
+- 6 bloqueantes go-live identificados — go-live 7 junio en riesgo
+- ModalCorreccionM5 usa IDs H2 en lugar de H3A — dato corrupto confirmado en Sheet via trazabilidad
+- Modal cierre semana requiere rediseño — campos manuales que el sistema puede calcular desde H4D y H4B
+
+**Qué cambia en el próximo sprint:**
+- Próxima sesión: DISEÑO para BL-04 y BL-05 (rediseño modal cierre semana) + CONSTRUCCIÓN para BL-01, BL-02, BL-03, BL-06
+- Re-evaluar fecha go-live antes de abrir construcción
+
+---
 
 Flujo - Proyecto de salud financiera familiar - Camilo Villamil - 2026
