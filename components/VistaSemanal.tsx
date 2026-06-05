@@ -1095,7 +1095,7 @@ export default function VistaSemanal({
               </button>
             </div>
             <div className="sheet-body">
-              <RegistroRapido onClose={handleSheetSuccess} />
+              <RegistroRapido onClose={handleSheetSuccess} onSuccess={handleSheetSuccess} />
             </div>
           </div>
         </div>

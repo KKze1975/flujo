@@ -23,7 +23,7 @@ const FUENTE_A_CUENTA: Record<string, CuentaH4C | null> = {
 };
 
 
-export default function RegistroRapido({ onClose }: { onClose?: () => void }) {
+export default function RegistroRapido({ onClose, onSuccess }: { onClose?: () => void; onSuccess?: () => void }) {
   const [estado, setEstado] = useState<Estado>("idle");
   const [interpretacion, setInterpretacion] = useState<InterpretacionM4 | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -32,6 +32,10 @@ export default function RegistroRapido({ onClose }: { onClose?: () => void }) {
   const [saldosMes, setSaldosMes] = useState<SaldoCuenta[]>([]);
   const [recargasMes, setRecargasMes] = useState<RecargaAngie[]>([]);
   const [resultado, setResultado] = useState<Resultado | null>(null);
+
+  useEffect(() => {
+    if (estado === "exito") onSuccess?.();
+  }, [estado]);
   const [validacionPayload, setValidacionPayload] = useState<ConfirmacionPayload | null>(null);
 
   useEffect(() => {
