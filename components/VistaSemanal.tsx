@@ -38,14 +38,6 @@ function copCompact(n: number): string {
 }
 
 // Active bolsillos list (ESTADO.md: vincula exclusivamente a bolsillos activos)
-const BOLSILLOS_ACTIVOS = [
-  { id: "frida",           nombre: "Frida",           icon: "paw"    },
-  { id: "entretenimiento", nombre: "Entretenimiento",  icon: "film"   },
-  { id: "mercado_semanal", nombre: "Mercado semanal",  icon: "bag"    },
-  { id: "mercado_mensual", nombre: "Mercado mensual",  icon: "bag"    },
-  { id: "fondo_transporte",nombre: "Fondo transporte", icon: "car"    },
-  { id: "angie",           nombre: "Angie",            icon: "wallet" },
-];
 
 const FUENTES_M5 = [
   { key: "fuenteCamilo" as const, label: "NU Camilo", persona: "c" as const },
@@ -111,11 +103,13 @@ const SCN_LABEL: Record<M5Scenario, { eye: string; title: string; note: string }
 function ModalCorreccion({
   consumo,
   bolsillos,
+  consumos,
   onClose,
   onSaved,
 }: {
   consumo: ConsumoH3;
   bolsillos: Movimiento[];
+  consumos: ConsumoH3[];
   onClose: () => void;
   onSaved: (updated: ConsumoH3) => void;
 }) {
@@ -145,9 +139,8 @@ function ModalCorreccion({
     if (scenario === "fuente")   patch = { ...fuentes };
     if (scenario === "clasif") {
       const selectedId = bolsilloId ?? consumo.bolsilloId;
-      const matchNombre = BOLSILLOS_ACTIVOS.find((a) => a.id === selectedId)?.nombre.toLowerCase();
-      const h2 = bolsillos.find((m) => m.nombreSnapshot.toLowerCase() === matchNombre);
-      const gastado = h2?.montoEjecutado ?? 0;
+      const h2 = bolsillos.find((m) => m.conceptoId === selectedId);
+      const gastado = consumos.filter(c => c.bolsilloId === selectedId).reduce((sum, c) => sum + c.monto, 0);
       const techo = h2?.montoPresupuestado ?? 0;
       patch = { bolsilloId: selectedId, clasificado: true, sobreTecho: techo > 0 && gastado >= techo };
     }
@@ -280,17 +273,17 @@ function ModalCorreccion({
               <>
                 <p className="dk-exp-lbl">Bolsillo activo</p>
                 <div className="dk-h2pick">
-                  {BOLSILLOS_ACTIVOS.map(b => {
-                    const h2 = bolsillos.find((m) => m.nombreSnapshot.toLowerCase() === b.nombre.toLowerCase());
-                    const gastado = h2?.montoEjecutado ?? 0;
-                    const techo = h2?.montoPresupuestado ?? 0;
+                  {bolsillos.map(b => {
+                    const gastado = consumos.filter(c => c.bolsilloId === b.conceptoId).reduce((sum, c) => sum + c.monto, 0);
+                    const techo = b.montoPresupuestado ?? 0;
                     const over = techo > 0 && gastado >= techo;
+                    const icon = CAT_ICON[b.categoriaSnapshot] ?? "bag";
                     return (
-                      <button key={b.id} type="button"
-                        className={`dk-h2${bolsilloId === b.id ? " on" : ""}`}
-                        onClick={() => setBolsilloId(b.id)}>
-                        <span className="dk-h2-ic"><Icon name={b.icon} size={13} /></span>
-                        <span className="nm">{b.nombre}</span>
+                      <button key={b.conceptoId} type="button"
+                        className={`dk-h2${bolsilloId === b.conceptoId ? " on" : ""}`}
+                        onClick={() => setBolsilloId(b.conceptoId)}>
+                        <span className="dk-h2-ic"><Icon name={icon} size={13} /></span>
+                        <span className="nm">{b.nombreSnapshot}</span>
                         {over && <span className="fl-badge neg" style={{ fontSize: 10, padding: "1px 5px", marginLeft: 4 }}>sobre techo</span>}
                         <span className="dk-rb"><Icon name="check" size={11} /></span>
                       </button>
@@ -780,7 +773,9 @@ export default function VistaSemanal({
             <p className="fl-sectlabel">Bolsillos · techo semanal</p>
             <div className="fl-card" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               {bolsillos.map((b, i) => {
-                const gastado = b.montoEjecutado ?? 0;
+                const gastado = consumos
+                  .filter(c => c.bolsilloId === b.conceptoId)
+                  .reduce((sum, c) => sum + c.monto, 0);
                 const techo   = b.montoPresupuestado;
                 const pctB    = techo > 0 ? Math.round((gastado / techo) * 100) : 0;
                 const over    = gastado > techo;
@@ -1111,6 +1106,7 @@ export default function VistaSemanal({
         <ModalCorreccion
           consumo={corrigiendoConsumo}
           bolsillos={bolsillos}
+          consumos={consumos}
           onClose={() => setCorrigiendoConsumo(null)}
           onSaved={updated => {
             setConsumos(prev => prev.map(c => c.id === updated.id ? updated : c));
