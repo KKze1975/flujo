@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Junio 2026 | Fase: Go-live — QA sesión 5 jun — T45 abierto — bloqueante go-live identificado
+Actualizado: Junio 2026 | Fase: Go-live — T45 construido — DoD 4/5/6 pendientes verificación en móvil
 
 ---
 
@@ -517,7 +517,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | T43 — Módulo trazabilidad /admin/trazabilidad | Completo — commit e7b0e91 — DoD 8/8 — tsc limpio — sin regresiones |
 | T44 — Fix H4 spillover + createRecargaAngie determinista | Completo — commit 84b23eb — DoD 8/8 — tsc limpio — sin regresiones |
 | Fix reactividad bolsillos (handleSheetSuccess) | Completo — Promise.all consumos + movimientos — commit pendiente |
-| T45 — Migración pago_fraccionado + flujo FAB | Abierto — bloqueante go-live |
+| T45 — Migración pago_fraccionado + flujo FAB | Construido — commits 184b42f, 0dc8ef0, da3e017 — DoD 4/5/6 pendientes verificación móvil |
 
 ---
 
@@ -936,6 +936,9 @@ Objetivo: cartografiar fuentes de verdad, redefinir modelo, alinear frontend.
 | 5 jun 2026 | tipo bolsillo renombrado a pago_fraccionado | Semántica incorrecta — bolsillo sugiere contenedor de dinero, el concepto real es límite de gasto con pagos fraccionados |
 | 5 jun 2026 | Celular Angie → tipo fijo | Pago único mensual — no tiene pagos fraccionados |
 | 5 jun 2026 | Gastos pago_fraccionado van a H3B, no PATCH H2 | H2 tiene una fila por concepto — no soporta múltiples consumos del mismo concepto |
+| 5 jun 2026 | pago_fraccionado en H2 siempre queda pendiente | H2 es referencia de presupuesto — los consumos van a H3B — estado lo gestiona el cierre de semana |
+| 5 jun 2026 | Panel límites calcula desde H3B | montoEjecutado H2 siempre null para pago_fraccionado — consumo acumulado real está en H3B |
+| 5 jun 2026 | BOLSILLOS_ACTIVOS eliminado | IDs obsoletos — reemplazado por bolsillos prop con conceptoId real de H1 |
 | 5 jun 2026 | Metas financieras (Fondo emergencia, CDT NU) — diseño post go-live | Lógica diferente a gastos operativos — no bloquea go-live |
 
 ---
@@ -1286,9 +1289,9 @@ Fecha: 2026-06-03 | Cierre: 09:04
 
 ## Prompt de apertura — próxima sesión
 
-Retomamos el proyecto Flujo. Lee ESTADO.md en el repo y el adjunto al proyecto Claude.
-Tipo de sesión: CONSTRUCCIÓN
-Objetivo: T45 — Migración tipo bolsillo → pago_fraccionado + flujo FAB correcto
+Retomamos el proyecto Flujo. Lee ESTADO.md adjunto al proyecto Claude.
+Tipo de sesión: QA
+Objetivo: Verificar DoD 4/5/6 T45 + flujo Angie completo (corrección M5, cierre semana)
 Hora de inicio: [COMPLETAR]
 Entorno: Windows — PowerShell exclusivamente.
 
@@ -1303,6 +1306,27 @@ Leé archivos fuente solo para el archivo específico que vas a editar.
 CIERRE: Actualizar ESTADO.md con hora de cierre y retrospectiva.
 Regla: bugs se documentan como deuda técnica — no se corrigen dentro del ticket.
 Regenerar kanban: node scripts/generate-kanban.mjs
+
+---
+
+## Retrospectiva — Sesión CONSTRUCCIÓN · T45
+
+Fecha: 2026-06-05
+
+**Qué funcionó:**
+- Diagnóstico arquitectónico correcto — tipo bolsillo como concepto mal nombrado resuelto en una sesión
+- Script migración datos H1/H2 limpio — 10 filas H1, 18 filas H2 actualizadas
+- tsc limpio en todos los commits
+- Trazabilidad /admin/trazabilidad útil para confirmar IDs correctos en H3B
+
+**Qué no funcionó:**
+- DoD de T45 incompleto al abrirse — no contempló estado H2 para pago_fraccionado ni selector PropuestaCard
+- Commit prematuro antes de verificar DoD en browser
+- Tres gaps adicionales identificados durante construcción: PropuestaCard filtro, panel límites H3B, ModalCorreccion IDs
+
+**Qué cambia en el próximo sprint:**
+- Próxima sesión: QA — verificar DoD 4/5/6 de T45 + continuar flujo Angie (corrección M5, cierre semana)
+- H3 tiene 5 consumos de prueba — decidir si limpiar antes de go-live
 
 ---
 
@@ -1352,6 +1376,9 @@ Regenerar kanban: node scripts/generate-kanban.mjs
 - **DT-QA-02:** Label "Registrar aporte de Angie" en modal T26 no adapta por actor — requiere autenticación real
 - **DT-QA-03:** idRecargaOrigen=null cuando fuenteAngie=true — conciliación pendiente
 - **DT-QA-04:** Dropdown Concepto en H2 en FAB muestra todas las semanas sin filtrar por semana activa
+- **DT-T45-01:** H3B sin-concepto/route.ts: H3B_HEADERS declara 14 columnas pero el row tiene 16 — sobre_techo siempre se escribe como "" en lugar de calcularse. Post go-live.
+- **DT-T45-02:** M1 Ejecución: conceptos pago_fraccionado muestran estado "pendiente" aunque tengan consumos en H3B — diferenciación visual pendiente. Post go-live.
+- **DT-T45-03:** H3 junio: 5 consumos de prueba en MERCADO_Y_ALIMENTACION_1779730807246 — limpiar antes de go-live o dejar como datos reales.
 
 ---
 
