@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Junio 2026 | Fase: Go-live — QA sesión 6 jun — scope M1 Ejecución — BL-01 a BL-06 deuda técnica post go-live
+Actualizado: 6 junio 2026 | Fase: Go-live — M1 Ejecución aprobado — QA matemáticas Por Semana cerrado
 
 ---
 
@@ -519,6 +519,8 @@ Archivo fuente: H1_presupuesto_base.csv
 | Fix reactividad bolsillos (handleSheetSuccess) | Completo — Promise.all consumos + movimientos — commit pendiente |
 | T45 — Migración pago_fraccionado + flujo FAB | Construido — commits 184b42f, 0dc8ef0, da3e017 — DoD 4/5/6 pendientes verificación móvil |
 | T46 — Eliminar tarjetas métricas superiores MesM1Desktop | Completo — commits 887ed38, 4915410, c0f0473 — tsc limpio — verificado en Vercel |
+| Fix QA-6jun-3 — remanenteSemana ConceptoBoard nunca negativo | Completo — commit 1bc042f — WeekColumn: remanenteSemana = porPagar en lugar de tot-ejecutadoMonto — cero cuando todo ejecutado |
+| Fix QA-6jun-4 — balanceSemanas usa recargas Angie en lugar de cierre.remanenteAngie | Completo — commit 77e8842 — Por Semana sidebar: aporteAngie = recargas reales (no el sobrante del cierre) — eliminó -$1.64M falso en S1-S4 |
 
 ---
 
@@ -1372,6 +1374,8 @@ Prueba piloto con la familia Villamil la semana del 8 de junio. Los BL-* se prio
 |---|---|---|---|
 | 1 | NU Camilo disponible = 0 pese a ingreso $12.1M registrado | Media | Fix aplicado — commit 4da180a |
 | 2 | Saldo Angie negativo en rail + T26 no dispara cuando recargas parcialmente gastadas | Media | Fix aplicado — commit 6223e8f |
+| 3 | remanenteSemana WeekColumn muestra negativo cuando ítem ejecutado por más de presupuestado | Baja | Fix aplicado — commit 1bc042f — remanenteSemana = porPagar |
+| 4 | Por Semana sidebar muestra -$1.64M en S1-S4 — balanceSemanas usaba cierre.remanenteAngie ($0) en lugar de recargas ($1.7M) | Media | Fix aplicado — commit 77e8842 |
 
 ### Fixes aplicados en sesión
 
@@ -1379,6 +1383,8 @@ Prueba piloto con la familia Villamil la semana del 8 de junio. Los BL-* se prio
 |---|---|---|
 | 1 | disponiblePorCuenta suma ingreso Camilo H4A a la cuenta destino | 4da180a |
 | 2 | disponiblePorCuenta unifica fórmula bruto+ingreso+recargas-ejecutado — rail y validación T26 consistentes | 6223e8f |
+| 3 | remanenteSemana = porPagar — nunca negativo, cero cuando todo ejecutado | 1bc042f |
+| 4 | balanceSemanas aporteAngie usa recargas reales por semana — Por Semana sidebar correcto | 77e8842 |
 
 ---
 
