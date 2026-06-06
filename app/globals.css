@@ -503,7 +503,7 @@ body {
 .dk-kpi .h { font-size: 12px; color: var(--ink-faint); margin: 10px 0 0; }
 
 /* layout split */
-.dk-grid { display: grid; grid-template-columns: minmax(0, 1.85fr) minmax(300px, 1fr); gap: 20px; align-items: start; }
+.dk-grid { display: grid; grid-template-columns: 1fr; align-items: start; }
 .dk-panel { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; overflow: hidden; }
 .dk-panel-head { display: flex; align-items: center; gap: 12px; padding: 18px 20px; border-bottom: 1px solid var(--line); }
 .dk-panel-head h3 { font-family: var(--font-display); font-weight: 700; font-size: 16px; letter-spacing: -0.01em; color: var(--ink); margin: 0; }
