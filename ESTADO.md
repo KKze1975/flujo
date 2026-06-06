@@ -518,7 +518,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | T44 — Fix H4 spillover + createRecargaAngie determinista | Completo — commit 84b23eb — DoD 8/8 — tsc limpio — sin regresiones |
 | Fix reactividad bolsillos (handleSheetSuccess) | Completo — Promise.all consumos + movimientos — commit pendiente |
 | T45 — Migración pago_fraccionado + flujo FAB | Construido — commits 184b42f, 0dc8ef0, da3e017 — DoD 4/5/6 pendientes verificación móvil |
-| T46 — Eliminar tarjetas métricas superiores MesM1Desktop | Completo — commit 887ed38 — tsc limpio — sin regresiones |
+| T46 — Eliminar tarjetas métricas superiores MesM1Desktop | Completo — commits 887ed38, 4915410, c0f0473 — tsc limpio — verificado en Vercel |
 
 ---
 
@@ -1410,10 +1410,14 @@ Prueba piloto con la familia Villamil la semana del 8 de junio. Los BL-* se prio
 - Diagnóstico de variables usadas en sidebar/rail vs solo en KPI — no se eliminó nada útil
 
 **Qué no funcionó:**
-- Nada
+- Dos fixes CSS necesarios post-commit: (1) max-width: 1400px en .dk-content limitaba el ancho total; (2) dk-grid tenía dos columnas (1.85fr | 1fr) pero solo un hijo — la columna vacía consumía ~35% del ancho disponible
+
+**Causa raíz:**
+- El rail de saldos por cuenta vive en el sidebar (aside.dk-side), no en dk-grid — la definición de dos columnas era un vestigio de un diseño anterior donde el rail estaba en el grid
 
 **Qué cambia en el próximo sprint:**
-- Si hay más componentes visuales de la sesión de diseño con claude.ai, aplicar el mismo criterio: eliminar bloque JSX + variables huérfanas + tsc en un solo ciclo
+- Al eliminar un bloque JSX, verificar si el CSS del contenedor padre asume una cantidad específica de hijos (columnas de grid con hijos implícitos)
+- Si hay más componentes visuales, aplicar el mismo criterio: eliminar bloque JSX + variables huérfanas + tsc + verificar layout en Vercel
 
 ---
 
