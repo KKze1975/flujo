@@ -1862,4 +1862,20 @@ Fecha: 2026-06-04
 
 ---
 
+## Retrospectiva — Sesión CONSTRUCCIÓN · 5 junio 2026 · –17:33
+
+**Qué funcionó:**
+- Identificación correcta de premisa de negocio: selector clasif debe mostrar solo bolsillos de semana activa (presupuesto asignado), no todos los del mes
+
+**Qué no funcionó:**
+- BL-01: fix incorrecto descartado — se intentó reemplazar `bolsillos: Movimiento[]` por H1 Concepto (mes completo), contradiciendo la premisa de semana activa. Revertido.
+- BL-01 queda abierto: causa raíz no confirmada en código (el ID escrito ya es `b.conceptoId`, no MOV_xxx). Requiere reproducir dato corrupto en trazabilidad antes de tocar código.
+- BL-02: no ejecutado — sesión cerrada por tokens
+
+**Qué cambia en el próximo sprint:**
+- BL-01: antes de tocar código, reproducir el dato corrupto en trazabilidad e identificar exactamente qué valor incorrecto llega a `id_bolsillo`
+- BL-02, BL-03, BL-04, BL-05, BL-06: pendientes
+
+---
+
 Flujo - Proyecto de salud financiera familiar - Camilo Villamil - 2026
