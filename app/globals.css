@@ -493,7 +493,7 @@ body {
 }
 .dk-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
 
-.dk-content { padding: 26px 32px 48px; max-width: 1400px; }
+.dk-content { padding: 26px 32px 48px; }
 
 /* KPI row */
 .dk-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 22px; }
