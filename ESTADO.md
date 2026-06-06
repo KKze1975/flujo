@@ -1343,39 +1343,61 @@ Prueba piloto con la familia Villamil la semana del 8 de junio. Los BL-* se prio
 
 ## QA Go-Live — 6 junio 2026
 
-### Inicio: [COMPLETAR]
-### Cierre: [COMPLETAR]
+### Inicio: 6 junio 2026
+### Cierre: 6 junio 2026
 
 ### Flujo M1 Ejecución — Camilo
 
 | Paso | Acción | Resultado | Fix |
 |---|---|---|---|
-| 1 | Inicializar junio 2026 → verificar 62 movimientos en H2 | [PENDIENTE] | — |
-| 2 | Confirmar saldos | [PENDIENTE] | — |
-| 3 | Ejecutar concepto | [PENDIENTE] | — |
-| 4 | Posponer | [PENDIENTE] | — |
-| 5 | Revertir ejecución | [PENDIENTE] | — |
-| 6 | Agregar via B4 | [PENDIENTE] | — |
-| 7 | Cerrar semana | [PENDIENTE] | — |
+| 1 | Inicializar junio 2026 → verificar 62 movimientos en H2 | ✓ OK | — |
+| 2 | Confirmar saldos | ✓ OK | — |
+| 3 | Ejecutar conceptos (múltiples) | ✓ OK — saldos consistentes contra Sheet | disponiblePorCuenta ignoraba H4A — NU Camilo mostraba 0 pese a $12.1M de ingreso |
+| 4 | Posponer (mover a otra semana) | ✓ OK | — |
+| 5 | Revertir ejecución | ✓ OK — saldos se actualizan correctamente | — |
+| 6 | Agregar via B4 (desde Ejecución) | ✓ OK — aparece bajo categoría Recreación | — |
+| 7 | Cerrar semana | ✓ OK | — |
 
 ### Flujo Angie en M1
 
 | Paso | Acción | Resultado | Fix |
 |---|---|---|---|
-| 1 | Registrar aporte FAB | [PENDIENTE] | — |
-| 2 | Ejecutar con cuenta Angie | [PENDIENTE] | — |
+| 1 | Registrar aporte FAB | ✓ OK | — |
+| 2 | Ejecutar con cuenta Angie | ✓ OK (post-fix) | T26 dispara correctamente, saldo ya no negativo |
 
 ### Bugs encontrados en QA
 
 | # | Descripción | Severidad | Acción |
 |---|---|---|---|
-| — | — | — | — |
+| 1 | NU Camilo disponible = 0 pese a ingreso $12.1M registrado | Media | Fix aplicado — commit 4da180a |
+| 2 | Saldo Angie negativo en rail + T26 no dispara cuando recargas parcialmente gastadas | Media | Fix aplicado — commit 6223e8f |
 
 ### Fixes aplicados en sesión
 
 | # | Descripción | Commit |
 |---|---|---|
-| — | — | — |
+| 1 | disponiblePorCuenta suma ingreso Camilo H4A a la cuenta destino | 4da180a |
+| 2 | disponiblePorCuenta unifica fórmula bruto+ingreso+recargas-ejecutado — rail y validación T26 consistentes | 6223e8f |
+
+---
+
+## Retrospectiva — QA Go-Live · 6 junio 2026
+
+**Resultado: APROBADO — go-live M1 Ejecución habilitado**
+
+**Qué funcionó:**
+- Flujo completo M1 Ejecución sin bloqueantes: inicializar, confirmar saldos, ejecutar, posponer, revertir, B4, cerrar semana
+- Flujo Angie: FAB aporte + T26 validación de fondos operativo
+- Criterio de fix < 20 min funcionó — 2 bugs resueltos en sesión sin frenar el QA
+- Reset + reinicialización desde app sin fricción
+
+**Bugs encontrados y resueltos:**
+- **Fix 1** (commit 4da180a): `disponiblePorCuenta` ignoraba ingreso Camilo H4A — NU Camilo mostraba $0 pese a $12.1M registrado
+- **Fix 2** (commit 6223e8f): fórmula `disponiblePorCuenta` unificada con display rail — eliminó saldo negativo Angie y alineó validación T26
+
+**Deuda técnica nueva:** ninguna
+
+**Próximo paso:** sesión de diseño con claude.ai — rediseño de componentes (reubicar y eliminar)
 
 ---
 
