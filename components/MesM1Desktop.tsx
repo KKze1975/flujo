@@ -380,7 +380,13 @@ export default function MesM1Desktop({
   const ejecutarBloqueado = !ingresoCamiloLocal || ingresoCamiloLocal.montoCop === 0;
 
   const disponiblePorCuenta = (cuenta: CuentaH4C): number => {
-    const entry = saldosLocal.find(s => s.cuenta === cuenta);
+    const fuenteKey = CUENTAS_H4C.find(c => c.cuenta === cuenta)?.fuenteKey;
+    const bruto = saldosBrutos.find(s => s.cuenta === cuenta)?.saldoInicial ?? 0;
+    const ejecutado = fuenteKey
+      ? movs
+          .filter(m => m.estado === "ejecutado" && m[fuenteKey as keyof typeof m])
+          .reduce((sum, m) => sum + (m.montoEjecutado ?? m.montoPresupuestado), 0)
+      : 0;
     const recargas = (cuenta === "nu_angie" || cuenta === "en_mano")
       ? recargasAngieLocal.filter(r => r.cuentaDestino === cuenta).reduce((sum, r) => sum + r.monto, 0)
       : 0;
@@ -388,7 +394,7 @@ export default function MesM1Desktop({
       ingresoCamiloLocal?.estado === "confirmado" &&
       CUENTA_DESTINO_TO_H4C[ingresoCamiloLocal.cuentaDestino] === cuenta
     ) ? ingresoCamiloLocal.montoCop : 0;
-    return (entry?.saldoInicial ?? 0) + recargas + ingresoCamilo;
+    return bruto + ingresoCamilo + recargas - ejecutado;
   };
 
   const rows = useMemo<TableRow[]>(() => {
@@ -850,7 +856,7 @@ export default function MesM1Desktop({
                   ? recargasAngieLocal.filter(r => r.cuentaDestino === cuenta).reduce((sum, r) => sum + r.monto, 0)
                   : 0;
                 const bruto = saldosBrutos.find(s => s.cuenta === cuenta)?.saldoInicial ?? 0;
-                const disponible = bruto - ejecutado + recargas;
+                const disponible = disponiblePorCuenta(cuenta);
                 const inicial = bruto;
                 return (
                   <div key={cuenta} style={{ padding: "6px 0", borderBottom: "1px solid var(--line)" }}>
