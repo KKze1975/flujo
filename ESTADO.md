@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: Junio 2026 | Fase: Go-live — QA sesión 5 jun — 6 bloqueantes identificados — construcción pendiente
+Actualizado: Junio 2026 | Fase: Go-live — QA sesión 6 jun — scope M1 Ejecución — BL-01 a BL-06 deuda técnica post go-live
 
 ---
 
@@ -796,12 +796,12 @@ Objetivo: cartografiar fuentes de verdad, redefinir modelo, alinear frontend.
 - H3B sin-concepto/route.ts: H3B_HEADERS declara 14 columnas pero el row tiene 16 — sobre_techo siempre se escribe como "" en lugar de calcularse. Post go-live.
 - M1 Ejecución: conceptos pago_fraccionado muestran estado "pendiente" aunque tengan consumos en H3B — diferenciación visual pendiente. Post go-live.
 - H3 junio: 5 consumos de prueba en MERCADO_Y_ALIMENTACION_1779730807246 — limpiar antes de go-live o dejar como datos reales.
-- BL-01 (bloqueante go-live): ModalCorreccionM5 selector bolsillos usa IDs H2 en lugar de IDs H3A — dato corrupto en Sheet al clasificar. Confirmado en trazabilidad sesión 5 jun.
-- BL-02 (bloqueante go-live): PropuestaCard dropdown concepto muestra conceptos de todas las semanas sin filtrar por semana activa.
-- BL-03 (bloqueante go-live): Registro via FAB aparece sin categoría en historial VistaSemanal.
-- BL-04 (bloqueante go-live): Modal cierre semana — "Remanente Angie" es campo manual vacío, debe calcularse desde H4D menos consumos con fuenteAngie=true.
-- BL-05 (bloqueante go-live): Modal cierre semana — "Aporte S2 planeado" es campo manual vacío, debe traerse de H4B. Rediseño modal requerido antes de go-live.
-- BL-06 (bloqueante go-live): PropuestaCard label "Concepto en H2" para pago_fraccionado — lógica correcta (escribe H3B), label engañoso para el usuario.
+- BL-01 (deuda técnica post go-live — reclasificado 6 jun): ModalCorreccionM5 selector bolsillos usa IDs H2 en lugar de IDs H3A — dato corrupto en Sheet al clasificar. Confirmado en trazabilidad sesión 5 jun.
+- BL-02 (deuda técnica post go-live — reclasificado 6 jun): PropuestaCard dropdown concepto muestra conceptos de todas las semanas sin filtrar por semana activa.
+- BL-03 (deuda técnica post go-live — reclasificado 6 jun): Registro via FAB aparece sin categoría en historial VistaSemanal.
+- BL-04 (deuda técnica post go-live — reclasificado 6 jun): Modal cierre semana — "Remanente Angie" es campo manual vacío, debe calcularse desde H4D menos consumos con fuenteAngie=true. Para domingo 8 jun: campo manual — se le explica a Angie que es temporal. Rediseño modal semana siguiente.
+- BL-05 (deuda técnica post go-live — reclasificado 6 jun): Modal cierre semana — "Aporte S2 planeado" es campo manual vacío, debe traerse de H4B. Para domingo 8 jun: campo manual — temporal. Rediseño modal semana siguiente.
+- BL-06 (deuda técnica post go-live — reclasificado 6 jun): PropuestaCard label "Concepto en H2" para pago_fraccionado — lógica correcta (escribe H3B), label engañoso para el usuario.
 
 ---
 
@@ -1315,27 +1315,84 @@ Fecha: 2026-06-03 | Cierre: 09:04
 
 ---
 
-## Prompt de apertura — próxima sesión
+## Sesión Estratégica — 6 junio 2026
+
+### Decisiones tomadas
+
+**Redefinición de scope go-live**
+El go-live del 7 de junio se limita a M1 Ejecución. Los bloqueantes BL-01 a BL-06 se reclasifican como deuda técnica post go-live — no bloquean la salida a producción con el scope reducido.
+
+**Plan go-live semana 7 junio**
+
+| Día | Actividad |
+|---|---|
+| Sábado 7 jun | Inicializar junio 2026 en la app + QA M1 Ejecución (flujo completo Camilo + flujo Angie en M1) |
+| Domingo 8 jun | Momento 2 real con Angie — primer cierre semanal S1 junio en condiciones reales |
+
+**Criterio de fix durante QA**
+- Bug resoluble en menos de 20 min → se resuelve
+- Requiere diagnóstico o toca arquitectura → deuda técnica, se documenta y se sigue
+
+**Modal cierre semana BL-04 y BL-05**
+Los campos de remanente Angie y aporte planeado quedan manuales para el domingo. Se le explica a Angie que es temporal. Rediseño del modal queda para la semana siguiente.
+
+**Adopción**
+Prueba piloto con la familia Villamil la semana del 8 de junio. Los BL-* se priorizan según fricción real observada en uso.
+
+---
+
+## QA Go-Live — 6 junio 2026
+
+### Inicio: [COMPLETAR]
+### Cierre: [COMPLETAR]
+
+### Flujo M1 Ejecución — Camilo
+
+| Paso | Acción | Resultado | Fix |
+|---|---|---|---|
+| 1 | Inicializar junio 2026 → verificar 62 movimientos en H2 | [PENDIENTE] | — |
+| 2 | Confirmar saldos | [PENDIENTE] | — |
+| 3 | Ejecutar concepto | [PENDIENTE] | — |
+| 4 | Posponer | [PENDIENTE] | — |
+| 5 | Revertir ejecución | [PENDIENTE] | — |
+| 6 | Agregar via B4 | [PENDIENTE] | — |
+| 7 | Cerrar semana | [PENDIENTE] | — |
+
+### Flujo Angie en M1
+
+| Paso | Acción | Resultado | Fix |
+|---|---|---|---|
+| 1 | Registrar aporte FAB | [PENDIENTE] | — |
+| 2 | Ejecutar con cuenta Angie | [PENDIENTE] | — |
+
+### Bugs encontrados en QA
+
+| # | Descripción | Severidad | Acción |
+|---|---|---|---|
+| — | — | — | — |
+
+### Fixes aplicados en sesión
+
+| # | Descripción | Commit |
+|---|---|---|
+| — | — | — |
+
+---
+
+## Prompt de apertura — próxima sesión (post go-live)
 
 Retomamos el proyecto Flujo. Lee ESTADO.md adjunto al proyecto Claude.
-Tipo de sesión: DISEÑO + CONSTRUCCIÓN
-Objetivo: Rediseño modal cierre semana (BL-04, BL-05) + construcción BL-01, BL-02, BL-03, BL-06
+Tipo de sesión: CONSTRUCCIÓN
+Objetivo: Priorizar y construir deuda técnica post go-live según fricción observada en uso real (semana 8 jun)
 Hora de inicio: [COMPLETAR]
 Entorno: Windows — PowerShell exclusivamente.
 
 APERTURA: Genera el dashboard con los datos actuales de ESTADO.md antes de cualquier otra cosa.
 
-Navegación de código: el proyecto tiene un grafo en graphify-out/. Antes de leer archivos fuente para entender estructura, usá:
-- graphify query "<pregunta>" para preguntas sobre el código
-- graphify path "<A>" "<B>" para entender cómo se conectan dos símbolos
-- graphify explain "<símbolo>" para ver todas las conexiones de un nodo
-Leé archivos fuente solo para el archivo específico que vas a editar.
+Navegación de código: usar graphify query antes de leer archivos fuente.
 
 CIERRE: Actualizar ESTADO.md con hora de cierre y retrospectiva.
-Regla: bugs se documentan como deuda técnica — no se corrigen dentro del ticket.
 Regenerar kanban: node scripts/generate-kanban.mjs
-
-Para cuando termines. No abras trabajo nuevo.
 
 ---
 
