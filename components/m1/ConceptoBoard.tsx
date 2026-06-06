@@ -543,7 +543,7 @@ function WeekColumn({
   const activos = items.filter(m => m.estado !== "no_aplica" && m.estado !== "pospuesto_mes_siguiente");
   const pct = activos.length ? Math.round((ejecutados.length / activos.length) * 100) : 0;
   const porPagar = items.filter(m => m.estado === "pendiente").reduce((s, m) => s + m.montoPresupuestado, 0);
-  const remanenteSemana = tot - ejecutadoMonto;
+  const remanenteSemana = porPagar;
   const dim = focus !== "todas" && focus !== semana;
   const isFocus = focus === semana;
   const allDone = ejecutados.length === items.length && items.length > 0;
