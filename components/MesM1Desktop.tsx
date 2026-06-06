@@ -368,14 +368,7 @@ export default function MesM1Desktop({
   const isExec = (mov: Movimiento) => mov.estado === "ejecutado";
   const filtrados = wk === "todas" ? movs : movs.filter(m => m.semana === wk);
   const pendientes = movs.filter(m => !isExec(m)).length;
-  const totalPresupuestado = movs.reduce((s, m) => s + m.montoPresupuestado, 0);
-  const ejecutadoMonto = movs.filter(isExec).reduce((s, m) => s + (m.montoEjecutado ?? m.montoPresupuestado), 0);
-  const totalSaldos = saldos.reduce((s, c) => s + c.saldoInicial, 0);
-  const proyeccion = totalSaldos - totalPresupuestado;
-  const pctEjecutado = totalPresupuestado > 0 ? Math.min(100, Math.round((ejecutadoMonto / totalPresupuestado) * 100)) : 0;
-  const saldoC = saldos.find(s => s.cuenta === "nu_camilo")?.saldoInicial ?? 0;
-  const saldoA = saldos.find(s => s.cuenta === "nu_angie")?.saldoInicial ?? 0;
-  const splitTotal = saldoC + saldoA || 1;
+
   const totalSaldosLocal = saldosLocal.reduce((s, c) => s + c.saldoInicial, 0);
   const ejecutarBloqueado = !ingresoCamiloLocal || ingresoCamiloLocal.montoCop === 0;
 
@@ -1057,71 +1050,6 @@ export default function MesM1Desktop({
 
         <div className="dk-content">
 
-          {/* ── KPIs ── */}
-          <div className="dk-kpis">
-            {view === "planificacion" ? (
-              <>
-                <div className="dk-kpi">
-                  <p className="k"><Icon name="wallet" size={14} /> Ingreso mes</p>
-                  <p className="v">{COP(ingresoTotal)}</p>
-                  <p className="h">C: {COP(ingresoCamiloNum, { compact: true })} · A: {COP(aportesNum, { compact: true })}</p>
-                </div>
-                <div className="dk-kpi">
-                  <p className="k"><Icon name="list" size={14} /> Comprometido</p>
-                  <p className="v">{COP(totalComprometido)}</p>
-                  <p className="h">{conceptosActivosMes.length} conceptos activos</p>
-                </div>
-                <div className="dk-kpi">
-                  <p className="k"><Icon name="trophy" size={14} /> Diferencia</p>
-                  <p className="v" style={{ color: diferenciaTotal >= 0 ? "var(--pos)" : "var(--neg)" }}>
-                    {diferenciaTotal >= 0 ? "+" : ""}{COP(diferenciaTotal)}
-                  </p>
-                  <p className="h">ingreso − comprometido</p>
-                </div>
-                <div className="dk-kpi">
-                  <p className="k"><Icon name="check" size={14} /> Semana activa</p>
-                  <p className="v" style={{ fontSize: 36 }}>{activeSemana}</p>
-                  <p className="h">{dates[activeSemana]}</p>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="dk-kpi">
-                  <p className="k"><Icon name="wallet" size={14} /> Saldos iniciales</p>
-                  <p className="v">{COP(totalSaldos)}</p>
-                  <div className="fl-split" style={{ marginTop: 12 }}>
-                    <span className="c" style={{ width: `${Math.round((saldoC / splitTotal) * 100)}%` }} />
-                    <span className="a" style={{ width: `${Math.round((saldoA / splitTotal) * 100)}%` }} />
-                  </div>
-                  <div className="fl-legend" style={{ marginTop: 9 }}>
-                    <span className="side"><span className="fl-person c">C</span><span className="vl">{COP(saldoC, { compact: true })}</span></span>
-                    <span className="side"><span className="vl">{COP(saldoA, { compact: true })}</span><span className="fl-person a">A</span></span>
-                  </div>
-                  {ingresoCamiloLocal
-                    ? <p className="h" style={{ color: "var(--pos)", marginTop: 6 }}>Ingreso: {COP(ingresoCamiloLocal.montoCop, { compact: true })}</p>
-                    : <p className="h" style={{ color: "var(--neg)", marginTop: 6 }}>Sin ingreso registrado</p>}
-                </div>
-                <div className="dk-kpi">
-                  <p className="k"><Icon name="list" size={14} /> Presupuestado</p>
-                  <p className="v">{COP(totalPresupuestado)}</p>
-                  <p className="h">{movs.length} conceptos</p>
-                </div>
-                <div className="dk-kpi">
-                  <p className="k"><Icon name="check" size={14} /> Ejecutado</p>
-                  <p className="v">{COP(ejecutadoMonto)}</p>
-                  <div className="fl-bar" style={{ marginTop: 12 }}><i style={{ width: `${pctEjecutado}%` }} /></div>
-                  <p className="h">{pctEjecutado}% · {pendientes} pendientes</p>
-                </div>
-                <div className="dk-kpi">
-                  <p className="k"><Icon name="trophy" size={14} /> Proyección superávit</p>
-                  <p className="v" style={{ color: proyeccion >= 0 ? "var(--pos)" : "var(--neg)" }}>
-                    {proyeccion >= 0 ? "+" : ""}{COP(proyeccion)}
-                  </p>
-                  <p className="h">saldos − presupuesto</p>
-                </div>
-              </>
-            )}
-          </div>
 
           {/* ── Split: tabla + rail ── */}
           <div className="dk-grid">
