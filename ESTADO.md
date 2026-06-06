@@ -518,6 +518,7 @@ Archivo fuente: H1_presupuesto_base.csv
 | T44 — Fix H4 spillover + createRecargaAngie determinista | Completo — commit 84b23eb — DoD 8/8 — tsc limpio — sin regresiones |
 | Fix reactividad bolsillos (handleSheetSuccess) | Completo — Promise.all consumos + movimientos — commit pendiente |
 | T45 — Migración pago_fraccionado + flujo FAB | Construido — commits 184b42f, 0dc8ef0, da3e017 — DoD 4/5/6 pendientes verificación móvil |
+| T46 — Eliminar tarjetas métricas superiores MesM1Desktop | Completo — commit 887ed38 — tsc limpio — sin regresiones |
 
 ---
 
@@ -1398,6 +1399,21 @@ Prueba piloto con la familia Villamil la semana del 8 de junio. Los BL-* se prio
 **Deuda técnica nueva:** ninguna
 
 **Próximo paso:** sesión de diseño con claude.ai — rediseño de componentes (reubicar y eliminar)
+
+---
+
+## Retrospectiva — T46 Eliminar tarjetas métricas superiores · 6 junio 2026
+
+**Qué funcionó:**
+- Ticket 100% clean: bloque dk-kpis removido (65 líneas JSX), 8 variables huérfanas eliminadas
+- tsc limpio al primer intento, cero errores post-refactor
+- Diagnóstico de variables usadas en sidebar/rail vs solo en KPI — no se eliminó nada útil
+
+**Qué no funcionó:**
+- Nada
+
+**Qué cambia en el próximo sprint:**
+- Si hay más componentes visuales de la sesión de diseño con claude.ai, aplicar el mismo criterio: eliminar bloque JSX + variables huérfanas + tsc en un solo ciclo
 
 ---
 
