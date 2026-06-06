@@ -426,7 +426,10 @@ export default function MesM1Desktop({
         .filter((m) => m.estado === "ejecutado")
         .reduce((sum, m) => sum + (m.montoEjecutado ?? m.montoPresupuestado), 0);
       const pendiente = items.filter((m) => m.estado === "pendiente").length;
-      const aporteAngie = remanenteAngiePerSemana[s] ?? 0;
+      // Usar recargas reales (no cierre.remanenteAngie) para el flujo de caja:
+      // cierre.remanenteAngie = lo que queda en la cuenta de Angie al cerrar,
+      // no lo que ella aportó. El aporte real son las recargas de esa semana.
+      const aporteAngie = recargasAngieLocal.filter(r => r.semana === s).reduce((sum, r) => sum + r.monto, 0);
       const disponible = remanente + aporteAngie;
       const diferencia = disponible - ejecutado;
       // F3: semana cerrada = ingreso Angie confirmado; sin cierre = planeado
@@ -434,7 +437,7 @@ export default function MesM1Desktop({
       remanente = diferencia;
       return { semana: s, remanente: disponible, aporteAngie, comprometido, ejecutado, diferencia, pendiente, isConfirmado };
     });
-  }, [movs, ingresoCamiloLocal, remanenteAngiePerSemana, cierresSemanaProps]);
+  }, [movs, ingresoCamiloLocal, recargasAngieLocal, cierresSemanaProps]);
 
 
   // ── Planificación derivations ─────────────────────────────────────────────
