@@ -89,6 +89,13 @@ const CUENTAS_H4C: Array<{
   { cuenta: "en_mano",   label: "En mano",                 fuenteKey: "fuenteEnMano" },
 ];
 
+const CUENTA_DESTINO_TO_H4C: Partial<Record<CuentaDestino, CuentaH4C>> = {
+  camilo: "nu_camilo",
+  angie:  "nu_angie",
+  en_mano: "en_mano",
+  nequi:  "arq",
+};
+
 const CUENTAS_DESTINO: { key: CuentaDestino; label: string }[] = [
   { key: "camilo",  label: "Cta. Camilo" },
   { key: "angie",   label: "Cta. Angie"  },
@@ -377,7 +384,11 @@ export default function MesM1Desktop({
     const recargas = (cuenta === "nu_angie" || cuenta === "en_mano")
       ? recargasAngieLocal.filter(r => r.cuentaDestino === cuenta).reduce((sum, r) => sum + r.monto, 0)
       : 0;
-    return (entry?.saldoInicial ?? 0) + recargas;
+    const ingresoCamilo = (
+      ingresoCamiloLocal?.estado === "confirmado" &&
+      CUENTA_DESTINO_TO_H4C[ingresoCamiloLocal.cuentaDestino] === cuenta
+    ) ? ingresoCamiloLocal.montoCop : 0;
+    return (entry?.saldoInicial ?? 0) + recargas + ingresoCamilo;
   };
 
   const rows = useMemo<TableRow[]>(() => {
