@@ -712,15 +712,15 @@ export default function VistaSemanal({
     try {
       const [consumosRes, movRes] = await Promise.all([
         fetch(`/api/mes/${mes}/consumos/${semanaActiva}`),
-        fetch(`/api/mes/${mes}`),
+        fetch(`/api/mes/${mes}/semana/${semanaActiva}`),
       ]);
       if (consumosRes.ok) {
         const data = await consumosRes.json() as { consumos: ConsumoH3[] };
         setConsumos(data.consumos ?? []);
       }
       if (movRes.ok) {
-        const data = await movRes.json() as Movimiento[];
-        setMovimientos(data);
+        const data = await movRes.json() as { movimientos: Movimiento[] };
+        setMovimientos(data.movimientos ?? []);
       }
     } catch {}
   }
