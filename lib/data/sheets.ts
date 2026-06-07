@@ -286,7 +286,10 @@ export class SheetsDataProvider implements IDataProvider {
 
   async getMovimientosByMesYSemana(mes: string, semana: Semana): Promise<Movimiento[]> {
     const todos = await this.getMovimientos(mes);
-    return todos.filter((m) => m.semana === semana);
+    return todos.filter((m) =>
+      m.semana === semana ||
+      (m.semana === null && m.estado !== "ejecutado")
+    );
   }
   createMovimiento(_data: Omit<Movimiento, "id">): Promise<Movimiento> {
     throw new Error("Not implemented yet");
