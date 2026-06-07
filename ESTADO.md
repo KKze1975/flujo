@@ -1983,4 +1983,43 @@ Fecha: 2026-06-04
 
 ---
 
+---
+
+## Sesión QA pre go-live · 6 junio 2026 (continuación) · M4 + M1 Sidebar
+
+### Bugs resueltos — VistaSemanal / M4
+
+| # | Bug | Archivos | Commit |
+|---|---|---|---|
+| BL-M4-01 | Pendientes mostraba pospuesto/no_aplica — filtro debía ser `estado === "pendiente"` exclusivamente | `VistaSemanal.tsx` | — |
+| BL-M4-02 | Mercado y Alimentación / Entretenimiento ausentes de pendientes — movimientos con `semana = null` (variable) eran excluidos por filtro estricto de semana | `lib/data/sheets.ts` — `getMovimientosByMesYSemana`: añade `m.semana === null && m.estado !== "ejecutado"` | — |
+| BL-M4-03 | Carousel de bolsillos se inundaba con todos los conceptos del mes tras un registro FAB | `VistaSemanal.tsx` — `handleSheetSuccess` cambiado a endpoint `/api/mes/${mes}/semana/${semanaActiva}` (week-scoped) | — |
+| BL-M4-04 | Registros FAB clasificados por Claude quedaban sin categoría en H3 (`clasificado = FALSE`) | `app/api/registro/sin-concepto/route.ts` — `clasificado = body.bolsilloId ? "TRUE" : "FALSE"` · `components/m4/RegistroRapido.tsx` — path pago_fraccionado fija `clasificado: true` | — |
+| BL-M4-05 | NU Angie saldo no reflejaba gastos FAB (H3) — `disponiblePorCuenta` no restaba consumos H3 | `app/mes/[mes]/page.tsx`, `MesM1ClientWrapper.tsx`, `MesM1Desktop.tsx` — pipeline `gastoH3PorCuenta` por cuenta | — |
+| BL-M4-06 | Recarga Angie dejaba el movimiento sin ejecutar — `handleRecargaRegistrada` no disparaba `onEjecutarConCuenta` al cubrir el déficit | `components/m1/ModalValidacionFondos.tsx` — auto-ejecución post recarga cuando nueva disponibilidad ≥ montoEjecutado | — |
+| BL-M4-07 | "Ejecutado" en sidebar mostraba $0 para cuentas con gastos H3 — solo sumaba H2 | `MesM1Desktop.tsx` — `ejecutado = ejecutadoH2 + gastoH3PorCuenta[cuenta]` | — |
+| BL-M4-08 | Formato compacto negativo mostraba `$-100K` en lugar de `-$100K` | `MesM1Desktop.tsx` — helper COP reformulado con `abs` y `sign` separados | — |
+
+### Bugs resueltos — M1 Ejecución sidebar (sesión actual)
+
+| # | Bug | Causa raíz | Fix | Archivos | Commit |
+|---|---|---|---|---|---|
+| S-01 | Fila "Total" del bloque Saldos mostraba suma de saldos H4C ajustados por H2, sin descontar H3 | `totalSaldosLocal` = suma de `saldosLocal.saldoInicial` — no incluía `gastoH3PorCuenta` | Reemplazado por `CUENTAS_H4C.reduce((sum, { cuenta }) => sum + disponiblePorCuenta(cuenta), 0)` | `MesM1Desktop.tsx` | 5e73625 |
+| S-02 | "Por Semana" no descontaba gastos FAB — flujo de caja semanal ignoraba H3 | `balanceSemanas` computaba `ejecutado` solo desde H2 movimientos | Nuevo prop `gastoH3PorSemana` (suma de ConsumoH3 por semana S1-S4) threadeado desde `page.tsx` → wrapper → desktop; sumado al ejecutado de cada semana | `page.tsx`, `MesM1ClientWrapper.tsx`, `MesM1Desktop.tsx` | 5e73625 |
+| S-03 | Movimientos de semana variable ejecutados via FAB no aparecían en "Por Semana" — sí bajaban disponible de cuenta | **Causa doble:** (1) PATCH `/ejecutar` no aceptaba ni escribía `semana` — movimiento quedaba `semana = null` post-ejecución; (2) `balanceSemanas` filtraba con `m.semana === s`, descartando `null` | (1) Route: campo `semana?: Semana` en body, se escribe si `mov.semana === null`; (2) RegistroRapido: envía `semana: payload.semana` cuando `mov.semana === null`; (3) `balanceSemanas`: para ejecutados con `semana = null`, deriva semana desde `fechaEjecucion` (día 1–7→S1, 8–14→S2, 15–21→S3, 22+→S4) via helper `semanaFromFecha` | `app/api/mes/[mes]/movimientos/[id]/route.ts`, `components/m4/RegistroRapido.tsx`, `MesM1Desktop.tsx` | 9ca7add |
+
+### Retrospectiva — Sesión
+
+**Qué funcionó:**
+- Trazabilidad paso a paso del registro FAB identificó el bug S-03 antes de buscar en el código
+- `semanaFromFecha` cubre tanto registros ya existentes con `semana = null` (usa `fechaEjecucion`) como los futuros (route escribe semana en el momento de ejecutar)
+- tsc limpio en todos los commits sin iteraciones adicionales
+
+**Qué no funcionó:**
+- S-03 tenía causa doble — route Y `balanceSemanas` fallaban independientemente. El fix de solo el route habría dejado los registros históricos sin semana fuera del flujo semanal.
+
+**Deuda técnica nueva:** ninguna
+
+---
+
 Flujo - Proyecto de salud financiera familiar - Camilo Villamil - 2026
