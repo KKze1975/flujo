@@ -77,6 +77,7 @@ export async function POST(req: NextRequest) {
 
   const id = `CONSUMO_${Date.now()}`;
   const hoy = new Date().toISOString().split("T")[0];
+  const clasificado = body.bolsilloId ? "TRUE" : "FALSE";
   const row = [
     id,
     body.bolsilloId ?? "PENDIENTE_CLASIFICACION",
@@ -91,7 +92,7 @@ export async function POST(req: NextRequest) {
     body.fuente === "angie" ? "TRUE" : "FALSE",
     hoy,
     "",
-    "FALSE",
+    clasificado,
     "",
     "",
   ];
@@ -103,7 +104,7 @@ export async function POST(req: NextRequest) {
       valueInputOption: "RAW",
       requestBody: { values: [row] },
     });
-    return Response.json({ id, clasificado: false });
+    return Response.json({ id, clasificado: !!body.bolsilloId });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Error guardando en H3";
     return Response.json({ error: msg }, { status: 500 });

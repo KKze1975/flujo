@@ -174,7 +174,7 @@ export default function RegistroRapido({ onClose, onSuccess }: { onClose?: () =>
             const d = await res.json() as { error?: string };
             throw new Error(d.error ?? "Error al guardar el consumo.");
           }
-          setResultado({ nombreConcepto: mov.nombreSnapshot, clasificado: false });
+          setResultado({ nombreConcepto: mov.nombreSnapshot, clasificado: true });
         } else {
           const res = await fetch(`/api/mes/${mesActivo}/movimientos/${payload.movimientoId}`, {
             method: "PATCH",
