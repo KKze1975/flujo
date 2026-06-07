@@ -805,6 +805,8 @@ Objetivo: cartografiar fuentes de verdad, redefinir modelo, alinear frontend.
 - BL-04 (deuda técnica post go-live — reclasificado 6 jun): Modal cierre semana — "Remanente Angie" es campo manual vacío, debe calcularse desde H4D menos consumos con fuenteAngie=true. Para domingo 8 jun: campo manual — se le explica a Angie que es temporal. Rediseño modal semana siguiente.
 - BL-05 (deuda técnica post go-live — reclasificado 6 jun): Modal cierre semana — "Aporte S2 planeado" es campo manual vacío, debe traerse de H4B. Para domingo 8 jun: campo manual — temporal. Rediseño modal semana siguiente.
 - BL-06 (deuda técnica post go-live — reclasificado 6 jun): PropuestaCard label "Concepto en H2" para pago_fraccionado — lógica correcta (escribe H3B), label engañoso para el usuario.
+- QA-7jun-01 (deuda técnica post go-live): T26 no valida fondos Angie en consumos H3B (pago_fraccionado) — solo intercepta PATCH H2. Usuario puede registrar gasto pago_fraccionado con fuenteAngie sin saldo suficiente sin que el sistema lo bloquee.
+- QA-7jun-04 (feature request post go-live): Falta desglose de consumos H3B por concepto pago_fraccionado en M1 Ejecución — usuario no puede auditar qué gastos componen el total de un bolsillo desde la vista principal.
 
 ---
 
@@ -2019,6 +2021,59 @@ Fecha: 2026-06-04
 - S-03 tenía causa doble — route Y `balanceSemanas` fallaban independientemente. El fix de solo el route habría dejado los registros históricos sin semana fuera del flujo semanal.
 
 **Deuda técnica nueva:** ninguna
+
+---
+
+## QA Go-Live — 7 junio 2026
+
+### Foco: M4 → propagación a M1 Ejecución
+### Resultado: APROBADO — un bug nuevo, un feature request
+
+### Casos verificados
+
+| # | Caso | Resultado | Detalle |
+|---|---|---|---|
+| C1 | Gasto texto libre → concepto pago_fraccionado (Entretenimiento) | ✅ | Routing correcto a H3B, clasificado OK, semana OK |
+| C2 | Gasto texto libre → concepto fijo (Mesada) | ✅ | PATCH H2 correcto, desviación registrada |
+| C3 | Gasto fuenteAngie sin saldo suficiente | ❌ Bug | T26 no intercepta — registrado como QA-7jun-01 |
+| C4 | Propagación M4 → M1 Saldos | ✅ | ejecutadoH2 + gastoH3PorCuenta correctos en rail |
+| C5 | Historial VistaSemanal con categoría | ✅ | Registros clasificados aparecen con categoría |
+| C6 | Registro sin clasificar en VistaSemanal | ✅ | Alerta visible, flujo correcto — BL-03 cerrado como falso positivo en uso real |
+
+### Bugs nuevos
+
+| ID | Vista | Descripción | Severidad |
+|---|---|---|---|
+| QA-7jun-01 | M4 | T26 no valida fondos Angie en consumos H3B pago_fraccionado — solo valida PATCH H2 | Media |
+
+### Feature requests
+
+| ID | Vista | Descripción |
+|---|---|---|
+| QA-7jun-04 | M1 Ejecución | Desglose de consumos H3B por concepto pago_fraccionado — auditoría sin salir de la vista principal |
+
+### Comportamientos verificados como correctos
+
+- Routing M4: pago_fraccionado → H3B, fijo → H2 PATCH ✓
+- Rail Saldos M1: suma H2 ejecutado + H3B por cuenta correctamente ✓
+- Historial VistaSemanal: registros clasificados con categoría ✓
+- Registro sin clasificar: alerta visual presente ✓
+- BL-03: cerrado — falso positivo en uso real ✓
+
+### Retrospectiva — QA Go-Live · 7 junio 2026
+
+**Qué funcionó:**
+- Flujo M4 completo sin bloqueantes: texto libre, pago_fraccionado, fijo, sin clasificar
+- Propagación M4 → M1 Saldos correcta — H2 + H3B sumados por cuenta
+- Trazabilidad /admin/trazabilidad como herramienta de verificación — eficaz en cada caso
+- Google Drive read desde claude.ai permitió diagnóstico sin abrir WorkSpace
+
+**Qué no funcionó:**
+- T26 no cubre el flujo H3B — brecha arquitectónica identificada en uso real
+
+**Qué cambia en el próximo sprint:**
+- QA-7jun-01 entra a la cola de construcción post go-live
+- Orden de prioridad actualizado: BL-02 → BL-03 (cerrado) → BL-06 → QA-7jun-01 → BL-04/BL-05
 
 ---
 
