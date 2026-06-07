@@ -299,6 +299,8 @@ export default function TrazabilidadPage() {
   const [diff, setDiff] = useState<DiffResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetResult, setResetResult] = useState<string | null>(null);
 
   async function handleCapturar(target: "before" | "after") {
     setLoading(true);
@@ -330,6 +332,28 @@ export default function TrazabilidadPage() {
     setSnapAfter(null);
     setDiff(null);
     setError(null);
+  }
+
+  async function handleReset() {
+    if (!confirm(`¿Reset completo + reinicializar ${mes}?\n\nBorra H2, H3B, H4A, H4B, H4C, H4D, H5A, H5B y recrea H2 desde H1. No se puede deshacer.`)) return;
+    setResetLoading(true);
+    setResetResult(null);
+    try {
+      const res = await fetch("/api/admin/reset-mes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mes }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Error desconocido");
+      const r = data.reset;
+      setResetResult(`✓ Reset + init ${data.mes} — H2:${r.h2} H3B:${r.h3b} H4A:${r.h4a} H4B:${r.h4b} H4C:${r.h4c} H4D:${r.h4d} H5A:${r.h5a} H5B:${r.h5b} borradas · ${data.inicializado} movimientos creados`);
+      setSnapBefore(null); setSnapAfter(null); setDiff(null);
+    } catch (e) {
+      setResetResult(`❌ ${e instanceof Error ? e.message : "Error"}`);
+    } finally {
+      setResetLoading(false);
+    }
   }
 
   const btnStyle: React.CSSProperties = {
@@ -380,7 +404,19 @@ export default function TrazabilidadPage() {
           Limpiar
         </button>
         {loading && <span style={{ color: "#888" }}>Cargando…</span>}
+        <button
+          style={{ ...btnStyle, marginLeft: 24, background: "#fff0f0", borderColor: "#c00", color: "#c00", opacity: resetLoading ? 0.5 : 1 }}
+          disabled={resetLoading}
+          onClick={handleReset}
+        >
+          {resetLoading ? "Reseteando…" : "Reset completo + reinicializar"}
+        </button>
       </div>
+      {resetResult && (
+        <p style={{ marginBottom: 12, fontSize: 13, color: resetResult.startsWith("✓") ? "#070" : "#c00", background: resetResult.startsWith("✓") ? "#f0fff0" : "#fff0f0", padding: "6px 12px", borderRadius: 4 }}>
+          {resetResult}
+        </p>
+      )}
 
       <div style={{ marginBottom: 16, fontSize: 13, color: "#444" }}>
         <strong>ANTES:</strong>{" "}
