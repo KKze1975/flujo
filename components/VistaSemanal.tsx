@@ -621,8 +621,8 @@ export default function VistaSemanal({
 
   const bolsillos = movimientos.filter((m) => m.tipoSnapshot === "pago_fraccionado");
   const conceptos  = movimientos.filter((m) => m.tipoSnapshot !== "pago_fraccionado");
-  const pendientes = conceptos.filter((m) => m.estado === "pendiente");
-  const ejecutados = conceptos.filter((m) => m.estado !== "pendiente");
+  const pendientes = conceptos.filter((m) => m.estado !== "ejecutado");
+  const ejecutados = conceptos.filter((m) => m.estado === "ejecutado");
 
   const totalPresupuestado = movimientos.reduce((s, m) => s + m.montoPresupuestado, 0);
   const totalEjecutado = movimientos
@@ -904,7 +904,7 @@ export default function VistaSemanal({
                   </div>
 
                   {/* Acciones para pendientes */}
-                  {tab === "pendientes" && mov.estado === "pendiente" && !panelActivo && (
+                  {tab === "pendientes" && mov.estado !== "ejecutado" && !panelActivo && (
                     <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
                       <button
                         className="fl-btn pos sm"
