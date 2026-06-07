@@ -632,6 +632,13 @@ export default function VistaSemanal({
     ? Math.round((totalEjecutado / totalPresupuestado) * 100)
     : 0;
 
+  const angieConceptos = conceptos.filter(m => m.ejecutor === "angie");
+  const comprometidoAngie = angieConceptos.reduce((s, m) => s + m.montoPresupuestado, 0);
+  const ejecutadoAngie = movimientos
+    .filter(m => m.fuenteAngie && m.estado === "ejecutado")
+    .reduce((s, m) => s + (m.montoEjecutado ?? 0), 0);
+  const faltaAngie = comprometidoAngie - ejecutadoAngie;
+
   async function patchar(id: string, body: Record<string, unknown>) {
     setBusy(true);
     setError(null);
@@ -767,22 +774,50 @@ export default function VistaSemanal({
           </div>
         )}
 
-        {/* Bolsillos */}
+        {/* Angie metrics */}
+        {comprometidoAngie > 0 && (
+          <>
+            <p className="fl-sectlabel">
+              <span className="fl-person a" style={{ width: 16, height: 16, fontSize: 9, verticalAlign: "middle" }}>A</span>
+              {" "}Angie · esta semana
+            </p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+              {([
+                { label: "Comprometido", val: comprometidoAngie, color: "var(--ink)" },
+                { label: "Ejecutado",    val: ejecutadoAngie,    color: "var(--pos)" },
+                { label: "Falta",        val: faltaAngie,        color: faltaAngie > 0 ? "var(--warn)" : "var(--pos)" },
+              ] as { label: string; val: number; color: string }[]).map(({ label, val, color }) => (
+                <div key={label} className="fl-card" style={{ textAlign: "center", padding: "10px 8px" }}>
+                  <p style={{ fontSize: 10, color: "var(--ink-soft)", marginBottom: 4 }}>{label}</p>
+                  <p style={{ fontSize: 13, fontWeight: 700, color }}>{copCompact(val)}</p>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Bolsillos carousel */}
         {bolsillos.length > 0 && (
           <>
             <p className="fl-sectlabel">Bolsillos · techo semanal</p>
-            <div className="fl-card" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              {bolsillos.map((b, i) => {
+            <div style={{
+              display: "flex",
+              overflowX: "auto",
+              gap: 10,
+              scrollSnapType: "x mandatory",
+              paddingBottom: 4,
+            }}>
+              {bolsillos.map((b) => {
                 const gastado = consumos
                   .filter(c => c.bolsilloId === b.conceptoId)
                   .reduce((sum, c) => sum + c.monto, 0);
-                const techo   = b.montoPresupuestado;
-                const pctB    = techo > 0 ? Math.round((gastado / techo) * 100) : 0;
-                const over    = gastado > techo;
+                const techo = b.montoPresupuestado;
+                const pctB  = techo > 0 ? Math.round((gastado / techo) * 100) : 0;
+                const over  = gastado > techo;
                 return (
-                  <div key={b.id} style={{
-                    paddingTop: i ? 14 : 4, paddingBottom: 4,
-                    borderTop: i ? "1px solid var(--line)" : "none",
+                  <div key={b.id} className="fl-card" style={{
+                    minWidth: 155, flexShrink: 0, scrollSnapAlign: "start",
+                    display: "flex", flexDirection: "column", gap: 8, padding: "12px 14px",
                   }}>
                     <div className="fl-bolsillo">
                       <Ring pct={pctB} over={over} />
@@ -792,10 +827,10 @@ export default function VistaSemanal({
                           {COP(gastado)} <span style={{ color: "var(--ink-faint)" }}>/ {COP(techo)}</span>
                         </p>
                       </div>
-                      {over
-                        ? <span className="fl-badge neg"><span className="dot" />+{COP(gastado - techo)}</span>
-                        : <span className="fl-badge pos">{COP(techo - gastado)} libre</span>}
                     </div>
+                    {over
+                      ? <span className="fl-badge neg"><span className="dot" />+{COP(gastado - techo)}</span>
+                      : <span className="fl-badge pos">{COP(techo - gastado)} libre</span>}
                   </div>
                 );
               })}
