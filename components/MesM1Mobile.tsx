@@ -215,23 +215,6 @@ export default function MesM1Mobile({
     const monto = Number(ejecutarPanel.monto);
     if (!monto || isNaN(monto)) return;
 
-    // T26 — validar saldo antes de ejecutar
-    const fuentes = Object.keys(FUENTE_A_CUENTA) as (keyof typeof FUENTE_A_CUENTA)[];
-    const seleccionadas = fuentes.filter(k => ejecutarPanel[k as keyof EjecutarPanel]);
-    if (seleccionadas.length > 0) {
-      const totalDisp = seleccionadas.reduce((sum, k) => sum + disponiblePorCuenta(FUENTE_A_CUENTA[k]), 0);
-      if (totalDisp < monto) {
-        const mov = movs.find(m => m.id === ejecutarPanel.movId);
-        const cuentaConMayorDeficit = seleccionadas.reduce((worst, cur) =>
-          disponiblePorCuenta(FUENTE_A_CUENTA[cur]) < disponiblePorCuenta(FUENTE_A_CUENTA[worst]) ? cur : worst
-        );
-        if (mov) {
-          setValidacionFondos({ mov, panel: { ...ejecutarPanel }, cuentaDeficit: FUENTE_A_CUENTA[cuentaConMayorDeficit] });
-          return;
-        }
-      }
-    }
-
     patchar(ejecutarPanel.movId, {
       tipo: "ejecutar", montoEjecutado: monto,
       ejecutor: ejecutarPanel.ejecutor,

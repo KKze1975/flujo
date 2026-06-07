@@ -118,34 +118,6 @@ export default function RegistroRapido({ onClose, onSuccess }: { onClose?: () =>
   async function handleConfirmar(payload: ConfirmacionPayload) {
     if (!mesActivo) return;
 
-    // T26 — validar saldo cuando el gasto se vincula a H2
-    if (payload.movimientoId) {
-      const cuentaKey = FUENTE_A_CUENTA[payload.fuente];
-      if (cuentaKey && saldosMes.length > 0) {
-        const CUENTA_FUENTE_KEY: Record<CuentaH4C, string> = {
-          nu_camilo: "fuenteCamilo", nu_angie: "fuenteAngie",
-          arq: "fuenteNequi", en_mano: "fuenteEnMano",
-        };
-        const fuenteKey = CUENTA_FUENTE_KEY[cuentaKey];
-        const ejecutado = movimientos
-          .filter(m => m.estado === "ejecutado" && (m as unknown as Record<string, unknown>)[fuenteKey])
-          .reduce((sum, m) => sum + (m.montoEjecutado ?? m.montoPresupuestado), 0);
-        const recargas = (cuentaKey === "nu_angie" || cuentaKey === "en_mano")
-          ? recargasMes.filter(r => r.cuentaDestino === cuentaKey).reduce((sum, r) => sum + r.monto, 0)
-          : 0;
-        const saldoRaw = saldosMes.find(s => s.cuenta === cuentaKey)?.saldoInicial ?? 0;
-        const disponible = Math.max(0, saldoRaw - ejecutado) + recargas;
-        if (payload.monto > disponible) {
-          const mov = movimientos.find(m => m.id === payload.movimientoId);
-          if (mov) {
-            setValidacionPayload(payload);
-            setEstado("propuesta");
-            return;
-          }
-        }
-      }
-    }
-
     await doConfirmar(payload);
   }
 

@@ -637,40 +637,12 @@ export default function MesM1Desktop({
     }
   };
 
-  const handleBeforeExec = (mov: Movimiento, s: EjecutarPanel): boolean => {
-    const monto = Number(s.monto);
-    if (!monto || isNaN(monto)) return true;
-    const seleccionadas = CUENTAS_H4C.filter(({ fuenteKey }) => s[fuenteKey]);
-    if (!seleccionadas.length) return true;
-    const totalDisp = seleccionadas.reduce((sum, { cuenta }) => sum + disponiblePorCuenta(cuenta), 0);
-    if (totalDisp >= monto) return true;
-    const cuentaConDeficit = seleccionadas.reduce((w, c) =>
-      disponiblePorCuenta(c.cuenta) < disponiblePorCuenta(w.cuenta) ? c : w
-    );
-    setValidacionFondos({ mov, panel: { ...s }, cuentaDeficit: cuentaConDeficit.cuenta });
-    return false;
-  };
+  const handleBeforeExec = (_mov: Movimiento, _s: EjecutarPanel): boolean => true;
 
   const confirmarEjecucion = () => {
     if (!ejecutarPanel) return;
     const monto = Number(ejecutarPanel.monto);
     if (!monto || isNaN(monto)) return;
-
-    // T26 — validar saldo antes de ejecutar
-    const seleccionadas = CUENTAS_H4C.filter(({ fuenteKey }) => ejecutarPanel[fuenteKey]);
-    if (seleccionadas.length > 0) {
-      const totalDisp = seleccionadas.reduce((sum, { cuenta }) => sum + disponiblePorCuenta(cuenta), 0);
-      if (totalDisp < monto) {
-        const mov = movs.find(m => m.id === ejecutarPanel.movId);
-        const cuentaConMayorDeficit = seleccionadas.reduce((worst, cur) =>
-          disponiblePorCuenta(cur.cuenta) < disponiblePorCuenta(worst.cuenta) ? cur : worst
-        );
-        if (mov) {
-          setValidacionFondos({ mov, panel: { ...ejecutarPanel }, cuentaDeficit: cuentaConMayorDeficit.cuenta });
-          return;
-        }
-      }
-    }
 
     doEjecutar(ejecutarPanel);
   };
