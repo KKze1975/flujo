@@ -11,7 +11,7 @@ export default async function MesPage({
   const { mes } = await params;
   const provider = getProvider();
 
-  const [movimientos, conceptos, ingresoCamiloList, ingresosAngie, cierresSemana, gastosSinClasificar, saldosCuenta, recargasAngie] = await Promise.all([
+  const [movimientos, conceptos, ingresoCamiloList, ingresosAngie, cierresSemana, gastosSinClasificar, saldosCuenta, recargasAngie, consumosH3] = await Promise.all([
     provider.getMovimientos(mes),
     provider.getConceptos(),
     provider.getIngresoCamilo(mes).catch(() => []),
@@ -20,7 +20,15 @@ export default async function MesPage({
     provider.getGastosSinClasificarPorSemana(mes).catch(() => ({ S1: 0, S2: 0, S3: 0, S4: 0 })),
     provider.getSaldosCuenta(mes).catch(() => []),
     provider.getRecargasAngie(mes).catch(() => []),
+    provider.getConsumosByMes(mes).catch(() => []),
   ]);
+
+  const gastoH3PorCuenta = {
+    nu_camilo: consumosH3.filter(c => c.fuenteCamilo).reduce((s, c) => s + c.monto, 0),
+    nu_angie:  consumosH3.filter(c => c.fuenteAngie).reduce((s, c) => s + c.monto, 0),
+    arq:       consumosH3.filter(c => c.fuenteNequi).reduce((s, c) => s + c.monto, 0),
+    en_mano:   consumosH3.filter(c => c.fuenteEnMano).reduce((s, c) => s + c.monto, 0),
+  };
 
   const cuentaToFuente = {
     en_mano: "fuenteEnMano",
@@ -58,6 +66,7 @@ export default async function MesPage({
       gastosSinClasificarInit={gastosSinClasificar}
       saldosInit={saldosConDescuento}
       saldosBrutos={saldosCuenta}
+      gastoH3PorCuenta={gastoH3PorCuenta}
     />
   );
 }

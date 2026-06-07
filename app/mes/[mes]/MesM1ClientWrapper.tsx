@@ -18,6 +18,7 @@ export default function MesM1ClientWrapper({
   gastosSinClasificarInit,
   saldosInit,
   saldosBrutos,
+  gastoH3PorCuenta = { nu_camilo: 0, nu_angie: 0, arq: 0, en_mano: 0 },
 }: {
   mes: string;
   movimientos: Movimiento[];
@@ -29,6 +30,7 @@ export default function MesM1ClientWrapper({
   gastosSinClasificarInit: Record<Semana, number>;
   saldosInit: SaldoCuenta[];
   saldosBrutos: SaldoCuenta[];
+  gastoH3PorCuenta?: Record<string, number>;
 }) {
   // Default to mobile; corrected by effect before first paint on client
   const [viewMode, setViewMode] = useState<ViewMode>("mobile");
@@ -53,6 +55,7 @@ export default function MesM1ClientWrapper({
         recargasAngie={recargasAngie}
         cierresSemana={cierresSemana}
         gastosSinClasificar={gastosSinClasificarInit}
+        gastoH3PorCuenta={gastoH3PorCuenta}
         onSwitchToMobile={() => setViewMode("mobile")}
       />
     );

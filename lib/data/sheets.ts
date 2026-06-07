@@ -831,6 +831,23 @@ export class SheetsDataProvider implements IDataProvider {
     ];
   }
 
+  async getConsumosByMes(mes: string): Promise<ConsumoH3[]> {
+    try {
+      const res = await this.sheets.spreadsheets.values.get({
+        spreadsheetId: process.env.GOOGLE_SHEET_ID,
+        range: "H3!A:P",
+      });
+      const rows = (res.data.values ?? []) as string[][];
+      if (rows.length < 2) return [];
+      const [headers, ...data] = rows;
+      return data
+        .filter(row => row[headers.indexOf("mes")] === mes && row[headers.indexOf("id_consumo")])
+        .map(row => this.rowToConsumoH3(row, headers));
+    } catch {
+      return [];
+    }
+  }
+
   async getConsumosByMesYSemana(mes: string, semana: Semana): Promise<ConsumoH3[]> {
     try {
       const res = await this.sheets.spreadsheets.values.get({

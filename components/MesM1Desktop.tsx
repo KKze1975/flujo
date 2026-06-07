@@ -300,6 +300,7 @@ export default function MesM1Desktop({
   recargasAngie: recargasAngieProp = [],
   cierresSemana: cierresSemanaProps = [],
   gastosSinClasificar = { S1: 0, S2: 0, S3: 0, S4: 0 },
+  gastoH3PorCuenta = {},
   onSwitchToMobile,
 }: {
   movimientos: Movimiento[];
@@ -312,6 +313,7 @@ export default function MesM1Desktop({
   recargasAngie?: RecargaAngie[];
   cierresSemana?: import("@/lib/data/types").CierreSemana[];
   gastosSinClasificar?: Record<Semana, number>;
+  gastoH3PorCuenta?: Record<string, number>;
   onSwitchToMobile: () => void;
 }) {
   const router = useRouter();
@@ -383,7 +385,8 @@ export default function MesM1Desktop({
     const recargas = (cuenta === "nu_angie" || cuenta === "en_mano")
       ? recargasAngieLocal.filter(r => r.cuentaDestino === cuenta).reduce((sum, r) => sum + r.monto, 0)
       : 0;
-    return bruto + recargas - ejecutado;
+    const gastoH3 = gastoH3PorCuenta[cuenta] ?? 0;
+    return bruto + recargas - ejecutado - gastoH3;
   };
 
   const rows = useMemo<TableRow[]>(() => {

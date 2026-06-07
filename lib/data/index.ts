@@ -40,6 +40,7 @@ export interface IDataProvider {
   updateConsumo(id: string, data: Partial<Omit<Consumo, "id">>): Promise<Consumo>;
   getConsumos(bolsilloId?: string): Promise<Consumo[]>;
   getGastosSinClasificarPorSemana(mes: string): Promise<Record<Semana, number>>;
+  getConsumosByMes(mes: string): Promise<ConsumoH3[]>;
   getConsumosByMesYSemana(mes: string, semana: Semana): Promise<ConsumoH3[]>;
   updateConsumoH3(id: string, data: Partial<Omit<ConsumoH3, "id">>): Promise<ConsumoH3>;
 
