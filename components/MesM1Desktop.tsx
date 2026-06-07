@@ -844,9 +844,11 @@ export default function MesM1Desktop({
             <div style={{ background: "var(--surface-2)", borderRadius: 14, padding: "10px 12px", marginBottom: 4 }}>
               {CUENTAS_H4C.map(({ cuenta, label: cuentaLabel, persona, fuenteKey }) => {
                 const entry = saldosLocal.find(s => s.cuenta === cuenta);
-                const ejecutado = movs
+                const ejecutadoH2 = movs
                   .filter(m => m.estado === "ejecutado" && m[fuenteKey])
                   .reduce((sum, m) => sum + (m.montoEjecutado ?? m.montoPresupuestado), 0);
+                const gastoH3 = gastoH3PorCuenta[cuenta] ?? 0;
+                const ejecutado = ejecutadoH2 + gastoH3;
                 const recargas = (cuenta === "nu_angie" || cuenta === "en_mano")
                   ? recargasAngieLocal.filter(r => r.cuentaDestino === cuenta).reduce((sum, r) => sum + r.monto, 0)
                   : 0;
