@@ -341,6 +341,7 @@ export default function MesM1Desktop({
   const [conceptosLocal, setConceptosLocal] = useState<Concepto[]>(conceptosProp);
   const [showAgregarConcepto, setShowAgregarConcepto] = useState(false);
   const [saldosLocal, setSaldosLocal] = useState<SaldoCuenta[]>(saldos);
+  const [saldosBrutosLocal, setSaldosBrutosLocal] = useState<SaldoCuenta[]>(saldosBrutos);
   const [ingresoCamiloLocal, setIngresoCamiloLocal] = useState<IngresoCamilo | null>(ingresoCamiloProp);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -388,7 +389,7 @@ export default function MesM1Desktop({
 
   const disponiblePorCuenta = (cuenta: CuentaH4C): number => {
     const fuenteKey = CUENTAS_H4C.find(c => c.cuenta === cuenta)?.fuenteKey;
-    const bruto = saldosBrutos.find(s => s.cuenta === cuenta)?.saldoInicial ?? 0;
+    const bruto = saldosBrutosLocal.find(s => s.cuenta === cuenta)?.saldoInicial ?? 0;
     const ejecutado = fuenteKey
       ? movs
           .filter(m => m.estado === "ejecutado" && m[fuenteKey as keyof typeof m])
@@ -868,7 +869,7 @@ export default function MesM1Desktop({
                 const recargas = (cuenta === "nu_angie" || cuenta === "en_mano")
                   ? recargasAngieLocal.filter(r => r.cuentaDestino === cuenta).reduce((sum, r) => sum + r.monto, 0)
                   : 0;
-                const bruto = saldosBrutos.find(s => s.cuenta === cuenta)?.saldoInicial ?? 0;
+                const bruto = saldosBrutosLocal.find(s => s.cuenta === cuenta)?.saldoInicial ?? 0;
                 const disponible = disponiblePorCuenta(cuenta);
                 const inicial = bruto;
                 return (
@@ -1161,6 +1162,7 @@ export default function MesM1Desktop({
           existing={saldosLocal}
           onConfirmed={(saldos) => {
             setSaldosLocal(saldos);
+            setSaldosBrutosLocal(saldos);
             setSaldosOk(true);
             setShowConfirmarSaldos(false);
             setView("ejecucion");
