@@ -187,6 +187,7 @@ export default function RegistroRapido({ onClose, onSuccess }: { onClose?: () =>
               fuenteCamilo: payload.fuente === "camilo",
               fuenteAngie: payload.fuente === "angie",
               ejecutor: payload.ejecutor,
+              ...(mov?.semana === null ? { semana: payload.semana } : {}),
             }),
           });
           if (!res.ok) {

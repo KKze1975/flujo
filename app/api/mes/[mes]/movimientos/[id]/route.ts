@@ -15,6 +15,7 @@ type PatchBody =
       fuenteAngie: boolean;
       ejecutor?: "camilo" | "angie";
       razonDesviacion?: string | null;
+      semana?: Semana;
     }
   | { tipo: "posponer"; nuevaSemana?: Semana; razonPostergacion?: string | null }
   | { tipo: "no_aplica" }
@@ -73,6 +74,7 @@ export async function PATCH(
         fuenteAngie: body.fuenteAngie,
         fechaEjecucion: hoy,
         razonDesviacion: body.razonDesviacion ?? null,
+        ...(body.semana && mov.semana === null ? { semana: body.semana } : {}),
       };
     } else if (body.tipo === "posponer") {
       if (body.nuevaSemana && !SEMANAS_VALIDAS.includes(body.nuevaSemana)) {

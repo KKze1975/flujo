@@ -32,6 +32,15 @@ const COP = (n: number, opts?: { compact?: boolean }): string => {
 
 const SEMANAS: Semana[] = ["S1", "S2", "S3", "S4"];
 
+function semanaFromFecha(fecha: string | null, mes: string): Semana | null {
+  if (!fecha || !fecha.startsWith(mes)) return null;
+  const day = new Date(fecha + "T12:00:00").getDate();
+  if (day <= 7) return "S1";
+  if (day <= 14) return "S2";
+  if (day <= 21) return "S3";
+  return "S4";
+}
+
 const MESES_ES = ["","ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
 const MESES_FULL = ["","Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const MESES_ES_MAP: Record<string, string> = {
@@ -424,8 +433,11 @@ export default function MesM1Desktop({
     return SEMANAS.map((s) => {
       const items = movs.filter((m) => m.semana === s);
       const comprometido = items.reduce((sum, m) => sum + m.montoPresupuestado, 0);
-      const ejecutadoH2 = items
-        .filter((m) => m.estado === "ejecutado")
+      const ejecutadoH2 = movs
+        .filter((m) => m.estado === "ejecutado" && (
+          m.semana === s ||
+          (m.semana === null && semanaFromFecha(m.fechaEjecucion, mes) === s)
+        ))
         .reduce((sum, m) => sum + (m.montoEjecutado ?? m.montoPresupuestado), 0);
       const ejecutado = ejecutadoH2 + (gastoH3PorSemana[s] ?? 0);
       const pendiente = items.filter((m) => m.estado === "pendiente").length;
