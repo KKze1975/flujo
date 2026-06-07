@@ -303,6 +303,7 @@ export default function MesM1Desktop({
   cierresSemana: cierresSemanaProps = [],
   gastosSinClasificar = { S1: 0, S2: 0, S3: 0, S4: 0 },
   gastoH3PorCuenta = {},
+  gastoH3PorSemana = { S1: 0, S2: 0, S3: 0, S4: 0 },
   onSwitchToMobile,
 }: {
   movimientos: Movimiento[];
@@ -316,6 +317,7 @@ export default function MesM1Desktop({
   cierresSemana?: import("@/lib/data/types").CierreSemana[];
   gastosSinClasificar?: Record<Semana, number>;
   gastoH3PorCuenta?: Record<string, number>;
+  gastoH3PorSemana?: Record<string, number>;
   onSwitchToMobile: () => void;
 }) {
   const router = useRouter();
@@ -373,7 +375,6 @@ export default function MesM1Desktop({
   const filtrados = wk === "todas" ? movs : movs.filter(m => m.semana === wk);
   const pendientes = movs.filter(m => !isExec(m)).length;
 
-  const totalSaldosLocal = saldosLocal.reduce((s, c) => s + c.saldoInicial, 0);
   const ejecutarBloqueado = !ingresoCamiloLocal || ingresoCamiloLocal.montoCop === 0;
 
   const disponiblePorCuenta = (cuenta: CuentaH4C): number => {
@@ -423,9 +424,10 @@ export default function MesM1Desktop({
     return SEMANAS.map((s) => {
       const items = movs.filter((m) => m.semana === s);
       const comprometido = items.reduce((sum, m) => sum + m.montoPresupuestado, 0);
-      const ejecutado = items
+      const ejecutadoH2 = items
         .filter((m) => m.estado === "ejecutado")
         .reduce((sum, m) => sum + (m.montoEjecutado ?? m.montoPresupuestado), 0);
+      const ejecutado = ejecutadoH2 + (gastoH3PorSemana[s] ?? 0);
       const pendiente = items.filter((m) => m.estado === "pendiente").length;
       // Usar recargas reales (no cierre.remanenteAngie) para el flujo de caja:
       // cierre.remanenteAngie = lo que queda en la cuenta de Angie al cerrar,
@@ -438,7 +440,7 @@ export default function MesM1Desktop({
       remanente = diferencia;
       return { semana: s, remanente: disponible, aporteAngie, comprometido, ejecutado, diferencia, pendiente, isConfirmado };
     });
-  }, [movs, ingresoCamiloLocal, recargasAngieLocal, cierresSemanaProps]);
+  }, [movs, ingresoCamiloLocal, recargasAngieLocal, cierresSemanaProps, gastoH3PorSemana]);
 
 
   // ── Planificación derivations ─────────────────────────────────────────────
@@ -890,7 +892,7 @@ export default function MesM1Desktop({
               })}
               <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 7, fontSize: 12, fontWeight: 700 }}>
                 <span style={{ color: "var(--ink-soft)" }}>Total</span>
-                <span style={{ color: "var(--ink)" }}>{COP(totalSaldosLocal, { compact: true })}</span>
+                <span style={{ color: "var(--ink)" }}>{COP(CUENTAS_H4C.reduce((sum, { cuenta }) => sum + disponiblePorCuenta(cuenta), 0), { compact: true })}</span>
               </div>
               {/* B3: mostrar ingreso Camilo en sección Saldos */}
               {ingresoCamiloLocal && ingresoCamiloLocal.montoCop > 0 && (
