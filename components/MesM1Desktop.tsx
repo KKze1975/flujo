@@ -383,11 +383,7 @@ export default function MesM1Desktop({
     const recargas = (cuenta === "nu_angie" || cuenta === "en_mano")
       ? recargasAngieLocal.filter(r => r.cuentaDestino === cuenta).reduce((sum, r) => sum + r.monto, 0)
       : 0;
-    const ingresoCamilo = (
-      ingresoCamiloLocal?.estado === "confirmado" &&
-      CUENTA_DESTINO_TO_H4C[ingresoCamiloLocal.cuentaDestino] === cuenta
-    ) ? ingresoCamiloLocal.montoCop : 0;
-    return bruto + ingresoCamilo + recargas - ejecutado;
+    return bruto + recargas - ejecutado;
   };
 
   const rows = useMemo<TableRow[]>(() => {
