@@ -60,9 +60,19 @@ export default function ModalValidacionFondos({
 
   function handleRecargaRegistrada(recarga: RecargaAngie) {
     const key = recarga.cuentaDestino as CuentaH4C;
-    setSaldoExtra(prev => ({ ...prev, [key]: (prev[key] ?? 0) + recarga.monto }));
+    const newSaldoExtra = { ...saldoExtra, [key]: (saldoExtra[key] ?? 0) + recarga.monto };
+    setSaldoExtra(newSaldoExtra);
     onRecargaRegistrada?.(recarga);
     setShowIngreso(false);
+
+    // Si la cuenta recargada es la que tenía déficit y ahora cubre el monto, ejecutar directamente
+    if (key === cuentaDeficit) {
+      const baseDisp = todasCuentas.find(c => c.cuenta === cuentaDeficit)?.disponible ?? 0;
+      const newDisp = baseDisp + (newSaldoExtra[key] ?? 0);
+      if (newDisp >= montoEjecutado) {
+        onEjecutarConCuenta(cuentaDeficit);
+      }
+    }
   }
 
   if (showIngreso) {
