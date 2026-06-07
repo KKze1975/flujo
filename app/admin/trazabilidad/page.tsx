@@ -335,7 +335,7 @@ export default function TrazabilidadPage() {
   }
 
   async function handleReset() {
-    if (!confirm(`¿Reset completo + reinicializar ${mes}?\n\nBorra H2, H3B, H4A, H4B, H4C, H4D, H5A, H5B y recrea H2 desde H1. No se puede deshacer.`)) return;
+    if (!confirm(`¿Reset completo de ${mes}?\n\nBorra H2, H3B, H4A, H4B, H4C, H4D, H5A, H5B. H2 queda vacía — debes inicializar el mes desde la app. No se puede deshacer.`)) return;
     setResetLoading(true);
     setResetResult(null);
     try {
@@ -347,7 +347,7 @@ export default function TrazabilidadPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Error desconocido");
       const r = data.reset;
-      setResetResult(`✓ Reset + init ${data.mes} — H2:${r.h2} H3B:${r.h3b} H4A:${r.h4a} H4B:${r.h4b} H4C:${r.h4c} H4D:${r.h4d} H5A:${r.h5a} H5B:${r.h5b} borradas · ${data.inicializado} movimientos creados`);
+      setResetResult(`✓ Reset ${data.mes} — H2:${r.h2} H3B:${r.h3b} H4A:${r.h4a} H4B:${r.h4b} H4C:${r.h4c} H4D:${r.h4d} H5A:${r.h5a} H5B:${r.h5b} filas borradas · Inicializa el mes desde la app.`);
       setSnapBefore(null); setSnapAfter(null); setDiff(null);
     } catch (e) {
       setResetResult(`❌ ${e instanceof Error ? e.message : "Error"}`);
@@ -409,7 +409,7 @@ export default function TrazabilidadPage() {
           disabled={resetLoading}
           onClick={handleReset}
         >
-          {resetLoading ? "Reseteando…" : "Reset completo + reinicializar"}
+          {resetLoading ? "Reseteando…" : "Reset completo"}
         </button>
       </div>
       {resetResult && (

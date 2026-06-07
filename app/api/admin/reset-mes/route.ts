@@ -1,27 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
-import { getProvider } from "@/lib/data/provider";
-import type { Movimiento, Semana } from "@/lib/data/types";
-
 const MES_REGEX = /^\d{4}-\d{2}$/;
-
-const MESES_NOMBRE = [
-  "enero", "febrero", "marzo", "abril", "mayo", "junio",
-  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
-];
-
-function mesNombre(mes: string): string {
-  const month = parseInt(mes.split("-")[1], 10);
-  return MESES_NOMBRE[month - 1] ?? "";
-}
-
-function mesPrevio(mes: string): string {
-  const [yearStr, monthStr] = mes.split("-");
-  const year = parseInt(yearStr, 10);
-  const month = parseInt(monthStr, 10);
-  if (month === 1) return `${year - 1}-12`;
-  return `${year}-${String(month - 1).padStart(2, "0")}`;
-}
 
 function getSheets() {
   const auth = new google.auth.JWT({
@@ -99,17 +78,6 @@ async function resetH2(
   return { label: "H2", borradas: antes };
 }
 
-function conceptoActivoEnMes(
-  concepto: { estado: string; frecuencia: string; mesActivoBimestral: string | null },
-  mes: string
-): boolean {
-  if (concepto.estado !== "activo") return false;
-  if (concepto.frecuencia !== "bimestral") return true;
-  if (!concepto.mesActivoBimestral) return false;
-  const nombre = mesNombre(mes);
-  return concepto.mesActivoBimestral.split(",").map((m) => m.trim()).includes(nombre);
-}
-
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const mes: string = body.mes ?? "";
@@ -133,50 +101,8 @@ export async function POST(req: NextRequest) {
     deleteRowsByMes(sheets, spreadsheetId, mes, "H5B!A:I",  "H5B!A2:I10000",  "H5B!A2",  "H5B"),
   ]);
 
-  // ── Reinicializar H2 ───────────────────────────────────────────────────────
-
-  const provider = getProvider();
-  const [conceptos, movimientosPrevios] = await Promise.all([
-    provider.getConceptos(),
-    provider.getMovimientos(mesPrevio(mes)),
-  ]);
-
-  const SEMANAS: Semana[] = ["S1", "S2", "S3", "S4"];
-  const baseFields = {
-    montoEjecutado: null, desviacion: null, estado: "pendiente" as const,
-    ejecutor: null, fuenteEnMano: false, fuenteNequi: false, fuenteCamilo: false,
-    fuenteAngie: false, fechaEjecucion: null, razonDesviacion: null,
-    razonPostergacion: null, comprobanteUrl: null, pendienteAprobacion: false,
-    notas: null, montoEjecutadoCamilo: null, montoEjecutadoAngie: null, idRecargaOrigen: null,
-  };
-
-  const desdeH1: Omit<Movimiento, "id">[] = conceptos
-    .filter((c) => conceptoActivoEnMes(c, mes))
-    .flatMap((c) => {
-      const base = {
-        ...baseFields,
-        conceptoId: c.id, mes,
-        nombreSnapshot: c.nombre, categoriaSnapshot: c.categoria,
-        tipoSnapshot: c.tipo, montoPresupuestado: c.monto,
-      };
-      if (c.frecuencia === "semanal") return SEMANAS.map((s) => ({ ...base, semana: s }));
-      return [{ ...base, semana: c.semanaDefault === "variable" ? null : (c.semanaDefault as Semana) }];
-    });
-
-  const carryover: Omit<Movimiento, "id">[] = movimientosPrevios
-    .filter((m) => m.estado === "pospuesto_mes_siguiente")
-    .map((m) => ({
-      ...baseFields,
-      conceptoId: m.conceptoId, mes,
-      nombreSnapshot: m.nombreSnapshot, categoriaSnapshot: m.categoriaSnapshot,
-      tipoSnapshot: m.tipoSnapshot, montoPresupuestado: m.montoPresupuestado, semana: m.semana,
-    }));
-
-  const movimientos = await provider.crearMovimientosMes([...desdeH1, ...carryover]);
-
   return NextResponse.json({
     mes,
     reset: { h2: h2.borradas, h3b: h3b.borradas, h4a: h4a.borradas, h4b: h4b.borradas, h4c: h4c.borradas, h4d: h4d.borradas, h5a: h5a.borradas, h5b: h5b.borradas },
-    inicializado: movimientos.length,
   });
 }
