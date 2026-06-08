@@ -3,18 +3,32 @@
 import { useState, useRef, useEffect } from "react";
 import Icon from "@/components/ui/Icon";
 
-type PayloadTexto = { tipo: "texto"; contenido: string };
-type PayloadImagen = { tipo: "imagen"; base64: string; mimeType: string };
-type Payload = PayloadTexto | PayloadImagen;
+type FuentePago = "en_mano" | "nequi" | "camilo" | "angie";
+type Actor = "camilo" | "angie";
+
+type BaseFields = { monto: number; ejecutor: Actor; fuente: FuentePago };
+type PayloadTexto = BaseFields & { tipo: "texto"; contenido: string };
+type PayloadImagen = BaseFields & { tipo: "imagen"; base64: string; mimeType: string };
+export type Payload = PayloadTexto | PayloadImagen;
 
 interface Props {
   onSubmit: (payload: Payload) => void;
 }
 
+const FUENTES: { value: FuentePago; label: string }[] = [
+  { value: "en_mano", label: "En mano" },
+  { value: "nequi",   label: "Nequi"   },
+  { value: "camilo",  label: "NU Camilo" },
+  { value: "angie",   label: "NU Angie"  },
+];
+
 export default function InputRegistro({ onSubmit }: Props) {
   const [tab, setTab] = useState<"texto" | "imagen">("texto");
   const [texto, setTexto] = useState("");
   const [imagen, setImagen] = useState<{ base64: string; mimeType: string; previewUrl: string } | null>(null);
+  const [monto, setMonto] = useState("");
+  const [ejecutor, setEjecutor] = useState<Actor>("camilo");
+  const [fuente, setFuente] = useState<FuentePago>("en_mano");
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
 
@@ -36,16 +50,19 @@ export default function InputRegistro({ onSubmit }: Props) {
   }
 
   function handleSubmit() {
+    const montoNum = Number(monto);
+    if (montoNum <= 0) return;
+    const base: BaseFields = { monto: montoNum, ejecutor, fuente };
     if (tab === "texto") {
       if (!texto.trim()) return;
-      onSubmit({ tipo: "texto", contenido: texto.trim() });
+      onSubmit({ tipo: "texto", contenido: texto.trim(), ...base });
     } else {
       if (!imagen) return;
-      onSubmit({ tipo: "imagen", base64: imagen.base64, mimeType: imagen.mimeType });
+      onSubmit({ tipo: "imagen", base64: imagen.base64, mimeType: imagen.mimeType, ...base });
     }
   }
 
-  const puedeEnviar = tab === "texto" ? texto.trim().length > 0 : imagen !== null;
+  const puedeEnviar = Number(monto) > 0 && (tab === "texto" ? texto.trim().length > 0 : imagen !== null);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -73,8 +90,8 @@ export default function InputRegistro({ onSubmit }: Props) {
           <textarea
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
-            placeholder={'Escribe el gasto como hablas… p. ej. "mercado 64 mil en el Jumbo"'}
-            rows={3}
+            placeholder={'Describe el gasto… p. ej. "mercado en el Jumbo"'}
+            rows={2}
             style={{
               border: "none", resize: "none", outline: "none", background: "transparent",
               fontFamily: "inherit", fontSize: 15, color: "var(--ink)", lineHeight: 1.45,
@@ -129,23 +146,64 @@ export default function InputRegistro({ onSubmit }: Props) {
             )}
           </div>
         )}
+      </div>
 
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          {tab === "texto" ? (
-            <span className="fl-faint">Ctrl + Enter para enviar</span>
-          ) : (
-            <span />
-          )}
-          <button
-            type="button"
-            className="fl-btn primary sm"
-            onClick={handleSubmit}
-            disabled={!puedeEnviar}
+      {/* Monto */}
+      <div className="fl-field">
+        <label>Monto (COP)</label>
+        <input
+          type="number"
+          value={monto}
+          min={0}
+          onChange={(e) => setMonto(e.target.value)}
+          className="fl-input"
+          placeholder="0"
+          style={{ fontFeatureSettings: '"tnum" 1', fontWeight: 600 }}
+        />
+      </div>
+
+      {/* Ejecutor + Fuente */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <div className="fl-field">
+          <label>¿Quién pagó?</label>
+          <div className="fl-tabs">
+            {(["camilo", "angie"] as Actor[]).map((a) => (
+              <button
+                key={a}
+                type="button"
+                className={`fl-tab${ejecutor === a ? " on" : ""}`}
+                onClick={() => setEjecutor(a)}
+              >
+                <span className={`fl-person ${a === "camilo" ? "c" : "a"}`}>
+                  {a === "camilo" ? "C" : "A"}
+                </span>
+                {a === "camilo" ? "Camilo" : "Angie"}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="fl-field">
+          <label>Fuente</label>
+          <select
+            value={fuente}
+            onChange={(e) => setFuente(e.target.value as FuentePago)}
+            className="fl-input"
+            style={{ appearance: "auto" }}
           >
-            <Icon name="send" size={14} /> Interpretar
-          </button>
+            {FUENTES.map((f) => <option key={f.value} value={f.value}>{f.label}</option>)}
+          </select>
         </div>
       </div>
+
+      {/* Submit */}
+      <button
+        type="button"
+        className="fl-btn primary block"
+        onClick={handleSubmit}
+        disabled={!puedeEnviar}
+      >
+        <Icon name="send" size={14} /> Registrar
+      </button>
     </div>
   );
 }
