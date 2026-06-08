@@ -42,6 +42,7 @@ export interface IDataProvider {
   getConsumosByMes(mes: string): Promise<ConsumoH3[]>;
   getConsumosByMesYSemana(mes: string, semana: Semana): Promise<ConsumoH3[]>;
   updateConsumoH3(id: string, data: Partial<Omit<ConsumoH3, "id">>): Promise<ConsumoH3>;
+  deleteConsumoH3(id: string): Promise<void>;
 
   // ── H4 ───────────────────────────────────────────────────────────────────
   getIngresoCamilo(mes: string): Promise<IngresoCamilo[]>;

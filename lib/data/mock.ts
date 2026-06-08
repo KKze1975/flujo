@@ -89,6 +89,9 @@ export class MockDataProvider implements IDataProvider {
   updateConsumoH3(_id: string, _data: Partial<Omit<ConsumoH3, "id">>): Promise<ConsumoH3> {
     return Promise.resolve(null as unknown as ConsumoH3);
   }
+  deleteConsumoH3(_id: string): Promise<void> {
+    return Promise.resolve();
+  }
 
   // ── H4 ───────────────────────────────────────────────────────────────────
   getIngresoCamilo(_mes: string): Promise<IngresoCamilo[]> {

@@ -799,6 +799,42 @@ export class SheetsDataProvider implements IDataProvider {
     return updated;
   }
 
+  async deleteConsumoH3(id: string): Promise<void> {
+    const meta = await this.sheets.spreadsheets.get({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+    });
+    const h3Sheet = meta.data.sheets?.find(s => s.properties?.title === "H3");
+    if (!h3Sheet?.properties) throw new Error("Sheet H3 no encontrada");
+    const sheetId = h3Sheet.properties.sheetId;
+    if (sheetId == null) throw new Error("Sheet H3 sin sheetId");
+
+    const res = await this.sheets.spreadsheets.values.get({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: "H3!A:A",
+    });
+    const rows = (res.data.values ?? []) as string[][];
+    if (rows.length < 2) throw new Error(`Consumo ${id} no encontrado`);
+    const [, ...data] = rows;
+    const dataRowIndex = data.findIndex(row => row[0] === id);
+    if (dataRowIndex === -1) throw new Error(`Consumo ${id} no encontrado`);
+
+    await this.sheets.spreadsheets.batchUpdate({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      requestBody: {
+        requests: [{
+          deleteDimension: {
+            range: {
+              sheetId,
+              dimension: "ROWS",
+              startIndex: dataRowIndex + 1, // +1 por la fila de headers
+              endIndex: dataRowIndex + 2,
+            },
+          },
+        }],
+      },
+    });
+  }
+
   // ── H5 ───────────────────────────────────────────────────────────────────
 
   private readonly H5_HEADERS = [

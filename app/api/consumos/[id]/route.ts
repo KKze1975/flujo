@@ -2,6 +2,21 @@ import type { NextRequest } from "next/server";
 import { getProvider } from "@/lib/data/provider";
 import type { Actor, Semana } from "@/lib/data/types";
 
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const provider = getProvider();
+  try {
+    await provider.deleteConsumoH3(id);
+    return Response.json({ ok: true });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "Error interno";
+    return Response.json({ error: msg }, { status: 500 });
+  }
+}
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
