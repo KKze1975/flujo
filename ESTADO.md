@@ -2144,3 +2144,32 @@ Flujo - Proyecto de salud financiera familiar - Camilo Villamil - 2026
 - Próxima sesión: CONSTRUCCIÓN T48 en ventana nueva.
 
 ---
+
+## Sesión 8 junio 2026 (noche) — CONSTRUCCIÓN T48
+
+### T48 — FAB asíncrono
+
+| Pieza | Commit | Descripción |
+|---|---|---|
+| P1 | 02d0702 | InputRegistro colecta monto+ejecutor+fuente · RegistroRapido elimina flujo síncrono Claude |
+| P2 | 2f14d62 | POST /api/consumos/[id]/clasificar — Claude Haiku en background |
+| P3 | 48abc09 | VistaSemanal — polling 5s + lista H3B muestra todos con indicador |
+
+### DoD — verificado en producción
+
+1. POST FAB < 500ms — sheet cierra inmediatamente ✅
+2. Claude clasifica en background sin bloquear ✅
+3. H3B actualiza clasificado=TRUE + bolsilloId al terminar ✅
+4. Ejecutados muestra "Clasificando…" inmediatamente ✅
+5. Polling cada 5s — cambia a nombre del concepto sin recargar ✅
+6. tsc limpio en los 3 commits ✅
+7. Verificado en producción con registro real ✅
+
+### Estado al cierre
+
+- T48 completo y verificado.
+- Go-live Angie: desbloqueado — T48 era el prerequisito.
+- Próximo paso: confirmar go-live formal con Angie.
+- Cola post go-live: BL-02 → BL-06 → QA-7jun-01 → BL-04/BL-05 · T49 requiere sesión DISEÑO.
+
+---
