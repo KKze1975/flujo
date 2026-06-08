@@ -596,6 +596,8 @@ export default function VistaSemanal({
   cierreSemana,
   consumosInit = [],
   ingresosAngie = [],
+  actor = "camilo",
+  disponibleNuAngie = 0,
 }: {
   mes: string;
   mesLabel: string;
@@ -604,6 +606,8 @@ export default function VistaSemanal({
   cierreSemana: CierreSemana | null;
   consumosInit?: ConsumoH3[];
   ingresosAngie?: IngresoAngie[];
+  actor?: Actor;
+  disponibleNuAngie?: number;
 }) {
   const router = useRouter();
   const [movimientos, setMovimientos] = useState<Movimiento[]>(movimientosInit);
@@ -636,6 +640,12 @@ export default function VistaSemanal({
     .filter(m => m.fuenteAngie && m.estado === "ejecutado")
     .reduce((s, m) => s + (m.montoEjecutado ?? 0), 0);
   const faltaAngie = comprometidoAngie - ejecutadoAngie;
+
+  // Header M4 Angie
+  const pendientesClasificar = consumos.filter(c => !c.clasificado).length;
+  const aportePlaneado = ingresosAngieLocal.find(a => a.semana === semanaActiva)?.monto ?? 0;
+  const gastadoSemanaAngie = consumos.filter(c => c.fuenteAngie).reduce((s, c) => s + c.monto, 0);
+  const disponibleSemana = aportePlaneado - gastadoSemanaAngie;
 
   async function patchar(id: string, body: Record<string, unknown>) {
     setBusy(true);
@@ -769,6 +779,40 @@ export default function VistaSemanal({
             <button type="button" onClick={() => setError(null)}>
               <Icon name="x" size={16} style={{ color: "var(--neg)" }} />
             </button>
+          </div>
+        )}
+
+        {/* Header M4 Angie — solo actor=angie */}
+        {actor === "angie" && (
+          <div style={{ background: "var(--surface-2)", borderRadius: 16, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "var(--ink-soft)" }}>Saldo NU Angie</span>
+              <span style={{ fontSize: 15, fontWeight: 800, fontVariantNumeric: "tabular-nums", color: disponibleNuAngie < 0 ? "var(--neg)" : "var(--ink)" }}>
+                {copCompact(disponibleNuAngie)}
+              </span>
+            </div>
+            {pendientesClasificar > 0 && (
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: "var(--neg)" }}>Sin clasificar</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: "var(--neg)" }}>{pendientesClasificar}</span>
+              </div>
+            )}
+            <div style={{ borderTop: "1px solid var(--line)", paddingTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ fontSize: 12, color: "var(--ink-soft)" }}>Aporte planeado {semanaActiva}</span>
+                <span style={{ fontSize: 13, fontVariantNumeric: "tabular-nums", color: "var(--ink)" }}>{copCompact(aportePlaneado)}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span style={{ fontSize: 12, color: "var(--ink-soft)" }}>Gastado esta semana</span>
+                <span style={{ fontSize: 13, fontVariantNumeric: "tabular-nums", color: "var(--ink)" }}>{copCompact(gastadoSemanaAngie)}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px dashed var(--line)", paddingTop: 6 }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: "var(--ink-soft)" }}>Disponible semana</span>
+                <span style={{ fontSize: 13, fontWeight: 800, fontVariantNumeric: "tabular-nums", color: disponibleSemana < 0 ? "var(--neg)" : "var(--pos)" }}>
+                  {copCompact(disponibleSemana)}
+                </span>
+              </div>
+            </div>
           </div>
         )}
 

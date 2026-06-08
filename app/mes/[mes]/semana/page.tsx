@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { getProvider } from "@/lib/data/provider";
 import VistaSemanal from "@/components/VistaSemanal";
-import type { Semana } from "@/lib/data/types";
+import type { Semana, Actor } from "@/lib/data/types";
 
 function semanaActual(): Semana {
   const dia = new Date().getDate();
@@ -24,21 +24,37 @@ function formatMes(mes: string): string {
 
 export default async function SemanaPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ mes: string }>;
+  searchParams: Promise<{ actor?: string }>;
 }) {
   const { mes } = await params;
+  const { actor: actorParam } = await searchParams;
+  const actor: Actor = actorParam === "angie" ? "angie" : "camilo";
   const semana = semanaActual();
   const provider = getProvider();
 
-  const [movimientos, cierres, consumos, ingresosAngie] = await Promise.all([
+  const [movimientos, cierres, consumos, ingresosAngie, saldosCuenta, movimientosMes, consumosMes] = await Promise.all([
     provider.getMovimientosByMesYSemana(mes, semana).catch(() => []),
     provider.getCierresSemana(mes).catch(() => []),
     provider.getConsumosByMesYSemana(mes, semana).catch(() => []),
     provider.getIngresosAngie(mes).catch(() => []),
+    provider.getSaldosCuenta(mes).catch(() => []),
+    provider.getMovimientos(mes).catch(() => []),
+    provider.getConsumosByMes(mes).catch(() => []),
   ]);
 
   const cierreSemana = cierres.find((c) => c.semana === semana) ?? null;
+
+  const saldoBrutoAngie = saldosCuenta.find(s => s.cuenta === "nu_angie")?.saldoInicial ?? 0;
+  const ejecutadoH2Angie = movimientosMes
+    .filter(m => m.estado === "ejecutado" && m.fuenteAngie)
+    .reduce((s, m) => s + (m.montoEjecutado ?? m.montoPresupuestado), 0);
+  const gastoH3Angie = consumosMes
+    .filter(c => c.fuenteAngie)
+    .reduce((s, c) => s + c.monto, 0);
+  const disponibleNuAngie = saldoBrutoAngie - ejecutadoH2Angie - gastoH3Angie;
 
   return (
     <VistaSemanal
@@ -49,6 +65,8 @@ export default async function SemanaPage({
       cierreSemana={cierreSemana}
       consumosInit={consumos}
       ingresosAngie={ingresosAngie}
+      actor={actor}
+      disponibleNuAngie={disponibleNuAngie}
     />
   );
 }
