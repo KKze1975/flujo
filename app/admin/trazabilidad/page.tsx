@@ -1,12 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import type { Movimiento, ConsumoH3, RecargaAngie, SaldoCuenta } from "@/lib/data/types";
+import type { Movimiento, ConsumoH3, SaldoCuenta } from "@/lib/data/types";
 
 type Snapshot = {
   h2: Movimiento[];
   h3b: ConsumoH3[];
-  h4d: RecargaAngie[];
   h4c: SaldoCuenta[];
 };
 
@@ -17,19 +16,15 @@ type HojaDiff = {
   modificadas: FilaModificada[];
   impacto: ImpactoItem[];
 };
-type DiffResult = { h2: HojaDiff; h3b: HojaDiff; h4d: HojaDiff; h4c: HojaDiff };
+type DiffResult = { h2: HojaDiff; h3b: HojaDiff; h4c: HojaDiff };
 
 async function capturar(mes: string): Promise<Snapshot> {
-  const [h2Res, c1, c2, c3, c4, r1, r2, r3, r4, h4cRes] = await Promise.all([
+  const [h2Res, c1, c2, c3, c4, h4cRes] = await Promise.all([
     fetch(`/api/mes/${mes}`).then((r) => r.json()),
     fetch(`/api/mes/${mes}/consumos/S1`).then((r) => r.json()),
     fetch(`/api/mes/${mes}/consumos/S2`).then((r) => r.json()),
     fetch(`/api/mes/${mes}/consumos/S3`).then((r) => r.json()),
     fetch(`/api/mes/${mes}/consumos/S4`).then((r) => r.json()),
-    fetch(`/api/ingresos/angie/${mes}/recargas/S1`).then((r) => r.json()),
-    fetch(`/api/ingresos/angie/${mes}/recargas/S2`).then((r) => r.json()),
-    fetch(`/api/ingresos/angie/${mes}/recargas/S3`).then((r) => r.json()),
-    fetch(`/api/ingresos/angie/${mes}/recargas/S4`).then((r) => r.json()),
     fetch(`/api/mes/${mes}/saldos`).then((r) => r.json()),
   ]);
   return {
@@ -40,12 +35,6 @@ async function capturar(mes: string): Promise<Snapshot> {
       ...(c3.consumos ?? []),
       ...(c4.consumos ?? []),
     ] as ConsumoH3[],
-    h4d: [
-      ...(r1.recargas ?? []),
-      ...(r2.recargas ?? []),
-      ...(r3.recargas ?? []),
-      ...(r4.recargas ?? []),
-    ] as RecargaAngie[],
     h4c: Array.isArray(h4cRes) ? (h4cRes as SaldoCuenta[]) : [],
   };
 }
@@ -138,28 +127,12 @@ function calcImpactoH3b(nuevas: ConsumoH3[]): ImpactoItem[] {
   });
 }
 
-function calcImpactoH4d(nuevasH4d: RecargaAngie[], h4cDiff: HojaDiff): ImpactoItem[] {
-  const h4cTieneModif = h4cDiff.modificadas.length > 0 || h4cDiff.nuevas.length > 0;
-  return nuevasH4d.map((row) => ({
-    id: row.id,
-    regla: "nueva recarga H4D",
-    ok: h4cTieneModif,
-    detalle: h4cTieneModif ? "H4C tiene modificación" : "H4C sin cambios",
-  }));
-}
-
 function calcDiff(before: Snapshot, after: Snapshot): DiffResult {
   const { nuevas: h2Nuevas, modificadas: h2Mod } = diffHoja(before.h2, after.h2);
   const { nuevas: h3bNuevas, modificadas: h3bMod } = diffHoja(before.h3b, after.h3b);
-  const { nuevas: h4dNuevas, modificadas: h4dMod } = diffHoja(before.h4d, after.h4d);
   const { nuevas: h4cNuevas, modificadas: h4cMod } = diffHoja(before.h4c, after.h4c);
 
   const h2AfterMap = new Map(after.h2.map((r) => [r.id, r]));
-  const h4cDiff: HojaDiff = {
-    nuevas: h4cNuevas as unknown as Record<string, unknown>[],
-    modificadas: h4cMod,
-    impacto: [],
-  };
 
   return {
     h2: {
@@ -172,17 +145,16 @@ function calcDiff(before: Snapshot, after: Snapshot): DiffResult {
       modificadas: h3bMod,
       impacto: calcImpactoH3b(h3bNuevas),
     },
-    h4d: {
-      nuevas: h4dNuevas as unknown as Record<string, unknown>[],
-      modificadas: h4dMod,
-      impacto: calcImpactoH4d(h4dNuevas, h4cDiff),
+    h4c: {
+      nuevas: h4cNuevas as unknown as Record<string, unknown>[],
+      modificadas: h4cMod,
+      impacto: [],
     },
-    h4c: h4cDiff,
   };
 }
 
 function snapLabel(snap: Snapshot): string {
-  return `${snap.h2.length} mov / ${snap.h3b.length} consumos / ${snap.h4d.length} recargas / ${snap.h4c.length} saldos`;
+  return `${snap.h2.length} mov / ${snap.h3b.length} consumos / ${snap.h4c.length} saldos`;
 }
 
 const tdStyle: React.CSSProperties = {
@@ -444,7 +416,6 @@ export default function TrazabilidadPage() {
         <div>
           <HojaDiffView label="H2 — Movimientos" hoja={diff.h2} />
           <HojaDiffView label="H3B — Consumos" hoja={diff.h3b} />
-          <HojaDiffView label="H4D — Recargas Angie" hoja={diff.h4d} />
           <HojaDiffView label="H4C — Saldos" hoja={diff.h4c} />
         </div>
       )}
