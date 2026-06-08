@@ -636,9 +636,11 @@ export default function VistaSemanal({
 
   const angieConceptos = conceptos.filter(m => m.ejecutor === "angie");
   const comprometidoAngie = angieConceptos.reduce((s, m) => s + m.montoPresupuestado, 0);
-  const ejecutadoAngie = movimientos
+  const ejecutadoAngieH2 = movimientos
     .filter(m => m.fuenteAngie && m.estado === "ejecutado")
     .reduce((s, m) => s + (m.montoEjecutado ?? 0), 0);
+  const ejecutadoAngieH3 = consumos.filter(c => c.fuenteAngie).reduce((s, c) => s + c.monto, 0);
+  const ejecutadoAngie = ejecutadoAngieH2 + ejecutadoAngieH3;
   const faltaAngie = comprometidoAngie - ejecutadoAngie;
 
   // Header M4 Angie
@@ -883,7 +885,7 @@ export default function VistaSemanal({
         {/* Tabs */}
         <div className="fl-tabs">
           {(["pendientes", "ejecutados"] as const).map((t) => {
-            const count = t === "pendientes" ? pendientes.length : ejecutados.length;
+            const count = t === "pendientes" ? pendientes.length : ejecutados.length + consumos.length;
             return (
               <button
                 key={t}
@@ -1102,10 +1104,10 @@ export default function VistaSemanal({
           </div>
         )}
 
-        {/* T27 · Historial M4 — registros rápidos */}
-        {consumos.length > 0 && (
+        {/* Registros rápidos H3B — visibles en pestaña Ejecutados */}
+        {tab === "ejecutados" && consumos.length > 0 && (
           <>
-            <p className="fl-sectlabel">Historial M4 · Registros rápidos</p>
+            <p className="fl-sectlabel">Registros rápidos</p>
             <div style={{ display: "flex", flexDirection: "column" }}>
               {consumos.map(c => {
                 const fuente = fuenteLabel(c);
