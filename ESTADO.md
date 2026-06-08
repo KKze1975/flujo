@@ -2119,3 +2119,28 @@ Flujo - Proyecto de salud financiera familiar - Camilo Villamil - 2026
 - Próximo paso: confirmar go-live con Angie o identificar fricción adicional.
 
 ---
+
+## Sesión 8 junio 2026 (tarde) — QA + DEBUGGING
+
+### Bugs resueltos
+
+| Bug | Causa raíz | Commit |
+|---|---|---|
+| Lista H3B invisible en Ejecutados | filtro ejecutor === actor introducido en 5ac1723 — actor nunca se propaga por navegación | b9b344d |
+
+### Decisiones de diseño tomadas
+
+- Lista consumos FAB en Ejecutados muestra todos los consumos del hogar con clasificado=FALSE — sin filtrar por ejecutor. Decisión revisable cuando se implemente sesión por actor.
+- FAB debe ser asíncrono: registro inmediato en H3B sin bloquear → Claude clasifica en background → recomendación disponible en Ejecutados para conciliación posterior. Spinner y pantalla de recomendación inmediata eliminados del flujo.
+
+### Tickets abiertos
+
+- **T48 — FAB asíncrono:** registro inmediato sin bloqueo. Claude interpreta monto y descripción en background. Recomendación de categoría y concepto disponible en lista Ejecutados. Único dato determinista del servidor: semana activa. Estado: aprobado para construir.
+- **T49 — Revertir movimientos desde M4:** agregar opción de revertir en modal Corregir de VistaSemanal. Actualmente solo disponible en M1 Ejecución. Estado: pendiente sesión DISEÑO.
+
+### Estado al cierre
+
+- Go-live Angie: pendiente — FAB asíncrono (T48) es prerequisito antes de dar go formal.
+- Próxima sesión: CONSTRUCCIÓN T48 en ventana nueva.
+
+---
