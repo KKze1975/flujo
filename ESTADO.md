@@ -2078,3 +2078,44 @@ Fecha: 2026-06-04
 ---
 
 Flujo - Proyecto de salud financiera familiar - Camilo Villamil - 2026
+
+---
+
+## Sesión 8 junio 2026 — DISEÑO + CONSTRUCCIÓN + DEBUGGING
+
+### Decisiones de diseño aprobadas
+
+- Modelo de recargas eliminado. Angie registra gastos libremente — saldo NU Angie puede quedar negativo. Se resuelve cuando Angie transfiere, sin fricción ni bloqueos.
+- T26 (ModalValidacionFondos) eliminado completamente para todos los actores.
+- H4D queda como tab legacy vacío — no se escribe, no se lee, no se elimina físicamente.
+- `id_recarga_origen` deprecado — permanece en tipos como `string | null`, nunca se popula.
+- Prerequisito cierre de semana #3 eliminado (`COUNT WHERE id_recarga_origen=null`).
+- H4B sigue siendo el plan semanal de Angie — fuente del aporte planeado por semana.
+- Header M4 actor=angie muestra: ejecutado H2+H3B, aporte planeado H4B, falta, pendientes clasificar.
+
+### T47 — commits
+
+| Pieza | Commit | Descripción |
+|---|---|---|
+| P1 | dadb328 | Trazabilidad: eliminar fetches H4D |
+| P2 | 937ead0 | T26, ModalValidacionFondos, lógica recargas eliminados |
+| P3 | 95875e5 | saldo NU Angie puede ser negativo — no truncar a cero |
+| P4 | 3f3a012 | Modal cierre semana: remanente Angie pre-populado |
+| P5 | 73c575b | Header M4 móvil actor=angie — 5 métricas |
+| Bug 1 | 1d0dfa8 | ejecutadoAngie suma H2+H3B · lista FAB movida a tab Ejecutados |
+| Bug 2 | 5ac1723 | consumosPendientes filtra clasificado=FALSE · dato sucio parcheado |
+| Bug 3 | fc7b251 | semana FAB calculada en servidor — IA ya no infiere semana |
+
+### Aprendizajes
+
+- Datos operativos deterministas nunca se delegan a inferencia IA. La semana del registro es una propiedad del momento del POST, no una inferencia del texto del usuario. El servidor calcula, el cliente no opina.
+- El primer uso real de Angie expuso 3 bugs en horas que el QA interno no detectó. El go-live con usuario real es el test más efectivo.
+
+### Estado al cierre
+
+- T47 completo y verificado en producción.
+- Go-live Angie: pendiente — 2 días de postergación activa.
+- ESTADO.md desactualizado desde sesión anterior (corte por tokens) — este append cubre ambas sesiones.
+- Próximo paso: confirmar go-live con Angie o identificar fricción adicional.
+
+---
