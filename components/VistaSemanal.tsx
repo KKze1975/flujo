@@ -753,7 +753,7 @@ export default function VistaSemanal({
   }
 
   const lista = tab === "pendientes" ? pendientes : ejecutados;
-  const consumosPendientes = consumos.filter(c => !c.clasificado && c.ejecutor === actor);
+  const consumosPendientes = consumos.filter(c => !c.clasificado);
 
   return (
     <div className="t-calido screen-anim">
