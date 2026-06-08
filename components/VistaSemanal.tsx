@@ -89,13 +89,14 @@ function OriginalRecord({ consumo, flagClasif }: { consumo: ConsumoH3; flagClasi
   );
 }
 
-type M5Scenario = "monto" | "ejecutor" | "fuente" | "clasif" | "semana";
+type M5Scenario = "descripcion" | "monto" | "ejecutor" | "fuente" | "clasif" | "semana";
 
 const SCN_LABEL: Record<M5Scenario, { eye: string; title: string; note: string }> = {
+  descripcion: { eye: "Descripción incorrecta",    title: "Corregir la descripción",   note: "Edita el texto del gasto registrado." },
   monto:    { eye: "Error de monto",           title: "Corregir el monto",         note: "Ajusta el valor; el registro original queda como referencia." },
   ejecutor: { eye: "Ejecutor incorrecto",      title: "¿Quién ejecutó el gasto?",  note: "Cambia la persona que pagó." },
   fuente:   { eye: "Fuente de pago incorrecta",title: "Cambiar la fuente de pago", note: "Selecciona de dónde salió realmente el dinero." },
-  clasif:   { eye: "Gasto sin clasificar · H3",title: "Clasificar el gasto",       note: "Asígnalo a un bolsillo activo para registrar correctamente el consumo." },
+  clasif:   { eye: "Categoría / Concepto",     title: "Clasificar el gasto",       note: "Asígnalo a un bolsillo activo para registrar correctamente el consumo." },
   semana:   { eye: "Semana incorrecta",        title: "Mover de semana",           note: "Reasigna el registro a la semana correcta del mes." },
 };
 
@@ -114,6 +115,7 @@ function ModalCorreccion({
 }) {
   const defaultScenario: M5Scenario = !consumo.clasificado ? "clasif" : "monto";
   const [scenario, setScenario] = useState<M5Scenario>(defaultScenario);
+  const [descripcion, setDescripcion] = useState(consumo.descripcion);
   const [monto, setMonto] = useState(consumo.monto);
   const [ejecutor, setEjecutor] = useState<Actor>(consumo.ejecutor);
   const [fuentes, setFuentes] = useState({
@@ -133,6 +135,7 @@ function ModalCorreccion({
     setBusy(true);
     setError(null);
     let patch: Record<string, unknown> = {};
+    if (scenario === "descripcion") patch = { descripcion };
     if (scenario === "monto")    patch = { monto };
     if (scenario === "ejecutor") patch = { ejecutor };
     if (scenario === "fuente")   patch = { ...fuentes };
@@ -186,7 +189,7 @@ function ModalCorreccion({
         <div className="dk-modal-body">
           {/* Scenario tabs */}
           <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-            {(["monto", "ejecutor", "fuente", "clasif", "semana"] as M5Scenario[]).map(s => (
+            {(["descripcion", "monto", "ejecutor", "fuente", "clasif", "semana"] as M5Scenario[]).map(s => (
               <button
                 key={s}
                 type="button"
@@ -209,6 +212,20 @@ function ModalCorreccion({
 
           {/* Correction control */}
           <div className="dk-corr">
+            {scenario === "descripcion" && (
+              <>
+                <p className="dk-exp-lbl">Descripción corregida</p>
+                <input
+                  className="dk-amt-in"
+                  type="text"
+                  value={descripcion}
+                  onChange={e => setDescripcion(e.target.value)}
+                  style={{ width: "100%", fontWeight: 500 }}
+                  placeholder="¿Qué fue este gasto?"
+                />
+              </>
+            )}
+
             {scenario === "monto" && (
               <>
                 <p className="dk-exp-lbl">Monto corregido</p>
@@ -736,6 +753,7 @@ export default function VistaSemanal({
   }
 
   const lista = tab === "pendientes" ? pendientes : ejecutados;
+  const consumosPendientes = consumos.filter(c => !c.clasificado && c.ejecutor === actor);
 
   return (
     <div className="t-calido screen-anim">
@@ -885,7 +903,7 @@ export default function VistaSemanal({
         {/* Tabs */}
         <div className="fl-tabs">
           {(["pendientes", "ejecutados"] as const).map((t) => {
-            const count = t === "pendientes" ? pendientes.length : ejecutados.length + consumos.length;
+            const count = t === "pendientes" ? pendientes.length : ejecutados.length + consumosPendientes.length;
             return (
               <button
                 key={t}
@@ -1104,12 +1122,12 @@ export default function VistaSemanal({
           </div>
         )}
 
-        {/* Registros rápidos H3B — visibles en pestaña Ejecutados */}
-        {tab === "ejecutados" && consumos.length > 0 && (
+        {/* Registros rápidos H3B — sin clasificar, ejecutor=actor */}
+        {tab === "ejecutados" && consumosPendientes.length > 0 && (
           <>
-            <p className="fl-sectlabel">Registros rápidos</p>
+            <p className="fl-sectlabel">Registros rápidos · Sin clasificar</p>
             <div style={{ display: "flex", flexDirection: "column" }}>
-              {consumos.map(c => {
+              {consumosPendientes.map(c => {
                 const fuente = fuenteLabel(c);
                 return (
                   <div key={c.id} className="dk-rec">

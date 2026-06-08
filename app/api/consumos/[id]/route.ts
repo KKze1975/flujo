@@ -9,6 +9,7 @@ export async function PATCH(
   const { id } = await params;
 
   let body: {
+    descripcion?: string;
     monto?: number;
     ejecutor?: Actor;
     fuenteEnMano?: boolean;
@@ -30,6 +31,7 @@ export async function PATCH(
   const provider = getProvider();
   try {
     const updated = await provider.updateConsumoH3(id, {
+      ...(body.descripcion !== undefined && { descripcion: body.descripcion }),
       ...(body.monto !== undefined && { monto: body.monto }),
       ...(body.ejecutor !== undefined && { ejecutor: body.ejecutor }),
       ...(body.fuenteEnMano !== undefined && { fuenteEnMano: body.fuenteEnMano }),
