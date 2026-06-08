@@ -6,15 +6,18 @@
 - Local:         http://localhost:3000
 - Network:       http://172.31.28.120:3000
 - Environments: .env.local
-✓ Ready in 1144ms
+✓ Ready in 1538ms
 
- GET /mes/2026-06/semana 200 in 11.2s (next.js: 9.3s, application-code: 1907ms)
- GET /api/mes/2026-06/2026-06/semana/S4 404 in 325ms (next.js: 151ms, application-code: 174ms)
-○ Compiling /api/mes/[mes]/semana/[semana] ...
- GET /api/mes/2026-06/semana/S4 200 in 23.5s (next.js: 23.0s, application-code: 560ms)
- PATCH /api/mes/2026-06/movimientos/MOV_1779752776972 200 in 5.0s (next.js: 4.5s, application-code: 538ms)
- PATCH /api/mes/2026-06/movimientos/MOV_1779752776972 200 in 867ms (next.js: 34ms, application-code: 834ms)
- PATCH /api/mes/2026-06/movimientos/MOV_1779752776972 200 in 737ms (next.js: 9ms, application-code: 728ms)
- GET /mes/2026-06/semana 200 in 522ms (next.js: 29ms, application-code: 492ms)
-(node:3928) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(node:7772) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
+ POST /api/mes/2026-06/iniciar 201 in 24.2s (next.js: 21.7s, application-code: 2.5s)
+ POST /api/mes/2026-06/iniciar 409 in 250ms (next.js: 57ms, application-code: 193ms)
+ GET /api/mes/2026-06 200 in 7.8s (next.js: 7.6s, application-code: 246ms)
+ GET /api/mes/2026-06/saldos 200 in 4.4s (next.js: 4.1s, application-code: 286ms)
+ GET /api/meses 200 in 627ms (next.js: 129ms, application-code: 498ms)
+✓ Finished filesystem cache database compaction in 10.4s
+ GET /api/ingresos/angie/2026-06/recargas/S1 200 in 8.6s (next.js: 8.1s, application-code: 547ms)
+ GET /api/ingresos/angie/2026-06/recargas/S2 200 in 303ms (next.js: 13ms, application-code: 290ms)
+ GET /api/ingresos/angie/2026-06/recargas/S3 200 in 303ms (next.js: 7ms, application-code: 295ms)
+ GET /api/ingresos/angie/2026-06/recargas/S4 200 in 290ms (next.js: 5ms, application-code: 284ms)
+^C^C

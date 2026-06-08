@@ -11,7 +11,6 @@ import type {
   EstadoIngresoCamilo,
   CuentaDestino,
   CuentaH4C,
-  CuentaDestinoAngie,
   Actor,
   Concepto,
   Movimiento,
@@ -20,7 +19,6 @@ import type {
   ConsumoH3,
   IngresoCamilo,
   IngresoAngie,
-  RecargaAngie,
   SaldoCuenta,
   CierreSemana,
   PlanSemana,
@@ -652,92 +650,6 @@ export class SheetsDataProvider implements IDataProvider {
     }
 
     return result;
-  }
-
-  // ── H4D helpers ──────────────────────────────────────────────────────────
-
-  private readonly H4D_HEADERS = [
-    "id_recarga", "mes", "semana", "monto", "fecha",
-    "registrado_por", "cuenta_destino", "notas",
-  ];
-
-  private rowToRecargaAngie(row: string[], headers: string[]): RecargaAngie {
-    const col = (name: string) => row[headers.indexOf(name)] ?? "";
-    return {
-      id: col("id_recarga"),
-      mes: col("mes"),
-      semana: col("semana") as import("./types").Semana,
-      monto: Number(col("monto")) || 0,
-      fecha: col("fecha"),
-      registradoPor: col("registrado_por"),
-      cuentaDestino: (col("cuenta_destino") || "nu_angie") as CuentaDestinoAngie,
-      notas: col("notas") || null,
-    };
-  }
-
-  private recargaAngieToRow(r: RecargaAngie): string[] {
-    return [r.id, r.mes, r.semana, String(r.monto), r.fecha, r.registradoPor, r.cuentaDestino, r.notas ?? ""];
-  }
-
-  private async ensureH4DHeaders(): Promise<void> {
-    try {
-      const res = await this.sheets.spreadsheets.values.get({
-        spreadsheetId: process.env.GOOGLE_SHEET_ID,
-        range: "H4!X1",
-      });
-      if (res.data.values?.[0]?.[0] === "id_recarga") return;
-    } catch {
-      // continúa a escribir
-    }
-    await this.sheets.spreadsheets.values.update({
-      spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: "H4!X1:AE1",
-      valueInputOption: "RAW",
-      requestBody: { values: [this.H4D_HEADERS] },
-    });
-  }
-
-  async getRecargasAngie(mes: string): Promise<RecargaAngie[]> {
-    await this.ensureH4DHeaders();
-    try {
-      const res = await this.sheets.spreadsheets.values.get({
-        spreadsheetId: process.env.GOOGLE_SHEET_ID,
-        range: "H4!X:AE",
-      });
-      const rows = (res.data.values ?? []) as string[][];
-      if (rows.length < 2) return [];
-      const [headers, ...dataRows] = rows;
-      const mesIdx = headers.indexOf("mes");
-      return dataRows
-        .filter((row) => row.length > 0 && row[0] && row[mesIdx] === mes)
-        .map((row) => this.rowToRecargaAngie(row, headers));
-    } catch {
-      return [];
-    }
-  }
-
-  async createRecargaAngie(data: Omit<RecargaAngie, "id">): Promise<RecargaAngie> {
-    await this.ensureH4DHeaders();
-    const id = `RECARGA_ANG_${Date.now()}`;
-    const recarga: RecargaAngie = { id, ...data };
-    // Use explicit row to avoid values.append table-detection placing data in wrong columns
-    const colRes = await this.sheets.spreadsheets.values.get({
-      spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: "H4!X:X",
-    });
-    const colValues = colRes.data.values ?? [];
-    let lastRow = 1;
-    for (let i = colValues.length - 1; i >= 0; i--) {
-      if (colValues[i]?.[0]) { lastRow = i + 1; break; }
-    }
-    const nextRow = lastRow + 1;
-    await this.sheets.spreadsheets.values.update({
-      spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: `H4!X${nextRow}:AE${nextRow}`,
-      valueInputOption: "RAW",
-      requestBody: { values: [this.recargaAngieToRow(recarga)] },
-    });
-    return recarga;
   }
 
   // ── H3 ───────────────────────────────────────────────────────────────────

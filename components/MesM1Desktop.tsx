@@ -5,7 +5,7 @@ import React from "react";
 import { useRouter } from "next/navigation";
 import type {
   Movimiento, Concepto, SaldoCuenta, Semana, Categoria,
-  Actor, IngresoCamilo, IngresoAngie, RecargaAngie, CuentaDestino, CuentaH4C,
+  Actor, IngresoCamilo, IngresoAngie, CuentaDestino, CuentaH4C,
 } from "@/lib/data/types";
 import Icon from "@/components/ui/Icon";
 import ConceptoBoard from "@/components/m1/ConceptoBoard";
@@ -13,7 +13,6 @@ import ModalAgregarConcepto from "@/components/m1/ModalAgregarConcepto";
 import ModalConfirmarSaldos from "@/components/m1/ModalConfirmarSaldos";
 import ModalCerrarSemana from "@/components/m1/ModalCerrarSemana";
 import ModalAporteAngie from "@/components/m1/ModalAporteAngie";
-import ModalValidacionFondos from "@/components/m1/ModalValidacionFondos";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -308,7 +307,6 @@ export default function MesM1Desktop({
   mes,
   ingresoCamilo: ingresoCamiloProp = null,
   ingresosAngie: ingresosAngieProp = [],
-  recargasAngie: recargasAngieProp = [],
   cierresSemana: cierresSemanaProps = [],
   gastosSinClasificar = { S1: 0, S2: 0, S3: 0, S4: 0 },
   gastoH3PorCuenta = {},
@@ -322,7 +320,6 @@ export default function MesM1Desktop({
   mes: string;
   ingresoCamilo?: IngresoCamilo | null;
   ingresosAngie?: IngresoAngie[];
-  recargasAngie?: RecargaAngie[];
   cierresSemana?: import("@/lib/data/types").CierreSemana[];
   gastosSinClasificar?: Record<Semana, number>;
   gastoH3PorCuenta?: Record<string, number>;
@@ -337,7 +334,6 @@ export default function MesM1Desktop({
 
   // Shared state
   const [movs, setMovs] = useState<Movimiento[]>(movimientosProp);
-  const [recargasAngieLocal, setRecargasAngieLocal] = useState<RecargaAngie[]>(recargasAngieProp);
   const [conceptosLocal, setConceptosLocal] = useState<Concepto[]>(conceptosProp);
   const [showAgregarConcepto, setShowAgregarConcepto] = useState(false);
   const [saldosLocal, setSaldosLocal] = useState<SaldoCuenta[]>(saldos);
@@ -350,9 +346,6 @@ export default function MesM1Desktop({
   const [wk, setWk] = useState<"todas" | Semana>(() => getActiveSemana(mes));
   const [saldosOk, setSaldosOk] = useState(saldos.length >= 4);
   const [ejecutarPanel, setEjecutarPanel] = useState<EjecutarPanel | null>(null);
-  const [validacionFondos, setValidacionFondos] = useState<{
-    mov: Movimiento; panel: EjecutarPanel; cuentaDeficit: CuentaH4C;
-  } | null>(null);
   const [execBoardKey, setExecBoardKey] = useState(0);
 
   // Ingreso Camilo (sidebar en planificación, modal en ejecución)
@@ -395,11 +388,8 @@ export default function MesM1Desktop({
           .filter(m => m.estado === "ejecutado" && m[fuenteKey as keyof typeof m])
           .reduce((sum, m) => sum + (m.montoEjecutado ?? m.montoPresupuestado), 0)
       : 0;
-    const recargas = (cuenta === "nu_angie" || cuenta === "en_mano")
-      ? recargasAngieLocal.filter(r => r.cuentaDestino === cuenta).reduce((sum, r) => sum + r.monto, 0)
-      : 0;
     const gastoH3 = gastoH3PorCuenta[cuenta] ?? 0;
-    return bruto + recargas - ejecutado - gastoH3;
+    return bruto - ejecutado - gastoH3;
   };
 
   const rows = useMemo<TableRow[]>(() => {
@@ -423,11 +413,11 @@ export default function MesM1Desktop({
       if (cierre) {
         result[s] = cierre.remanenteAngie;
       } else {
-        result[s] = recargasAngieLocal.filter(r => r.semana === s).reduce((sum, r) => sum + r.monto, 0);
+        result[s] = 0;
       }
     }
     return result;
-  }, [cierresSemanaProps, recargasAngieLocal]);
+  }, [cierresSemanaProps]);
 
   const balanceSemanas = useMemo(() => {
     let remanente = ingresoCamiloLocal?.montoCop ?? 0;
@@ -442,18 +432,14 @@ export default function MesM1Desktop({
         .reduce((sum, m) => sum + (m.montoEjecutado ?? m.montoPresupuestado), 0);
       const ejecutado = ejecutadoH2 + (gastoH3PorSemana[s] ?? 0);
       const pendiente = items.filter((m) => m.estado === "pendiente").length;
-      // Usar recargas reales (no cierre.remanenteAngie) para el flujo de caja:
-      // cierre.remanenteAngie = lo que queda en la cuenta de Angie al cerrar,
-      // no lo que ella aportó. El aporte real son las recargas de esa semana.
-      const aporteAngie = recargasAngieLocal.filter(r => r.semana === s).reduce((sum, r) => sum + r.monto, 0);
+      const aporteAngie = ingresosAngieProp.find(a => a.semana === s)?.monto ?? 0;
       const disponible = remanente + aporteAngie;
       const diferencia = disponible - ejecutado;
-      // F3: semana cerrada = ingreso Angie confirmado; sin cierre = planeado
       const isConfirmado = cierresSemanaProps.some((c) => c.semana === s);
       remanente = diferencia;
       return { semana: s, remanente: disponible, aporteAngie, comprometido, ejecutado, diferencia, pendiente, isConfirmado };
     });
-  }, [movs, ingresoCamiloLocal, recargasAngieLocal, cierresSemanaProps, gastoH3PorSemana]);
+  }, [movs, ingresoCamiloLocal, ingresosAngieProp, cierresSemanaProps, gastoH3PorSemana]);
 
 
   // ── Planificación derivations ─────────────────────────────────────────────
@@ -664,38 +650,6 @@ export default function MesM1Desktop({
     });
   };
 
-  const ejecutarConCuenta = (nuevaCuenta: CuentaH4C) => {
-    if (!validacionFondos) return;
-    const { panel } = validacionFondos;
-    const monto = Number(panel.monto);
-    const newPanel: EjecutarPanel = {
-      ...panel,
-      fuenteEnMano: nuevaCuenta === "en_mano",
-      fuenteNequi: nuevaCuenta === "arq",
-      fuenteCamilo: nuevaCuenta === "nu_camilo",
-      fuenteAngie: nuevaCuenta === "nu_angie",
-    };
-    patchar(panel.movId, {
-      tipo: "ejecutar", montoEjecutado: monto, ejecutor: panel.ejecutor,
-      fuenteEnMano: newPanel.fuenteEnMano, fuenteNequi: newPanel.fuenteNequi,
-      fuenteCamilo: newPanel.fuenteCamilo, fuenteAngie: newPanel.fuenteAngie,
-    }, () => {
-      setSaldosLocal(prev => prev.map(s =>
-        s.cuenta === nuevaCuenta ? { ...s, saldoInicial: Math.max(0, s.saldoInicial - monto) } : s
-      ));
-      setValidacionFondos(null);
-      setExecBoardKey(k => k + 1);
-    });
-  };
-
-  const posponerDesdeModal = () => {
-    if (!validacionFondos) return;
-    patchar(validacionFondos.panel.movId, { tipo: "posponer", razonPostergacion: null }, () => {
-      setValidacionFondos(null);
-      setExecBoardKey(k => k + 1);
-    });
-  };
-
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -838,9 +792,6 @@ export default function MesM1Desktop({
                   .reduce((sum, m) => sum + (m.montoEjecutado ?? m.montoPresupuestado), 0);
                 const gastoH3 = gastoH3PorCuenta[cuenta] ?? 0;
                 const ejecutado = ejecutadoH2 + gastoH3;
-                const recargas = (cuenta === "nu_angie" || cuenta === "en_mano")
-                  ? recargasAngieLocal.filter(r => r.cuentaDestino === cuenta).reduce((sum, r) => sum + r.monto, 0)
-                  : 0;
                 const bruto = saldosBrutosLocal.find(s => s.cuenta === cuenta)?.saldoInicial ?? 0;
                 const disponible = disponiblePorCuenta(cuenta);
                 const inicial = bruto;
@@ -857,12 +808,6 @@ export default function MesM1Desktop({
                         <span style={{ color: "var(--ink-faint)" }}>Inicial</span>
                         <span style={{ color: "var(--ink-soft)", fontVariantNumeric: "tabular-nums" }}>{entry ? COP(inicial, { compact: true }) : "—"}</span>
                       </div>
-                      {recargas > 0 && (
-                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5 }}>
-                          <span style={{ color: "var(--ink-faint)" }}>Recargado</span>
-                          <span style={{ color: "var(--pos)", fontVariantNumeric: "tabular-nums" }}>+{COP(recargas, { compact: true })}</span>
-                        </div>
-                      )}
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5 }}>
                         <span style={{ color: "var(--ink-faint)" }}>Ejecutado</span>
                         <span style={{ color: "var(--ink-soft)", fontVariantNumeric: "tabular-nums" }}>{COP(ejecutado, { compact: true })}</span>
@@ -1162,23 +1107,6 @@ export default function MesM1Desktop({
             setMovs(prev => [...prev, movimiento]);
             setShowAgregarConcepto(false);
           }}
-        />
-      )}
-
-      {/* ── T26 · Modal Validación de Fondos ── */}
-      {validacionFondos && (
-        <ModalValidacionFondos
-          mov={validacionFondos.mov}
-          mes={mes}
-          semana={validacionFondos.mov.semana ?? "S1"}
-          montoEjecutado={Number(validacionFondos.panel.monto)}
-          cuentaDeficit={validacionFondos.cuentaDeficit}
-          todasCuentas={CUENTAS_H4C.map(({ cuenta }) => ({ cuenta, disponible: disponiblePorCuenta(cuenta) }))}
-          actor={validacionFondos.panel.ejecutor}
-          onEjecutarConCuenta={ejecutarConCuenta}
-          onPosponer={posponerDesdeModal}
-          onClose={() => setValidacionFondos(null)}
-          onRecargaRegistrada={(r) => setRecargasAngieLocal(prev => [...prev, r])}
         />
       )}
 

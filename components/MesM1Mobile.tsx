@@ -5,12 +5,11 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import type {
   Movimiento, Concepto, IngresoCamilo, IngresoAngie,
-  SaldoCuenta, CierreSemana, Semana, Actor, RecargaAngie, CuentaH4C,
+  SaldoCuenta, CierreSemana, Semana, Actor, CuentaH4C,
 } from "@/lib/data/types";
 import Icon from "@/components/ui/Icon";
 import BottomNav from "@/components/ui/BottomNav";
 import ModalConfirmarSaldos from "@/components/m1/ModalConfirmarSaldos";
-import ModalValidacionFondos from "@/components/m1/ModalValidacionFondos";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -108,7 +107,6 @@ export default function MesM1Mobile({
   conceptos: _conceptos,
   ingresoCamilo: ingresoCamiloProp,
   ingresosAngie: ingresosAngieProp,
-  recargasAngie: recargasAngieProp = [],
   cierresSemana: _cierresSemana,
   gastosSinClasificarInit: _gastos,
   saldosInit,
@@ -119,7 +117,6 @@ export default function MesM1Mobile({
   conceptos: Concepto[];
   ingresoCamilo: IngresoCamilo | null;
   ingresosAngie: IngresoAngie[];
-  recargasAngie?: RecargaAngie[];
   cierresSemana: CierreSemana[];
   gastosSinClasificarInit: Record<Semana, number>;
   saldosInit: SaldoCuenta[];
@@ -136,9 +133,6 @@ export default function MesM1Mobile({
   const [showSaldosModal, setShowSaldosModal] = useState(false);
   const [expandedPlanId, setExpandedPlanId] = useState<string | null>(null);
   const [ejecutarPanel, setEjecutarPanel] = useState<EjecutarPanel | null>(null);
-  const [validacionFondos, setValidacionFondos] = useState<{
-    mov: Movimiento; panel: EjecutarPanel; cuentaDeficit: CuentaH4C;
-  } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -204,10 +198,7 @@ export default function MesM1Mobile({
 
   const disponiblePorCuenta = (cuenta: CuentaH4C): number => {
     const entry = saldos.find(s => s.cuenta === cuenta);
-    const recargas = (cuenta === "nu_angie" || cuenta === "en_mano")
-      ? recargasAngieProp.filter(r => r.cuentaDestino === cuenta).reduce((sum, r) => sum + r.monto, 0)
-      : 0;
-    return (entry?.saldoInicial ?? 0) + recargas;
+    return entry?.saldoInicial ?? 0;
   };
 
   const confirmarEjecucion = () => {
@@ -222,26 +213,6 @@ export default function MesM1Mobile({
       fuenteNequi: ejecutarPanel.fuenteNequi,
       fuenteCamilo: ejecutarPanel.fuenteCamilo,
       fuenteAngie: ejecutarPanel.fuenteAngie,
-    });
-  };
-
-  const ejecutarConCuenta = (nuevaCuenta: CuentaH4C) => {
-    if (!validacionFondos) return;
-    const { panel } = validacionFondos;
-    const monto = Number(panel.monto);
-    patchar(panel.movId, {
-      tipo: "ejecutar", montoEjecutado: monto, ejecutor: panel.ejecutor,
-      fuenteEnMano: nuevaCuenta === "en_mano",
-      fuenteNequi: nuevaCuenta === "arq",
-      fuenteCamilo: nuevaCuenta === "nu_camilo",
-      fuenteAngie: nuevaCuenta === "nu_angie",
-    }, () => setValidacionFondos(null));
-  };
-
-  const posponerDesdeModal = () => {
-    if (!validacionFondos) return;
-    patchar(validacionFondos.panel.movId, { tipo: "posponer", razonPostergacion: null }, () => {
-      setValidacionFondos(null);
     });
   };
 
@@ -610,21 +581,6 @@ export default function MesM1Mobile({
         document.body
       )}
 
-      {/* T26 · Modal Validación de Fondos */}
-      {validacionFondos && (
-        <ModalValidacionFondos
-          mov={validacionFondos.mov}
-          mes={mes}
-          semana={validacionFondos.mov.semana ?? "S1"}
-          montoEjecutado={Number(validacionFondos.panel.monto)}
-          cuentaDeficit={validacionFondos.cuentaDeficit}
-          todasCuentas={CUENTAS_H4C.map(({ cuenta }) => ({ cuenta, disponible: disponiblePorCuenta(cuenta) }))}
-          actor={validacionFondos.panel.ejecutor}
-          onEjecutarConCuenta={ejecutarConCuenta}
-          onPosponer={posponerDesdeModal}
-          onClose={() => setValidacionFondos(null)}
-        />
-      )}
     </div>
   );
 }

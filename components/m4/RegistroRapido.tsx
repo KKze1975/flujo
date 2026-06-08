@@ -5,23 +5,14 @@ import InputRegistro from "@/components/m4/InputRegistro";
 import AclaracionBanner from "@/components/m4/AclaracionBanner";
 import PropuestaCard, { type ConfirmacionPayload } from "@/components/m4/PropuestaCard";
 import ConfirmacionExito from "@/components/m4/ConfirmacionExito";
-import type { Movimiento, SaldoCuenta, RecargaAngie, CuentaH4C } from "@/lib/data/types";
+import type { Movimiento, SaldoCuenta } from "@/lib/data/types";
 import type { InterpretacionM4 } from "@/app/api/registro/interpretar/route";
-import ModalValidacionFondos from "@/components/m1/ModalValidacionFondos";
 
 type Estado = "idle" | "procesando" | "aclaracion" | "propuesta" | "confirmando" | "exito";
 type Resultado = { nombreConcepto: string | null; clasificado: boolean };
 type InputPayload =
   | { tipo: "texto"; contenido: string }
   | { tipo: "imagen"; base64: string; mimeType: string };
-
-const FUENTE_A_CUENTA: Record<string, CuentaH4C | null> = {
-  en_mano: "en_mano",
-  camilo: "nu_camilo",
-  angie: "nu_angie",
-  nequi: null,
-};
-
 
 export default function RegistroRapido({ onClose, onSuccess }: { onClose?: () => void; onSuccess?: () => void }) {
   const [estado, setEstado] = useState<Estado>("idle");
@@ -30,13 +21,11 @@ export default function RegistroRapido({ onClose, onSuccess }: { onClose?: () =>
   const [mesActivo, setMesActivo] = useState<string | null>(null);
   const [movimientos, setMovimientos] = useState<Movimiento[]>([]);
   const [saldosMes, setSaldosMes] = useState<SaldoCuenta[]>([]);
-  const [recargasMes, setRecargasMes] = useState<RecargaAngie[]>([]);
   const [resultado, setResultado] = useState<Resultado | null>(null);
 
   useEffect(() => {
     if (estado === "exito") onSuccess?.();
   }, [estado]);
-  const [validacionPayload, setValidacionPayload] = useState<ConfirmacionPayload | null>(null);
 
   useEffect(() => {
     fetch("/api/meses")
@@ -73,19 +62,10 @@ export default function RegistroRapido({ onClose, onSuccess }: { onClose?: () =>
         setError(`Error cargando movimientos de ${mesActivo}: ${msg}`);
       });
 
-    // Fetch saldos para validación T26
     fetch(`/api/mes/${mesActivo}/saldos`)
       .then(r => r.json())
       .then((data: unknown) => { if (Array.isArray(data)) setSaldosMes(data as SaldoCuenta[]); })
       .catch(() => {});
-
-    // Fetch todas las recargas Angie del mes (S1-S4) para cálculo de disponible
-    Promise.all(["S1", "S2", "S3", "S4"].map(s =>
-      fetch(`/api/ingresos/angie/${mesActivo}/recargas/${s}`)
-        .then(r => r.json())
-        .then((d: { recargas?: RecargaAngie[] }) => d.recargas ?? [])
-        .catch(() => [] as RecargaAngie[])
-    )).then(results => setRecargasMes(results.flat()));
   }, [mesActivo]);
 
   async function handleSubmitInput(payload: InputPayload) {
@@ -253,65 +233,6 @@ export default function RegistroRapido({ onClose, onSuccess }: { onClose?: () =>
         />
       )}
 
-      {/* T26 · Modal validación de fondos en M4 */}
-      {validacionPayload && mesActivo && (() => {
-        const cuentaKey = FUENTE_A_CUENTA[validacionPayload.fuente];
-        const mov = movimientos.find(m => m.id === validacionPayload.movimientoId);
-        if (!cuentaKey || !mov) return null;
-        const CUENTA_FUENTE_KEY: Record<CuentaH4C, string> = {
-          nu_camilo: "fuenteCamilo", nu_angie: "fuenteAngie",
-          arq: "fuenteNequi", en_mano: "fuenteEnMano",
-        };
-        const getDisp = (c: CuentaH4C) => {
-          const fKey = CUENTA_FUENTE_KEY[c];
-          const ej = movimientos
-            .filter(m => m.estado === "ejecutado" && (m as unknown as Record<string, unknown>)[fKey])
-            .reduce((sum, m) => sum + (m.montoEjecutado ?? m.montoPresupuestado), 0);
-          const rec = (c === "nu_angie" || c === "en_mano")
-            ? recargasMes.filter(r => r.cuentaDestino === c).reduce((sum, r) => sum + r.monto, 0)
-            : 0;
-          return Math.max(0, (saldosMes.find(s => s.cuenta === c)?.saldoInicial ?? 0) - ej) + rec;
-        };
-        const todasCuentas: { cuenta: CuentaH4C; disponible: number }[] = [
-          { cuenta: "nu_camilo", disponible: getDisp("nu_camilo") },
-          { cuenta: "nu_angie",  disponible: getDisp("nu_angie")  },
-          { cuenta: "arq",       disponible: getDisp("arq")       },
-          { cuenta: "en_mano",   disponible: getDisp("en_mano")   },
-        ];
-        return (
-          <ModalValidacionFondos
-            mov={mov}
-            mes={mesActivo}
-            semana={validacionPayload.semana}
-            montoEjecutado={validacionPayload.monto}
-            cuentaDeficit={cuentaKey}
-            todasCuentas={todasCuentas}
-            actor={validacionPayload.ejecutor}
-            onEjecutarConCuenta={(nuevaCuenta) => {
-              const CUENTA_A_FUENTE: Record<CuentaH4C, string> = {
-                nu_camilo: "camilo", nu_angie: "angie", arq: "nequi", en_mano: "en_mano",
-              };
-              setValidacionPayload(null);
-              void doConfirmar({ ...validacionPayload, fuente: CUENTA_A_FUENTE[nuevaCuenta] as typeof validacionPayload.fuente });
-            }}
-            onPosponer={() => {
-              if (!mesActivo || !validacionPayload.movimientoId) { setValidacionPayload(null); return; }
-              void fetch(`/api/mes/${mesActivo}/movimientos/${validacionPayload.movimientoId}`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ tipo: "posponer", razonPostergacion: null }),
-              }).then(() => {
-                setMovimientos(prev => prev.map(m =>
-                  m.id === validacionPayload.movimientoId ? { ...m, estado: "pospuesto" } : m
-                ));
-                setValidacionPayload(null);
-                reset();
-              });
-            }}
-            onClose={() => setValidacionPayload(null)}
-          />
-        );
-      })()}
     </div>
   );
 }

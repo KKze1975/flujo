@@ -8,7 +8,6 @@ import type {
   ConsumoH3,
   IngresoCamilo,
   IngresoAngie,
-  RecargaAngie,
   SaldoCuenta,
   CierreSemana,
   PlanSemana,
@@ -109,12 +108,6 @@ export class MockDataProvider implements IDataProvider {
   }
   updateIngresoAngie(_id: string, _data: Partial<Omit<IngresoAngie, "id">>): Promise<IngresoAngie> {
     return Promise.resolve(null as unknown as IngresoAngie);
-  }
-  getRecargasAngie(_mes: string): Promise<RecargaAngie[]> {
-    return Promise.resolve([]);
-  }
-  createRecargaAngie(_data: Omit<RecargaAngie, "id">): Promise<RecargaAngie> {
-    return Promise.resolve({ id: `RECARGA_ANG_${Date.now()}`, ..._data });
   }
   getSaldosCuenta(_mes: string): Promise<SaldoCuenta[]> {
     return Promise.resolve([]);
