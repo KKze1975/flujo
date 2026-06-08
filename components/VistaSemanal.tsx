@@ -130,6 +130,7 @@ function ModalCorreccion({
   const [semana, setSemana] = useState<Semana>(consumo.semana);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmandoRevertir, setConfirmandoRevertir] = useState(false);
 
   const scn = SCN_LABEL[scenario];
 
@@ -179,6 +180,7 @@ function ModalCorreccion({
       onRevertido(consumo.id);
       onClose();
     } catch (e: unknown) {
+      setConfirmandoRevertir(false);
       setError(e instanceof Error ? e.message : "Error desconocido");
     } finally {
       setBusy(false);
@@ -193,7 +195,7 @@ function ModalCorreccion({
 
   return (
     <div className="dk-modal-backdrop" onClick={onClose}>
-      <div className="dk-modal" onClick={e => e.stopPropagation()}>
+      <div className="dk-modal" style={{ position: "relative" }} onClick={e => e.stopPropagation()}>
         {/* Header */}
         <header className="dk-modal-head">
           <div className="lhs">
@@ -356,7 +358,7 @@ function ModalCorreccion({
 
         {/* Footer */}
         <footer className="dk-modal-foot">
-          <button type="button" className="fl-btn ghost sm" onClick={revertir} disabled={busy}
+          <button type="button" className="fl-btn ghost sm" onClick={() => setConfirmandoRevertir(true)} disabled={busy}
             style={{ color: "var(--neg)", borderColor: "var(--neg)", marginRight: "auto" }}>
             <Icon name="x" size={15} /> Revertir
           </button>
@@ -365,6 +367,30 @@ function ModalCorreccion({
             <Icon name="check" size={15} /> {busy ? "…" : "Guardar corrección"}
           </button>
         </footer>
+
+        {/* Confirmación revertir */}
+        {confirmandoRevertir && (
+          <div style={{
+            position: "absolute", inset: 0, borderRadius: "inherit",
+            background: "var(--surface)", display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center", gap: 20, padding: 32, zIndex: 10,
+          }}>
+            <p style={{ fontWeight: 600, fontSize: 15, textAlign: "center", margin: 0 }}>
+              ¿Eliminar &ldquo;{consumo.descripcion || "este registro"}&rdquo;?
+            </p>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button type="button" className="fl-btn ghost sm"
+                onClick={() => setConfirmandoRevertir(false)} disabled={busy}>
+                Cancelar
+              </button>
+              <button type="button" className="fl-btn primary sm"
+                onClick={revertir} disabled={busy}
+                style={{ background: "var(--neg)", borderColor: "var(--neg)" }}>
+                {busy ? "…" : "Eliminar"}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
