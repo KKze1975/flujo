@@ -2173,3 +2173,43 @@ Flujo - Proyecto de salud financiera familiar - Camilo Villamil - 2026
 - Cola post go-live: BL-02 → BL-06 → QA-7jun-01 → BL-04/BL-05 · T49 requiere sesión DISEÑO.
 
 ---
+
+## Sesión 8 junio 2026 (cierre) — DISEÑO + CONSTRUCCIÓN T49 + T50
+
+### T49 — Revertir movimientos desde M4
+
+**Diseño aprobado:**
+- H2: PATCH revertir_ejecucion → estado pendiente → item pasa de Ejecutados a Pendientes en VistaSemanal sin recargar
+- H3B: DELETE consumo → item desaparece de Ejecutados · acumulado bolsillo se recalcula
+- Sin modal de confirmación en H2 (acción reversible) · Con confirmación en H3B (acción destructiva — T50)
+- Botón Revertir en modal Corregir existente — H2 y H3B
+
+| Pieza | Commit | Descripción |
+|---|---|---|
+| P1 | c69a5e9 | deleteConsumoH3 — IDataProvider + SheetsDataProvider + DELETE endpoint |
+| P2 | 04c008c | Botón Revertir en ModalCorreccion (H3B) y ModalCorreccionH2 (H2) |
+
+### T50 — Confirmación modal antes de eliminar H3B
+
+| Pieza | Commit | Descripción |
+|---|---|---|
+| P1 | ab77a1b | Overlay confirmación con nombre del item · Cancelar no actúa · Eliminar ejecuta DELETE |
+
+### Verificación con trazabilidad — /admin/trazabilidad
+
+- H2 revertido (MOV_1780841388020): 6 campos correctos — estado pendiente, montoEjecutado null, desviacion null, ejecutor null, fuenteAngie false, fechaEjecucion null ✅
+- H3B eliminado: 1 consumo antes → 0 después ✅
+- H4C sin modificar — correcto, saldos iniciales no se recalculan ✅
+
+### DoD — verificado en producción con trazabilidad
+
+- T49: 7/7 ✅
+- T50: criterios completos ✅
+
+### Estado al cierre
+
+- T49 y T50 completos y verificados.
+- Próximo paso: go-live formal con Angie o siguiente ticket de la cola.
+- Cola activa: BL-02 → BL-06 → QA-7jun-01 → BL-04/BL-05.
+
+---
