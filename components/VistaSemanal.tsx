@@ -106,12 +106,14 @@ function ModalCorreccion({
   consumos,
   onClose,
   onSaved,
+  onRevertido,
 }: {
   consumo: ConsumoH3;
   bolsillos: Movimiento[];
   consumos: ConsumoH3[];
   onClose: () => void;
   onSaved: (updated: ConsumoH3) => void;
+  onRevertido: (id: string) => void;
 }) {
   const defaultScenario: M5Scenario = !consumo.clasificado ? "clasif" : "monto";
   const [scenario, setScenario] = useState<M5Scenario>(defaultScenario);
@@ -157,6 +159,24 @@ function ModalCorreccion({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Error al guardar");
       onSaved(data as ConsumoH3);
+      onClose();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Error desconocido");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function revertir() {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/consumos/${consumo.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json() as { error?: string };
+        throw new Error(data.error ?? "Error al revertir");
+      }
+      onRevertido(consumo.id);
       onClose();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Error desconocido");
@@ -336,6 +356,10 @@ function ModalCorreccion({
 
         {/* Footer */}
         <footer className="dk-modal-foot">
+          <button type="button" className="fl-btn ghost sm" onClick={revertir} disabled={busy}
+            style={{ color: "var(--neg)", borderColor: "var(--neg)", marginRight: "auto" }}>
+            <Icon name="x" size={15} /> Revertir
+          </button>
           <button type="button" className="fl-btn ghost sm" onClick={onClose}>Cancelar</button>
           <button type="button" className="fl-btn primary sm" onClick={guardar} disabled={busy}>
             <Icon name="check" size={15} /> {busy ? "…" : "Guardar corrección"}
@@ -398,11 +422,13 @@ function ModalCorreccionH2({
   mes,
   onClose,
   onSaved,
+  onRevertido,
 }: {
   movimiento: Movimiento;
   mes: string;
   onClose: () => void;
   onSaved: (updated: Movimiento) => void;
+  onRevertido: (updated: Movimiento) => void;
 }) {
   const [scenario, setScenario] = useState<M5ScenarioH2>("monto");
   const [monto, setMonto] = useState(movimiento.montoEjecutado ?? movimiento.montoPresupuestado);
@@ -446,6 +472,26 @@ function ModalCorreccionH2({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Error al guardar");
       onSaved(data as Movimiento);
+      onClose();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Error desconocido");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function revertirH2() {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/mes/${mes}/movimientos/${movimiento.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tipo: "revertir_ejecucion" }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error((data as { error?: string }).error ?? "Error al revertir");
+      onRevertido(data as Movimiento);
       onClose();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Error desconocido");
@@ -570,6 +616,10 @@ function ModalCorreccionH2({
         </div>
 
         <footer className="dk-modal-foot">
+          <button type="button" className="fl-btn ghost sm" onClick={revertirH2} disabled={busy}
+            style={{ color: "var(--neg)", borderColor: "var(--neg)", marginRight: "auto" }}>
+            <Icon name="x" size={15} /> Revertir
+          </button>
           <button type="button" className="fl-btn ghost sm" onClick={onClose}>Cancelar</button>
           <button type="button" className="fl-btn primary sm" onClick={guardar} disabled={busy}>
             <Icon name="check" size={15} /> {busy ? "…" : "Guardar corrección"}
@@ -1214,6 +1264,9 @@ export default function VistaSemanal({
           onSaved={updated => {
             setConsumos(prev => prev.map(c => c.id === updated.id ? updated : c));
           }}
+          onRevertido={id => {
+            setConsumos(prev => prev.filter(c => c.id !== id));
+          }}
         />
       )}
 
@@ -1224,6 +1277,9 @@ export default function VistaSemanal({
           mes={mes}
           onClose={() => setCorrigiendoMovimiento(null)}
           onSaved={updated => {
+            setMovimientos(prev => prev.map(m => m.id === updated.id ? updated : m));
+          }}
+          onRevertido={updated => {
             setMovimientos(prev => prev.map(m => m.id === updated.id ? updated : m));
           }}
         />
