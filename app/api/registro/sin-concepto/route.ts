@@ -45,9 +45,16 @@ async function ensureH3(sheets: ReturnType<typeof getSheets>) {
   });
 }
 
+function semanaActual(): "S1" | "S2" | "S3" | "S4" {
+  const dia = new Date().getDate();
+  if (dia <= 7)  return "S1";
+  if (dia <= 14) return "S2";
+  if (dia <= 21) return "S3";
+  return "S4";
+}
+
 type Body = {
   mes: string;
-  semana: string;
   descripcion: string;
   monto: number;
   ejecutor: "camilo" | "angie";
@@ -63,7 +70,7 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "Body inválido." }, { status: 400 });
   }
 
-  if (!body.mes || !body.semana || !body.monto || !body.ejecutor || !body.fuente) {
+  if (!body.mes || !body.monto || !body.ejecutor || !body.fuente) {
     return Response.json({ error: "Campos requeridos incompletos." }, { status: 400 });
   }
 
@@ -77,12 +84,13 @@ export async function POST(req: NextRequest) {
 
   const id = `CONSUMO_${Date.now()}`;
   const hoy = new Date().toISOString().split("T")[0];
+  const semana = semanaActual();
   const clasificado = body.bolsilloId ? "TRUE" : "FALSE";
   const row = [
     id,
     body.bolsilloId ?? "PENDIENTE_CLASIFICACION",
     body.mes,
-    body.semana,
+    semana,
     body.descripcion ?? "",
     String(body.monto),
     body.ejecutor,
