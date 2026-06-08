@@ -311,6 +311,7 @@ export default function MesM1Desktop({
   gastosSinClasificar = { S1: 0, S2: 0, S3: 0, S4: 0 },
   gastoH3PorCuenta = {},
   gastoH3PorSemana = { S1: 0, S2: 0, S3: 0, S4: 0 },
+  gastoH3AngiePorSemana = { S1: 0, S2: 0, S3: 0, S4: 0 },
   onSwitchToMobile,
 }: {
   movimientos: Movimiento[];
@@ -324,6 +325,7 @@ export default function MesM1Desktop({
   gastosSinClasificar?: Record<Semana, number>;
   gastoH3PorCuenta?: Record<string, number>;
   gastoH3PorSemana?: Record<string, number>;
+  gastoH3AngiePorSemana?: Record<string, number>;
   onSwitchToMobile: () => void;
 }) {
   const router = useRouter();
@@ -1092,6 +1094,8 @@ export default function MesM1Desktop({
         <ModalCerrarSemana
           mes={mes}
           semana={semanaParaCerrar}
+          ingresosAngie={ingresosAngieProp}
+          gastoH3AngiePorSemana={gastoH3AngiePorSemana as Record<import("@/lib/data/types").Semana, number>}
           onClose={() => setShowCerrarSemana(false)}
           onSuccess={() => setShowCerrarSemana(false)}
         />

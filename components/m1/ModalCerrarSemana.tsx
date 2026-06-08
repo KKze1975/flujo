@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import type { Semana } from "@/lib/data/types";
+import { useState, useMemo } from "react";
+import type { Semana, IngresoAngie } from "@/lib/data/types";
 
 const COP = (n: number) =>
   new Intl.NumberFormat("es-CO", {
@@ -24,16 +24,29 @@ const SEMANA_SIGUIENTE: Record<Semana, Semana | null> = {
 interface Props {
   mes: string;
   semana: Semana;
+  ingresosAngie?: IngresoAngie[];
+  gastoH3AngiePorSemana?: Record<Semana, number>;
   onClose(): void;
   onSuccess(semana: Semana): void;
 }
 
-export default function ModalCerrarSemana({ mes, semana, onClose, onSuccess }: Props) {
+export default function ModalCerrarSemana({ mes, semana, ingresosAngie = [], gastoH3AngiePorSemana, onClose, onSuccess }: Props) {
   const semanaSiguiente = SEMANA_SIGUIENTE[semana];
 
-  const [remanenteAngie, setRemanenteAngie] = useState("");
+  const remanenteCalc = useMemo(() => {
+    const aporte = ingresosAngie.find(a => a.semana === semana)?.monto ?? 0;
+    const gasto = gastoH3AngiePorSemana?.[semana] ?? 0;
+    return aporte - gasto;
+  }, [ingresosAngie, gastoH3AngiePorSemana, semana]);
+
+  const aporteCalc = useMemo(() => {
+    const monto = ingresosAngie.find(a => a.semana === semanaSiguiente)?.monto;
+    return monto != null ? String(monto) : "";
+  }, [ingresosAngie, semanaSiguiente]);
+
+  const [remanenteAngie, setRemanenteAngie] = useState(() => remanenteCalc !== 0 ? String(remanenteCalc) : "");
   const [ubicacion, setUbicacion] = useState<Ubicacion>("nu_angie");
-  const [aporteAngiePlaneado, setAporteAngiePlaneado] = useState("");
+  const [aporteAngiePlaneado, setAporteAngiePlaneado] = useState(() => aporteCalc);
   const [notas, setNotas] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);

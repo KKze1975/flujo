@@ -36,6 +36,13 @@ export default async function MesPage({
     S4: consumosH3.filter(c => c.semana === "S4").reduce((s, c) => s + c.monto, 0),
   };
 
+  const gastoH3AngiePorSemana = {
+    S1: consumosH3.filter(c => c.fuenteAngie && c.semana === "S1").reduce((s, c) => s + c.monto, 0),
+    S2: consumosH3.filter(c => c.fuenteAngie && c.semana === "S2").reduce((s, c) => s + c.monto, 0),
+    S3: consumosH3.filter(c => c.fuenteAngie && c.semana === "S3").reduce((s, c) => s + c.monto, 0),
+    S4: consumosH3.filter(c => c.fuenteAngie && c.semana === "S4").reduce((s, c) => s + c.monto, 0),
+  };
+
   const cuentaToFuente = {
     en_mano: "fuenteEnMano",
     nu_camilo: "fuenteCamilo",
@@ -74,6 +81,7 @@ export default async function MesPage({
       saldosBrutos={saldosCuenta}
       gastoH3PorCuenta={gastoH3PorCuenta}
       gastoH3PorSemana={gastoH3PorSemana}
+      gastoH3AngiePorSemana={gastoH3AngiePorSemana}
     />
   );
 }
