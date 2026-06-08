@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Icon from "@/components/ui/Icon";
 import Ring from "@/components/ui/Ring";
@@ -755,6 +755,21 @@ export default function VistaSemanal({
   const lista = tab === "pendientes" ? pendientes : ejecutados;
   const consumosPendientes = consumos.filter(c => !c.clasificado);
 
+  // Polling: refresca consumos cada 5s mientras haya items sin clasificar
+  useEffect(() => {
+    if (consumosPendientes.length === 0) return;
+    const timerId = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/mes/${mes}/consumos/${semanaActiva}`);
+        if (res.ok) {
+          const data = await res.json() as { consumos: ConsumoH3[] };
+          setConsumos(data.consumos ?? []);
+        }
+      } catch {}
+    }, 5000);
+    return () => clearInterval(timerId);
+  }, [consumosPendientes.length, mes, semanaActiva]);
+
   return (
     <div className="t-calido screen-anim">
       {/* App bar */}
@@ -1122,12 +1137,14 @@ export default function VistaSemanal({
           </div>
         )}
 
-        {/* Registros rápidos H3B — sin clasificar, ejecutor=actor */}
-        {tab === "ejecutados" && consumosPendientes.length > 0 && (
+        {/* Registros rápidos H3B */}
+        {tab === "ejecutados" && consumos.length > 0 && (
           <>
-            <p className="fl-sectlabel">Registros rápidos · Sin clasificar</p>
+            <p className="fl-sectlabel">
+              Registros rápidos{consumosPendientes.length > 0 ? ` · ${consumosPendientes.length} clasificando…` : ""}
+            </p>
             <div style={{ display: "flex", flexDirection: "column" }}>
-              {consumosPendientes.map(c => {
+              {consumos.map(c => {
                 const fuente = fuenteLabel(c);
                 return (
                   <div key={c.id} className="dk-rec">
@@ -1137,7 +1154,7 @@ export default function VistaSemanal({
                     <div className="dk-rec-tx">
                       <p className="t">{c.descripcion || "Sin descripción"}</p>
                       <p className="d">
-                        {c.clasificado ? c.bolsilloId : "Sin clasificar"} · {c.semana} · {fuente}
+                        {c.clasificado ? c.bolsilloId : "Clasificando…"} · {c.semana} · {fuente}
                       </p>
                     </div>
                     <span className="dk-rec-who">
