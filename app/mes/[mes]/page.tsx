@@ -49,7 +49,8 @@ export default async function MesPage({
     const ejecutado = movimientos
       .filter(m => m.estado === "ejecutado" && m[fuenteKey])
       .reduce((sum, m) => sum + (m.montoEjecutado ?? m.montoPresupuestado), 0);
-    return { ...s, saldoInicial: Math.max(0, s.saldoInicial - ejecutado) };
+    const nuevo = s.saldoInicial - ejecutado;
+    return { ...s, saldoInicial: s.cuenta === "nu_angie" ? nuevo : Math.max(0, nuevo) };
   });
 
   if (movimientos.length === 0) {
