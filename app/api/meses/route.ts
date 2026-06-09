@@ -1,4 +1,4 @@
-import { getProvider } from "@/lib/data/provider"; // test hook
+import { getProvider } from "@/lib/data/provider";
 
 export async function GET() {
   const provider = getProvider();
