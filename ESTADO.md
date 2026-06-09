@@ -2213,3 +2213,8 @@ Flujo - Proyecto de salud financiera familiar - Camilo Villamil - 2026
 - Cola activa: BL-02 → BL-06 → QA-7jun-01 → BL-04/BL-05.
 
 ---
+
+## T51 — Rama dev + Protected Branch
+- Rama dev creada desde main
+- Protected branch en GitHub: pendiente configuración manual
+- Preview URL: pendiente primer push
