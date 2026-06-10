@@ -2253,3 +2253,27 @@ Flujo - Proyecto de salud financiera familiar - Camilo Villamil - 2026
 - T52: Sheet de dev + variables de entorno Preview ✅
 - T53: INVARIANTS.md + pre-commit hook ✅
 - T54: documentación flujo de trabajo ✅
+
+---
+
+## Cierre sesión 9 junio 2026 — CONSTRUCCIÓN T51-T54
+
+### Resumen
+
+- T51: rama dev + protected branch en GitHub ✅
+- T52: Sheet de dev (copia prod) + GOOGLE_SHEET_ID separado por environment en Vercel ✅
+- T53: INVARIANTS.md (I-01 a I-11) + pre-commit hook (tsc + Sheet ID prod) ✅
+- T54: documentación flujo de trabajo dev→prod + checklist promoción a prod ✅
+
+### Aprendizajes
+
+- Trailing newline en variable de entorno produce 404 silencioso en runtime — origen: copiar ID desde interfaz que agrega \n al valor.
+- Protected branch con "Do not allow bypassing" es necesario — sin esa opción el admin puede hacer push directo.
+
+### Estado al cierre
+
+- Rama dev activa y sincronizada con origin/dev
+- Preview URL operativa — conecta a Sheet de dev
+- main protegido — push directo bloqueado para todos incluyendo admin
+- Kanban: 49 tickets, 69 items deuda técnica
+- Próxima sesión: BL-02 → BL-06 → QA-7jun-01 → BL-04/BL-05
