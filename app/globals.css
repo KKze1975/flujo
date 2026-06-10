@@ -905,3 +905,60 @@ body {
 .dk-h2.on .dk-h2-ic { background: var(--primary); color: var(--on-primary); }
 .dk-h2 .dk-rb { width: 16px; height: 16px; border-radius: 999px; border: 1.5px solid var(--line); display: grid; place-items: center; flex: none; color: transparent; }
 .dk-h2.on .dk-rb { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+
+/* ===== Splash / pantalla de carga ===== */
+.fl-splash {
+  position: fixed; inset: 0; z-index: 9999;
+  background: linear-gradient(150deg, oklch(0.55 0.17 357) 0%, oklch(0.46 0.16 350) 46%, oklch(0.38 0.13 345) 100%);
+  display: grid; place-items: center;
+  overflow: hidden;
+  transition: opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1), visibility .7s;
+}
+.fl-splash::before {
+  content: ""; position: absolute; left: 50%; top: 46%; transform: translate(-50%,-50%);
+  width: min(78vw, 620px); aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(circle, oklch(1 0 0 / .14) 0%, oklch(1 0 0 / 0) 62%);
+  pointer-events: none;
+}
+.fl-splash--done {
+  opacity: 0; visibility: hidden;
+  transform: scale(1.05);
+  pointer-events: none;
+}
+.fl-splash__inner {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center;
+  gap: clamp(22px, 4vh, 40px);
+  padding: 24px;
+}
+.fl-splash__mark {
+  width: clamp(132px, 27vw, 248px);
+  height: auto; display: block;
+}
+.fl-splash__foot {
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+}
+.fl-splash__wordmark {
+  font-family: var(--font-bricolage, system-ui, sans-serif);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  font-size: clamp(30px, 6.4vw, 54px);
+  line-height: 1;
+  color: oklch(0.99 0.012 70);
+  opacity: 0;
+  transform: translateY(8px);
+  animation: fl-splash-rise .9s cubic-bezier(.22,1,.36,1) .45s forwards;
+}
+.fl-splash__progress {
+  width: clamp(120px, 32vw, 190px); height: 3px; border-radius: 999px;
+  background: oklch(1 0 0 / .18); overflow: hidden;
+  opacity: 0; animation: fl-splash-rise .8s ease .8s forwards;
+}
+.fl-splash__progress-fill {
+  height: 100%; width: 0%; border-radius: 999px;
+  background: oklch(0.99 0.012 70 / .92);
+}
+@keyframes fl-splash-rise { to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .fl-splash__wordmark, .fl-splash__progress { animation-duration: .01ms !important; }
+}
