@@ -720,9 +720,11 @@ export default function VistaSemanal({
   const ejecutados = conceptos.filter((m) => m.estado === "ejecutado");
 
   const totalPresupuestado = movimientos.reduce((s, m) => s + m.montoPresupuestado, 0);
-  const totalEjecutado = movimientos
+  const totalEjecutadoH2 = movimientos
     .filter((m) => m.estado === "ejecutado")
     .reduce((s, m) => s + (m.montoEjecutado ?? 0), 0);
+  const totalEjecutadoH3 = consumos.reduce((s, c) => s + c.monto, 0);
+  const totalEjecutado = totalEjecutadoH2 + totalEjecutadoH3;
   const pct = totalPresupuestado > 0
     ? Math.round((totalEjecutado / totalPresupuestado) * 100)
     : 0;
