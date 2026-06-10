@@ -2218,3 +2218,38 @@ Flujo - Proyecto de salud financiera familiar - Camilo Villamil - 2026
 - Rama dev creada desde main
 - Protected branch en GitHub: pendiente configuración manual
 - Preview URL: pendiente primer push
+
+---
+
+## T51-T54 — Ambiente dev/staging · 9 junio 2026
+
+### Qué se construyó
+
+| Capa | Dev | Prod |
+|---|---|---|
+| Código | rama `dev` | rama `main` |
+| URL | Vercel preview (auto en cada push) | flujo-dun.vercel.app |
+| Sheet | Flujo DEV (copia real) | Sheet original |
+| Variables Vercel | GOOGLE_SHEET_ID → Sheet dev | GOOGLE_SHEET_ID → Sheet prod |
+
+### Flujo de trabajo por ticket
+
+1. `git checkout dev && git pull origin dev`
+2. Construir — commits a dev con patrón `T[n]-P[n]: descripción`
+3. `git push origin dev` → Vercel genera preview automáticamente
+4. Verificar DoD en preview URL
+5. Angie hace QA en preview URL si el ticket lo requiere
+6. PR en GitHub de dev → main → merge → producción
+
+### Checklist de promoción a prod (tickets que tocan esquema del Sheet)
+
+- [ ] Cambio aplicado y verificado en Sheet de dev
+- [ ] Mismo cambio aplicado manualmente en Sheet de prod antes del merge
+- [ ] Verificado en /admin/trazabilidad post-merge
+
+### Estado
+
+- T51: rama dev + protected branch ✅
+- T52: Sheet de dev + variables de entorno Preview ✅
+- T53: INVARIANTS.md + pre-commit hook ✅
+- T54: documentación flujo de trabajo ✅
