@@ -729,16 +729,6 @@ export default function VistaSemanal({
     ? Math.round((totalEjecutado / totalPresupuestado) * 100)
     : 0;
 
-  const angieConceptos = conceptos.filter(m => m.ejecutor === "angie");
-  const comprometidoAngie = angieConceptos.reduce((s, m) => s + m.montoPresupuestado, 0);
-  const ejecutadoAngieH2 = movimientos
-    .filter(m => m.fuenteAngie && m.estado === "ejecutado")
-    .reduce((s, m) => s + (m.montoEjecutado ?? 0), 0);
-  const ejecutadoAngieH3 = consumos.filter(c => c.fuenteAngie).reduce((s, c) => s + c.monto, 0);
-  const ejecutadoAngie = ejecutadoAngieH2 + ejecutadoAngieH3;
-  const faltaAngie = comprometidoAngie - ejecutadoAngie;
-
-  // Header M4 Angie
   const pendientesClasificar = consumos.filter(c => !c.clasificado).length;
   const aportePlaneado = ingresosAngieLocal.find(a => a.semana === semanaActiva)?.monto ?? 0;
   const gastadoSemanaAngie = consumos.filter(c => c.fuenteAngie).reduce((s, c) => s + c.monto, 0);
@@ -927,28 +917,6 @@ export default function VistaSemanal({
               </div>
             </div>
           </div>
-        )}
-
-        {/* Angie metrics */}
-        {comprometidoAngie > 0 && (
-          <>
-            <p className="fl-sectlabel">
-              <span className="fl-person a" style={{ width: 16, height: 16, fontSize: 9, verticalAlign: "middle" }}>A</span>
-              {" "}Angie · esta semana
-            </p>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
-              {([
-                { label: "Comprometido", val: comprometidoAngie, color: "var(--ink)" },
-                { label: "Ejecutado",    val: ejecutadoAngie,    color: "var(--pos)" },
-                { label: "Falta",        val: faltaAngie,        color: faltaAngie > 0 ? "var(--warn)" : "var(--pos)" },
-              ] as { label: string; val: number; color: string }[]).map(({ label, val, color }) => (
-                <div key={label} className="fl-card" style={{ textAlign: "center", padding: "10px 8px" }}>
-                  <p style={{ fontSize: 10, color: "var(--ink-soft)", marginBottom: 4 }}>{label}</p>
-                  <p style={{ fontSize: 13, fontWeight: 700, color }}>{copCompact(val)}</p>
-                </div>
-              ))}
-            </div>
-          </>
         )}
 
         {/* Bolsillos carousel */}
