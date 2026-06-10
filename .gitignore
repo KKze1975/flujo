@@ -47,3 +47,5 @@ next-env.d.ts
 
 # graphify generated output
 /graphify-out/
+
+dev-server.log
