@@ -1750,6 +1750,28 @@ Fecha: 2026-06-02
 - F4: `allDone` computado in situ en `CatGroup` — sin prop adicional
 - tsc --noEmit limpio al primer intento
 
+---
+
+## Sesión 10 junio 2026 — QA post go-live semana 1
+
+### Tickets completados
+
+| Ticket | Descripción | Commit |
+|---|---|---|
+| T55 | Fix barra ejecutado VistaSemanal — totalEjecutado sumaba solo H2, ignoraba H3B | 3c9a4c1 |
+| T56 | Eliminar panel redundante "ANGIE · ESTA SEMANA" — 32 líneas eliminadas | d19d947 |
+| favicon + splash | Favicon SVG + SplashScreen animado | eac17f6 |
+
+### Aprendizajes
+
+- El primer uso real expone bugs que el QA interno no detecta — la barra de ejecutado llevaba días incorrecta y solo se detectó con Angie activa.
+- Verificar Sheet de producción directamente es más rápido que navegar el código para confirmar si un número es correcto.
+
+### Estado al cierre
+
+- Cola pendiente: BL-02 → BL-06 → QA-7jun-01 → BL-04/BL-05
+- Próxima sesión: recopilar hallazgos semana 1 completa con Angie y priorizar backlog.
+
 **Qué no funcionó:**
 - Nada
 
