@@ -2299,3 +2299,90 @@ Flujo - Proyecto de salud financiera familiar - Camilo Villamil - 2026
 - main protegido — push directo bloqueado para todos incluyendo admin
 - Kanban: 49 tickets, 69 items deuda técnica
 - Próxima sesión: BL-02 → BL-06 → QA-7jun-01 → BL-04/BL-05
+
+---
+
+## Prompt de apertura de sesión
+
+Este workspace tiene múltiples proyectos. Antes de cualquier acción:
+1. Lee `D:\Users\camilo\flujo\ESTADO.md` — este archivo
+2. Confirma que el proyecto activo es **flujo** (no school-bot ni otro)
+3. Propón el siguiente paso según el estado documentado
+
+Nunca asumir contexto de otros proyectos.
+
+**Prompt exacto para iniciar sesión:**
+> "Lee `D:\Users\camilo\flujo\ESTADO.md` y propón el siguiente paso."
+
+---
+
+## Infraestructura y herramientas
+
+### Entorno de desarrollo
+- Dispositivo principal: Chromebook
+- Entorno de ejecución: AWS Workspace Windows
+- Node.js: v26.1.0
+- Gestor de paquetes: npm
+
+### Repositorio
+- Local: `D:\Users\camilo\flujo\`
+- GitHub: github.com/KKze1975/flujo (público)
+- Rama principal: `main` — protegida, push directo bloqueado para todos incluyendo admin
+- Rama desarrollo: `dev` — activa, preview URL auto en cada push a Vercel
+
+### Flujo de trabajo dev → prod
+1. `git checkout dev && git pull origin dev`
+2. Construir — commits a dev con patrón `T[n]-P[n]: descripción`
+3. `git push origin dev` → Vercel genera preview automáticamente
+4. Verificar DoD en preview URL
+5. PR en GitHub dev → main → merge → producción
+
+### Asistentes IA
+- Claude (claude.ai) — project manager, contexto HG-SDD, diseño de UX, decisiones de arquitectura
+- Claude Code — ejecutor de tareas en AWS Workspace Windows
+- graphify — navegación de código (graphify query/path/explain antes de leer archivos fuente)
+
+### Stack técnico
+- Framework: Next.js 16.2.6 — App Router + TypeScript + Tailwind CSS
+- Runtime dev: Turbopack (activo por default)
+- Backend: API Routes de Next.js — sin servidor separado
+- Base de datos MVP: Google Sheets (invisible para usuarios finales)
+
+### Google Sheets API
+- Proyecto Google Cloud: `psibot`
+- Cuenta de servicio: `psibot@psibot-495119.iam.gserviceaccount.com`
+- Google Sheet prod: ID `1GOMhxYw_f7Zl-GTVNtxAs9218x4vKxzg3LGRyveyr7A` — H1–H5 operativos
+- Google Sheet dev: ID separado — configurado en Vercel Preview environment
+- Credenciales: service account JSON en `.env.local` (gitignored)
+
+### Anthropic API
+- Modelo principal: `claude-sonnet-4-6` — parser M4 y registro rápido
+- Modelo background: `claude-haiku-4-5` — clasificación FAB asíncrona (T48)
+- Variable de entorno: `ANTHROPIC_API_KEY` (en `.env.local`)
+
+### Vercel
+- Deploy producción: flujo-dun.vercel.app — auto en cada push a `main`
+- Deploy preview: URL auto en cada push a `dev` — conecta a Sheet de dev
+- Variables de entorno: `GOOGLE_SHEET_ID` diferenciado por environment (Preview vs Production)
+- SSO Protection: desactivada — app familiar
+
+### Autenticación MVP
+- PIN simple — actor: `camilo` / `angie`
+- Google OAuth: feature futura sin retrofit
+
+### Paquetes npm clave
+- `next` — framework
+- `googleapis` — Google Sheets API
+- `@anthropic-ai/sdk` — Claude API
+- `typescript`, `tailwindcss` — tipado y estilos
+
+### Archivos excluidos del repo (.gitignore)
+- `.env.local` — credenciales Google + ANTHROPIC_API_KEY
+- `node_modules/`
+- `graphify-out/` — grafo de código generado localmente
+- Capturas de pantalla (ss-*.png) — evidencia de QA, no parte del código
+
+### Destino de despliegue
+- Vercel — free tier, costo $0
+- Deploy automático en cada push — sin pipeline adicional
+- DevOps formal (tests, staging con rama dedicada, alertas): post MVP
