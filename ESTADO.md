@@ -2284,6 +2284,16 @@ Flujo - Proyecto de salud financiera familiar - Camilo Villamil - 2026
 
 - T51: rama dev + protected branch en GitHub ✅
 - T52: Sheet de dev (copia prod) + GOOGLE_SHEET_ID separado por environment en Vercel ✅
+
+### Sheet de dev
+
+| Campo | Valor |
+|---|---|
+| Nombre | Flujo DEV |
+| Sheet ID | 1p5hvKINy512I-BOEA5ujjynUnJVdnvniAiqCQTYDJ-w |
+| Service account | psibot@psibot-495119.iam.gserviceaccount.com |
+| Acceso | Editor |
+
 - T53: INVARIANTS.md (I-01 a I-11) + pre-commit hook (tsc + Sheet ID prod) ✅
 - T54: documentación flujo de trabajo dev→prod + checklist promoción a prod ✅
 
