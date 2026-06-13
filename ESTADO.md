@@ -2386,3 +2386,73 @@ Nunca asumir contexto de otros proyectos.
 - Vercel — free tier, costo $0
 - Deploy automático en cada push — sin pipeline adicional
 - DevOps formal (tests, staging con rama dedicada, alertas): post MVP
+
+---
+
+## Sesión 13 junio 2026 — RETROSPECTIVA
+
+### Tipo de sesión
+RETROSPECTIVA — Grill-Me + revisión metodológica HG-SDD
+
+### Hallazgos críticos
+
+1. **Bug de saldos es urgente — no backlog**
+   Angie está en producción con datos reales. Los saldos se propagan mal entre vistas.
+   Hipótesis de causa raíz: cada vista tiene su propia lógica de agregación construida
+   ticket a ticket — no hay capa de cómputo centralizada. Hipótesis pendiente de
+   verificación en sesión DEBUGGING.
+
+2. **Backlog no está priorizado por fricción real**
+   Está ordenado por orden de identificación durante desarrollo. Con Angie en
+   producción ese criterio ya no es válido. Resetear prioridades post-DEBUGGING.
+
+3. **No hay preguntas de aprendizaje definidas para las primeras semanas de uso real**
+   El canal de observación existe — Camilo vive con la usuaria. Sin preguntas
+   explícitas el aprendizaje queda al azar.
+
+4. **Revisión de seguridad pendiente**
+   Consecuencia estructural del vibe coding: la seguridad nunca fue un requisito
+   explícito en ningún ticket. Superficie de ataque no auditada. Tratamiento:
+   auditoría separada — no un ticket del backlog. Precondición: sistema estable
+   en producción con bug de saldos resuelto.
+
+### Decisiones tomadas
+
+- Bug de saldos entra como prioridad inmediata sobre todo el backlog existente.
+- Pregunta de observación semanal adoptada: ¿qué hizo Angie que no esperabas?
+  ¿Qué no hizo que esperabas que hiciera?
+- Auditoría de seguridad: sesión separada con criterios propios, posterior a
+  estabilización del sistema.
+- Deuda técnica irrelevante post go-live: archivar explícitamente, no dejar como ruido.
+
+### Invariante candidato
+
+- **I-12:** Todo endpoint nuevo declara su política de acceso antes de cerrar el
+  ticket. "Sin autenticación" es una decisión válida si es consciente — no una omisión.
+
+### Actualizaciones metodológicas HG-SDD
+
+El documento Human-Grounded-SDD.docx recibe tres actualizaciones aprobadas en
+esta sesión:
+- Gap 1: Fase 4 Retrospectiva — cuarta pregunta + INVARIANTS.md como artefacto.
+  "Sprint" → "sesión" en todo el documento.
+- Gap 2: Fase 2 Especificación — criterio de seguridad mínimo: política de acceso
+  declarada antes de abrir el ticket.
+- Gap 3: Fase 5 Observación — nueva fase post go-live con dos preguntas semanales
+  y criterio de reordenamiento del backlog por fricción observada.
+
+### Estado al cierre
+
+- Angie: usuaria activa en producción con datos reales.
+- Bug de saldos: reproducible, pendiente sesión DEBUGGING.
+- Backlog: congelado hasta completar DEBUGGING de saldos.
+- Auditoría de seguridad: en horizonte, post-estabilización.
+- HG-SDD: actualizaciones aprobadas, pendientes de incorporar al .docx.
+
+### Próxima sesión
+
+DEBUGGING — bug de saldos.
+Objetivo único: trazar el flujo de un registro de Angie desde H3B hasta cada
+vista que debería reflejarlo. Documentar exactamente dónde divergen los números.
+Sin proponer ningún fix hasta tener el mapa completo.
+El caso es reproducible — esa es la entrada de la sesión.
