@@ -2504,3 +2504,11 @@ Observación controlada en dev para mapear comportamiento del sistema en primera
 
 ### Cola actualizada
 BL-07 → BL-08 → BL-09 → BL-02 → BL-06 → QA-7jun-01 → BL-04/BL-05
+
+## BL-07 — Fix totalPresupuestado · 14 junio 2026
+
+- Filtro aplicado en `VistaSemanal.tsx` L722 (cliente) y `app/api/mes/[mes]/semana/[semana]/route.ts` L31 (servidor)
+- Estados excluidos: `no_aplica`, `pospuesto`, `pospuesto_mes_siguiente`
+- Commit: 522dea7 — pusheado a origin/dev
+- DoD verificado: S2 muestra $1.765.996 ✓
+- Estado: completo
