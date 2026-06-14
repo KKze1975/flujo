@@ -913,7 +913,7 @@ export default function VistaSemanal({
             {showPresupuestadoPopover && presupuestadoAnchor && (
               <div style={{
                 position: "fixed", top: presupuestadoAnchor.bottom + 4, left: presupuestadoAnchor.left, zIndex: 9999,
-                background: "white", border: "1px solid var(--hair)", borderRadius: 12,
+                background: "white", color: "#111111", border: "1px solid var(--hair)", borderRadius: 12,
                 boxShadow: "0 4px 24px rgba(0,0,0,0.12)", minWidth: 260, padding: "12px 0",
               }}>
                 <p style={{ fontWeight: 600, fontSize: 13, padding: "0 14px 8px" }}>Conceptos presupuestados</p>
@@ -1037,7 +1037,7 @@ export default function VistaSemanal({
                     {popoverBolsilloId === b.conceptoId && bolsilloAnchor && (
                       <div style={{
                         position: "fixed", top: bolsilloAnchor.bottom + 4, left: bolsilloAnchor.left, zIndex: 9999,
-                        background: "white", border: "1px solid var(--hair)", borderRadius: 12,
+                        background: "white", color: "#111111", border: "1px solid var(--hair)", borderRadius: 12,
                         boxShadow: "0 4px 24px rgba(0,0,0,0.12)", minWidth: 260, padding: "12px 0",
                       }}>
                         <p style={{ fontWeight: 600, fontSize: 13, padding: "0 14px 8px" }}>{b.nombreSnapshot}</p>
