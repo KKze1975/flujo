@@ -2539,3 +2539,10 @@ Todos los 5 puntos pasados en preview URL de dev antes del merge.
 
 ### Cola actualizada
 BL-02 → BL-06 → QA-7jun-01 → BL-04/BL-05
+
+## Deuda de proceso — pipeline dev→prod · 14 junio 2026
+
+- Merge a main ejecutado sin QA de Angie — viola workflow documentado.
+- Angie accede a una URL de producción distinta a flujo-dun.vercel.app — no identificada aún.
+- Consecuencia: deploy de BL-08/BL-09 llegó a URL que ella no usa.
+- Pendiente próxima sesión: identificar URL exacta de Angie, verificar qué deployment ve, corregir pipeline para que QA de Angie sea precondición explícita del merge a main.
