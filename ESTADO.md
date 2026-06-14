@@ -2466,3 +2466,41 @@ Objetivo único: trazar el flujo de un registro de Angie desde H3B hasta cada
 vista que debería reflejarlo. Documentar exactamente dónde divergen los números.
 Sin proponer ningún fix hasta tener el mapa completo.
 El caso es reproducible — esa es la entrada de la sesión.
+
+## Sesión 14 junio 2026 — DEBUGGING/Observación semana 1 producción
+
+### Objetivo
+Observación controlada en dev para mapear comportamiento del sistema en primera semana de uso real con Angie.
+
+### Hallazgos
+
+#### Bug de datos — MOV_1780844291091 (Universal)
+- Movimiento ejecutado con `ejecutor` presente pero todas las fuentes en FALSE
+- Causa: endpoint PATCH H2 no valida que al menos una fuente esté marcada antes de aceptar estado `ejecutado`
+- Resuelto manualmente en dev (revert + re-ejecución correcta)
+- Pendiente ticket de validación
+
+#### BL-07 — Fix totalPresupuestado excluir no_aplica y pospuesto
+- `totalPresupuestado` en VistaSemanal.tsx (L722) y endpoint movimientosInit (L31) suma todos los movimientos sin filtrar
+- Fix: `estado !== "no_aplica" && estado !== "pospuesto"` antes del reduce
+- Impacto: display only — no toca modelo de datos ni Sheet
+- DoD: barra S2 muestra $2.015.996 (excluye Apoyo Mariella $100.000) y porcentaje recalculado consistente
+- Prioridad: deploy hoy
+
+#### BL-08 — Auditabilidad inline totalPresupuestado
+- La barra morada es caja negra — genera comportamiento de verificación manual (calculadora)
+- Solución: tap en monto presupuestado despliega lista de conceptos que lo componen
+- Dependencia: BL-07 primero
+- Prioridad: deploy hoy
+
+#### BL-09 — Auditabilidad inline tarjetas de bolsillos
+- Tarjetas muestran total ejecutado sin desglose de consumos — mismo patrón de desconfianza
+- Solución: tap en tarjeta muestra lista de consumos que componen el ejecutado
+- Prioridad: deploy hoy
+
+### Deuda técnica
+- DT-H5-01: H5 acumula cierres sin metadata de criterio de cálculo — agregar `version_calculo` antes de activar vista histórica
+- DT-UX-01: Señalización de mecánica de bolsillos (FAB como único punto de entrada) — pendiente para escala a otros usuarios
+
+### Cola actualizada
+BL-07 → BL-08 → BL-09 → BL-02 → BL-06 → QA-7jun-01 → BL-04/BL-05
