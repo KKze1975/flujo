@@ -719,7 +719,9 @@ export default function VistaSemanal({
   const pendientes = conceptos.filter((m) => m.estado === "pendiente");
   const ejecutados = conceptos.filter((m) => m.estado === "ejecutado");
 
-  const totalPresupuestado = movimientos.reduce((s, m) => s + m.montoPresupuestado, 0);
+  const totalPresupuestado = movimientos
+    .filter(m => m.estado !== "no_aplica" && m.estado !== "pospuesto" && m.estado !== "pospuesto_mes_siguiente")
+    .reduce((s, m) => s + m.montoPresupuestado, 0);
   const totalEjecutadoH2 = movimientos
     .filter((m) => m.estado === "ejecutado")
     .reduce((s, m) => s + (m.montoEjecutado ?? 0), 0);
