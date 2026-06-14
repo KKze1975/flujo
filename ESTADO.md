@@ -2512,3 +2512,30 @@ BL-07 → BL-08 → BL-09 → BL-02 → BL-06 → QA-7jun-01 → BL-04/BL-05
 - Commit: 522dea7 — pusheado a origin/dev
 - DoD verificado: S2 muestra $1.765.996 ✓
 - Estado: completo
+
+## BL-08 y BL-09 — Popovers auditabilidad · 14 junio 2026
+
+### Tickets cerrados
+- BL-08: popover en monto presupuestado — lista de conceptos con nombre y monto
+- BL-09: popover en tarjetas de bolsillos — lista de consumos con descripción, monto y fecha
+
+### Commits
+- 752b235 BL-08: popover auditabilidad totalPresupuestado
+- c1b2de1 BL-09: popover auditabilidad consumos bolsillo
+- ba7d607 fix: position fixed para popovers
+- d1af3fa fix: position fixed bolsillos
+- 89d5120 fix: coordenadas viewport
+- a5aa284 fix: color texto popovers
+- 6102614 fix: posicionamiento BL-09 viewport móvil
+
+### Problemas encontrados en construcción
+- position: absolute clipado por overflow del carousel (BL-09) y z-index insuficiente (BL-08)
+- Texto invisible por herencia de color del appbar (color claro sobre fondo blanco)
+- Coordenadas fixed incorrectas (window.scrollY sumado innecesariamente)
+- Popover BL-09 salía del viewport en tarjeta derecha del carousel — corregido con clamp al innerWidth
+
+### DoD verificado
+Todos los 5 puntos pasados en preview URL de dev antes del merge.
+
+### Cola actualizada
+BL-02 → BL-06 → QA-7jun-01 → BL-04/BL-05
