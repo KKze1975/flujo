@@ -869,6 +869,9 @@ export default function VistaSemanal({
     return () => document.removeEventListener("mousedown", handleClick);
   }, [popoverBolsilloId]);
 
+  // eslint-disable-next-line no-console
+  console.log("DBG-BL08", movimientosPresupuestados.length, showPresupuestadoPopover);
+
   return (
     <div className="t-calido screen-anim">
       {/* App bar */}
