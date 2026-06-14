@@ -1002,6 +1002,10 @@ export default function VistaSemanal({
                 const techo = b.montoPresupuestado;
                 const pctB  = techo > 0 ? Math.round((gastado / techo) * 100) : 0;
                 const over  = gastado > techo;
+                const popoverWidth = 260;
+                const adjustedLeft = bolsilloAnchor
+                  ? Math.min(bolsilloAnchor.left, window.innerWidth - popoverWidth - 8)
+                  : 0;
                 return (
                   <div
                     key={b.id}
@@ -1036,7 +1040,7 @@ export default function VistaSemanal({
                       : <span className="fl-badge pos">{COP(techo - gastado)} libre</span>}
                     {popoverBolsilloId === b.conceptoId && bolsilloAnchor && (
                       <div style={{
-                        position: "fixed", top: bolsilloAnchor.bottom + 4, left: bolsilloAnchor.left, zIndex: 9999,
+                        position: "fixed", top: bolsilloAnchor.bottom + 4, left: adjustedLeft, zIndex: 9999,
                         background: "white", color: "#111111", border: "1px solid var(--hair)", borderRadius: 12,
                         boxShadow: "0 4px 24px rgba(0,0,0,0.12)", minWidth: 260, padding: "12px 0",
                       }}>
