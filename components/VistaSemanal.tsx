@@ -714,7 +714,9 @@ export default function VistaSemanal({
   const [corrigiendoMovimiento, setCorrigiendoMovimiento] = useState<Movimiento | null>(null);
   const [ingresosAngieLocal, setIngresosAngieLocal] = useState<IngresoAngie[]>(ingresosAngie);
   const [showPresupuestadoPopover, setShowPresupuestadoPopover] = useState(false);
+  const [presupuestadoAnchor, setPresupuestadoAnchor] = useState<DOMRect | null>(null);
   const [popoverBolsilloId, setPopoverBolsilloId] = useState<string | null>(null);
+  const [bolsilloAnchor, setBolsilloAnchor] = useState<DOMRect | null>(null);
   const presupuestadoPopoverRef = useRef<HTMLDivElement>(null);
   const bolsilloRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
@@ -869,9 +871,6 @@ export default function VistaSemanal({
     return () => document.removeEventListener("mousedown", handleClick);
   }, [popoverBolsilloId]);
 
-  // eslint-disable-next-line no-console
-  console.log("DBG-BL08", movimientosPresupuestados.length, showPresupuestadoPopover);
-
   return (
     <div className="t-calido screen-anim">
       {/* App bar */}
@@ -903,14 +902,17 @@ export default function VistaSemanal({
               <button
                 type="button"
                 style={{ fontWeight: 700, textDecoration: "underline dotted", cursor: "pointer", background: "none", border: "none", color: "inherit", fontSize: "inherit", padding: 0 }}
-                onClick={() => setShowPresupuestadoPopover(v => !v)}
+                onClick={(e) => {
+                  setPresupuestadoAnchor((e.currentTarget as HTMLButtonElement).getBoundingClientRect());
+                  setShowPresupuestadoPopover(v => !v);
+                }}
               >
                 {COP(totalPresupuestado)}
               </button>
             </p>
-            {showPresupuestadoPopover && (
+            {showPresupuestadoPopover && presupuestadoAnchor && (
               <div style={{
-                position: "absolute", top: "100%", left: 0, zIndex: 50,
+                position: "fixed", top: presupuestadoAnchor.bottom + window.scrollY, left: presupuestadoAnchor.left, zIndex: 9999,
                 background: "white", border: "1px solid var(--hair)", borderRadius: 12,
                 boxShadow: "0 4px 24px rgba(0,0,0,0.12)", minWidth: 260, padding: "12px 0",
               }}>
@@ -1018,7 +1020,10 @@ export default function VistaSemanal({
                           <button
                             type="button"
                             style={{ fontWeight: 700, textDecoration: "underline dotted", cursor: "pointer", background: "none", border: "none", color: "inherit", fontSize: "inherit", padding: 0 }}
-                            onClick={() => setPopoverBolsilloId(id => id === b.conceptoId ? null : b.conceptoId)}
+                            onClick={(e) => {
+                              setBolsilloAnchor((e.currentTarget as HTMLButtonElement).getBoundingClientRect());
+                              setPopoverBolsilloId(id => id === b.conceptoId ? null : b.conceptoId);
+                            }}
                           >
                             {COP(gastado)}
                           </button>
@@ -1029,9 +1034,9 @@ export default function VistaSemanal({
                     {over
                       ? <span className="fl-badge neg"><span className="dot" />+{COP(gastado - techo)}</span>
                       : <span className="fl-badge pos">{COP(techo - gastado)} libre</span>}
-                    {popoverBolsilloId === b.conceptoId && (
+                    {popoverBolsilloId === b.conceptoId && bolsilloAnchor && (
                       <div style={{
-                        position: "absolute", bottom: "100%", left: 0, zIndex: 50,
+                        position: "fixed", top: bolsilloAnchor.bottom + window.scrollY, left: bolsilloAnchor.left, zIndex: 9999,
                         background: "white", border: "1px solid var(--hair)", borderRadius: 12,
                         boxShadow: "0 4px 24px rgba(0,0,0,0.12)", minWidth: 260, padding: "12px 0",
                       }}>
