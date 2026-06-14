@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Icon from "@/components/ui/Icon";
 import Ring from "@/components/ui/Ring";
@@ -713,30 +713,31 @@ export default function VistaSemanal({
   const [corrigiendoConsumo, setCorrigiendoConsumo] = useState<ConsumoH3 | null>(null);
   const [corrigiendoMovimiento, setCorrigiendoMovimiento] = useState<Movimiento | null>(null);
   const [ingresosAngieLocal, setIngresosAngieLocal] = useState<IngresoAngie[]>(ingresosAngie);
+  const [showPresupuestadoPopover, setShowPresupuestadoPopover] = useState(false);
+  const [presupuestadoAnchor, setPresupuestadoAnchor] = useState<DOMRect | null>(null);
+  const [popoverBolsilloId, setPopoverBolsilloId] = useState<string | null>(null);
+  const [bolsilloAnchor, setBolsilloAnchor] = useState<DOMRect | null>(null);
+  const presupuestadoPopoverRef = useRef<HTMLDivElement>(null);
+  const bolsilloRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   const bolsillos = movimientos.filter((m) => m.tipoSnapshot === "pago_fraccionado");
   const conceptos  = movimientos.filter((m) => m.tipoSnapshot !== "pago_fraccionado");
   const pendientes = conceptos.filter((m) => m.estado === "pendiente");
   const ejecutados = conceptos.filter((m) => m.estado === "ejecutado");
 
-  const totalPresupuestado = movimientos.reduce((s, m) => s + m.montoPresupuestado, 0);
-  const totalEjecutado = movimientos
+  const movimientosPresupuestados = movimientos.filter(
+    m => m.estado !== "no_aplica" && m.estado !== "pospuesto" && m.estado !== "pospuesto_mes_siguiente"
+  );
+  const totalPresupuestado = movimientosPresupuestados.reduce((s, m) => s + m.montoPresupuestado, 0);
+  const totalEjecutadoH2 = movimientos
     .filter((m) => m.estado === "ejecutado")
     .reduce((s, m) => s + (m.montoEjecutado ?? 0), 0);
+  const totalEjecutadoH3 = consumos.reduce((s, c) => s + c.monto, 0);
+  const totalEjecutado = totalEjecutadoH2 + totalEjecutadoH3;
   const pct = totalPresupuestado > 0
     ? Math.round((totalEjecutado / totalPresupuestado) * 100)
     : 0;
 
-  const angieConceptos = conceptos.filter(m => m.ejecutor === "angie");
-  const comprometidoAngie = angieConceptos.reduce((s, m) => s + m.montoPresupuestado, 0);
-  const ejecutadoAngieH2 = movimientos
-    .filter(m => m.fuenteAngie && m.estado === "ejecutado")
-    .reduce((s, m) => s + (m.montoEjecutado ?? 0), 0);
-  const ejecutadoAngieH3 = consumos.filter(c => c.fuenteAngie).reduce((s, c) => s + c.monto, 0);
-  const ejecutadoAngie = ejecutadoAngieH2 + ejecutadoAngieH3;
-  const faltaAngie = comprometidoAngie - ejecutadoAngie;
-
-  // Header M4 Angie
   const pendientesClasificar = consumos.filter(c => !c.clasificado).length;
   const aportePlaneado = ingresosAngieLocal.find(a => a.semana === semanaActiva)?.monto ?? 0;
   const gastadoSemanaAngie = consumos.filter(c => c.fuenteAngie).reduce((s, c) => s + c.monto, 0);
@@ -846,6 +847,30 @@ export default function VistaSemanal({
     return () => clearInterval(timerId);
   }, [consumosPendientes.length, mes, semanaActiva]);
 
+  useEffect(() => {
+    if (!showPresupuestadoPopover) return;
+    function handleClick(e: MouseEvent) {
+      if (presupuestadoPopoverRef.current && !presupuestadoPopoverRef.current.contains(e.target as Node)) {
+        setShowPresupuestadoPopover(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [showPresupuestadoPopover]);
+
+  useEffect(() => {
+    if (!popoverBolsilloId) return;
+    const activeId = popoverBolsilloId;
+    function handleClick(e: MouseEvent) {
+      const ref = bolsilloRefs.current.get(activeId);
+      if (ref && !ref.contains(e.target as Node)) {
+        setPopoverBolsilloId(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [popoverBolsilloId]);
+
   return (
     <div className="t-calido screen-anim">
       {/* App bar */}
@@ -871,9 +896,42 @@ export default function VistaSemanal({
           <div className="fl-bar" style={{ background: "var(--appbar-hair)" }}>
             <i style={{ width: `${Math.min(pct, 100)}%`, background: "var(--on-primary)" }} />
           </div>
-          <p className="sub" style={{ marginTop: 6, fontSize: 12 }}>
-            {COP(totalEjecutado)} de {COP(totalPresupuestado)}
-          </p>
+          <div ref={presupuestadoPopoverRef} style={{ position: "relative", marginTop: 6 }}>
+            <p className="sub" style={{ fontSize: 12 }}>
+              {COP(totalEjecutado)} de{" "}
+              <button
+                type="button"
+                style={{ fontWeight: 700, textDecoration: "underline dotted", cursor: "pointer", background: "none", border: "none", color: "inherit", fontSize: "inherit", padding: 0 }}
+                onClick={(e) => {
+                  setPresupuestadoAnchor((e.currentTarget as HTMLButtonElement).getBoundingClientRect());
+                  setShowPresupuestadoPopover(v => !v);
+                }}
+              >
+                {COP(totalPresupuestado)}
+              </button>
+            </p>
+            {showPresupuestadoPopover && presupuestadoAnchor && (
+              <div style={{
+                position: "fixed", top: presupuestadoAnchor.bottom + 4, left: presupuestadoAnchor.left, zIndex: 9999,
+                background: "white", color: "#111111", border: "1px solid var(--hair)", borderRadius: 12,
+                boxShadow: "0 4px 24px rgba(0,0,0,0.12)", minWidth: 260, padding: "12px 0",
+              }}>
+                <p style={{ fontWeight: 600, fontSize: 13, padding: "0 14px 8px" }}>Conceptos presupuestados</p>
+                <div style={{ maxHeight: 256, overflowY: "auto" }}>
+                  {movimientosPresupuestados.map(m => (
+                    <div key={m.id} style={{ display: "flex", justifyContent: "space-between", padding: "5px 14px", fontSize: 13 }}>
+                      <span style={{ flex: 1, marginRight: 12 }}>{m.nombreSnapshot}</span>
+                      <span style={{ fontVariantNumeric: "tabular-nums" }}>{COP(m.montoPresupuestado)}</span>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 14px 0", borderTop: "1px solid var(--hair)", fontSize: 13, fontWeight: 700, marginTop: 4 }}>
+                  <span>Total</span>
+                  <span>{COP(totalPresupuestado)}</span>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -927,28 +985,6 @@ export default function VistaSemanal({
           </div>
         )}
 
-        {/* Angie metrics */}
-        {comprometidoAngie > 0 && (
-          <>
-            <p className="fl-sectlabel">
-              <span className="fl-person a" style={{ width: 16, height: 16, fontSize: 9, verticalAlign: "middle" }}>A</span>
-              {" "}Angie · esta semana
-            </p>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
-              {([
-                { label: "Comprometido", val: comprometidoAngie, color: "var(--ink)" },
-                { label: "Ejecutado",    val: ejecutadoAngie,    color: "var(--pos)" },
-                { label: "Falta",        val: faltaAngie,        color: faltaAngie > 0 ? "var(--warn)" : "var(--pos)" },
-              ] as { label: string; val: number; color: string }[]).map(({ label, val, color }) => (
-                <div key={label} className="fl-card" style={{ textAlign: "center", padding: "10px 8px" }}>
-                  <p style={{ fontSize: 10, color: "var(--ink-soft)", marginBottom: 4 }}>{label}</p>
-                  <p style={{ fontSize: 13, fontWeight: 700, color }}>{copCompact(val)}</p>
-                </div>
-              ))}
-            </div>
-          </>
-        )}
-
         {/* Bolsillos carousel */}
         {bolsillos.length > 0 && (
           <>
@@ -961,29 +997,76 @@ export default function VistaSemanal({
               paddingBottom: 4,
             }}>
               {bolsillos.map((b) => {
-                const gastado = consumos
-                  .filter(c => c.bolsilloId === b.conceptoId)
-                  .reduce((sum, c) => sum + c.monto, 0);
+                const consumosBolsillo = consumos.filter(c => c.bolsilloId === b.conceptoId);
+                const gastado = consumosBolsillo.reduce((sum, c) => sum + c.monto, 0);
                 const techo = b.montoPresupuestado;
                 const pctB  = techo > 0 ? Math.round((gastado / techo) * 100) : 0;
                 const over  = gastado > techo;
+                const popoverWidth = 260;
+                const adjustedLeft = bolsilloAnchor
+                  ? Math.min(bolsilloAnchor.left, window.innerWidth - popoverWidth - 8)
+                  : 0;
                 return (
-                  <div key={b.id} className="fl-card" style={{
-                    minWidth: 155, flexShrink: 0, scrollSnapAlign: "start",
-                    display: "flex", flexDirection: "column", gap: 8, padding: "12px 14px",
-                  }}>
+                  <div
+                    key={b.id}
+                    ref={(el) => { if (el) bolsilloRefs.current.set(b.conceptoId, el); else bolsilloRefs.current.delete(b.conceptoId); }}
+                    className="fl-card"
+                    style={{
+                      position: "relative", minWidth: 155, flexShrink: 0, scrollSnapAlign: "start",
+                      display: "flex", flexDirection: "column", gap: 8, padding: "12px 14px",
+                    }}
+                  >
                     <div className="fl-bolsillo">
                       <Ring pct={pctB} over={over} />
                       <div className="meta">
                         <p className="n">{b.nombreSnapshot}</p>
                         <p className="amt">
-                          {COP(gastado)} <span style={{ color: "var(--ink-faint)" }}>/ {COP(techo)}</span>
+                          <button
+                            type="button"
+                            style={{ fontWeight: 700, textDecoration: "underline dotted", cursor: "pointer", background: "none", border: "none", color: "inherit", fontSize: "inherit", padding: 0 }}
+                            onClick={(e) => {
+                              setBolsilloAnchor((e.currentTarget as HTMLButtonElement).getBoundingClientRect());
+                              setPopoverBolsilloId(id => id === b.conceptoId ? null : b.conceptoId);
+                            }}
+                          >
+                            {COP(gastado)}
+                          </button>
+                          {" "}<span style={{ color: "var(--ink-faint)" }}>/ {COP(techo)}</span>
                         </p>
                       </div>
                     </div>
                     {over
                       ? <span className="fl-badge neg"><span className="dot" />+{COP(gastado - techo)}</span>
                       : <span className="fl-badge pos">{COP(techo - gastado)} libre</span>}
+                    {popoverBolsilloId === b.conceptoId && bolsilloAnchor && (
+                      <div style={{
+                        position: "fixed", top: bolsilloAnchor.bottom + 4, left: adjustedLeft, zIndex: 9999,
+                        background: "white", color: "#111111", border: "1px solid var(--hair)", borderRadius: 12,
+                        boxShadow: "0 4px 24px rgba(0,0,0,0.12)", minWidth: 260, padding: "12px 0",
+                      }}>
+                        <p style={{ fontWeight: 600, fontSize: 13, padding: "0 14px 8px" }}>{b.nombreSnapshot}</p>
+                        <div style={{ maxHeight: 256, overflowY: "auto" }}>
+                          {consumosBolsillo.length === 0
+                            ? <p style={{ padding: "4px 14px", fontSize: 13, color: "var(--ink-faint)" }}>Sin consumos registrados</p>
+                            : consumosBolsillo.map(c => (
+                                <div key={c.id} style={{ padding: "5px 14px", fontSize: 13 }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                                    <span style={{ flex: 1, marginRight: 12 }}>{c.descripcion}</span>
+                                    <span style={{ fontVariantNumeric: "tabular-nums" }}>{COP(c.monto)}</span>
+                                  </div>
+                                  <p style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 2 }}>{c.fecha}</p>
+                                </div>
+                              ))
+                          }
+                        </div>
+                        {consumosBolsillo.length > 0 && (
+                          <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 14px 0", borderTop: "1px solid var(--hair)", fontSize: 13, fontWeight: 700, marginTop: 4 }}>
+                            <span>Total</span>
+                            <span>{COP(gastado)}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}

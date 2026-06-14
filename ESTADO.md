@@ -1750,6 +1750,28 @@ Fecha: 2026-06-02
 - F4: `allDone` computado in situ en `CatGroup` — sin prop adicional
 - tsc --noEmit limpio al primer intento
 
+---
+
+## Sesión 10 junio 2026 — QA post go-live semana 1
+
+### Tickets completados
+
+| Ticket | Descripción | Commit |
+|---|---|---|
+| T55 | Fix barra ejecutado VistaSemanal — totalEjecutado sumaba solo H2, ignoraba H3B | 3c9a4c1 |
+| T56 | Eliminar panel redundante "ANGIE · ESTA SEMANA" — 32 líneas eliminadas | d19d947 |
+| favicon + splash | Favicon SVG + SplashScreen animado | eac17f6 |
+
+### Aprendizajes
+
+- El primer uso real expone bugs que el QA interno no detecta — la barra de ejecutado llevaba días incorrecta y solo se detectó con Angie activa.
+- Verificar Sheet de producción directamente es más rápido que navegar el código para confirmar si un número es correcto.
+
+### Estado al cierre
+
+- Cola pendiente: BL-02 → BL-06 → QA-7jun-01 → BL-04/BL-05
+- Próxima sesión: recopilar hallazgos semana 1 completa con Angie y priorizar backlog.
+
 **Qué no funcionó:**
 - Nada
 
@@ -2213,3 +2235,280 @@ Flujo - Proyecto de salud financiera familiar - Camilo Villamil - 2026
 - Cola activa: BL-02 → BL-06 → QA-7jun-01 → BL-04/BL-05.
 
 ---
+
+## T51 — Rama dev + Protected Branch
+- Rama dev creada desde main
+- Protected branch en GitHub: pendiente configuración manual
+- Preview URL: pendiente primer push
+
+---
+
+## T51-T54 — Ambiente dev/staging · 9 junio 2026
+
+### Qué se construyó
+
+| Capa | Dev | Prod |
+|---|---|---|
+| Código | rama `dev` | rama `main` |
+| URL | Vercel preview (auto en cada push) | flujo-dun.vercel.app |
+| Sheet | Flujo DEV (copia real) | Sheet original |
+| Variables Vercel | GOOGLE_SHEET_ID → Sheet dev | GOOGLE_SHEET_ID → Sheet prod |
+
+### Flujo de trabajo por ticket
+
+1. `git checkout dev && git pull origin dev`
+2. Construir — commits a dev con patrón `T[n]-P[n]: descripción`
+3. `git push origin dev` → Vercel genera preview automáticamente
+4. Verificar DoD en preview URL
+5. Angie hace QA en preview URL si el ticket lo requiere
+6. PR en GitHub de dev → main → merge → producción
+
+### Checklist de promoción a prod (tickets que tocan esquema del Sheet)
+
+- [ ] Cambio aplicado y verificado en Sheet de dev
+- [ ] Mismo cambio aplicado manualmente en Sheet de prod antes del merge
+- [ ] Verificado en /admin/trazabilidad post-merge
+
+### Estado
+
+- T51: rama dev + protected branch ✅
+- T52: Sheet de dev + variables de entorno Preview ✅
+- T53: INVARIANTS.md + pre-commit hook ✅
+- T54: documentación flujo de trabajo ✅
+
+---
+
+## Cierre sesión 9 junio 2026 — CONSTRUCCIÓN T51-T54
+
+### Resumen
+
+- T51: rama dev + protected branch en GitHub ✅
+- T52: Sheet de dev (copia prod) + GOOGLE_SHEET_ID separado por environment en Vercel ✅
+
+### Sheet de dev
+
+| Campo | Valor |
+|---|---|
+| Nombre | Flujo DEV |
+| Sheet ID | 1p5hvKINy512I-BOEA5ujjynUnJVdnvniAiqCQTYDJ-w |
+| Service account | psibot@psibot-495119.iam.gserviceaccount.com |
+| Acceso | Editor |
+
+- T53: INVARIANTS.md (I-01 a I-11) + pre-commit hook (tsc + Sheet ID prod) ✅
+- T54: documentación flujo de trabajo dev→prod + checklist promoción a prod ✅
+
+### Aprendizajes
+
+- Trailing newline en variable de entorno produce 404 silencioso en runtime — origen: copiar ID desde interfaz que agrega \n al valor.
+- Protected branch con "Do not allow bypassing" es necesario — sin esa opción el admin puede hacer push directo.
+
+### Estado al cierre
+
+- Rama dev activa y sincronizada con origin/dev
+- Preview URL operativa — conecta a Sheet de dev
+- main protegido — push directo bloqueado para todos incluyendo admin
+- Kanban: 49 tickets, 69 items deuda técnica
+- Próxima sesión: BL-02 → BL-06 → QA-7jun-01 → BL-04/BL-05
+
+---
+
+## Prompt de apertura de sesión
+
+Este workspace tiene múltiples proyectos. Antes de cualquier acción:
+1. Lee `D:\Users\camilo\flujo\ESTADO.md` — este archivo
+2. Confirma que el proyecto activo es **flujo** (no school-bot ni otro)
+3. Propón el siguiente paso según el estado documentado
+
+Nunca asumir contexto de otros proyectos.
+
+**Prompt exacto para iniciar sesión:**
+> "Lee `D:\Users\camilo\flujo\ESTADO.md` y propón el siguiente paso."
+
+---
+
+## Infraestructura y herramientas
+
+### Entorno de desarrollo
+- Dispositivo principal: Chromebook
+- Entorno de ejecución: AWS Workspace Windows
+- Node.js: v26.1.0
+- Gestor de paquetes: npm
+
+### Repositorio
+- Local: `D:\Users\camilo\flujo\`
+- GitHub: github.com/KKze1975/flujo (público)
+- Rama principal: `main` — protegida, push directo bloqueado para todos incluyendo admin
+- Rama desarrollo: `dev` — activa, preview URL auto en cada push a Vercel
+
+### Flujo de trabajo dev → prod
+1. `git checkout dev && git pull origin dev`
+2. Construir — commits a dev con patrón `T[n]-P[n]: descripción`
+3. `git push origin dev` → Vercel genera preview automáticamente
+4. Verificar DoD en preview URL
+5. PR en GitHub dev → main → merge → producción
+
+### Asistentes IA
+- Claude (claude.ai) — project manager, contexto HG-SDD, diseño de UX, decisiones de arquitectura
+- Claude Code — ejecutor de tareas en AWS Workspace Windows
+- graphify — navegación de código (graphify query/path/explain antes de leer archivos fuente)
+
+### Stack técnico
+- Framework: Next.js 16.2.6 — App Router + TypeScript + Tailwind CSS
+- Runtime dev: Turbopack (activo por default)
+- Backend: API Routes de Next.js — sin servidor separado
+- Base de datos MVP: Google Sheets (invisible para usuarios finales)
+
+### Google Sheets API
+- Proyecto Google Cloud: `psibot`
+- Cuenta de servicio: `psibot@psibot-495119.iam.gserviceaccount.com`
+- Google Sheet prod: ID `1GOMhxYw_f7Zl-GTVNtxAs9218x4vKxzg3LGRyveyr7A` — H1–H5 operativos
+- Google Sheet dev: ID separado — configurado en Vercel Preview environment
+- Credenciales: service account JSON en `.env.local` (gitignored)
+
+### Anthropic API
+- Modelo principal: `claude-sonnet-4-6` — parser M4 y registro rápido
+- Modelo background: `claude-haiku-4-5` — clasificación FAB asíncrona (T48)
+- Variable de entorno: `ANTHROPIC_API_KEY` (en `.env.local`)
+
+### Vercel
+- Deploy producción: flujo-dun.vercel.app — auto en cada push a `main`
+- Deploy preview: URL auto en cada push a `dev` — conecta a Sheet de dev
+- Variables de entorno: `GOOGLE_SHEET_ID` diferenciado por environment (Preview vs Production)
+- SSO Protection: desactivada — app familiar
+
+### Autenticación MVP
+- PIN simple — actor: `camilo` / `angie`
+- Google OAuth: feature futura sin retrofit
+
+### Paquetes npm clave
+- `next` — framework
+- `googleapis` — Google Sheets API
+- `@anthropic-ai/sdk` — Claude API
+- `typescript`, `tailwindcss` — tipado y estilos
+
+### Archivos excluidos del repo (.gitignore)
+- `.env.local` — credenciales Google + ANTHROPIC_API_KEY
+- `node_modules/`
+- `graphify-out/` — grafo de código generado localmente
+- Capturas de pantalla (ss-*.png) — evidencia de QA, no parte del código
+
+### Destino de despliegue
+- Vercel — free tier, costo $0
+- Deploy automático en cada push — sin pipeline adicional
+- DevOps formal (tests, staging con rama dedicada, alertas): post MVP
+
+---
+
+## Sesión 13 junio 2026 — RETROSPECTIVA
+
+### Tipo de sesión
+RETROSPECTIVA — Grill-Me + revisión metodológica HG-SDD
+
+### Hallazgos críticos
+
+1. **Bug de saldos es urgente — no backlog**
+   Angie está en producción con datos reales. Los saldos se propagan mal entre vistas.
+   Hipótesis de causa raíz: cada vista tiene su propia lógica de agregación construida
+   ticket a ticket — no hay capa de cómputo centralizada. Hipótesis pendiente de
+   verificación en sesión DEBUGGING.
+
+2. **Backlog no está priorizado por fricción real**
+   Está ordenado por orden de identificación durante desarrollo. Con Angie en
+   producción ese criterio ya no es válido. Resetear prioridades post-DEBUGGING.
+
+3. **No hay preguntas de aprendizaje definidas para las primeras semanas de uso real**
+   El canal de observación existe — Camilo vive con la usuaria. Sin preguntas
+   explícitas el aprendizaje queda al azar.
+
+4. **Revisión de seguridad pendiente**
+   Consecuencia estructural del vibe coding: la seguridad nunca fue un requisito
+   explícito en ningún ticket. Superficie de ataque no auditada. Tratamiento:
+   auditoría separada — no un ticket del backlog. Precondición: sistema estable
+   en producción con bug de saldos resuelto.
+
+### Decisiones tomadas
+
+- Bug de saldos entra como prioridad inmediata sobre todo el backlog existente.
+- Pregunta de observación semanal adoptada: ¿qué hizo Angie que no esperabas?
+  ¿Qué no hizo que esperabas que hiciera?
+- Auditoría de seguridad: sesión separada con criterios propios, posterior a
+  estabilización del sistema.
+- Deuda técnica irrelevante post go-live: archivar explícitamente, no dejar como ruido.
+
+### Invariante candidato
+
+- **I-12:** Todo endpoint nuevo declara su política de acceso antes de cerrar el
+  ticket. "Sin autenticación" es una decisión válida si es consciente — no una omisión.
+
+### Actualizaciones metodológicas HG-SDD
+
+El documento Human-Grounded-SDD.docx recibe tres actualizaciones aprobadas en
+esta sesión:
+- Gap 1: Fase 4 Retrospectiva — cuarta pregunta + INVARIANTS.md como artefacto.
+  "Sprint" → "sesión" en todo el documento.
+- Gap 2: Fase 2 Especificación — criterio de seguridad mínimo: política de acceso
+  declarada antes de abrir el ticket.
+- Gap 3: Fase 5 Observación — nueva fase post go-live con dos preguntas semanales
+  y criterio de reordenamiento del backlog por fricción observada.
+
+### Estado al cierre
+
+- Angie: usuaria activa en producción con datos reales.
+- Bug de saldos: reproducible, pendiente sesión DEBUGGING.
+- Backlog: congelado hasta completar DEBUGGING de saldos.
+- Auditoría de seguridad: en horizonte, post-estabilización.
+- HG-SDD: actualizaciones aprobadas, pendientes de incorporar al .docx.
+
+### Próxima sesión
+
+DEBUGGING — bug de saldos.
+Objetivo único: trazar el flujo de un registro de Angie desde H3B hasta cada
+vista que debería reflejarlo. Documentar exactamente dónde divergen los números.
+Sin proponer ningún fix hasta tener el mapa completo.
+El caso es reproducible — esa es la entrada de la sesión.
+
+## Sesión 14 junio 2026 — DEBUGGING/Observación semana 1 producción
+
+### Objetivo
+Observación controlada en dev para mapear comportamiento del sistema en primera semana de uso real con Angie.
+
+### Hallazgos
+
+#### Bug de datos — MOV_1780844291091 (Universal)
+- Movimiento ejecutado con `ejecutor` presente pero todas las fuentes en FALSE
+- Causa: endpoint PATCH H2 no valida que al menos una fuente esté marcada antes de aceptar estado `ejecutado`
+- Resuelto manualmente en dev (revert + re-ejecución correcta)
+- Pendiente ticket de validación
+
+#### BL-07 — Fix totalPresupuestado excluir no_aplica y pospuesto
+- `totalPresupuestado` en VistaSemanal.tsx (L722) y endpoint movimientosInit (L31) suma todos los movimientos sin filtrar
+- Fix: `estado !== "no_aplica" && estado !== "pospuesto"` antes del reduce
+- Impacto: display only — no toca modelo de datos ni Sheet
+- DoD: barra S2 muestra $2.015.996 (excluye Apoyo Mariella $100.000) y porcentaje recalculado consistente
+- Prioridad: deploy hoy
+
+#### BL-08 — Auditabilidad inline totalPresupuestado
+- La barra morada es caja negra — genera comportamiento de verificación manual (calculadora)
+- Solución: tap en monto presupuestado despliega lista de conceptos que lo componen
+- Dependencia: BL-07 primero
+- Prioridad: deploy hoy
+
+#### BL-09 — Auditabilidad inline tarjetas de bolsillos
+- Tarjetas muestran total ejecutado sin desglose de consumos — mismo patrón de desconfianza
+- Solución: tap en tarjeta muestra lista de consumos que componen el ejecutado
+- Prioridad: deploy hoy
+
+### Deuda técnica
+- DT-H5-01: H5 acumula cierres sin metadata de criterio de cálculo — agregar `version_calculo` antes de activar vista histórica
+- DT-UX-01: Señalización de mecánica de bolsillos (FAB como único punto de entrada) — pendiente para escala a otros usuarios
+
+### Cola actualizada
+BL-07 → BL-08 → BL-09 → BL-02 → BL-06 → QA-7jun-01 → BL-04/BL-05
+
+## BL-07 — Fix totalPresupuestado · 14 junio 2026
+
+- Filtro aplicado en `VistaSemanal.tsx` L722 (cliente) y `app/api/mes/[mes]/semana/[semana]/route.ts` L31 (servidor)
+- Estados excluidos: `no_aplica`, `pospuesto`, `pospuesto_mes_siguiente`
+- Commit: 522dea7 — pusheado a origin/dev
+- DoD verificado: S2 muestra $1.765.996 ✓
+- Estado: completo
