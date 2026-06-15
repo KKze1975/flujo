@@ -2681,3 +2681,65 @@ Imprevisto = gasto sin concepto en H1. Casos de timing (pospuesto entre semanas)
 
 QA — BL-10 con Angie en preview URL de dev.
 Si pasa QA, merge PR a main y continuar con BL-02.
+
+---
+
+## Sesión 15 junio 2026 — DISEÑO
+
+### Tipo de sesión
+DISEÑO — Cierre de semana integrado en VistaSemanal mobile
+
+### Contexto
+Decisión conjunta Angie + Camilo post primera semana de uso real.
+El cierre de semana debe sentirse orgánico desde M4 VistaSemanal — no
+como una acción separada detrás de un modal. Premisa reforzada: no hay
+roles diferenciados. Angie y Camilo tienen acceso simétrico a todas las
+acciones. Esta sesión también resuelve BL-04 y BL-05 que quedan absorbidos
+en el nuevo diseño.
+
+### Decisiones tomadas
+
+- Modal de cierre de semana eliminado completamente.
+- Cierre de semana se ejecuta inline desde VistaSemanal mobile, sin modal
+  intermedio.
+- Navegación entre semanas agregada al header de VistaSemanal:
+  ← S1 | S2 (activa) | S3 →
+  Flecha izquierda deshabilitada en S1. Flecha derecha deshabilitada en
+  semana activa del mes. No se puede navegar al futuro.
+- Bloque de cierre posicionado en la parte superior de VistaSemanal,
+  inmediatamente debajo del selector de semanas, antes del contenido de
+  pendientes/ejecutados.
+- Estructura del bloque de cierre:
+  - Línea informativa: Remanente Angie: $X · Aporte planeado Sn: $Y
+  - Botón: [ Cerrar semana Sn ]
+  - Si la semana ya tiene cierre en H5A: muestra "Semana cerrada ✓",
+    botón no aparece. La vista queda en modo lectura.
+- Un tap en el botón ejecuta POST /mes/[mes]/cerrar-semana directamente.
+  Confirmación visual inline — el botón se reemplaza por "Semana cerrada ✓".
+- Sin selección de destino del remanente. Default siempre: carry_over.
+- El servidor calcula todos los campos del cierre en el POST:
+  remanente_angie (H4D - consumos fuenteAngie=true de la semana),
+  aporte_angie_planeado (H4B semana correspondiente),
+  total_presupuestado / total_ejecutado / desviacion (H2 + H3B semana).
+- Prerequisitos de cierre simplificados: ninguno. Se confía en el usuario.
+  La vista muestra la info necesaria para que decida cuándo cerrar.
+- BL-04 absorbido: remanente Angie calculado en servidor, no campo manual.
+- BL-05 absorbido: aporte planeado leído de H4B en servidor, no campo manual.
+
+### Tickets creados
+
+| Ticket | Descripción | Dependencia |
+|--------|-------------|-------------|
+| BL-10  | Navegación entre semanas en header VistaSemanal (flechas ← →) | Ninguna |
+| BL-11  | Bloque cierre semana inline en VistaSemanal + POST calculado en servidor | BL-10 |
+
+BL-04 y BL-05 quedan cerrados por diseño — absorbidos en BL-11.
+
+### Cola actualizada
+
+BL-10 → BL-11 → BL-02 → BL-06 → QA-7jun-01
+
+### Estado al cierre
+
+- Diseño aprobado. Sin código abierto.
+- Próxima sesión: CONSTRUCCIÓN BL-10.
