@@ -46,11 +46,11 @@
 
 ## 2. Invariantes activos (no negociables)
 
-- **I-01:** Datos operativos (semana, fecha, mes, sesión) siempre calculados server-side en POST — nunca inferidos por IA.
-- **I-03:** `tipo = pago_fraccionado` → POST H3B. `tipo = fijo` → PATCH H2. Nunca mezclar.
-- **I-04:** Bolsillos son control presupuestal, no fuente de fondos. Las fuentes son: NU Camilo, NU Angie, EN MANO, NEQUI.
-- **I-12:** Todo endpoint nuevo declara su política de acceso antes de cerrar el ticket. "Sin autenticación" es decisión válida si es consciente — no una omisión.
-- Cuando muevas un rango en el Sheet: auditar operaciones de **lectura Y escritura** en todas las funciones que tocan ese rango antes de commitear.
+Lee `INVARIANTS.md` completo antes de escribir una sola línea de código.
+Si alguna decisión de implementación roza un invariante, detente y reporta
+antes de continuar.
+
+Los invariantes del archivo son la fuente de verdad — no esta sección.
 
 ---
 
@@ -79,7 +79,7 @@
 
 1. **Rama:** Trabajar exclusivamente en `dev`. Ningún comando debe tocar `main`.
 2. **Commits:** Un commit por pieza completada con `tsc --noEmit` limpio.
-3. **Hook:** No usar `--no-verify` bajo ninguna circunstancia. Si el hook falla, ver criterios de parada.
+3. **Hook:** No usar `--no-verify` en commits que tocan código TypeScript. Excepción permitida: commits de documentación o assets sin TypeScript (ej: actualización de ESTADO.md, kanban.html, imágenes). Si el hook falla en un commit de código, ver criterios de parada.
 4. **Scope:** No tocar archivos fuera del scope del ticket. Si encuentras algo que debería corregirse, documentarlo en SESSION_LOG.md como deuda técnica — no corregirlo inline.
 5. **PR:** Crear el PR al finalizar pero **no mergearlo**. El merge es manual y requiere QA de Angie primero.
 6. **Sheet IDs:** Usar siempre variables de entorno. Nunca hardcodear IDs en código fuente.
