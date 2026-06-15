@@ -782,13 +782,22 @@ export class SheetsDataProvider implements IDataProvider {
   async updateConsumoH3(id: string, data: Partial<Omit<ConsumoH3, "id">>): Promise<ConsumoH3> {
     const res = await this.sheets.spreadsheets.values.get({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: "H3!A:P",
+      range: "H3!A:Q",
     });
     const rows = (res.data.values ?? []) as string[][];
     if (rows.length < 2) throw new Error("H3 vacía");
     const [headers, ...data2] = rows;
     const rowIndex = data2.findIndex(row => row[headers.indexOf("id_consumo")] === id);
     if (rowIndex === -1) throw new Error(`Consumo ${id} no encontrado`);
+    // Si Q1 no tiene "imprevisto", reparar header row antes de escribir datos
+    if (!headers.includes("imprevisto")) {
+      await this.sheets.spreadsheets.values.update({
+        spreadsheetId: process.env.GOOGLE_SHEET_ID,
+        range: "H3!A1",
+        valueInputOption: "RAW",
+        requestBody: { values: [this.H3B_HEADERS] },
+      });
+    }
     const existing = this.rowToConsumoH3(data2[rowIndex], headers);
     const updated: ConsumoH3 = { ...existing, ...data, id };
     const sheetRow = rowIndex + 2;
