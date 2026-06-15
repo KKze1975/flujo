@@ -750,6 +750,8 @@ export default function VistaSemanal({
   const [semanaActivaMes, setSemanaActivaMes] = useState<Semana>(semanaActiva);
   const [cierreSemanaState, setCierreSemanaState] = useState<CierreSemana | null>(cierreSemana);
   const [navegando, setNavegando] = useState(false);
+  const [cerrandoSemana, setCerrandoSemana] = useState(false);
+  const [cierreError, setCierreError] = useState<string | null>(null);
   const [movimientos, setMovimientos] = useState<Movimiento[]>(movimientosInit);
   const [consumos, setConsumos] = useState<ConsumoH3[]>(consumosInit);
   const [panel, setPanel] = useState<ActivePanel | null>(null);
@@ -770,6 +772,7 @@ export default function VistaSemanal({
   const idxVisible = SEMANAS.indexOf(semanaVisible);
   const puedeIzq = idxVisible > 0;
   const puedeDer = semanaVisible !== semanaActivaMes;
+  const bloqueVisible = idxVisible <= SEMANAS.indexOf(semanaActivaMes);
 
   const bolsillos = movimientos.filter((m) => m.tipoSnapshot === "pago_fraccionado");
   const conceptos  = movimientos.filter((m) => m.tipoSnapshot !== "pago_fraccionado");
@@ -839,6 +842,26 @@ export default function VistaSemanal({
       setError("Error cargando semana");
     } finally {
       setNavegando(false);
+    }
+  }
+
+  async function handleCerrarSemana() {
+    if (cerrandoSemana) return;
+    setCerrandoSemana(true);
+    setCierreError(null);
+    try {
+      const res = await fetch(`/api/mes/${mes}/cerrar-semana`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ semana: semanaVisible }),
+      });
+      const data = await res.json() as { ok?: boolean; cierre?: CierreSemana; error?: string };
+      if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+      if (data.cierre) setCierreSemanaState(data.cierre);
+    } catch (e: unknown) {
+      setCierreError(e instanceof Error ? e.message : "Error al cerrar semana");
+    } finally {
+      setCerrandoSemana(false);
     }
   }
 
@@ -1052,6 +1075,52 @@ export default function VistaSemanal({
             <button type="button" onClick={() => setError(null)}>
               <Icon name="x" size={16} style={{ color: "var(--neg)" }} />
             </button>
+          </div>
+        )}
+
+        {/* Bloque cierre de semana */}
+        {bloqueVisible && (
+          <div style={{ background: "var(--surface-2)", borderRadius: 16, padding: "14px 16px" }}>
+            {cierreSemanaState ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <Icon name="check" size={16} style={{ color: "var(--pos)" }} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: "var(--pos)" }}>
+                  Semana {semanaVisible} cerrada
+                </span>
+                <span style={{ fontSize: 12, color: "var(--ink-faint)", marginLeft: 2 }}>
+                  {cierreSemanaState.fechaCierre}
+                </span>
+              </div>
+            ) : (
+              <>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                  <span style={{ fontSize: 12, color: "var(--ink-soft)" }}>Remanente Angie {semanaVisible}</span>
+                  <span style={{ fontSize: 13, fontVariantNumeric: "tabular-nums", fontWeight: 700, color: disponibleSemana < 0 ? "var(--neg)" : "var(--ink)" }}>
+                    {copCompact(disponibleSemana)}
+                  </span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+                  <span style={{ fontSize: 12, color: "var(--ink-soft)" }}>Aporte planeado {semanaVisible}</span>
+                  <span style={{ fontSize: 13, fontVariantNumeric: "tabular-nums", color: "var(--ink)" }}>
+                    {copCompact(aportePlaneado)}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="fl-btn primary sm block"
+                  style={{ width: "100%" }}
+                  disabled={cerrandoSemana}
+                  onClick={handleCerrarSemana}
+                >
+                  {cerrandoSemana ? "Cerrando…" : `Cerrar semana ${semanaVisible}`}
+                </button>
+                {cierreError && (
+                  <p style={{ fontSize: 12, color: "var(--neg)", marginTop: 8, fontWeight: 600 }}>
+                    {cierreError}
+                  </p>
+                )}
+              </>
+            )}
           </div>
         )}
 
