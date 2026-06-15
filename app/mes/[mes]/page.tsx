@@ -82,6 +82,7 @@ export default async function MesPage({
       gastoH3PorCuenta={gastoH3PorCuenta}
       gastoH3PorSemana={gastoH3PorSemana}
       gastoH3AngiePorSemana={gastoH3AngiePorSemana}
+      consumosH3={consumosH3}
     />
   );
 }
