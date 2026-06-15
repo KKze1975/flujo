@@ -1078,7 +1078,7 @@ export default function VistaSemanal({
           </div>
         </div>
         {/* Cierre de semana */}
-        {semanaVisible === semanaActivaMes && !cierreSemanaState && (
+        {idxVisible <= SEMANAS.indexOf(semanaActivaMes) && !cierreSemanaState && modoSemana !== "lectura" && (
           <div style={{ marginTop: 12 }}>
             <button
               type="button"
