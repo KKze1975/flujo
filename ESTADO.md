@@ -2743,3 +2743,65 @@ BL-10 → BL-11 → BL-02 → BL-06 → QA-7jun-01
 
 - Diseño aprobado. Sin código abierto.
 - Próxima sesión: CONSTRUCCIÓN BL-10.
+
+## Sesión 15 junio 2026 — CONSTRUCCIÓN + QA · BL-10, BL-11, BL-11b
+
+### Tickets completados
+
+| Ticket | Descripción | Commits | DoD |
+|--------|-------------|---------|-----|
+| BL-10 | Navegación entre semanas VistaSemanal | 5133905, f0290ba | ✓ |
+| BL-11 | Bloque cierre semana inline + POST calculado servidor | d76ce3e, da59686, 0d68724 | ✓ |
+| BL-11b | Gate modal + señal visual selector + ajustes UI | 340675e, 0350be8, 7fc71b1 | ✓ |
+| Fix BL-11b | Botón cierre visible en semanas pasadas sin cerrar | d4292ac | ✓ |
+
+### Decisiones de diseño aprobadas
+
+#### Bloque de cierre de semana
+- Línea informativa (remanente + aporte planeado) eliminada. Solo botón.
+- Botón de cierre en header morado, debajo del porcentaje de ejecución.
+- Semana cerrada: muestra "Semana Sn cerrada ✓" en el mismo espacio.
+- Botón visible en semana activa Y en semanas pasadas sin cerrar
+  (modo edición). Oculto en modo lectura.
+
+#### Tres estados de semana en VistaSemanal
+
+| Estado | Condición | Comportamiento |
+|--------|-----------|----------------|
+| Activa | semana === semanaActivaMes | Acceso completo, sin gate |
+| Cerrada | tieneCierre === true | Gate modal antes del contenido |
+| Futura | semana > semanaActivaMes | Gate modal antes del contenido |
+
+#### Gate modal
+- Aparece cada vez que se navega a semana no activa — no persiste.
+- Sin botón X — usuario debe elegir una opción.
+- Variante cerrada: "Solo leer" / "Editar semana"
+- Variante futura: "Solo leer" / "Planear semana"
+- Modo lectura: FAB oculto, botones de acción ocultos.
+- Modo editar/planear: acciones visibles. Sin botón re-cierre.
+
+#### Señal visual selector de semanas
+- Semana activa: morado con marca.
+- Semana cerrada: gris + 🔒 (opacity 0.72).
+- Semana futura: gris tenue.
+
+#### Re-cierre
+Permanente desde UI. Deuda técnica aceptada conscientemente.
+
+### Bug encontrado y resuelto en QA
+- S2 sin cierre no mostraba botón al entrar en modo edición.
+- Causa: condición `semana === semanaActivaMes` excluía semanas pasadas.
+- Fix: `idxVisible <= SEMANAS.indexOf(semanaActivaMes)` — comparación
+  numérica sobre array ["S1","S2","S3","S4"]. Guarda `modoSemana !== "lectura"`
+  oculta el botón en modo solo leer.
+
+### Cola actualizada
+
+BL-02 → BL-06 → QA-7jun-01
+
+### Estado al cierre
+
+- BL-10, BL-11, BL-11b: DoD verificados en preview URL.
+- PR #5 (dev → main): pendiente merge — QA completado, listo para producción.
+- BL-04 y BL-05: cerrados por diseño, absorbidos en BL-11.
+- Próxima sesión: merge PR #5 → BL-02.
