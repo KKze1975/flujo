@@ -5,6 +5,14 @@ import type { Semana } from "@/lib/data/types";
 const MES_REGEX = /^\d{4}-\d{2}$/;
 const SEMANAS_VALIDAS: Semana[] = ["S1", "S2", "S3", "S4"];
 
+function semanaActivaMes(): Semana {
+  const dia = new Date().getDate();
+  if (dia <= 7)  return "S1";
+  if (dia <= 14) return "S2";
+  if (dia <= 21) return "S3";
+  return "S4";
+}
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ mes: string; semana: string }> }
@@ -40,6 +48,7 @@ export async function GET(
 
     return Response.json({
       semana,
+      semanaActivaMes: semanaActivaMes(),
       movimientos,
       metricas: { totalPresupuestado, totalEjecutado, pct },
       cierreSemana,
