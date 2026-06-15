@@ -15,10 +15,12 @@ export default function BottomNav({
   onFabClick,
   semanaHref = "/",
   active,
+  hideFab = false,
 }: {
   onFabClick?: () => void;
   semanaHref?: string;
   active?: "home" | "semana" | "mes" | "historial";
+  hideFab?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -42,6 +44,7 @@ export default function BottomNav({
               onClick={onFabClick}
               aria-label="Registrar gasto"
               type="button"
+              style={hideFab ? { opacity: 0, pointerEvents: "none" } : undefined}
             >
               <Icon name="bolt" size={24} fill />
             </button>

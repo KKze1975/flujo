@@ -9,6 +9,7 @@ import RegistroRapido from "@/components/m4/RegistroRapido";
 import type { Movimiento, CierreSemana, Semana, Actor, ConsumoH3, IngresoAngie } from "@/lib/data/types";
 
 type Fuente = "en_mano" | "nequi" | "camilo" | "angie";
+type ModoSemana = "activa" | "lectura" | "edicion";
 
 type ActivePanel =
   | { tipo: "ok"; id: string; fuente: Fuente | null; ejecutor: Actor }
@@ -752,6 +753,8 @@ export default function VistaSemanal({
   const [navegando, setNavegando] = useState(false);
   const [cerrandoSemana, setCerrandoSemana] = useState(false);
   const [cierreError, setCierreError] = useState<string | null>(null);
+  const [modoSemana, setModoSemana] = useState<ModoSemana>("activa");
+  const [mostrarGate, setMostrarGate] = useState(false);
   const [movimientos, setMovimientos] = useState<Movimiento[]>(movimientosInit);
   const [consumos, setConsumos] = useState<ConsumoH3[]>(consumosInit);
   const [panel, setPanel] = useState<ActivePanel | null>(null);
@@ -826,17 +829,27 @@ export default function VistaSemanal({
         fetch(`/api/mes/${mes}/semana/${s}`),
         fetch(`/api/mes/${mes}/consumos/${s}`),
       ]);
+      let nuevaSemanaActiva = semanaActivaMes;
       if (semRes.ok) {
         const data = await semRes.json() as { movimientos: Movimiento[]; cierreSemana: CierreSemana | null; semanaActivaMes?: Semana };
         setMovimientos(data.movimientos ?? []);
         setCierreSemanaState(data.cierreSemana ?? null);
-        if (data.semanaActivaMes) setSemanaActivaMes(data.semanaActivaMes);
+        if (data.semanaActivaMes) {
+          setSemanaActivaMes(data.semanaActivaMes);
+          nuevaSemanaActiva = data.semanaActivaMes;
+        }
       }
       if (conRes.ok) {
         const data = await conRes.json() as { consumos: ConsumoH3[] };
         setConsumos(data.consumos ?? []);
       }
       setSemanaVisible(s);
+      if (s !== nuevaSemanaActiva) {
+        setMostrarGate(true);
+      } else {
+        setModoSemana("activa");
+        setMostrarGate(false);
+      }
     } catch {
       setError("Error cargando semana");
     } finally {
@@ -1302,7 +1315,7 @@ export default function VistaSemanal({
                   </div>
 
                   {/* Acciones para pendientes */}
-                  {tab === "pendientes" && mov.estado === "pendiente" && !panelActivo && (
+                  {tab === "pendientes" && mov.estado === "pendiente" && !panelActivo && modoSemana !== "lectura" && (
                     <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
                       <button
                         className="fl-btn pos sm"
@@ -1324,7 +1337,7 @@ export default function VistaSemanal({
                   )}
 
                   {/* Acción corregir para ejecutados */}
-                  {tab === "ejecutados" && (
+                  {tab === "ejecutados" && modoSemana !== "lectura" && (
                     <div style={{ display: "flex", marginTop: 10 }}>
                       <button
                         type="button"
@@ -1491,13 +1504,15 @@ export default function VistaSemanal({
                       </span>
                     </span>
                     <span className="dk-rec-amt">{copCompact(c.monto)}</span>
-                    <button
-                      type="button"
-                      className="dk-rec-fix"
-                      onClick={() => setCorrigiendoConsumo(c)}
-                    >
-                      <Icon name="pencil" size={13} /> Corregir
-                    </button>
+                    {modoSemana !== "lectura" && (
+                      <button
+                        type="button"
+                        className="dk-rec-fix"
+                        onClick={() => setCorrigiendoConsumo(c)}
+                      >
+                        <Icon name="pencil" size={13} /> Corregir
+                      </button>
+                    )}
                   </div>
                 );
               })}
@@ -1512,6 +1527,7 @@ export default function VistaSemanal({
         onFabClick={() => setSheetOpen(true)}
         semanaHref={`/mes/${mes}/semana`}
         active="semana"
+        hideFab={modoSemana === "lectura"}
       />
 
       {/* Registro sheet */}
@@ -1527,6 +1543,53 @@ export default function VistaSemanal({
             </div>
             <div className="sheet-body">
               <RegistroRapido onClose={handleSheetSuccess} onSuccess={handleSheetSuccess} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Gate modal — semana no activa */}
+      {mostrarGate && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
+          display: "flex", alignItems: "flex-end", justifyContent: "center",
+          zIndex: 600, padding: "0 16px 32px",
+        }}>
+          <div style={{
+            background: "var(--surface)", borderRadius: 20,
+            padding: "24px 20px 20px", width: "100%", maxWidth: 480,
+            boxShadow: "0 8px 40px rgba(0,0,0,0.2)",
+          }}>
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: "var(--ink-soft)", marginBottom: 4 }}>
+              Semana {semanaVisible}
+            </p>
+            <h3 style={{ fontSize: 18, fontWeight: 800, margin: "0 0 6px", color: "var(--ink)" }}>
+              {cierreSemanaState
+                ? "Cerrada"
+                : SEMANAS.indexOf(semanaVisible) > SEMANAS.indexOf(semanaActivaMes)
+                  ? "Aún no iniciada"
+                  : "Semana pasada"}
+            </h3>
+            <p style={{ fontSize: 13, color: "var(--ink-soft)", marginBottom: 20 }}>¿Qué querés hacer?</p>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                type="button"
+                className="fl-btn ghost sm"
+                style={{ flex: 1 }}
+                onClick={() => { setModoSemana("lectura"); setMostrarGate(false); }}
+              >
+                Solo leer
+              </button>
+              <button
+                type="button"
+                className="fl-btn primary sm"
+                style={{ flex: 1 }}
+                onClick={() => { setModoSemana("edicion"); setMostrarGate(false); }}
+              >
+                {SEMANAS.indexOf(semanaVisible) > SEMANAS.indexOf(semanaActivaMes)
+                  ? "Planear semana"
+                  : "Editar semana"}
+              </button>
             </div>
           </div>
         </div>
