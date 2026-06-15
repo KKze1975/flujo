@@ -5,6 +5,7 @@ const H3B_HEADERS = [
   "id_consumo", "id_bolsillo", "mes", "semana", "descripcion",
   "monto", "ejecutor", "fuente_en_mano", "fuente_nequi",
   "fuente_camilo", "fuente_angie", "fecha", "comprobante_url", "clasificado",
+  "sobre_techo", "id_recarga_origen", "imprevisto",
 ];
 
 function getSheets() {
@@ -27,13 +28,14 @@ async function ensureH3(sheets: ReturnType<typeof getSheets>) {
       requestBody: { requests: [{ addSheet: { properties: { title: "H3" } } }] },
     });
   }
-  // Write headers only if row 1 is empty or wrong
+  // Write headers if row 1 is missing, wrong, or has fewer columns than H3B_HEADERS
   try {
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: "H3!A1",
+      range: `H3!A1:${String.fromCharCode(64 + H3B_HEADERS.length)}1`,
     });
-    if (res.data.values?.[0]?.[0] === "id_consumo") return;
+    const existing = res.data.values?.[0] ?? [];
+    if (existing[0] === "id_consumo" && existing.length >= H3B_HEADERS.length) return;
   } catch {
     // Proceed to write headers
   }
@@ -103,12 +105,13 @@ export async function POST(req: NextRequest) {
     clasificado,
     "",
     "",
+    "FALSE",
   ];
 
   try {
     await sheets.spreadsheets.values.append({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: "H3!A:P",
+      range: "H3!A:Q",
       valueInputOption: "RAW",
       requestBody: { values: [row] },
     });

@@ -659,7 +659,7 @@ export class SheetsDataProvider implements IDataProvider {
     try {
       const res = await this.sheets.spreadsheets.values.get({
         spreadsheetId: process.env.GOOGLE_SHEET_ID,
-        range: "H3!A:P",
+        range: "H3!A:Q",
       });
       const rows = (res.data.values ?? []) as string[][];
       if (rows.length < 2) return result;
@@ -703,7 +703,7 @@ export class SheetsDataProvider implements IDataProvider {
     "id_consumo", "id_bolsillo", "mes", "semana", "descripcion",
     "monto", "ejecutor", "fuente_en_mano", "fuente_nequi",
     "fuente_camilo", "fuente_angie", "fecha", "comprobante_url", "clasificado",
-    "sobre_techo", "id_recarga_origen",
+    "sobre_techo", "id_recarga_origen", "imprevisto",
   ];
 
   private rowToConsumoH3(row: string[], headers: string[]): ConsumoH3 {
@@ -725,6 +725,7 @@ export class SheetsDataProvider implements IDataProvider {
       clasificado:     col("clasificado").toUpperCase() === "TRUE",
       sobreTecho:      col("sobre_techo") === "TRUE" ? true : col("sobre_techo") === "FALSE" ? false : null,
       idRecargaOrigen: col("id_recarga_origen") || null,
+      imprevisto:      col("imprevisto").toUpperCase() === "TRUE",
     };
   }
 
@@ -740,6 +741,7 @@ export class SheetsDataProvider implements IDataProvider {
       c.clasificado ? "TRUE" : "FALSE",
       c.sobreTecho != null ? (c.sobreTecho ? "TRUE" : "FALSE") : "",
       c.idRecargaOrigen ?? "",
+      c.imprevisto ? "TRUE" : "FALSE",
     ];
   }
 
@@ -747,7 +749,7 @@ export class SheetsDataProvider implements IDataProvider {
     try {
       const res = await this.sheets.spreadsheets.values.get({
         spreadsheetId: process.env.GOOGLE_SHEET_ID,
-        range: "H3!A:P",
+        range: "H3!A:Q",
       });
       const rows = (res.data.values ?? []) as string[][];
       if (rows.length < 2) return [];
@@ -764,7 +766,7 @@ export class SheetsDataProvider implements IDataProvider {
     try {
       const res = await this.sheets.spreadsheets.values.get({
         spreadsheetId: process.env.GOOGLE_SHEET_ID,
-        range: "H3!A:P",
+        range: "H3!A:Q",
       });
       const rows = (res.data.values ?? []) as string[][];
       if (rows.length < 2) return [];
@@ -780,19 +782,28 @@ export class SheetsDataProvider implements IDataProvider {
   async updateConsumoH3(id: string, data: Partial<Omit<ConsumoH3, "id">>): Promise<ConsumoH3> {
     const res = await this.sheets.spreadsheets.values.get({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: "H3!A:P",
+      range: "H3!A:Q",
     });
     const rows = (res.data.values ?? []) as string[][];
     if (rows.length < 2) throw new Error("H3 vacía");
     const [headers, ...data2] = rows;
     const rowIndex = data2.findIndex(row => row[headers.indexOf("id_consumo")] === id);
     if (rowIndex === -1) throw new Error(`Consumo ${id} no encontrado`);
+    // Si Q1 no tiene "imprevisto", reparar header row antes de escribir datos
+    if (!headers.includes("imprevisto")) {
+      await this.sheets.spreadsheets.values.update({
+        spreadsheetId: process.env.GOOGLE_SHEET_ID,
+        range: "H3!A1",
+        valueInputOption: "RAW",
+        requestBody: { values: [this.H3B_HEADERS] },
+      });
+    }
     const existing = this.rowToConsumoH3(data2[rowIndex], headers);
     const updated: ConsumoH3 = { ...existing, ...data, id };
     const sheetRow = rowIndex + 2;
     await this.sheets.spreadsheets.values.update({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: `H3!A${sheetRow}:P${sheetRow}`,
+      range: `H3!A${sheetRow}:Q${sheetRow}`,
       valueInputOption: "RAW",
       requestBody: { values: [this.consumoH3ToRow(updated)] },
     });

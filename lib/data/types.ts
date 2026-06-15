@@ -90,6 +90,7 @@ export interface ConsumoH3 {
   clasificado: boolean;
   sobreTecho: boolean | null;
   idRecargaOrigen: string | null;
+  imprevisto: boolean;
 }
 
 export interface Bolsillo {

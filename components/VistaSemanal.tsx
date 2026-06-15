@@ -9,6 +9,7 @@ import RegistroRapido from "@/components/m4/RegistroRapido";
 import type { Movimiento, CierreSemana, Semana, Actor, ConsumoH3, IngresoAngie } from "@/lib/data/types";
 
 type Fuente = "en_mano" | "nequi" | "camilo" | "angie";
+type ModoSemana = "activa" | "lectura" | "edicion";
 
 type ActivePanel =
   | { tipo: "ok"; id: string; fuente: Fuente | null; ejecutor: Actor }
@@ -131,8 +132,30 @@ function ModalCorreccion({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmandoRevertir, setConfirmandoRevertir] = useState(false);
+  const [imprevistoLocal, setImprevistoLocal] = useState(consumo.imprevisto);
+  const [imprevistoSaving, setImprevistoSaving] = useState(false);
 
   const scn = SCN_LABEL[scenario];
+
+  async function toggleImprevisto() {
+    const next = !imprevistoLocal;
+    setImprevistoLocal(next);
+    setImprevistoSaving(true);
+    try {
+      const res = await fetch(`/api/consumos/${consumo.id}/imprevisto`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imprevisto: next }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error((data as { error?: string }).error ?? "Error");
+      onSaved(data as ConsumoH3);
+    } catch {
+      setImprevistoLocal(!next);
+    } finally {
+      setImprevistoSaving(false);
+    }
+  }
 
   async function guardar() {
     setBusy(true);
@@ -227,6 +250,25 @@ function ModalCorreccion({
                 {SCN_LABEL[s].eye}
               </button>
             ))}
+          </div>
+
+          {/* Imprevisto toggle */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid var(--line)" }}>
+            <span style={{ fontSize: 12.5, color: "var(--ink-soft)" }}>Imprevisto (sin concepto en H1)</span>
+            <button
+              type="button"
+              disabled={imprevistoSaving}
+              onClick={toggleImprevisto}
+              style={{
+                padding: "3px 12px", borderRadius: 12, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                background: imprevistoLocal ? "var(--warn-soft, #fff3e0)" : "var(--surface-2)",
+                color: imprevistoLocal ? "var(--warn, #b05e00)" : "var(--ink-soft)",
+                border: imprevistoLocal ? "1.5px solid var(--warn, #b05e00)" : "1.5px solid var(--line)",
+                opacity: imprevistoSaving ? 0.5 : 1,
+              }}
+            >
+              {imprevistoLocal ? "Imprevisto ✓" : "Marcar imprevisto"}
+            </button>
           </div>
 
           {/* Original record */}
@@ -681,6 +723,8 @@ function formatMes(mes: string): string {
   return `${MESES_FULL[Number(m)]} ${year}`;
 }
 
+const SEMANAS: Semana[] = ["S1", "S2", "S3", "S4"];
+
 export default function VistaSemanal({
   mes,
   mesLabel,
@@ -703,6 +747,14 @@ export default function VistaSemanal({
   disponibleNuAngie?: number;
 }) {
   const router = useRouter();
+  const [semanaVisible, setSemanaVisible] = useState<Semana>(semanaActiva);
+  const [semanaActivaMes, setSemanaActivaMes] = useState<Semana>(semanaActiva);
+  const [cierreSemanaState, setCierreSemanaState] = useState<CierreSemana | null>(cierreSemana);
+  const [navegando, setNavegando] = useState(false);
+  const [cerrandoSemana, setCerrandoSemana] = useState(false);
+  const [cierreError, setCierreError] = useState<string | null>(null);
+  const [modoSemana, setModoSemana] = useState<ModoSemana>("activa");
+  const [mostrarGate, setMostrarGate] = useState(false);
   const [movimientos, setMovimientos] = useState<Movimiento[]>(movimientosInit);
   const [consumos, setConsumos] = useState<ConsumoH3[]>(consumosInit);
   const [panel, setPanel] = useState<ActivePanel | null>(null);
@@ -719,6 +771,10 @@ export default function VistaSemanal({
   const [bolsilloAnchor, setBolsilloAnchor] = useState<DOMRect | null>(null);
   const presupuestadoPopoverRef = useRef<HTMLDivElement>(null);
   const bolsilloRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  const idxVisible = SEMANAS.indexOf(semanaVisible);
+  const puedeIzq = idxVisible > 0;
+  const puedeDer = semanaVisible !== semanaActivaMes;
 
   const bolsillos = movimientos.filter((m) => m.tipoSnapshot === "pago_fraccionado");
   const conceptos  = movimientos.filter((m) => m.tipoSnapshot !== "pago_fraccionado");
@@ -739,7 +795,7 @@ export default function VistaSemanal({
     : 0;
 
   const pendientesClasificar = consumos.filter(c => !c.clasificado).length;
-  const aportePlaneado = ingresosAngieLocal.find(a => a.semana === semanaActiva)?.monto ?? 0;
+  const aportePlaneado = ingresosAngieLocal.find(a => a.semana === semanaVisible)?.monto ?? 0;
   const gastadoSemanaAngie = consumos.filter(c => c.fuenteAngie).reduce((s, c) => s + c.monto, 0);
   const disponibleSemana = aportePlaneado - gastadoSemanaAngie;
 
@@ -760,6 +816,64 @@ export default function VistaSemanal({
       setError(e instanceof Error ? e.message : "Error desconocido");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function navegar(s: Semana) {
+    if (navegando) return;
+    setNavegando(true);
+    setPanel(null);
+    setTab("pendientes");
+    try {
+      const [semRes, conRes] = await Promise.all([
+        fetch(`/api/mes/${mes}/semana/${s}`),
+        fetch(`/api/mes/${mes}/consumos/${s}`),
+      ]);
+      let nuevaSemanaActiva = semanaActivaMes;
+      if (semRes.ok) {
+        const data = await semRes.json() as { movimientos: Movimiento[]; cierreSemana: CierreSemana | null; semanaActivaMes?: Semana };
+        setMovimientos(data.movimientos ?? []);
+        setCierreSemanaState(data.cierreSemana ?? null);
+        if (data.semanaActivaMes) {
+          setSemanaActivaMes(data.semanaActivaMes);
+          nuevaSemanaActiva = data.semanaActivaMes;
+        }
+      }
+      if (conRes.ok) {
+        const data = await conRes.json() as { consumos: ConsumoH3[] };
+        setConsumos(data.consumos ?? []);
+      }
+      setSemanaVisible(s);
+      if (s !== nuevaSemanaActiva) {
+        setMostrarGate(true);
+      } else {
+        setModoSemana("activa");
+        setMostrarGate(false);
+      }
+    } catch {
+      setError("Error cargando semana");
+    } finally {
+      setNavegando(false);
+    }
+  }
+
+  async function handleCerrarSemana() {
+    if (cerrandoSemana) return;
+    setCerrandoSemana(true);
+    setCierreError(null);
+    try {
+      const res = await fetch(`/api/mes/${mes}/cerrar-semana`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ semana: semanaVisible }),
+      });
+      const data = await res.json() as { ok?: boolean; cierre?: CierreSemana; error?: string };
+      if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+      if (data.cierre) setCierreSemanaState(data.cierre);
+    } catch (e: unknown) {
+      setCierreError(e instanceof Error ? e.message : "Error al cerrar semana");
+    } finally {
+      setCerrandoSemana(false);
     }
   }
 
@@ -815,8 +929,8 @@ export default function VistaSemanal({
     setSheetOpen(false);
     try {
       const [consumosRes, movRes] = await Promise.all([
-        fetch(`/api/mes/${mes}/consumos/${semanaActiva}`),
-        fetch(`/api/mes/${mes}/semana/${semanaActiva}`),
+        fetch(`/api/mes/${mes}/consumos/${semanaVisible}`),
+        fetch(`/api/mes/${mes}/semana/${semanaVisible}`),
       ]);
       if (consumosRes.ok) {
         const data = await consumosRes.json() as { consumos: ConsumoH3[] };
@@ -837,7 +951,7 @@ export default function VistaSemanal({
     if (consumosPendientes.length === 0) return;
     const timerId = setInterval(async () => {
       try {
-        const res = await fetch(`/api/mes/${mes}/consumos/${semanaActiva}`);
+        const res = await fetch(`/api/mes/${mes}/consumos/${semanaVisible}`);
         if (res.ok) {
           const data = await res.json() as { consumos: ConsumoH3[] };
           setConsumos(data.consumos ?? []);
@@ -845,7 +959,7 @@ export default function VistaSemanal({
       } catch {}
     }, 5000);
     return () => clearInterval(timerId);
-  }, [consumosPendientes.length, mes, semanaActiva]);
+  }, [consumosPendientes.length, mes, semanaVisible]);
 
   useEffect(() => {
     if (!showPresupuestadoPopover) return;
@@ -880,11 +994,41 @@ export default function VistaSemanal({
             <Icon name="back" size={17} />
           </button>
           <div style={{ flex: 1 }} />
-          {cierreSemana && (
+          {cierreSemanaState && (
             <span className="fl-badge pos"><Icon name="check" size={12} /> Cerrada</span>
           )}
         </div>
-        <h1 style={{ fontSize: 21 }}>Semana {semanaActiva}</h1>
+        <div style={{ display: "flex", alignItems: "center", gap: 0, marginBottom: 2 }}>
+          <button
+            type="button"
+            disabled={!puedeIzq || navegando}
+            onClick={() => navegar(SEMANAS[idxVisible - 1])}
+            style={{ background: "none", border: "none", padding: "4px 12px 4px 0", cursor: puedeIzq ? "pointer" : "default", opacity: puedeIzq ? 1 : 0.3, color: "var(--on-primary)", fontSize: 22, lineHeight: 1 }}
+            aria-label="Semana anterior"
+          >
+            ←
+          </button>
+          <h1 style={{
+            fontSize: 21, margin: 0, display: "inline-flex", alignItems: "center", gap: 6,
+            opacity: semanaVisible === semanaActivaMes ? 1 : 0.72,
+          }}>
+            {semanaVisible}
+            {semanaVisible === semanaActivaMes ? (
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--on-primary)", display: "inline-block", opacity: 0.7 }} />
+            ) : cierreSemanaState ? (
+              <span style={{ fontSize: 15, lineHeight: 1 }}>🔒</span>
+            ) : null}
+          </h1>
+          <button
+            type="button"
+            disabled={!puedeDer || navegando}
+            onClick={() => navegar(SEMANAS[idxVisible + 1])}
+            style={{ background: "none", border: "none", padding: "4px 0 4px 12px", cursor: puedeDer ? "pointer" : "default", opacity: puedeDer ? 1 : 0.3, color: "var(--on-primary)", fontSize: 22, lineHeight: 1 }}
+            aria-label="Semana siguiente"
+          >
+            →
+          </button>
+        </div>
         <p className="sub">{mesLabel}</p>
         <div style={{ marginTop: 14 }}>
           <div className="fl-row" style={{ marginBottom: 7 }}>
@@ -933,6 +1077,37 @@ export default function VistaSemanal({
             )}
           </div>
         </div>
+        {/* Cierre de semana */}
+        {idxVisible <= SEMANAS.indexOf(semanaActivaMes) && !cierreSemanaState && modoSemana !== "lectura" && (
+          <div style={{ marginTop: 12 }}>
+            <button
+              type="button"
+              disabled={cerrandoSemana}
+              onClick={handleCerrarSemana}
+              style={{
+                width: "100%", background: "rgba(255,255,255,0.15)",
+                border: "1.5px solid rgba(255,255,255,0.45)", color: "var(--on-primary)",
+                borderRadius: 12, padding: "9px 16px", fontSize: 13, fontWeight: 700,
+                cursor: cerrandoSemana ? "default" : "pointer", opacity: cerrandoSemana ? 0.6 : 1,
+              }}
+            >
+              {cerrandoSemana ? "Cerrando…" : `Cerrar semana ${semanaVisible}`}
+            </button>
+            {cierreError && (
+              <p style={{ fontSize: 12, color: "rgba(255,120,120,0.95)", marginTop: 6, fontWeight: 600 }}>
+                {cierreError}
+              </p>
+            )}
+          </div>
+        )}
+        {cierreSemanaState && (
+          <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 6 }}>
+            <Icon name="check" size={13} style={{ color: "var(--on-primary)", opacity: 0.75 }} />
+            <span style={{ fontSize: 12, color: "var(--on-primary)", opacity: 0.75, fontWeight: 600 }}>
+              Semana {semanaVisible} cerrada · {cierreSemanaState.fechaCierre}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Body */}
@@ -968,7 +1143,7 @@ export default function VistaSemanal({
             )}
             <div style={{ borderTop: "1px solid var(--line)", paddingTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 12, color: "var(--ink-soft)" }}>Aporte planeado {semanaActiva}</span>
+                <span style={{ fontSize: 12, color: "var(--ink-soft)" }}>Aporte planeado {semanaVisible}</span>
                 <span style={{ fontSize: 13, fontVariantNumeric: "tabular-nums", color: "var(--ink)" }}>{copCompact(aportePlaneado)}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -1140,7 +1315,7 @@ export default function VistaSemanal({
                   </div>
 
                   {/* Acciones para pendientes */}
-                  {tab === "pendientes" && mov.estado === "pendiente" && !panelActivo && (
+                  {tab === "pendientes" && mov.estado === "pendiente" && !panelActivo && modoSemana !== "lectura" && (
                     <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
                       <button
                         className="fl-btn pos sm"
@@ -1162,7 +1337,7 @@ export default function VistaSemanal({
                   )}
 
                   {/* Acción corregir para ejecutados */}
-                  {tab === "ejecutados" && (
+                  {tab === "ejecutados" && modoSemana !== "lectura" && (
                     <div style={{ display: "flex", marginTop: 10 }}>
                       <button
                         type="button"
@@ -1311,7 +1486,14 @@ export default function VistaSemanal({
                       <Icon name={c.clasificado ? "wallet" : "alert"} size={17} />
                     </span>
                     <div className="dk-rec-tx">
-                      <p className="t">{c.descripcion || "Sin descripción"}</p>
+                      <p className="t">
+                        {c.descripcion || "Sin descripción"}
+                        {c.imprevisto && (
+                          <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 8, background: "var(--warn-soft, #fff3e0)", color: "var(--warn, #b05e00)", verticalAlign: "middle" }}>
+                            Imprevisto
+                          </span>
+                        )}
+                      </p>
                       <p className="d">
                         {c.clasificado ? c.bolsilloId : "Clasificando…"} · {c.semana} · {fuente}
                       </p>
@@ -1322,13 +1504,15 @@ export default function VistaSemanal({
                       </span>
                     </span>
                     <span className="dk-rec-amt">{copCompact(c.monto)}</span>
-                    <button
-                      type="button"
-                      className="dk-rec-fix"
-                      onClick={() => setCorrigiendoConsumo(c)}
-                    >
-                      <Icon name="pencil" size={13} /> Corregir
-                    </button>
+                    {modoSemana !== "lectura" && (
+                      <button
+                        type="button"
+                        className="dk-rec-fix"
+                        onClick={() => setCorrigiendoConsumo(c)}
+                      >
+                        <Icon name="pencil" size={13} /> Corregir
+                      </button>
+                    )}
                   </div>
                 );
               })}
@@ -1343,6 +1527,7 @@ export default function VistaSemanal({
         onFabClick={() => setSheetOpen(true)}
         semanaHref={`/mes/${mes}/semana`}
         active="semana"
+        hideFab={modoSemana === "lectura"}
       />
 
       {/* Registro sheet */}
@@ -1358,6 +1543,53 @@ export default function VistaSemanal({
             </div>
             <div className="sheet-body">
               <RegistroRapido onClose={handleSheetSuccess} onSuccess={handleSheetSuccess} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Gate modal — semana no activa */}
+      {mostrarGate && (
+        <div style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
+          display: "flex", alignItems: "flex-end", justifyContent: "center",
+          zIndex: 600, padding: "0 16px 32px",
+        }}>
+          <div style={{
+            background: "var(--surface)", borderRadius: 20,
+            padding: "24px 20px 20px", width: "100%", maxWidth: 480,
+            boxShadow: "0 8px 40px rgba(0,0,0,0.2)",
+          }}>
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: "var(--ink-soft)", marginBottom: 4 }}>
+              Semana {semanaVisible}
+            </p>
+            <h3 style={{ fontSize: 18, fontWeight: 800, margin: "0 0 6px", color: "var(--ink)" }}>
+              {cierreSemanaState
+                ? "Cerrada"
+                : SEMANAS.indexOf(semanaVisible) > SEMANAS.indexOf(semanaActivaMes)
+                  ? "Aún no iniciada"
+                  : "Semana pasada"}
+            </h3>
+            <p style={{ fontSize: 13, color: "var(--ink-soft)", marginBottom: 20 }}>¿Qué querés hacer?</p>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                type="button"
+                className="fl-btn ghost sm"
+                style={{ flex: 1 }}
+                onClick={() => { setModoSemana("lectura"); setMostrarGate(false); }}
+              >
+                Solo leer
+              </button>
+              <button
+                type="button"
+                className="fl-btn primary sm"
+                style={{ flex: 1 }}
+                onClick={() => { setModoSemana("edicion"); setMostrarGate(false); }}
+              >
+                {SEMANAS.indexOf(semanaVisible) > SEMANAS.indexOf(semanaActivaMes)
+                  ? "Planear semana"
+                  : "Editar semana"}
+              </button>
             </div>
           </div>
         </div>

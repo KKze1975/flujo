@@ -5,7 +5,7 @@ import React from "react";
 import { useRouter } from "next/navigation";
 import type {
   Movimiento, Concepto, SaldoCuenta, Semana, Categoria,
-  Actor, IngresoCamilo, IngresoAngie, CuentaDestino, CuentaH4C,
+  Actor, IngresoCamilo, IngresoAngie, CuentaDestino, CuentaH4C, ConsumoH3,
 } from "@/lib/data/types";
 import Icon from "@/components/ui/Icon";
 import ConceptoBoard from "@/components/m1/ConceptoBoard";
@@ -312,6 +312,7 @@ export default function MesM1Desktop({
   gastoH3PorCuenta = {},
   gastoH3PorSemana = { S1: 0, S2: 0, S3: 0, S4: 0 },
   gastoH3AngiePorSemana = { S1: 0, S2: 0, S3: 0, S4: 0 },
+  consumosH3 = [],
   onSwitchToMobile,
 }: {
   movimientos: Movimiento[];
@@ -326,6 +327,7 @@ export default function MesM1Desktop({
   gastoH3PorCuenta?: Record<string, number>;
   gastoH3PorSemana?: Record<string, number>;
   gastoH3AngiePorSemana?: Record<string, number>;
+  consumosH3?: ConsumoH3[];
   onSwitchToMobile: () => void;
 }) {
   const router = useRouter();
@@ -1051,6 +1053,31 @@ export default function MesM1Desktop({
                     }
                   }}
                 />
+                {consumosH3.filter(c => wk === "todas" || c.semana === wk).length > 0 && (
+                  <div style={{ padding: "12px 16px 0", borderTop: "1px solid var(--line)", marginTop: 12 }}>
+                    <p style={{ fontSize: 11, fontWeight: 700, color: "var(--ink-soft)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>
+                      Registros rápidos
+                    </p>
+                    {consumosH3
+                      .filter(c => wk === "todas" || c.semana === wk)
+                      .map(c => (
+                        <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", borderBottom: "1px solid var(--line)", fontSize: 13 }}>
+                          <span style={{ flex: 1, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {c.descripcion || "Sin descripción"}
+                          </span>
+                          {c.imprevisto && (
+                            <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 8, background: "var(--warn-soft, #fff3e0)", color: "var(--warn, #b05e00)", whiteSpace: "nowrap", flexShrink: 0 }}>
+                              Imprevisto
+                            </span>
+                          )}
+                          <span style={{ fontVariantNumeric: "tabular-nums", color: "var(--ink-soft)", fontSize: 12, flexShrink: 0 }}>
+                            {COP(c.monto)}
+                          </span>
+                        </div>
+                      ))
+                    }
+                  </div>
+                )}
               </div>
             )}
 

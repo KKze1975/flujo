@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { Movimiento, Concepto, IngresoCamilo, IngresoAngie, SaldoCuenta, CierreSemana, Semana } from "@/lib/data/types";
+import type { Movimiento, Concepto, IngresoCamilo, IngresoAngie, SaldoCuenta, CierreSemana, Semana, ConsumoH3 } from "@/lib/data/types";
 import MesM1Mobile from "@/components/MesM1Mobile";
 import MesM1Desktop from "@/components/MesM1Desktop";
 
@@ -20,6 +20,7 @@ export default function MesM1ClientWrapper({
   gastoH3PorCuenta = { nu_camilo: 0, nu_angie: 0, arq: 0, en_mano: 0 },
   gastoH3PorSemana = { S1: 0, S2: 0, S3: 0, S4: 0 },
   gastoH3AngiePorSemana = { S1: 0, S2: 0, S3: 0, S4: 0 },
+  consumosH3 = [],
 }: {
   mes: string;
   movimientos: Movimiento[];
@@ -33,6 +34,7 @@ export default function MesM1ClientWrapper({
   gastoH3PorCuenta?: Record<string, number>;
   gastoH3PorSemana?: Record<string, number>;
   gastoH3AngiePorSemana?: Record<string, number>;
+  consumosH3?: ConsumoH3[];
 }) {
   // Default to mobile; corrected by effect before first paint on client
   const [viewMode, setViewMode] = useState<ViewMode>("mobile");
@@ -59,6 +61,7 @@ export default function MesM1ClientWrapper({
         gastoH3PorCuenta={gastoH3PorCuenta}
         gastoH3PorSemana={gastoH3PorSemana}
         gastoH3AngiePorSemana={gastoH3AngiePorSemana}
+        consumosH3={consumosH3}
         onSwitchToMobile={() => setViewMode("mobile")}
       />
     );

@@ -53,7 +53,7 @@ export async function POST(
 
   try {
     await provider.updateConsumoH3(id, {
-      ...(bolsilloId ? { bolsilloId } : {}),
+      ...(bolsilloId ? { bolsilloId } : { imprevisto: true }),
       clasificado: true,
     });
   } catch (e: unknown) {
