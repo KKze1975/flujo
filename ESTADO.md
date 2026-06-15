@@ -2684,7 +2684,7 @@ Si pasa QA, merge PR a main y continuar con BL-02.
 
 ---
 
-## Sesión 15 junio 2026 — DISEÑO
+## Sesión 15 junio 2026 — DISEÑO · Cierre de semana inline
 
 ### Tipo de sesión
 DISEÑO — Cierre de semana integrado en VistaSemanal mobile
