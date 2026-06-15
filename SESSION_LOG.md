@@ -1,36 +1,68 @@
-# SESSION_LOG — BL-10 (navegación semanas) · 15 junio 2026
+# SESSION_LOG — BL-11 · 15 junio 2026
+
+## Hallazgos pre-construcción
+
+- `getRecargasAngie` NO existe en lib/data/sheets.ts ni en IDataProvider —
+  graphify tenía una referencia fantasma. RecargaAngie type existe en types.ts
+  pero sin implementación en la capa de datos.
+- H4D (recargas reales Angie) no es implementable en BL-11 sin trabajo mayor.
+  Decisión: usar H4B (getIngresosAngie) para remanenteAngie y aportePlaneado.
+  Fuente: mismo cálculo que ModalCerrarSemana usaba antes.
+  Deuda técnica: la diferencia H4B vs H4D puede generar discrepancias cuando
+  el aporte real difiere del planeado.
+
+## Auditoría cerrar-semana por campo H5A
+
+| Campo | Cat | Acción |
+|-------|-----|--------|
+| totalPresupuestado | A | no tocar |
+| totalEjecutado | C | agregar consumos H3B |
+| desviacionTotal | A | no tocar |
+| remanenteAngie | B | mover al servidor: H4B_semana - H3B_fuenteAngie_semana |
+| ubicacionRemanenteAngie | B | hardcodear "nu_angie" |
+| conceptosPospuestos | A | no tocar |
+| conceptosNoAplica | A | no tocar |
+| gastosSinClasificar | A | no tocar |
+| cerradoPor | B | hardcodear "camilo" |
+| fechaCierre | A | no tocar |
+| destinoRemanente | C | cambiar null → "carry_over" |
+| notas | B | null por defecto |
 
 ## Piezas completadas
 
-- P1: `semanaActivaMes` calculado server-side en endpoint `/api/mes/[mes]/semana/[semana]` — commit `5133905`
-- P2: Navegación ← Sn → en header `VistaSemanal.tsx` con estados, fetch al navegar y marca visual — commit `f0290ba`
+- P1: remanenteAngie + aportePlaneado en response de GET /semana/[semana] — commit [pendiente]
+- P2: cerrar-semana sin inputs manuales, cálculos en servidor — commit [pendiente]
+- P3: bloque cierre inline en VistaSemanal + page.tsx — commit [pendiente]
 
 ## Decisiones tomadas
 
-- `semanaActivaMes` se calcula en el servidor (I-01) con la misma lógica que `semanaActual()` en `page.tsx`.
-  El cliente recibe el valor en el response del GET y lo actualiza en estado.
-- `cierreSemana` convertido de prop a estado (`cierreSemanaState`) para reflejar el cierre
-  de la semana visualizada al navegar entre semanas.
-- `navegar()` hace fetch paralelo a `/semana/[s]` y `/consumos/[s]`. El endpoint de semana no
-  incluía consumos H3, por lo que se mantienen dos fetches separados — mismo patrón que `handleSheetSuccess`.
-- Punto visual de semana activa: dot inline de 6px junto al label. Sin texto adicional.
-- Flechas deshabilitadas via atributo `disabled` + `opacity: 0.3`.
+- H4B como fuente de remanenteAngie (no H4D): H4D no implementado en data layer.
+  Documentado como deuda técnica.
+- ubicacionRemanenteAngie hardcodeada como "nu_angie" — ubicación más probable
+  del saldo de Angie. Sin selección del usuario.
+- destinoRemanente cambia de null a "carry_over" — diseño BL-11.
+- totalEjecutado en cerrar-semana incluye H3B a partir de este ticket.
+- Bloque cierre visible para semanaVisible <= semanaActivaMes (guarda seguridad).
 
 ## Deuda técnica encontrada
 
-- Ninguna.
+- H4D recargas Angie: tipo existe (RecargaAngie), sin implementación en
+  IDataProvider ni SheetsDataProvider. remanenteAngie usa H4B como proxy.
+  Cuando H4D se implemente, remanenteAngie debería actualizarse.
+- I-05 parece desactualizado: menciona H4D como "tab legacy" pero el diseño
+  actual usa H4D (rango dentro del tab H4) como fuente de verdad de recargas.
 
 ## DoD verificado
 
-- [x] 1. Header muestra ← Sn → en lugar de label estático.
-- [x] 2. Tap ← carga semana anterior.
-- [x] 3. Tap → carga semana siguiente.
-- [x] 4. Flecha ← deshabilitada en S1.
-- [x] 5. Flecha → deshabilitada en semana activa del mes.
-- [x] 6. Semana activa tiene marca visual (dot).
-- [x] 7. Pendientes, ejecutados y bolsillos corresponden a semana visualizada.
-- [x] 8. `tsc --noEmit` limpio en P1 y P2.
-- [ ] 9. Verificado en preview URL — pendiente QA en Vercel tras merge del PR.
+- [ ] 1. Bloque cierre debajo del selector de semanas.
+- [ ] 2. Línea informativa con remanenteAngie y aportePlaneado correctos.
+- [ ] 3. Tap en botón ejecuta POST cerrar-semana sin modal.
+- [ ] 4. Post-cierre: botón reemplazado por "Semana cerrada ✓".
+- [ ] 5. Si semana ya tiene cierre: muestra "Semana cerrada ✓" directamente.
+- [ ] 6. Campos H5A correctos en /admin/trazabilidad.
+- [ ] 7. remanenteAngie y aportePlaneado calculados en servidor.
+- [ ] 8. tsc limpio en cada pieza.
+- [ ] 9. Verificado en preview URL.
 
 ## Criterios de parada activados
 

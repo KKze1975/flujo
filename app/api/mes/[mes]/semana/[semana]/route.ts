@@ -29,9 +29,11 @@ export async function GET(
   const provider = getProvider();
 
   try {
-    const [movimientos, cierres] = await Promise.all([
+    const [movimientos, cierres, ingresosAngie, consumos] = await Promise.all([
       provider.getMovimientosByMesYSemana(mes, semana as Semana),
       provider.getCierresSemana(mes).catch(() => []),
+      provider.getIngresosAngie(mes).catch(() => []),
+      provider.getConsumosByMesYSemana(mes, semana as Semana).catch(() => []),
     ]);
 
     const cierreSemana = cierres.find((c) => c.semana === semana) ?? null;
@@ -46,12 +48,18 @@ export async function GET(
       ? Math.round((totalEjecutado / totalPresupuestado) * 100)
       : 0;
 
+    const aportePlaneado = ingresosAngie.find((a) => a.semana === semana)?.monto ?? 0;
+    const gastosAngie = consumos.filter((c) => c.fuenteAngie).reduce((s, c) => s + c.monto, 0);
+    const remanenteAngie = aportePlaneado - gastosAngie;
+
     return Response.json({
       semana,
       semanaActivaMes: semanaActivaMes(),
       movimientos,
       metricas: { totalPresupuestado, totalEjecutado, pct },
       cierreSemana,
+      remanenteAngie,
+      aportePlaneado,
     });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Error interno";
