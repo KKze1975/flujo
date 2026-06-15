@@ -83,6 +83,7 @@ Los invariantes del archivo son la fuente de verdad — no esta sección.
 4. **Scope:** No tocar archivos fuera del scope del ticket. Si encuentras algo que debería corregirse, documentarlo en SESSION_LOG.md como deuda técnica — no corregirlo inline.
 5. **PR:** Crear el PR al finalizar pero **no mergearlo**. El merge es manual y requiere QA de Angie primero.
 6. **Sheet IDs:** Usar siempre variables de entorno. Nunca hardcodear IDs en código fuente.
+7. **ESTADO.md:** No modificar bajo ninguna circunstancia. ESTADO.md es territorio exclusivo de Camilo — se actualiza desde Claude.ai, no desde Claude Code. Si necesitas documentar algo, usa SESSION_LOG.md.
 
 ---
 
