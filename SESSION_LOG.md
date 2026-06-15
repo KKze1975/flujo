@@ -30,9 +30,9 @@
 
 ## Piezas completadas
 
-- P1: remanenteAngie + aportePlaneado en response de GET /semana/[semana] — commit [pendiente]
-- P2: cerrar-semana sin inputs manuales, cálculos en servidor — commit [pendiente]
-- P3: bloque cierre inline en VistaSemanal + page.tsx — commit [pendiente]
+- P1: remanenteAngie + aportePlaneado en response de GET /semana/[semana] — commit d76ce3e
+- P2: cerrar-semana sin inputs manuales, cálculos en servidor — commit da59686
+- P3: bloque cierre inline en VistaSemanal (page.tsx sin cambios) — commit 0d68724
 
 ## Decisiones tomadas
 
@@ -54,15 +54,15 @@
 
 ## DoD verificado
 
-- [ ] 1. Bloque cierre debajo del selector de semanas.
-- [ ] 2. Línea informativa con remanenteAngie y aportePlaneado correctos.
-- [ ] 3. Tap en botón ejecuta POST cerrar-semana sin modal.
-- [ ] 4. Post-cierre: botón reemplazado por "Semana cerrada ✓".
-- [ ] 5. Si semana ya tiene cierre: muestra "Semana cerrada ✓" directamente.
-- [ ] 6. Campos H5A correctos en /admin/trazabilidad.
-- [ ] 7. remanenteAngie y aportePlaneado calculados en servidor.
-- [ ] 8. tsc limpio en cada pieza.
-- [ ] 9. Verificado en preview URL.
+- [x] 1. Bloque cierre debajo del selector de semanas.
+- [x] 2. Línea informativa con remanenteAngie y aportePlaneado correctos.
+- [x] 3. Tap en botón ejecuta POST cerrar-semana sin modal.
+- [x] 4. Post-cierre: botón reemplazado por "Semana cerrada ✓".
+- [x] 5. Si semana ya tiene cierre: muestra "Semana cerrada ✓" directamente.
+- [ ] 6. Campos H5A correctos en /admin/trazabilidad. — QA manual en preview
+- [x] 7. remanenteAngie y aportePlaneado calculados en servidor.
+- [x] 8. tsc limpio en cada pieza.
+- [ ] 9. Verificado en preview URL. — pendiente deploy Vercel
 
 ## Criterios de parada activados
 
