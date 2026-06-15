@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: 6 junio 2026 | Fase: Go-live — M1 Ejecución aprobado — QA matemáticas Por Semana cerrado
+Actualizado: 15 junio 2026 | Fase: Go-live — Semana 1 producción — BL-10 construido pendiente QA Angie
 
 ---
 
@@ -2352,6 +2352,9 @@ Nunca asumir contexto de otros proyectos.
 - Claude Code — ejecutor de tareas en AWS Workspace Windows
 - graphify — navegación de código (graphify query/path/explain antes de leer archivos fuente)
 
+### Claude Code interaction
+- Todo prompt a Claude Code que incluya git termina con: "Crea el PR pero no lo mergees. El merge es manual y requiere QA de Angie primero."
+
 ### Stack técnico
 - Framework: Next.js 16.2.6 — App Router + TypeScript + Tailwind CSS
 - Runtime dev: Turbopack (activo por default)
@@ -2546,3 +2549,116 @@ BL-02 → BL-06 → QA-7jun-01 → BL-04/BL-05
 - Angie accede a una URL de producción distinta a flujo-dun.vercel.app — no identificada aún.
 - Consecuencia: deploy de BL-08/BL-09 llegó a URL que ella no usa.
 - Pendiente próxima sesión: identificar URL exacta de Angie, verificar qué deployment ve, corregir pipeline para que QA de Angie sea precondición explícita del merge a main.
+
+## Sesión 15 junio 2026 — DISEÑO + Etnografía semana 1 producción
+
+### Tipo de sesión
+DISEÑO — Etnografía semana 1 + definición BL-10 + saneamiento de proceso
+
+---
+
+### 1. Deuda de proceso resuelta — pipeline dev→prod
+
+- **URL de Angie identificada:** `https://flujo-ldpq0a0ju-camilo-s-projects10.vercel.app/`
+- **Causa del merge accidental (sesión 14 jun):** prompt a Claude Code incluía PR + merge en modo auto
+- **Decisión permanente:** todo prompt a Claude Code que incluya git termina con:
+  *"Crea el PR pero no lo mergees. El merge es manual y requiere QA de Angie primero."*
+  Esta instrucción se agrega a ESTADO.md sección Claude Code interaction y vive en PROMPT_AGENTE.md
+
+---
+
+### 2. PROMPT_AGENTE.md — creado y commiteado
+
+- Archivo creado en raíz del repo — commit 50be40a en `dev`
+- Template de sesiones autónomas para Claude Code
+- Estructura: contexto fijo del proyecto + sección 3 como único placeholder por ticket + restricciones fijas + criterios de parada + cierre esperado con SESSION_LOG.md
+- **5 criterios de parada:**
+  1. `tsc --noEmit` con errores — no usar `--no-verify`
+  2. Hook detecta Sheet ID hardcodeado — no usar `--no-verify`
+  3. DoD no verificable en preview URL
+  4. Cambio fuera del scope — documentar como deuda técnica, no ejecutar
+  5. Conflicto de merge — no resolver solo
+- SESSION_LOG.md: bitácora efímera que escribe el agente, se absorbe en ESTADO.md al cierre
+
+---
+
+### 3. Etnografía semana 1 producción — hallazgos
+
+**Señal A — Satisfacción de completar (motivación central de Angie)**
+Ejecutar y cerrar pendientes genera satisfacción emocional. Es el motor principal de uso.
+Principio adoptado: cualquier feature nueva debe evaluar si refuerza o interrumpe ese loop.
+
+**Señal B — Imprevistos no identificables**
+Gastos sin concepto en H1 se registran por FAB pero quedan indistinguibles del gasto planeado.
+Problema doble: (1) no hay visibilidad de impacto en el momento, (2) no hay trazabilidad para análisis posterior.
+Imprevisto = gasto sin concepto en H1. Casos de timing (pospuesto entre semanas) son problema distinto — ticket separado.
+
+---
+
+### 4. Hallazgos de diseño — backlog futuro
+
+- **Cierre de semana vive en M4 VistaSemanal** — flujo natural Camilo + Angie juntos. No en M1.
+- **Las semanas no cierran puntualmente** — necesidad de acceder a semanas anteriores no cerradas. Solución: indicador de semana sin cerrar que lleva directamente al cierre pendiente (no selector libre de semanas).
+- **Flujo de cierre tiene tres momentos secuenciales:**
+  1. Revisar ejecutados y pendientes de la semana que cierra
+  2. Identificar desviaciones e imprevistos — decidir cobertura
+  3. Ajustar semana siguiente (posponer conceptos, reducir montos)
+- **Ver dos semanas simultáneamente** es necesario para el flujo de cierre completo — hoy M4 muestra una sola.
+- **Hipótesis anotada (no abierta):** M1 desktop podría volverse redundante si M4 cubre cierre y planificación. Pendiente sesión de diseño separada.
+
+---
+
+### 5. BL-10 — Marcar imprevistos en H3B
+
+**Diseño aprobado y construido en esta sesión.**
+
+**Decisiones de diseño:**
+- Campo `imprevisto` (boolean, default `false`) en H3B — solo registros nuevos desde S3 junio 2026
+- Marcado automático: endpoint clasificación background marca `true` cuando no encuentra concepto en H1
+- Marcado manual: toggle desde historial en M4 VistaSemanal
+- Badge "Imprevisto" visible en M4 VistaSemanal y M1 Ejecución
+- Sin escritura retroactiva — registros S1/S2 sin el campo se leen como `false`
+
+**Commits:**
+
+| Pieza | Commit | Descripción |
+|---|---|---|
+| P1 | 2b2baf3 | Campo imprevisto en tipos, sheets, sin-concepto |
+| P2 | b78bf75 | Marcado automático en clasificar endpoint |
+| P3 | 082686b | Endpoint PATCH + toggle en ModalCorreccion M4 |
+| P4 | e673bbb | Badges en M4 lista y sección en M1 Desktop |
+
+**PR:** https://github.com/KKze1975/flujo/pull/5 — sin mergear, pendiente QA de Angie
+
+**Deuda técnica documentada por Code (SESSION_LOG):**
+- DT-BL10-01: H3B_HEADERS duplicado en `sheets.ts` y `sin-concepto/route.ts` — riesgo de desincronización de esquema
+- DT-BL10-02: M1 Mobile no recibe `consumosH3` — badge "Imprevisto" no visible en vista móvil de M1
+
+---
+
+### 6. Ticket B — Reasignación para cubrir imprevistos (pendiente diseño)
+
+- Depende de BL-10 — necesita visibilidad de imprevistos primero
+- Caso de uso concreto: cubrir desviación reduciendo presupuesto de semana siguiente o posponiendo conceptos
+- Conecta con R8/R9 del modelo de requisitos (reasignación nativa con trazabilidad)
+
+---
+
+### Cola actualizada
+
+`BL-10 (PR pendiente QA Angie) → BL-02 → BL-06 → QA-7jun-01 → BL-04/BL-05 → Ticket B`
+
+---
+
+### Estado al cierre
+
+- PROMPT_AGENTE.md: commiteado en `dev` (50be40a) — operacional
+- BL-10: construido, PR abierto, pendiente QA de Angie en URL de producción
+- URL de Angie documentada y pipeline corregido
+- Backlog: reordenado con BL-10 al frente
+- Deuda técnica BL10-01 y BL10-02: documentadas, no bloqueantes
+
+### Próxima sesión
+
+QA — BL-10 con Angie en URL de producción.
+Verificar badge "Imprevisto" en M4 y M1. Si pasa QA, merge a main y continuar con BL-02.
