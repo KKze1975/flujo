@@ -2550,10 +2550,10 @@ BL-02 → BL-06 → QA-7jun-01 → BL-04/BL-05
 - Consecuencia: deploy de BL-08/BL-09 llegó a URL que ella no usa.
 - Pendiente próxima sesión: identificar URL exacta de Angie, verificar qué deployment ve, corregir pipeline para que QA de Angie sea precondición explícita del merge a main.
 
-## Sesión 15 junio 2026 — DISEÑO + Etnografía semana 1 producción
+## Sesión 15 junio 2026 — DISEÑO + Etnografía semana 1 producción + QA BL-10
 
 ### Tipo de sesión
-DISEÑO — Etnografía semana 1 + definición BL-10 + saneamiento de proceso
+DISEÑO + QA — Etnografía semana 1 + definición BL-10 + construcción + QA en preview dev
 
 ---
 
@@ -2563,7 +2563,7 @@ DISEÑO — Etnografía semana 1 + definición BL-10 + saneamiento de proceso
 - **Causa del merge accidental (sesión 14 jun):** prompt a Claude Code incluía PR + merge en modo auto
 - **Decisión permanente:** todo prompt a Claude Code que incluya git termina con:
   *"Crea el PR pero no lo mergees. El merge es manual y requiere QA de Angie primero."*
-  Esta instrucción se agrega a ESTADO.md sección Claude Code interaction y vive en PROMPT_AGENTE.md
+  Esta instrucción vive en PROMPT_AGENTE.md y se agrega a sección Claude Code interaction de ESTADO.md
 
 ---
 
@@ -2579,6 +2579,7 @@ DISEÑO — Etnografía semana 1 + definición BL-10 + saneamiento de proceso
   4. Cambio fuera del scope — documentar como deuda técnica, no ejecutar
   5. Conflicto de merge — no resolver solo
 - SESSION_LOG.md: bitácora efímera que escribe el agente, se absorbe en ESTADO.md al cierre
+- Aplica para sesiones away y para sesiones normales — la restricción de no merge es universal
 
 ---
 
@@ -2610,29 +2611,47 @@ Imprevisto = gasto sin concepto en H1. Casos de timing (pospuesto entre semanas)
 
 ### 5. BL-10 — Marcar imprevistos en H3B
 
-**Diseño aprobado y construido en esta sesión.**
+**Diseño aprobado, construido y QA en preview dev en esta sesión.**
 
 **Decisiones de diseño:**
 - Campo `imprevisto` (boolean, default `false`) en H3B — solo registros nuevos desde S3 junio 2026
-- Marcado automático: endpoint clasificación background marca `true` cuando no encuentra concepto en H1
-- Marcado manual: toggle desde historial en M4 VistaSemanal
-- Badge "Imprevisto" visible en M4 VistaSemanal y M1 Ejecución
+- Marcado **exclusivamente manual** — Claude siempre encuentra un bolsillo "next best thing", el marcado automático no tiene sentido en el modelo asíncrono de T48
+- Toggle manual desde modal de corrección en M4 VistaSemanal
+- Badge eliminado del DoD por decisión de diseño — sin utilidad práctica en el flujo real (el marcado ocurre al cierre, no durante el registro)
 - Sin escritura retroactiva — registros S1/S2 sin el campo se leen como `false`
 
 **Commits:**
 
-| Pieza | Commit | Descripción |
+| Commit | Descripción |
+|---|---|
+| 2b2baf3 | BL-10-P1: Campo imprevisto en tipos, sheets, sin-concepto |
+| b78bf75 | BL-10-P2: Marcado automático en clasificar endpoint |
+| 082686b | BL-10-P3: Endpoint PATCH + toggle en ModalCorreccion M4 |
+| e673bbb | BL-10-P4: Badges en M4 lista y sección en M1 Desktop |
+| 91b9dc3 | fix: ensureH3 verifica longitud de headers, no solo A1 |
+| 2525e3b | fix: updateConsumoH3 repara Q1 si falta, corrige READ a H3!A:Q |
+
+**PR:** https://github.com/KKze1975/flujo/pull/5 — sin mergear, pendiente QA de Angie en preview URL de dev
+
+**Bugs encontrados y resueltos en QA:**
+
+| Bug | Causa | Fix | Commit |
+|---|---|---|---|
+| Q1 vacío — campo `imprevisto` no aparecía en Sheet | `ensureH3` salía si A1 = "id_consumo" sin verificar columnas nuevas | Compara longitud de headers antes de salir | 91b9dc3 |
+| PATCH imprevisto fallaba silenciosamente | `updateConsumoH3` leía solo A:P, Q1 nunca existía | READ corregido a H3!A:Q, repara headers si faltan antes del update | 2525e3b |
+
+**DoD final verificado en Sheet de dev:**
+
+| Punto | Estado | Evidencia |
 |---|---|---|
-| P1 | 2b2baf3 | Campo imprevisto en tipos, sheets, sin-concepto |
-| P2 | b78bf75 | Marcado automático en clasificar endpoint |
-| P3 | 082686b | Endpoint PATCH + toggle en ModalCorreccion M4 |
-| P4 | e673bbb | Badges en M4 lista y sección en M1 Desktop |
+| Campo `imprevisto` en H3B registros nuevos | ✅ | Sheet dev — columna Q visible |
+| Sin escritura retroactiva en S1/S2 | ✅ | Registros anteriores sin columna |
+| Toggle manual desde M4 | ✅ | Sheet dev — `imprevisto = TRUE` en registros marcados |
+| Badge en lista | ~~eliminado~~ | Decisión de diseño — sin utilidad práctica |
+| `tsc --noEmit` limpio | ✅ | Confirmado por Code |
 
-**PR:** https://github.com/KKze1975/flujo/pull/5 — sin mergear, pendiente QA de Angie
-
-**Deuda técnica documentada por Code (SESSION_LOG):**
-- DT-BL10-01: H3B_HEADERS duplicado en `sheets.ts` y `sin-concepto/route.ts` — riesgo de desincronización de esquema
-- DT-BL10-02: M1 Mobile no recibe `consumosH3` — badge "Imprevisto" no visible en vista móvil de M1
+**Invariante candidato (patrón ensureHeaders):**
+`ensureHeaders` debe verificar completitud del esquema (longitud de columnas), no solo existencia del primer header. Verificar solo A1 es condición necesaria pero no suficiente — ya ocurrió en T39/T40 con H4D. Candidato a I-13.
 
 ---
 
@@ -2646,19 +2665,19 @@ Imprevisto = gasto sin concepto en H1. Casos de timing (pospuesto entre semanas)
 
 ### Cola actualizada
 
-`BL-10 (PR pendiente QA Angie) → BL-02 → BL-06 → QA-7jun-01 → BL-04/BL-05 → Ticket B`
+`BL-10 (pendiente QA Angie → merge) → BL-02 → BL-06 → QA-7jun-01 → BL-04/BL-05 → Ticket B`
 
 ---
 
 ### Estado al cierre
 
 - PROMPT_AGENTE.md: commiteado en `dev` (50be40a) — operacional
-- BL-10: construido, PR abierto, pendiente QA de Angie en URL de producción
+- BL-10: construido, QA en preview dev pasado por Camilo, PR abierto — pendiente QA de Angie antes de merge a main
 - URL de Angie documentada y pipeline corregido
-- Backlog: reordenado con BL-10 al frente
-- Deuda técnica BL10-01 y BL10-02: documentadas, no bloqueantes
+- Deuda técnica BL10-01 (H3B_HEADERS duplicado) y BL10-02 (M1 Mobile sin consumosH3): documentadas, no bloqueantes
+- Invariante candidato I-13: `ensureHeaders` debe verificar completitud, no solo existencia
 
 ### Próxima sesión
 
-QA — BL-10 con Angie en URL de producción.
-Verificar badge "Imprevisto" en M4 y M1. Si pasa QA, merge a main y continuar con BL-02.
+QA — BL-10 con Angie en preview URL de dev.
+Si pasa QA, merge PR a main y continuar con BL-02.
