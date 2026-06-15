@@ -5,6 +5,7 @@ const H3B_HEADERS = [
   "id_consumo", "id_bolsillo", "mes", "semana", "descripcion",
   "monto", "ejecutor", "fuente_en_mano", "fuente_nequi",
   "fuente_camilo", "fuente_angie", "fecha", "comprobante_url", "clasificado",
+  "sobre_techo", "id_recarga_origen", "imprevisto",
 ];
 
 function getSheets() {
@@ -103,12 +104,13 @@ export async function POST(req: NextRequest) {
     clasificado,
     "",
     "",
+    "FALSE",
   ];
 
   try {
     await sheets.spreadsheets.values.append({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: "H3!A:P",
+      range: "H3!A:Q",
       valueInputOption: "RAW",
       requestBody: { values: [row] },
     });
