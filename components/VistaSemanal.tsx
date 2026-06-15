@@ -995,11 +995,16 @@ export default function VistaSemanal({
           >
             ←
           </button>
-          <h1 style={{ fontSize: 21, margin: 0, display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <h1 style={{
+            fontSize: 21, margin: 0, display: "inline-flex", alignItems: "center", gap: 6,
+            opacity: semanaVisible === semanaActivaMes ? 1 : 0.72,
+          }}>
             {semanaVisible}
-            {semanaVisible === semanaActivaMes && (
+            {semanaVisible === semanaActivaMes ? (
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--on-primary)", display: "inline-block", opacity: 0.7 }} />
-            )}
+            ) : cierreSemanaState ? (
+              <span style={{ fontSize: 15, lineHeight: 1 }}>🔒</span>
+            ) : null}
           </h1>
           <button
             type="button"
