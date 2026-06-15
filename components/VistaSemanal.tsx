@@ -722,6 +722,8 @@ function formatMes(mes: string): string {
   return `${MESES_FULL[Number(m)]} ${year}`;
 }
 
+const SEMANAS: Semana[] = ["S1", "S2", "S3", "S4"];
+
 export default function VistaSemanal({
   mes,
   mesLabel,
@@ -744,6 +746,10 @@ export default function VistaSemanal({
   disponibleNuAngie?: number;
 }) {
   const router = useRouter();
+  const [semanaVisible, setSemanaVisible] = useState<Semana>(semanaActiva);
+  const [semanaActivaMes, setSemanaActivaMes] = useState<Semana>(semanaActiva);
+  const [cierreSemanaState, setCierreSemanaState] = useState<CierreSemana | null>(cierreSemana);
+  const [navegando, setNavegando] = useState(false);
   const [movimientos, setMovimientos] = useState<Movimiento[]>(movimientosInit);
   const [consumos, setConsumos] = useState<ConsumoH3[]>(consumosInit);
   const [panel, setPanel] = useState<ActivePanel | null>(null);
@@ -760,6 +766,10 @@ export default function VistaSemanal({
   const [bolsilloAnchor, setBolsilloAnchor] = useState<DOMRect | null>(null);
   const presupuestadoPopoverRef = useRef<HTMLDivElement>(null);
   const bolsilloRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  const idxVisible = SEMANAS.indexOf(semanaVisible);
+  const puedeIzq = idxVisible > 0;
+  const puedeDer = semanaVisible !== semanaActivaMes;
 
   const bolsillos = movimientos.filter((m) => m.tipoSnapshot === "pago_fraccionado");
   const conceptos  = movimientos.filter((m) => m.tipoSnapshot !== "pago_fraccionado");
@@ -780,7 +790,7 @@ export default function VistaSemanal({
     : 0;
 
   const pendientesClasificar = consumos.filter(c => !c.clasificado).length;
-  const aportePlaneado = ingresosAngieLocal.find(a => a.semana === semanaActiva)?.monto ?? 0;
+  const aportePlaneado = ingresosAngieLocal.find(a => a.semana === semanaVisible)?.monto ?? 0;
   const gastadoSemanaAngie = consumos.filter(c => c.fuenteAngie).reduce((s, c) => s + c.monto, 0);
   const disponibleSemana = aportePlaneado - gastadoSemanaAngie;
 
@@ -801,6 +811,34 @@ export default function VistaSemanal({
       setError(e instanceof Error ? e.message : "Error desconocido");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function navegar(s: Semana) {
+    if (navegando) return;
+    setNavegando(true);
+    setPanel(null);
+    setTab("pendientes");
+    try {
+      const [semRes, conRes] = await Promise.all([
+        fetch(`/api/mes/${mes}/semana/${s}`),
+        fetch(`/api/mes/${mes}/consumos/${s}`),
+      ]);
+      if (semRes.ok) {
+        const data = await semRes.json() as { movimientos: Movimiento[]; cierreSemana: CierreSemana | null; semanaActivaMes?: Semana };
+        setMovimientos(data.movimientos ?? []);
+        setCierreSemanaState(data.cierreSemana ?? null);
+        if (data.semanaActivaMes) setSemanaActivaMes(data.semanaActivaMes);
+      }
+      if (conRes.ok) {
+        const data = await conRes.json() as { consumos: ConsumoH3[] };
+        setConsumos(data.consumos ?? []);
+      }
+      setSemanaVisible(s);
+    } catch {
+      setError("Error cargando semana");
+    } finally {
+      setNavegando(false);
     }
   }
 
@@ -856,8 +894,8 @@ export default function VistaSemanal({
     setSheetOpen(false);
     try {
       const [consumosRes, movRes] = await Promise.all([
-        fetch(`/api/mes/${mes}/consumos/${semanaActiva}`),
-        fetch(`/api/mes/${mes}/semana/${semanaActiva}`),
+        fetch(`/api/mes/${mes}/consumos/${semanaVisible}`),
+        fetch(`/api/mes/${mes}/semana/${semanaVisible}`),
       ]);
       if (consumosRes.ok) {
         const data = await consumosRes.json() as { consumos: ConsumoH3[] };
@@ -878,7 +916,7 @@ export default function VistaSemanal({
     if (consumosPendientes.length === 0) return;
     const timerId = setInterval(async () => {
       try {
-        const res = await fetch(`/api/mes/${mes}/consumos/${semanaActiva}`);
+        const res = await fetch(`/api/mes/${mes}/consumos/${semanaVisible}`);
         if (res.ok) {
           const data = await res.json() as { consumos: ConsumoH3[] };
           setConsumos(data.consumos ?? []);
@@ -886,7 +924,7 @@ export default function VistaSemanal({
       } catch {}
     }, 5000);
     return () => clearInterval(timerId);
-  }, [consumosPendientes.length, mes, semanaActiva]);
+  }, [consumosPendientes.length, mes, semanaVisible]);
 
   useEffect(() => {
     if (!showPresupuestadoPopover) return;
@@ -921,11 +959,36 @@ export default function VistaSemanal({
             <Icon name="back" size={17} />
           </button>
           <div style={{ flex: 1 }} />
-          {cierreSemana && (
+          {cierreSemanaState && (
             <span className="fl-badge pos"><Icon name="check" size={12} /> Cerrada</span>
           )}
         </div>
-        <h1 style={{ fontSize: 21 }}>Semana {semanaActiva}</h1>
+        <div style={{ display: "flex", alignItems: "center", gap: 0, marginBottom: 2 }}>
+          <button
+            type="button"
+            disabled={!puedeIzq || navegando}
+            onClick={() => navegar(SEMANAS[idxVisible - 1])}
+            style={{ background: "none", border: "none", padding: "4px 12px 4px 0", cursor: puedeIzq ? "pointer" : "default", opacity: puedeIzq ? 1 : 0.3, color: "var(--on-primary)", fontSize: 22, lineHeight: 1 }}
+            aria-label="Semana anterior"
+          >
+            ←
+          </button>
+          <h1 style={{ fontSize: 21, margin: 0, display: "inline-flex", alignItems: "center", gap: 6 }}>
+            {semanaVisible}
+            {semanaVisible === semanaActivaMes && (
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--on-primary)", display: "inline-block", opacity: 0.7 }} />
+            )}
+          </h1>
+          <button
+            type="button"
+            disabled={!puedeDer || navegando}
+            onClick={() => navegar(SEMANAS[idxVisible + 1])}
+            style={{ background: "none", border: "none", padding: "4px 0 4px 12px", cursor: puedeDer ? "pointer" : "default", opacity: puedeDer ? 1 : 0.3, color: "var(--on-primary)", fontSize: 22, lineHeight: 1 }}
+            aria-label="Semana siguiente"
+          >
+            →
+          </button>
+        </div>
         <p className="sub">{mesLabel}</p>
         <div style={{ marginTop: 14 }}>
           <div className="fl-row" style={{ marginBottom: 7 }}>
@@ -1009,7 +1072,7 @@ export default function VistaSemanal({
             )}
             <div style={{ borderTop: "1px solid var(--line)", paddingTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 12, color: "var(--ink-soft)" }}>Aporte planeado {semanaActiva}</span>
+                <span style={{ fontSize: 12, color: "var(--ink-soft)" }}>Aporte planeado {semanaVisible}</span>
                 <span style={{ fontSize: 13, fontVariantNumeric: "tabular-nums", color: "var(--ink)" }}>{copCompact(aportePlaneado)}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
