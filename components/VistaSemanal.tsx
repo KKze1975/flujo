@@ -131,8 +131,30 @@ function ModalCorreccion({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmandoRevertir, setConfirmandoRevertir] = useState(false);
+  const [imprevistoLocal, setImprevistoLocal] = useState(consumo.imprevisto);
+  const [imprevistoSaving, setImprevistoSaving] = useState(false);
 
   const scn = SCN_LABEL[scenario];
+
+  async function toggleImprevisto() {
+    const next = !imprevistoLocal;
+    setImprevistoLocal(next);
+    setImprevistoSaving(true);
+    try {
+      const res = await fetch(`/api/consumos/${consumo.id}/imprevisto`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imprevisto: next }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error((data as { error?: string }).error ?? "Error");
+      onSaved(data as ConsumoH3);
+    } catch {
+      setImprevistoLocal(!next);
+    } finally {
+      setImprevistoSaving(false);
+    }
+  }
 
   async function guardar() {
     setBusy(true);
@@ -227,6 +249,25 @@ function ModalCorreccion({
                 {SCN_LABEL[s].eye}
               </button>
             ))}
+          </div>
+
+          {/* Imprevisto toggle */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid var(--line)" }}>
+            <span style={{ fontSize: 12.5, color: "var(--ink-soft)" }}>Imprevisto (sin concepto en H1)</span>
+            <button
+              type="button"
+              disabled={imprevistoSaving}
+              onClick={toggleImprevisto}
+              style={{
+                padding: "3px 12px", borderRadius: 12, fontSize: 12, fontWeight: 600, cursor: "pointer",
+                background: imprevistoLocal ? "var(--warn-soft, #fff3e0)" : "var(--surface-2)",
+                color: imprevistoLocal ? "var(--warn, #b05e00)" : "var(--ink-soft)",
+                border: imprevistoLocal ? "1.5px solid var(--warn, #b05e00)" : "1.5px solid var(--line)",
+                opacity: imprevistoSaving ? 0.5 : 1,
+              }}
+            >
+              {imprevistoLocal ? "Imprevisto ✓" : "Marcar imprevisto"}
+            </button>
           </div>
 
           {/* Original record */}
@@ -1311,7 +1352,14 @@ export default function VistaSemanal({
                       <Icon name={c.clasificado ? "wallet" : "alert"} size={17} />
                     </span>
                     <div className="dk-rec-tx">
-                      <p className="t">{c.descripcion || "Sin descripción"}</p>
+                      <p className="t">
+                        {c.descripcion || "Sin descripción"}
+                        {c.imprevisto && (
+                          <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 8, background: "var(--warn-soft, #fff3e0)", color: "var(--warn, #b05e00)", verticalAlign: "middle" }}>
+                            Imprevisto
+                          </span>
+                        )}
+                      </p>
                       <p className="d">
                         {c.clasificado ? c.bolsilloId : "Clasificando…"} · {c.semana} · {fuente}
                       </p>
