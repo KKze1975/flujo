@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: 15 junio 2026 | Fase: Go-live — Semana 1 producción — BL-10 construido pendiente QA Angie
+Actualizado: 20 junio 2026 | Fase: Go-live — S3 cerrado — Loop OBS-1/2/3/4 aprobado para construir
 
 ---
 
@@ -2805,3 +2805,176 @@ BL-02 → BL-06 → QA-7jun-01
 - PR #5 (dev → main): pendiente merge — QA completado, listo para producción.
 - BL-04 y BL-05: cerrados por diseño, absorbidos en BL-11.
 - Próxima sesión: merge PR #5 → BL-02.
+
+---
+
+## Sesión 20 junio 2026 — DISEÑO · Cierre S3 + Observaciones producción
+
+### Tipo de sesión
+DISEÑO — Análisis de observaciones de uso real en producción. Sin código abierto.
+
+### Contexto
+Sesión de cierre de S3 con Angie activa en producción. Cuatro observaciones de usabilidad
+y confiabilidad identificadas durante el uso real de la semana. Diseño completo aprobado
+para construcción en loop autónomo.
+
+---
+
+### Estado Sheet producción al cierre S3
+
+Leído directamente desde Google Drive. Datos reales al 20 junio 2026.
+
+**Movimientos S3 ejecutados (fuente Angie):** $750.000
+**Consumos H3B S3 (fuente Angie):** $690.070
+**Total salida fuente Angie S3:** $1.440.070
+**Pendientes S3 reales** (descontando Entretenimiento y Frutas ya pagados): $426.000
+
+| Pendiente | Monto |
+|---|---:|
+| PS Plus | 60.000 |
+| Uber One | 16.000 |
+| Provisión Mireyita | 100.000 |
+| Víveres y otros | 250.000 |
+
+---
+
+### Observaciones de producción — diseño aprobado
+
+#### OBS-1 — Barra morada: totalEjecutado incompleto para pago_fraccionado
+
+**Problema:** para conceptos `pago_fraccionado`, el movimiento H2 permanece `pendiente`
+durante la semana. El gasto real ocurre en H3B. La barra no refleja ese gasto en tiempo real.
+
+**Diseño aprobado:**
+
+| Campo | Fuente | Momento |
+|---|---|---|
+| `totalPresupuestado` | H2 `monto_presupuestado` | Siempre |
+| `totalEjecutado` durante semana | H2 ejecutados (fijos) + suma consumos H3B (pago_fraccionado) de esa semana | Tiempo real |
+| `totalEjecutado` post cierre | H2 `monto_ejecutado` escrito por cerrar-semana | Al cerrar semana |
+
+Al ejecutar POST `cerrar-semana`: para cada H2 con `tipo_snapshot = pago_fraccionado`
+de la semana → escribir `monto_ejecutado` = suma H3B correspondiente + `estado = ejecutado`
++ `fecha_ejecucion` = fecha del cierre. Si no hay consumos H3B: `monto_ejecutado = 0`,
+estado `ejecutado` igualmente.
+
+---
+
+#### OBS-2 — Bolsillos vs Pendientes: separación genera confusión operativa
+
+**Problema:** los bolsillos `pago_fraccionado` aparecen en carousel separado de la lista
+de Pendientes. Operacionalmente son pendientes de consumo gradual — la separación confunde.
+
+**Diseño aprobado:**
+- Sección carousel de bolsillos eliminada de VistaSemanal.
+- Fichas `pago_fraccionado` se integran en lista de Pendientes — posiciones fijas 1, 2, 3.
+- Orden entre ellas: Entretenimiento · Frutas y verduras · Víveres (orden H2).
+- Cada ficha muestra: nombre + indicador avance (suma H3B semana / `monto_presupuestado` H2) + botón "Cerrar bolsillo".
+- Botón "Cerrar bolsillo" (acción manual): PATCH H2 → `monto_ejecutado` = suma H3B semana,
+  `estado = ejecutado`, `fecha_ejecucion` = hoy. Ficha pasa a Ejecutados.
+- POST `cerrar-semana` consolida automáticamente bolsillos no cerrados manualmente.
+- En Ejecutados: comportamiento existente sin cambios — al tocar monto despliega desglose H3B.
+- Semana cerrada modo lectura: bolsillos ejecutados aparecen en Ejecutados correctamente.
+
+---
+
+#### OBS-3 — Imprevistos: no hay categoría para gastos sin naturaleza clara
+
+**Problema:** gastos imprevistos se clasifican forzosamente en el bolsillo más cercano
+disponible, contaminando datos de cada categoría.
+
+**Diseño aprobado:**
+
+Concepto nuevo en H1:
+```
+nombre: Imprevistos
+categoria: Compromisos Financieros
+tipo: pago_fraccionado
+frecuencia: mensual
+semana_default: variable
+monto_referencia: 250000
+requiere_aprobacion: FALSE
+estado_concepto: activo
+```
+
+- Techo de referencia $250.000. Sobre techo: alerta visual, no bloquea (`sobre_techo = TRUE`).
+- Fuente de pago: define el usuario al registrar.
+- En VistaSemanal Pendientes: ficha idéntica a los otros tres — posición 4 en la lista.
+- Desde FAB: opción explícita del usuario. Claude Haiku NO lo sugiere automáticamente.
+- Desde Ejecutados: usuario puede reclasificar consumo existente a Imprevistos.
+- Cierre de semana: mismo comportamiento que OBS-2.
+
+**Nota operativa:** concepto creado en Sheet de dev para construcción y QA.
+Debe agregarse manualmente al Sheet de producción antes del merge a main.
+
+---
+
+#### OBS-4 — Posponer/No aplica: solo disponible en M1 desktop, no en VistaSemanal
+
+**Problema:** desde VistaSemanal mobile no hay forma de posponer o descartar un concepto
+sin salir de la vista.
+
+**Diseño aprobado:**
+- Opciones "Posponer" y "No aplica" en modal lápiz existente de VistaSemanal.
+- Aplica solo a fijos/discrecionales — NO a `pago_fraccionado`.
+
+**No aplica:** PATCH H2 `estado = no_aplica`.
+
+**Posponer:** selector de semana destino: S1, S2, S3, S4 del mes actual + "Mes siguiente".
+- Posponer a semana del mes actual: PATCH H2 `semana = destino`.
+  Bloqueo: si semana destino ya tiene cierre en H5A → error, no ejecutar PATCH.
+- Posponer a mes siguiente: movimiento actual → `estado = pospuesto`. Crear fila nueva
+  en H2 del mes siguiente con `semana = sin_asignar` y datos del concepto copiados.
+
+---
+
+### Análisis de riesgos pre-construcción
+
+| Riesgo | Severidad | Resolución |
+|---|---|---|
+| BL-01 abierto contamina Imprevistos H3B | Alta | BL-01 es ticket 1 del loop — prerequisito de OBS-3 |
+| POST cerrar-semana no escribe H2 individual | Alta | OBS-1 lo construye explícitamente |
+| Imprevistos ausente en junio 2026 H2 | Media | Inserción directa en Sheet de dev en OBS-3-P1 |
+| Claude Haiku sugiere Imprevistos automáticamente | Media | Instrucción explícita en system prompt — OBS-3-P3 |
+| Posponer a mes siguiente — lógica no existe | Media | OBS-4-P4 la construye |
+| Posponer a semana cerrada | Baja | Bloqueo explícito en OBS-4-P3 |
+
+---
+
+### Cola de construcción actualizada
+
+```
+BL-01 → OBS-1 → OBS-2 → OBS-3 → OBS-4 → BL-02 → BL-06 → QA-7jun-01
+```
+
+BL-01 es prerequisito de OBS-3. Si BL-01 falla, el loop se detiene.
+
+---
+
+### Artefactos generados
+
+- `LOOP-MAESTRO.md` — prompt de orquestación autónoma para Claude Code (5 tickets en secuencia)
+
+---
+
+### Deuda técnica nueva
+
+- OBS-3-DT1: Imprevistos pendiente de agregar manualmente al Sheet de producción antes del
+  merge de OBS-3 a main. Verificar en SESSION_LOG.md post-construcción.
+
+---
+
+### Estado al cierre
+
+- Diseños OBS-1 a OBS-4 aprobados para construir.
+- LOOP-MAESTRO.md listo para ejecución en Claude Code.
+- Sin código abierto — sesión de diseño pura.
+- PR #5 (BL-10/BL-11/BL-11b): pendiente merge — QA completado, listo para producción.
+  Merge debe ocurrir antes de ejecutar el loop de construcción.
+
+### Próxima sesión
+
+1. Merge PR #5 a main.
+2. Ejecutar LOOP-MAESTRO.md en Claude Code (rama dev).
+3. QA de Angie en preview URL de dev.
+4. Merge por ticket según resultados de QA.
