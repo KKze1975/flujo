@@ -55,8 +55,9 @@ export async function POST(
     }
 
     const totalPresupuestado = movsSemana.reduce((s, m) => s + m.montoPresupuestado, 0);
+    // Exclude pago_fraccionado from H2 sum — they are consolidated via H3B consumos below.
     const totalEjecutadoH2 = movsSemana
-      .filter((m) => m.estado === "ejecutado")
+      .filter((m) => m.estado === "ejecutado" && m.tipoSnapshot !== "pago_fraccionado")
       .reduce((s, m) => s + (m.montoEjecutado ?? 0), 0);
     const totalEjecutadoH3 = consumosSemana.reduce((s, c) => s + c.monto, 0);
     const totalEjecutado = totalEjecutadoH2 + totalEjecutadoH3;
@@ -115,6 +116,24 @@ export async function POST(
         balanceProyectado,
         notas: null,
       });
+    }
+
+    // Consolidate pago_fraccionado H2 rows: mark ejecutado with sum of H3B consumos for each bolsillo.
+    const bolsilloMovs = movsSemana.filter(m => m.tipoSnapshot === "pago_fraccionado" && m.estado !== "ejecutado");
+    if (bolsilloMovs.length > 0) {
+      await Promise.all(
+        bolsilloMovs.map(m => {
+          const sumH3B = consumosSemana
+            .filter(c => c.bolsilloId === m.conceptoId)
+            .reduce((s, c) => s + c.monto, 0);
+          return provider.updateMovimiento(m.id, {
+            estado: "ejecutado",
+            montoEjecutado: sumH3B,
+            desviacion: sumH3B - m.montoPresupuestado,
+            fechaEjecucion: hoy,
+          });
+        })
+      );
     }
 
     return Response.json({ ok: true, cierre, plan });

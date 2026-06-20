@@ -790,8 +790,10 @@ export default function VistaSemanal({
     m => m.estado !== "no_aplica" && m.estado !== "pospuesto" && m.estado !== "pospuesto_mes_siguiente"
   );
   const totalPresupuestado = movimientosPresupuestados.reduce((s, m) => s + m.montoPresupuestado, 0);
+  // Exclude pago_fraccionado from H2 sum — their spending is always counted via H3B consumos.
+  // After cerrar-semana writes estado=ejecutado to pago_fraccionado H2, this prevents double-counting.
   const totalEjecutadoH2 = movimientos
-    .filter((m) => m.estado === "ejecutado")
+    .filter((m) => m.estado === "ejecutado" && m.tipoSnapshot !== "pago_fraccionado")
     .reduce((s, m) => s + (m.montoEjecutado ?? 0), 0);
   const totalEjecutadoH3 = consumos.reduce((s, c) => s + c.monto, 0);
   const totalEjecutado = totalEjecutadoH2 + totalEjecutadoH3;
