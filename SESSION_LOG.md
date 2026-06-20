@@ -110,22 +110,68 @@ Pendiente: verificar en `/admin/trazabilidad` que un consumo clasificado desde M
 
 ## TICKET OBS-1 — Barra morada incluye consumos pago_fraccionado
 
-*Estado: pendiente*
+**Estado: COMPLETADO** | Commit: `7436902`
+
+**Cambios:**
+
+1. `components/VistaSemanal.tsx` — `totalEjecutadoH2` excluye `pago_fraccionado` para evitar doble conteo cuando cerrar-semana escribe H2. `totalEjecutadoH3` (suma H3B) siempre captura el gasto de bolsillos en tiempo real.
+
+2. `app/api/mes/[mes]/cerrar-semana/route.ts` — Tras crear H5A, consolida cada H2 `pago_fraccionado` de la semana: escribe `estado=ejecutado`, `montoEjecutado=sumH3B`, `desviacion`, `fechaEjecucion`.
+
+PR: pendiente crear
 
 ---
 
 ## TICKET OBS-2 — Bolsillos pago_fraccionado en lista Pendientes
 
-*Estado: pendiente*
+**Estado: COMPLETADO** | Commit: `b2ca808`
+
+**Cambios:**
+- `components/VistaSemanal.tsx`:
+  - Eliminado carousel de bolsillos.
+  - `bolsillosPendientes / bolsillosEjecutados` derivados del state existente.
+  - `lista` fusiona bolsillos + conceptos según tab activo.
+  - Tab count actualizado para incluir bolsillos en ambas pestañas.
+  - `lista.map()` renderiza ficha de bolsillo si `tipoSnapshot === "pago_fraccionado"`:
+    - Pendientes: Ring pct + nombre + avance + botón "Cerrar bolsillo" (PATCH ejecutar H2).
+    - Ejecutados: monto clickeable → popover desglose H3B (mismo mecanismo que carousel).
+
+PR: acumulado en #6
 
 ---
 
 ## TICKET OBS-3 — Crear bolsillo Imprevistos
 
-*Estado: pendiente*
+**Estado: COMPLETADO** | Commit: `391184b`
+
+**Cambios:**
+- `scripts/seed-imprevistos.mjs`: script uno-disparo para insertar H1 concepto "Imprevistos" (`pago_fraccionado`, $250K, semana=variable) + H2 movimiento junio 2026. Aborta si ya existe. Ejecutar: `node scripts/seed-imprevistos.mjs` (dev Sheet).
+- `app/api/consumos/[id]/clasificar/route.ts`:
+  - `activos.filter(c => c.nombre !== "Imprevistos")` excluye Imprevistos del listado enviado a Haiku.
+  - System prompt actualizado: "IMPORTANTE: Nunca sugieras 'Imprevistos' — esa categoría requiere selección explícita del usuario."
+- Ficha Imprevistos aparece automáticamente en lista Pendientes (OBS-2 ya lo maneja).
+
+**Pendiente operativo**: correr `node scripts/seed-imprevistos.mjs` contra dev Sheet. Agregar manualmente a Sheet de producción antes del merge a main.
+
+PR: acumulado en #6
 
 ---
 
 ## TICKET OBS-4 — Posponer/No aplica en modal lápiz VistaSemanal
 
-*Estado: pendiente*
+**Estado: COMPLETADO** | Commit: `0a4bfcd`
+
+**Cambios:**
+- `components/VistaSemanal.tsx`:
+  - Nueva prop `semanasCerradas?: Semana[]` (default `[]`).
+  - Estado `posponiendo: Movimiento | null`.
+  - Botón lápiz en pendientes ahora llama `setPosponiendo(mov)` (antes: `toggleEditar`).
+  - `ModalAccionesPendiente` renderizado cuando `posponiendo !== null`.
+  - `ModalAccionesPendiente`: scenarios Posponer (S1–S4 con gates de semana cerrada + "Mes sig.") y No aplica. PATCH a `/api/mes/[mes]/movimientos/[id]`.
+- `app/mes/[mes]/semana/page.tsx`: `semanasCerradas` derivado de cierres y pasado como prop.
+- `app/api/mes/[mes]/movimientos/[id]/route.ts`:
+  - `tipo=posponer`: verifica que `nuevaSemana` no tenga H5A existente.
+  - `tipo=mover_mes_siguiente`: crea H2 en mes siguiente con mismo concepto/monto.
+  - `tipo=no_aplica`: escribe `estado=no_aplica`.
+
+PR: acumulado en #6
