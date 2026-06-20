@@ -950,7 +950,11 @@ export default function VistaSemanal({
     } catch {}
   }
 
-  const lista = tab === "pendientes" ? pendientes : ejecutados;
+  const bolsillosPendientes = bolsillos.filter(b => b.estado !== "ejecutado");
+  const bolsillosEjecutados = bolsillos.filter(b => b.estado === "ejecutado");
+  const lista = tab === "pendientes"
+    ? [...bolsillosPendientes, ...pendientes]
+    : [...bolsillosEjecutados, ...ejecutados];
   const consumosPendientes = consumos.filter(c => !c.clasificado);
 
   // Polling: refresca consumos cada 5s mientras haya items sin clasificar
@@ -1167,99 +1171,13 @@ export default function VistaSemanal({
           </div>
         )}
 
-        {/* Bolsillos carousel */}
-        {bolsillos.length > 0 && (
-          <>
-            <p className="fl-sectlabel">Bolsillos · techo semanal</p>
-            <div style={{
-              display: "flex",
-              overflowX: "auto",
-              gap: 10,
-              scrollSnapType: "x mandatory",
-              paddingBottom: 4,
-            }}>
-              {bolsillos.map((b) => {
-                const consumosBolsillo = consumos.filter(c => c.bolsilloId === b.conceptoId);
-                const gastado = consumosBolsillo.reduce((sum, c) => sum + c.monto, 0);
-                const techo = b.montoPresupuestado;
-                const pctB  = techo > 0 ? Math.round((gastado / techo) * 100) : 0;
-                const over  = gastado > techo;
-                const popoverWidth = 260;
-                const adjustedLeft = bolsilloAnchor
-                  ? Math.min(bolsilloAnchor.left, window.innerWidth - popoverWidth - 8)
-                  : 0;
-                return (
-                  <div
-                    key={b.id}
-                    ref={(el) => { if (el) bolsilloRefs.current.set(b.conceptoId, el); else bolsilloRefs.current.delete(b.conceptoId); }}
-                    className="fl-card"
-                    style={{
-                      position: "relative", minWidth: 155, flexShrink: 0, scrollSnapAlign: "start",
-                      display: "flex", flexDirection: "column", gap: 8, padding: "12px 14px",
-                    }}
-                  >
-                    <div className="fl-bolsillo">
-                      <Ring pct={pctB} over={over} />
-                      <div className="meta">
-                        <p className="n">{b.nombreSnapshot}</p>
-                        <p className="amt">
-                          <button
-                            type="button"
-                            style={{ fontWeight: 700, textDecoration: "underline dotted", cursor: "pointer", background: "none", border: "none", color: "inherit", fontSize: "inherit", padding: 0 }}
-                            onClick={(e) => {
-                              setBolsilloAnchor((e.currentTarget as HTMLButtonElement).getBoundingClientRect());
-                              setPopoverBolsilloId(id => id === b.conceptoId ? null : b.conceptoId);
-                            }}
-                          >
-                            {COP(gastado)}
-                          </button>
-                          {" "}<span style={{ color: "var(--ink-faint)" }}>/ {COP(techo)}</span>
-                        </p>
-                      </div>
-                    </div>
-                    {over
-                      ? <span className="fl-badge neg"><span className="dot" />+{COP(gastado - techo)}</span>
-                      : <span className="fl-badge pos">{COP(techo - gastado)} libre</span>}
-                    {popoverBolsilloId === b.conceptoId && bolsilloAnchor && (
-                      <div style={{
-                        position: "fixed", top: bolsilloAnchor.bottom + 4, left: adjustedLeft, zIndex: 9999,
-                        background: "white", color: "#111111", border: "1px solid var(--hair)", borderRadius: 12,
-                        boxShadow: "0 4px 24px rgba(0,0,0,0.12)", minWidth: 260, padding: "12px 0",
-                      }}>
-                        <p style={{ fontWeight: 600, fontSize: 13, padding: "0 14px 8px" }}>{b.nombreSnapshot}</p>
-                        <div style={{ maxHeight: 256, overflowY: "auto" }}>
-                          {consumosBolsillo.length === 0
-                            ? <p style={{ padding: "4px 14px", fontSize: 13, color: "var(--ink-faint)" }}>Sin consumos registrados</p>
-                            : consumosBolsillo.map(c => (
-                                <div key={c.id} style={{ padding: "5px 14px", fontSize: 13 }}>
-                                  <div style={{ display: "flex", justifyContent: "space-between" }}>
-                                    <span style={{ flex: 1, marginRight: 12 }}>{c.descripcion}</span>
-                                    <span style={{ fontVariantNumeric: "tabular-nums" }}>{COP(c.monto)}</span>
-                                  </div>
-                                  <p style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 2 }}>{c.fecha}</p>
-                                </div>
-                              ))
-                          }
-                        </div>
-                        {consumosBolsillo.length > 0 && (
-                          <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 14px 0", borderTop: "1px solid var(--hair)", fontSize: 13, fontWeight: 700, marginTop: 4 }}>
-                            <span>Total</span>
-                            <span>{COP(gastado)}</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </>
-        )}
 
         {/* Tabs */}
         <div className="fl-tabs">
           {(["pendientes", "ejecutados"] as const).map((t) => {
-            const count = t === "pendientes" ? pendientes.length : ejecutados.length + consumosPendientes.length;
+            const count = t === "pendientes"
+              ? bolsillosPendientes.length + pendientes.length
+              : bolsillosEjecutados.length + ejecutados.length + consumosPendientes.length;
             return (
               <button
                 key={t}
@@ -1288,6 +1206,103 @@ export default function VistaSemanal({
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {lista.map((mov) => {
+              if (mov.tipoSnapshot === "pago_fraccionado") {
+                const consumosBolsillo = consumos.filter(c => c.bolsilloId === mov.conceptoId);
+                const gastado = consumosBolsillo.reduce((sum, c) => sum + c.monto, 0);
+                const techo = mov.montoPresupuestado;
+                const pctB = techo > 0 ? Math.round((gastado / techo) * 100) : 0;
+                const over = gastado > techo;
+                const popoverWidth = 260;
+                const adjustedLeft = bolsilloAnchor
+                  ? Math.min(bolsilloAnchor.left, window.innerWidth - popoverWidth - 8)
+                  : 0;
+                return (
+                  <div
+                    key={mov.id}
+                    ref={(el) => { if (el) bolsilloRefs.current.set(mov.conceptoId, el as HTMLDivElement); else bolsilloRefs.current.delete(mov.conceptoId); }}
+                    className="fl-concepto"
+                  >
+                    <div className="top">
+                      <div style={{ display: "flex", gap: 11, alignItems: "center", minWidth: 0 }}>
+                        <Ring pct={pctB} over={over} />
+                        <div style={{ minWidth: 0 }}>
+                          <p className="name">{mov.nombreSnapshot}</p>
+                          <p className="cat">{COP(gastado)} / {COP(techo)}</p>
+                        </div>
+                      </div>
+                      <div style={{ textAlign: "right", flexShrink: 0 }}>
+                        {tab === "ejecutados" ? (
+                          <button
+                            type="button"
+                            style={{ fontWeight: 700, textDecoration: "underline dotted", cursor: "pointer", background: "none", border: "none", color: "inherit", fontSize: "inherit", padding: 0 }}
+                            onClick={(e) => {
+                              setBolsilloAnchor((e.currentTarget as HTMLButtonElement).getBoundingClientRect());
+                              setPopoverBolsilloId(id => id === mov.conceptoId ? null : mov.conceptoId);
+                            }}
+                          >
+                            {COP(mov.montoEjecutado ?? gastado)}
+                          </button>
+                        ) : (
+                          over
+                            ? <span className="fl-badge neg" style={{ marginTop: 4 }}><span className="dot" />+{COP(gastado - techo)}</span>
+                            : <span className="fl-badge warn" style={{ marginTop: 4 }}><span className="dot" />{COP(techo - gastado)} libre</span>
+                        )}
+                      </div>
+                    </div>
+                    {tab === "pendientes" && modoSemana !== "lectura" && (
+                      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                        <button
+                          className="fl-btn ghost sm"
+                          style={{ flex: 1 }}
+                          type="button"
+                          disabled={busy}
+                          onClick={() => patchar(mov.id, {
+                            tipo: "ejecutar",
+                            montoEjecutado: gastado,
+                            fuenteEnMano: false,
+                            fuenteNequi: false,
+                            fuenteCamilo: false,
+                            fuenteAngie: false,
+                            ejecutor: "camilo",
+                          })}
+                        >
+                          Cerrar bolsillo
+                        </button>
+                      </div>
+                    )}
+                    {tab === "ejecutados" && popoverBolsilloId === mov.conceptoId && bolsilloAnchor && (
+                      <div style={{
+                        position: "fixed", top: bolsilloAnchor.bottom + 4, left: adjustedLeft, zIndex: 9999,
+                        background: "white", color: "#111111", border: "1px solid var(--hair)", borderRadius: 12,
+                        boxShadow: "0 4px 24px rgba(0,0,0,0.12)", minWidth: 260, padding: "12px 0",
+                      }}>
+                        <p style={{ fontWeight: 600, fontSize: 13, padding: "0 14px 8px" }}>{mov.nombreSnapshot}</p>
+                        <div style={{ maxHeight: 256, overflowY: "auto" }}>
+                          {consumosBolsillo.length === 0
+                            ? <p style={{ padding: "4px 14px", fontSize: 13, color: "var(--ink-faint)" }}>Sin consumos registrados</p>
+                            : consumosBolsillo.map(c => (
+                                <div key={c.id} style={{ padding: "5px 14px", fontSize: 13 }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                                    <span style={{ flex: 1, marginRight: 12 }}>{c.descripcion}</span>
+                                    <span style={{ fontVariantNumeric: "tabular-nums" }}>{COP(c.monto)}</span>
+                                  </div>
+                                  <p style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 2 }}>{c.fecha}</p>
+                                </div>
+                              ))
+                          }
+                        </div>
+                        {consumosBolsillo.length > 0 && (
+                          <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 14px 0", borderTop: "1px solid var(--hair)", fontSize: 13, fontWeight: 700, marginTop: 4 }}>
+                            <span>Total</span>
+                            <span>{COP(gastado)}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
               const panelActivo = panel?.id === mov.id;
               const catIcon = CAT_ICON[mov.categoriaSnapshot] ?? "wallet";
               return (
