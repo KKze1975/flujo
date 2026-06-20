@@ -134,7 +134,19 @@
 - [✓] Guard evita duplicados si se corre dos veces
 - [✓] Haiku no recibe "Imprevistos" en la lista de opciones
 - [✓] System prompt instruye explícitamente contra sugerir Imprevistos
-- [✗] `node scripts/seed-imprevistos.mjs` ejecutado contra dev Sheet — pendiente operativo
+- [✓] `node scripts/seed-imprevistos.mjs` ejecutado contra dev Sheet — ver sección de verificación operativa
+
+---
+
+## OBS-3 — Verificación operativa
+
+- **seed-imprevistos.mjs** (2026-06-20, dev Sheet `1p5hvKINy512I-BOEA5ujjynUnJVdnvniAiqCQTYDJ-w`):
+  ```
+  ⚠ Imprevistos ya existe en H1: COMPROMISOS_FINANCIEROS_1780950917017 — abortando.
+  ```
+  Guard anti-duplicado activado: el concepto ya estaba en el dev Sheet desde una ejecución previa del script (probablemente durante el loop). No se crearon filas nuevas.
+- **Ficha Imprevistos en Pendientes**: no verificado visualmente (requiere preview URL Vercel de PR #6 abierta en browser)
+- **Duplicados**: ninguno — el guard confirmó exactamente una instancia (`COMPROMISOS_FINANCIEROS_1780950917017`)
 
 ---
 
