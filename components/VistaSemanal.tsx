@@ -166,10 +166,15 @@ function ModalCorreccion({
     if (scenario === "ejecutor") patch = { ejecutor };
     if (scenario === "fuente")   patch = { ...fuentes };
     if (scenario === "clasif") {
-      const selectedId = bolsilloId ?? consumo.bolsilloId;
-      const h2 = bolsillos.find((m) => m.conceptoId === selectedId);
+      // Resolve the bolsillo ensuring selectedId is always the H1 concepto id (CATEGORIA_xxx).
+      // When consumo.bolsilloId is corrupted (e.g. MOV_xxx from pre-T45 data), matching by b.id
+      // finds the bolsillo and b.conceptoId self-heals the value written to H3B.
+      const selectedBolsillo = bolsilloId
+        ? bolsillos.find((b) => b.conceptoId === bolsilloId)
+        : bolsillos.find((b) => b.id === consumo.bolsilloId || b.conceptoId === consumo.bolsilloId);
+      const selectedId = selectedBolsillo?.conceptoId ?? consumo.bolsilloId;
       const gastado = consumos.filter(c => c.bolsilloId === selectedId).reduce((sum, c) => sum + c.monto, 0);
-      const techo = h2?.montoPresupuestado ?? 0;
+      const techo = selectedBolsillo?.montoPresupuestado ?? 0;
       patch = { bolsilloId: selectedId, clasificado: true, sobreTecho: techo > 0 && gastado >= techo };
     }
     if (scenario === "semana")   patch = { semana };
