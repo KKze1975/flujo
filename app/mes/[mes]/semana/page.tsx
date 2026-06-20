@@ -46,6 +46,7 @@ export default async function SemanaPage({
   ]);
 
   const cierreSemana = cierres.find((c) => c.semana === semana) ?? null;
+  const semanasCerradas = cierres.map((c) => c.semana);
 
   const saldoBrutoAngie = saldosCuenta.find(s => s.cuenta === "nu_angie")?.saldoInicial ?? 0;
   const ejecutadoH2Angie = movimientosMes
@@ -63,6 +64,7 @@ export default async function SemanaPage({
       semanaActiva={semana}
       movimientosInit={movimientos}
       cierreSemana={cierreSemana}
+      semanasCerradas={semanasCerradas}
       consumosInit={consumos}
       ingresosAngie={ingresosAngie}
       actor={actor}

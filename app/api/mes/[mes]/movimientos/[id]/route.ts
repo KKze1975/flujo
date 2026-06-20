@@ -80,6 +80,15 @@ export async function PATCH(
       if (body.nuevaSemana && !SEMANAS_VALIDAS.includes(body.nuevaSemana)) {
         return Response.json({ error: "nuevaSemana inválida." }, { status: 400 });
       }
+      if (body.nuevaSemana) {
+        const cierresSemana = await provider.getCierresSemana(mes);
+        if (cierresSemana.some(c => c.semana === body.nuevaSemana)) {
+          return Response.json(
+            { error: `${body.nuevaSemana} ya tiene cierre. No se puede posponer a una semana cerrada.` },
+            { status: 400 }
+          );
+        }
+      }
       patch = {
         estado: "pospuesto",
         ...(body.nuevaSemana ? { semana: body.nuevaSemana } : {}),
@@ -92,6 +101,37 @@ export async function PATCH(
       patch = { semana: body.semana };
     } else if (body.tipo === "mover_mes_siguiente") {
       patch = { estado: "pospuesto_mes_siguiente" };
+      // Create corresponding H2 row in the next month so it shows in planning
+      const [year, month] = mes.split("-").map(Number);
+      const nextMes = month === 12
+        ? `${year + 1}-01`
+        : `${year}-${String(month + 1).padStart(2, "0")}`;
+      await provider.crearMovimientosMes([{
+        conceptoId: mov.conceptoId,
+        mes: nextMes,
+        nombreSnapshot: mov.nombreSnapshot,
+        categoriaSnapshot: mov.categoriaSnapshot,
+        tipoSnapshot: mov.tipoSnapshot,
+        semana: null,
+        montoPresupuestado: mov.montoPresupuestado,
+        montoEjecutado: null,
+        desviacion: null,
+        estado: "pendiente",
+        ejecutor: null,
+        fuenteEnMano: false,
+        fuenteNequi: false,
+        fuenteCamilo: false,
+        fuenteAngie: false,
+        fechaEjecucion: null,
+        razonDesviacion: null,
+        razonPostergacion: null,
+        comprobanteUrl: null,
+        pendienteAprobacion: mov.pendienteAprobacion,
+        notas: null,
+        montoEjecutadoCamilo: null,
+        montoEjecutadoAngie: null,
+        idRecargaOrigen: null,
+      }]);
     } else if (body.tipo === "revertir_mes_siguiente") {
       patch = { estado: "pendiente", razonPostergacion: null };
     } else if (body.tipo === "revertir_ejecucion") {

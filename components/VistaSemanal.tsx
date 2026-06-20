@@ -443,6 +443,145 @@ function ModalCorreccion({
   );
 }
 
+// ── Modal Posponer / No aplica (pendientes) ───────────────────────────────────
+
+function ModalAccionesPendiente({
+  movimiento,
+  mes,
+  semanasCerradas,
+  onClose,
+  onUpdated,
+}: {
+  movimiento: Movimiento;
+  mes: string;
+  semanasCerradas: Semana[];
+  onClose: () => void;
+  onUpdated: (updated: Movimiento) => void;
+}) {
+  type Accion = "posponer" | "no_aplica";
+  type Destino = Semana | "siguiente";
+
+  const [accion, setAccion] = useState<Accion>("posponer");
+  const [destino, setDestino] = useState<Destino>("S1");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const semanas: Semana[] = ["S1", "S2", "S3", "S4"];
+
+  async function confirmar() {
+    setBusy(true);
+    setError(null);
+    try {
+      let body: Record<string, unknown>;
+      if (accion === "no_aplica") {
+        body = { tipo: "no_aplica" };
+      } else if (destino === "siguiente") {
+        body = { tipo: "mover_mes_siguiente" };
+      } else {
+        body = { tipo: "posponer", nuevaSemana: destino };
+      }
+      const res = await fetch(`/api/mes/${mes}/movimientos/${movimiento.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error((data as { error?: string }).error ?? "Error");
+      onUpdated(data as Movimiento);
+      onClose();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Error desconocido");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const btnStyle = (active: boolean) => ({
+    fontSize: 10.5 as const, padding: "4px 10px",
+    background: active ? "var(--primary-soft)" : "var(--surface-2)",
+    color: active ? "var(--primary)" : "var(--ink-soft)",
+    border: active ? "1.5px solid var(--primary)" : "1.5px solid var(--line)",
+  });
+
+  return (
+    <div className="dk-modal-backdrop" onClick={onClose}>
+      <div className="dk-modal" onClick={(e) => e.stopPropagation()}>
+        <header className="dk-modal-head">
+          <div className="lhs">
+            <p className="eyebrow"><Icon name="pencil" size={11} /> Opciones</p>
+            <h3>{movimiento.nombreSnapshot}</h3>
+          </div>
+          <button type="button" className="dk-modal-x" onClick={onClose}>
+            <Icon name="x" size={15} />
+          </button>
+        </header>
+
+        <div className="dk-modal-body">
+          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+            {(["posponer", "no_aplica"] as Accion[]).map(a => (
+              <button key={a} type="button"
+                className={`fl-btn ghost sm${accion === a ? " primary" : ""}`}
+                style={btnStyle(accion === a)}
+                onClick={() => setAccion(a)}
+              >
+                {a === "posponer" ? "Posponer" : "No aplica"}
+              </button>
+            ))}
+          </div>
+
+          {accion === "posponer" && (
+            <div style={{ marginTop: 16 }}>
+              <p className="dk-exp-lbl">Semana destino</p>
+              <div className="dk-seg2" style={{ gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
+                {semanas.map(s => {
+                  const cerrada = semanasCerradas.includes(s);
+                  return (
+                    <button key={s} type="button"
+                      className={destino === s ? "on" : ""}
+                      disabled={cerrada}
+                      onClick={() => setDestino(s)}
+                      title={cerrada ? `${s} ya cerrada` : ""}
+                    >
+                      {s}{cerrada ? " ×" : ""}
+                    </button>
+                  );
+                })}
+                <button type="button"
+                  className={destino === "siguiente" ? "on" : ""}
+                  onClick={() => setDestino("siguiente")}
+                >
+                  Mes sig.
+                </button>
+              </div>
+            </div>
+          )}
+
+          {accion === "no_aplica" && (
+            <p style={{ marginTop: 12, fontSize: 13.5, color: "var(--ink-soft)", lineHeight: 1.5 }}>
+              El concepto no aplica para esta semana y no será ejecutado en este período.
+            </p>
+          )}
+
+          {error && (
+            <div style={{ background: "var(--neg-soft)", color: "var(--neg)", borderRadius: 10, padding: "8px 12px", fontSize: 12.5, fontWeight: 600, marginTop: 8 }}>
+              {error}
+            </div>
+          )}
+        </div>
+
+        <footer className="dk-modal-foot">
+          <button type="button" className="fl-btn ghost sm" onClick={onClose} disabled={busy}>
+            Cancelar
+          </button>
+          <button type="button" className="fl-btn primary sm" onClick={confirmar} disabled={busy}>
+            {busy ? "…" : accion === "posponer" ? "Posponer" : "Confirmar no aplica"}
+          </button>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
 // ── M5 Modal H2 (ejecutados) ─────────────────────────────────────────────────
 
 type M5ScenarioH2 = "monto" | "ejecutor" | "fuente" | "semana";
@@ -736,6 +875,7 @@ export default function VistaSemanal({
   semanaActiva,
   movimientosInit,
   cierreSemana,
+  semanasCerradas = [],
   consumosInit = [],
   ingresosAngie = [],
   actor = "camilo",
@@ -746,6 +886,7 @@ export default function VistaSemanal({
   semanaActiva: Semana;
   movimientosInit: Movimiento[];
   cierreSemana: CierreSemana | null;
+  semanasCerradas?: Semana[];
   consumosInit?: ConsumoH3[];
   ingresosAngie?: IngresoAngie[];
   actor?: Actor;
@@ -774,6 +915,7 @@ export default function VistaSemanal({
   const [presupuestadoAnchor, setPresupuestadoAnchor] = useState<DOMRect | null>(null);
   const [popoverBolsilloId, setPopoverBolsilloId] = useState<string | null>(null);
   const [bolsilloAnchor, setBolsilloAnchor] = useState<DOMRect | null>(null);
+  const [posponiendo, setPosponiendo] = useState<Movimiento | null>(null);
   const presupuestadoPopoverRef = useRef<HTMLDivElement>(null);
   const bolsilloRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
@@ -1350,8 +1492,8 @@ export default function VistaSemanal({
                       <button
                         className="fl-btn ghost sm"
                         type="button"
-                        onClick={() => toggleEditar(mov.id)}
-                        title="Editar monto"
+                        onClick={() => setPosponiendo(mov)}
+                        title="Posponer / No aplica"
                       >
                         <Icon name="pencil" size={15} />
                       </button>
@@ -1629,6 +1771,20 @@ export default function VistaSemanal({
           }}
           onRevertido={id => {
             setConsumos(prev => prev.filter(c => c.id !== id));
+          }}
+        />
+      )}
+
+      {/* OBS-4 · Modal Posponer / No aplica */}
+      {posponiendo && (
+        <ModalAccionesPendiente
+          movimiento={posponiendo}
+          mes={mes}
+          semanasCerradas={semanasCerradas}
+          onClose={() => setPosponiendo(null)}
+          onUpdated={updated => {
+            setMovimientos(prev => prev.map(m => m.id === updated.id ? updated : m));
+            setPosponiendo(null);
           }}
         />
       )}
