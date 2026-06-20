@@ -5,7 +5,8 @@ import { getProvider } from "@/lib/data/provider";
 const SYSTEM_PROMPT = `Eres un asistente de finanzas personales de la familia Villamil en Colombia.
 Dado una descripción de un gasto y una lista de conceptos disponibles, indica cuál concepto se ajusta mejor.
 Devuelve SOLO el nombre exacto del concepto tal como aparece en la lista, o la palabra NULL si ninguno aplica.
-Sin comillas, sin explicación, solo el nombre o NULL.`;
+Sin comillas, sin explicación, solo el nombre o NULL.
+IMPORTANTE: Nunca sugieras "Imprevistos" — esa categoría requiere selección explícita del usuario.`;
 
 export async function POST(
   req: NextRequest,
@@ -23,7 +24,8 @@ export async function POST(
   const provider = getProvider();
 
   const conceptos = await provider.getConceptos();
-  const activos = conceptos.filter((c) => c.estado === "activo");
+  // Exclude "Imprevistos" — it requires explicit user selection, never auto-classified.
+  const activos = conceptos.filter((c) => c.estado === "activo" && c.nombre !== "Imprevistos");
   const conceptosList = activos.map((c) => c.nombre).join("\n");
 
   let bolsilloId: string | undefined;
