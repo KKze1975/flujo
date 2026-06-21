@@ -961,6 +961,7 @@ export default function VistaSemanal({
   const [ingresosAngieLocal, setIngresosAngieLocal] = useState<IngresoAngie[]>(ingresosAngie);
   const [showPresupuestadoPopover, setShowPresupuestadoPopover] = useState(false);
   const [presupuestadoAnchor, setPresupuestadoAnchor] = useState<DOMRect | null>(null);
+  const [popoverMode, setPopoverMode] = useState<"presupuestado" | "ejecutado">("presupuestado");
   const [desgloseModal, setDesgloseModal] = useState<Movimiento | null>(null);
   const [posponiendo, setPosponiendo] = useState<Movimiento | null>(null);
   const presupuestadoPopoverRef = useRef<HTMLDivElement>(null);
@@ -1263,8 +1264,13 @@ export default function VistaSemanal({
                 type="button"
                 style={{ fontWeight: 700, textDecoration: "underline dotted", cursor: "pointer", background: "none", border: "none", color: "inherit", fontSize: "inherit", padding: 0 }}
                 onClick={(e) => {
-                  setPresupuestadoAnchor((e.currentTarget as HTMLButtonElement).getBoundingClientRect());
-                  setShowPresupuestadoPopover(v => !v);
+                  if (showPresupuestadoPopover && popoverMode === "ejecutado") {
+                    setShowPresupuestadoPopover(false);
+                  } else {
+                    setPresupuestadoAnchor((e.currentTarget as HTMLButtonElement).getBoundingClientRect());
+                    setPopoverMode("ejecutado");
+                    setShowPresupuestadoPopover(true);
+                  }
                 }}
               >
                 {COP(totalEjecutado)}
@@ -1273,8 +1279,13 @@ export default function VistaSemanal({
                 type="button"
                 style={{ fontWeight: 700, textDecoration: "underline dotted", cursor: "pointer", background: "none", border: "none", color: "inherit", fontSize: "inherit", padding: 0 }}
                 onClick={(e) => {
-                  setPresupuestadoAnchor((e.currentTarget as HTMLButtonElement).getBoundingClientRect());
-                  setShowPresupuestadoPopover(v => !v);
+                  if (showPresupuestadoPopover && popoverMode === "presupuestado") {
+                    setShowPresupuestadoPopover(false);
+                  } else {
+                    setPresupuestadoAnchor((e.currentTarget as HTMLButtonElement).getBoundingClientRect());
+                    setPopoverMode("presupuestado");
+                    setShowPresupuestadoPopover(true);
+                  }
                 }}
               >
                 {COP(totalPresupuestado)}
@@ -1286,36 +1297,43 @@ export default function VistaSemanal({
                 background: "white", color: "#111111", border: "1px solid var(--hair)", borderRadius: 12,
                 boxShadow: "0 4px 24px rgba(0,0,0,0.12)", minWidth: 260, padding: "12px 0",
               }}>
-                <p style={{ fontWeight: 600, fontSize: 13, padding: "0 14px 8px" }}>Conceptos presupuestados</p>
-                <div style={{ maxHeight: 256, overflowY: "auto" }}>
-                  {movimientosPresupuestados.map(m => (
-                    <div key={m.id} style={{ display: "flex", justifyContent: "space-between", padding: "5px 14px", fontSize: 13 }}>
-                      <span style={{ flex: 1, marginRight: 12 }}>{m.nombreSnapshot}</span>
-                      <span style={{ fontVariantNumeric: "tabular-nums" }}>{COP(m.montoPresupuestado)}</span>
-                    </div>
-                  ))}
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 14px 0", borderTop: "1px solid var(--hair)", fontSize: 13, fontWeight: 700, marginTop: 4 }}>
-                  <span>Total</span>
-                  <span>{COP(totalPresupuestado)}</span>
-                </div>
-                {ejecutados.length > 0 && (
+                {popoverMode === "presupuestado" && (
                   <>
-                    <p style={{ fontWeight: 600, fontSize: 13, padding: "12px 14px 8px", borderTop: "1px solid var(--hair)", marginTop: 4 }}>
-                      Conceptos ejecutados
-                    </p>
-                    <div style={{ maxHeight: 160, overflowY: "auto" }}>
-                      {ejecutados.map(m => (
+                    <p style={{ fontWeight: 600, fontSize: 13, padding: "0 14px 8px" }}>Conceptos presupuestados</p>
+                    <div style={{ maxHeight: 256, overflowY: "auto" }}>
+                      {movimientosPresupuestados.map(m => (
                         <div key={m.id} style={{ display: "flex", justifyContent: "space-between", padding: "5px 14px", fontSize: 13 }}>
                           <span style={{ flex: 1, marginRight: 12 }}>{m.nombreSnapshot}</span>
-                          <span style={{ fontVariantNumeric: "tabular-nums" }}>{COP(m.montoEjecutado ?? 0)}</span>
+                          <span style={{ fontVariantNumeric: "tabular-nums" }}>{COP(m.montoPresupuestado)}</span>
                         </div>
                       ))}
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 14px 0", borderTop: "1px solid var(--hair)", fontSize: 13, fontWeight: 700, marginTop: 4 }}>
                       <span>Total</span>
-                      <span style={{ fontVariantNumeric: "tabular-nums" }}>{COP(totalEjecutadoH2)}</span>
+                      <span>{COP(totalPresupuestado)}</span>
                     </div>
+                  </>
+                )}
+                {popoverMode === "ejecutado" && (
+                  <>
+                    <p style={{ fontWeight: 600, fontSize: 13, padding: "0 14px 8px" }}>Conceptos ejecutados</p>
+                    <div style={{ maxHeight: 256, overflowY: "auto" }}>
+                      {ejecutados.length === 0
+                        ? <p style={{ padding: "5px 14px", fontSize: 13, color: "var(--muted)" }}>Sin ejecutados esta semana.</p>
+                        : ejecutados.map(m => (
+                            <div key={m.id} style={{ display: "flex", justifyContent: "space-between", padding: "5px 14px", fontSize: 13 }}>
+                              <span style={{ flex: 1, marginRight: 12 }}>{m.nombreSnapshot}</span>
+                              <span style={{ fontVariantNumeric: "tabular-nums" }}>{COP(m.montoEjecutado ?? 0)}</span>
+                            </div>
+                          ))
+                      }
+                    </div>
+                    {ejecutados.length > 0 && (
+                      <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 14px 0", borderTop: "1px solid var(--hair)", fontSize: 13, fontWeight: 700, marginTop: 4 }}>
+                        <span>Total</span>
+                        <span style={{ fontVariantNumeric: "tabular-nums" }}>{COP(totalEjecutadoH2)}</span>
+                      </div>
+                    )}
                   </>
                 )}
               </div>
