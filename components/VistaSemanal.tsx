@@ -1092,8 +1092,21 @@ export default function VistaSemanal({
     } catch {}
   }
 
-  const bolsillosPendientes = bolsillos.filter(b => b.estado !== "ejecutado");
-  const bolsillosEjecutados = bolsillos.filter(b => b.estado === "ejecutado");
+  const bolsillosDedup: Movimiento[] = (() => {
+    const map = new Map<string, { rep: Movimiento; movs: Movimiento[] }>();
+    for (const mov of bolsillos) {
+      const entry = map.get(mov.conceptoId);
+      if (!entry) map.set(mov.conceptoId, { rep: mov, movs: [mov] });
+      else entry.movs.push(mov);
+    }
+    return Array.from(map.values()).map(({ rep, movs }) => ({
+      ...rep,
+      montoPresupuestado: movs.reduce((s, m) => s + m.montoPresupuestado, 0),
+      estado: movs.every(m => m.estado === "ejecutado") ? "ejecutado" : rep.estado,
+    } as Movimiento));
+  })();
+  const bolsillosPendientes = bolsillosDedup.filter(b => b.estado !== "ejecutado");
+  const bolsillosEjecutados = bolsillosDedup.filter(b => b.estado === "ejecutado");
   const lista = tab === "pendientes"
     ? [...bolsillosPendientes, ...pendientes]
     : [...bolsillosEjecutados, ...ejecutados];
@@ -1763,7 +1776,7 @@ export default function VistaSemanal({
       {corrigiendoConsumo && (
         <ModalCorreccion
           consumo={corrigiendoConsumo}
-          bolsillos={bolsillos}
+          bolsillos={bolsillosDedup}
           consumos={consumos}
           onClose={() => setCorrigiendoConsumo(null)}
           onSaved={updated => {
