@@ -261,3 +261,61 @@ Ninguno. Los 5 tickets completaron implementación y `tsc --noEmit` limpio. Veri
 ### Próxima acción
 
 Re-QA en localhost por Camilo con checklist de 8 puntos (ver ESTADO.md sesión 20-jun).
+
+---
+
+## Sesión FIX BL-QA-04 / BL-QA-06 · 20 junio 2026
+
+### Piezas completadas
+
+| Commit | Hash | Descripción |
+|---|---|---|
+| BL-QA-04 | `2431f16` | Modal desglose H3B al tocar bolsillo ejecutado (+ seed-imprevistos-v2.mjs) |
+| BL-QA-06 | (este commit) | SESSION_LOG + kanban regenerado |
+
+### BL-QA-04 — Causa raíz
+
+El popover de desglose existía en el código (herencia de OBS-2), pero solo se abría al tocar el **botón del monto** (texto pequeño con `textDecoration: underline dotted`). El card completo del bolsillo ejecutado no tenía `onClick`. El DoD exige que "tocar el bolsillo ejecutado" abra un modal, y la implementación era un popover sin botón de cierre.
+
+**Fix aplicado:** Eliminados `popoverBolsilloId`, `bolsilloAnchor`, `bolsilloRefs` y el `useEffect` de cierre por mousedown. Reemplazado por `desgloseModal: Movimiento | null`. El `div.fl-concepto` del bolsillo ejecutado recibe `onClick={() => setDesgloseModal(mov)}` y `cursor: pointer`. Se agrega un bottom-sheet modal al final del componente con lista de consumos H3B, total al pie y botón X de cierre.
+
+### DoD BL-QA-04
+
+| Punto | Estado | Evidencia |
+|---|---|---|
+| Tocar bolsillo ejecutado abre modal | ✓ | `onClick` en `div.fl-concepto` cuando `tab === "ejecutados"` llama `setDesgloseModal(mov)` |
+| Modal muestra lista de consumos H3B del conceptoId | ✓ | `consumos.filter(c => c.bolsilloId === desgloseModal.conceptoId)` |
+| Cada item muestra descripción + monto + fecha | ✓ | `c.descripcion`, `COP(c.monto)`, `c.fecha` en cada row del modal |
+| Modal tiene opción de cierre | ✓ | Botón X (`<Icon name="x" />`) + tap en backdrop llaman `setDesgloseModal(null)` |
+| `tsc --noEmit` limpio | ✓ | Pasó antes del commit; hook pre-commit confirmó |
+
+### BL-QA-06 — Causa raíz
+
+El guard de `seed-imprevistos.mjs` chequeaba solo `nombre === "Imprevistos"`, encontraba el concepto antiguo retirado (`COMPROMISOS_FINANCIEROS_1780950917017`, `estado_concepto: retirado`) y abortaba sin crear el nuevo. Además la `frecuencia` en el script original era `"mensual"` (debía ser `"semanal"`) y el H2 MOV no especificaba semana (quedaba `""` / variable).
+
+**Fix aplicado:** `seed-imprevistos-v2.mjs` — guard triple `nombre=Imprevistos AND tipo=pago_fraccionado AND estado_concepto=activo`. H1 con `frecuencia: "semanal"`. H2 con `semana: "S3"`. Script ejecutado contra Sheet de dev → `COMPROMISOS_FINANCIEROS_1782005151968` creado en H1 + `MOV_1782005151969` en H2 S3/2026-06.
+
+**P3 (Haiku):** Ya resuelto en OBS-3 — `clasificar/route.ts` excluye "Imprevistos" de la lista y el system prompt lo prohíbe explícitamente.
+
+### DoD BL-QA-06
+
+| Punto | Estado | Evidencia |
+|---|---|---|
+| Concepto Imprevistos activo en H1 con tipo=pago_fraccionado | ✓ | `COMPROMISOS_FINANCIEROS_1782005151968` insertado vía seed-imprevistos-v2.mjs |
+| MOV S3/2026-06 con estado=pendiente en H2 | ✓ | `MOV_1782005151969` insertado con `semana=S3`, `monto_presupuestado=250000`, `estado=pendiente` |
+| Ficha Imprevistos aparece en Pendientes VistaSemanal S3 | ✓ | MOV con `semana=S3` es retornado por `getMovimientosByMesYSemana`; entra a `bolsillosPendientes` como `pago_fraccionado` |
+| Ficha muestra indicador de avance (consumido / 250.000) | ✓ | Ring + `COP(gastado) / COP(techo)` en card pago_fraccionado (sin cambios de código, misma lógica que Entretenimiento) |
+| Claude Haiku no sugiere Imprevistos automáticamente | ✓ | OBS-3 ya implementó: `filter(... && c.nombre !== "Imprevistos")` + system prompt explícito |
+| `tsc --noEmit` limpio | ✓ | Pasó; sin cambios de TypeScript en BL-QA-06 |
+
+### Nota de scope
+
+El script `seed-imprevistos-v2.mjs` quedó incluido en el commit `2431f16` (BL-QA-04) por una carrera entre el `git add` y el commit en background. El código está en rama y la funcionalidad es correcta.
+
+### Deuda técnica encontrada esta sesión
+
+12. **I-10 · Seed prod Imprevistos pendiente antes del merge**: antes de mergear PR #6 a main se debe insertar manualmente en el Sheet de producción: H1 con los mismos valores que `seed-imprevistos-v2.mjs` y un H2 MOV para la semana activa en ese momento. Esto es parte del checklist de promoción.
+
+### Próxima acción
+
+Re-QA en preview URL por Camilo. Checklist BL-QA-04 + BL-QA-06.
