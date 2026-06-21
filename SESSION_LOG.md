@@ -568,3 +568,48 @@ Sin MOVs de pago_fraccionado con semana=null en 2026-06.
 ### Próxima acción
 
 Re-QA en preview URL `https://flujo-git-dev-camilo-s-projects10.vercel.app` por Camilo.
+
+---
+
+## Sesión 21 jun 2026 — FIX-MES-ACTIVO + FIX-POPOVER-EJ-FILTRO
+
+### Bug 1 — Mes activo muestra julio en lugar de junio
+
+**Diagnóstico:** `app/page.tsx` calculaba `mesActivo` tomando el último elemento del array
+retornado por `getMeses()`. Esa función lee H2, extrae valores únicos de la columna `mes`
+y los ordena alfabéticamente. Como H2 producción tiene MOVs con `mes=2026-07`
+(presupuesto anticipado), `meses[meses.length - 1]` retornaba `"2026-07"` en lugar de `"2026-06"`.
+
+**Fix (commit `c9f5699`):** `app/page.tsx`
+- Agregar función `mesActual()` que retorna el mes calendario actual desde `new Date()`
+- Reemplazar la inferencia desde H2 por `mesActual()`
+
+**DoD:**
+| Criterio | Estado |
+|---|---|
+| App muestra junio como mes activo | ✓ — lógica corregida a fecha sistema |
+| Navegar a julio no cambia mes activo | ✓ — mes activo ya no depende de H2 |
+| `tsc --noEmit` limpio | ✓ — hook pre-commit confirmado |
+
+---
+
+### Bug 2 — Popover barra morada no muestra todos los ejecutados
+
+**Diagnóstico:** El total ejecutado de la barra morada (`totalEjecutado`) suma
+`totalEjecutadoH2` (MOVs H2 ejecutados, sin pago_fraccionado) + `totalEjecutadoH3`
+(consumos H3B de la semana). El popover solo listaba `ejecutados` (MOVs H2) y mostraba
+`totalEjecutadoH2` como total — omitía completamente los consumos H3B,
+causando discrepancia entre la lista del popover y el monto de la barra.
+
+**Fix (commit `7b861f6`):** `components/VistaSemanal.tsx` bloque `popoverMode === "ejecutado"`
+- Lista H2 `ejecutados` + `consumos` H3B como entradas individuales (`c.descripcion` + `COP(c.monto)`)
+- Condición vacío: `ejecutados.length === 0 && consumos.length === 0`
+- Total footer: `totalEjecutadoH2` → `totalEjecutado` (H2 + H3)
+- Footer visible si hay ejecutados H2 o consumos H3
+
+**DoD:**
+| Criterio | Estado |
+|---|---|
+| Popover muestra todos los items que suman el total | ✓ — H2 + H3 en lista |
+| Total popover coincide con total barra | ✓ — ambos usan `totalEjecutado` |
+| `tsc --noEmit` limpio | ✓ — hook pre-commit confirmado |
