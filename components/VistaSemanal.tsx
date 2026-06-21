@@ -1430,7 +1430,7 @@ export default function VistaSemanal({
                       <div style={{ display: "flex", gap: 11, alignItems: "center", minWidth: 0 }}>
                         <Ring pct={pctB} over={over} />
                         <div style={{ minWidth: 0 }}>
-                          <p className="name">{mov.nombreSnapshot}</p>
+                          <p className="name" onClick={(e) => e.stopPropagation()}>{mov.nombreSnapshot}</p>
                           <p
                             className="cat"
                             data-h3b-trigger
