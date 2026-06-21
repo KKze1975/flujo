@@ -482,3 +482,37 @@ por la variable `ejecutados`). Sin fetch adicional.
 ### Próxima acción
 
 Re-QA en preview URL `https://flujo-git-dev-camilo-s-projects10.vercel.app` por Camilo.
+
+---
+
+## Sesión FIX-BARRA-EJ-TRIGGER · 21 junio 2026
+
+### Commit
+
+| Hash | Descripción |
+|---|---|
+| `decb35b` | FIX-BARRA-EJ-TRIGGER: agregar onClick en monto ejecutado barra morada |
+
+### Causa raíz
+
+El commit `47e73ce` agregó la sección "Conceptos ejecutados" al popover pero no
+envolvió `{COP(totalEjecutado)}` en un botón. El texto era plano — sin trigger.
+Solo `totalPresupuestado` tenía el `<button onClick={openPopover}>`.
+
+### Fix
+
+Envuelto `{COP(totalEjecutado)}` en el mismo `<button>` con el mismo handler
+(`setPresupuestadoAnchor` + toggle `showPresupuestadoPopover`). Abre el mismo
+popover ya existente que incluye ambas secciones.
+
+### DoD
+
+| Punto | Estado |
+|---|---|
+| Tap en monto ejecutado barra → abre popover con ambas secciones | ✓ código |
+| Tap en monto presupuestado barra → sigue funcionando | ✓ código — sin cambios |
+| `tsc --noEmit` limpio | ✓ — hook pre-commit confirmado |
+
+### Próxima acción
+
+Re-QA en preview URL `https://flujo-git-dev-camilo-s-projects10.vercel.app` por Camilo.
