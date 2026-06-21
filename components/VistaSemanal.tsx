@@ -458,11 +458,13 @@ function ModalAccionesPendiente({
   onClose: () => void;
   onUpdated: (updated: Movimiento) => void;
 }) {
-  type Accion = "posponer" | "no_aplica";
+  type Accion = "ejecutar" | "posponer" | "no_aplica";
   type Destino = Semana | "siguiente";
 
-  const [accion, setAccion] = useState<Accion>("posponer");
+  const [accion, setAccion] = useState<Accion>("ejecutar");
   const [destino, setDestino] = useState<Destino>("S1");
+  const [montoEditar, setMontoEditar] = useState(String(movimiento.montoPresupuestado));
+  const [fuenteEditar, setFuenteEditar] = useState<Fuente | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -473,7 +475,19 @@ function ModalAccionesPendiente({
     setError(null);
     try {
       let body: Record<string, unknown>;
-      if (accion === "no_aplica") {
+      if (accion === "ejecutar") {
+        const monto = Number(montoEditar);
+        if (isNaN(monto) || monto <= 0) { setError("Monto inválido"); setBusy(false); return; }
+        body = {
+          tipo: "ejecutar",
+          montoEjecutado: monto,
+          fuenteEnMano:  fuenteEditar === "en_mano",
+          fuenteNequi:   fuenteEditar === "nequi",
+          fuenteCamilo:  fuenteEditar === "camilo",
+          fuenteAngie:   fuenteEditar === "angie",
+          ejecutor: "camilo",
+        };
+      } else if (accion === "no_aplica") {
         body = { tipo: "no_aplica" };
       } else if (destino === "siguiente") {
         body = { tipo: "mover_mes_siguiente" };
@@ -518,16 +532,49 @@ function ModalAccionesPendiente({
 
         <div className="dk-modal-body">
           <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-            {(["posponer", "no_aplica"] as Accion[]).map(a => (
+            {(["ejecutar", "posponer", "no_aplica"] as Accion[]).map(a => (
               <button key={a} type="button"
                 className={`fl-btn ghost sm${accion === a ? " primary" : ""}`}
                 style={btnStyle(accion === a)}
                 onClick={() => setAccion(a)}
               >
-                {a === "posponer" ? "Posponer" : "No aplica"}
+                {a === "ejecutar" ? "Ejecutar" : a === "posponer" ? "Posponer" : "No aplica"}
               </button>
             ))}
           </div>
+
+          {accion === "ejecutar" && (
+            <>
+              <div style={{ marginTop: 16 }}>
+                <p className="dk-exp-lbl">Monto ejecutado</p>
+                <div className="dk-amtrow">
+                  <input
+                    className="dk-amt-in"
+                    type="number"
+                    value={montoEditar}
+                    onChange={e => setMontoEditar(e.target.value)}
+                    style={{ width: "100%", textAlign: "right", fontFeatureSettings: '"tnum" 1', fontWeight: 600 }}
+                  />
+                </div>
+              </div>
+              <div style={{ marginTop: 12 }}>
+                <p className="dk-exp-lbl">Fuente de pago</p>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7 }}>
+                  {FUENTES.map(f => (
+                    <button key={f.value} type="button" className="fl-chip"
+                      style={{
+                        justifyContent: "center", cursor: "pointer",
+                        background: fuenteEditar === f.value ? "var(--primary)" : "var(--surface-2)",
+                        color: fuenteEditar === f.value ? "var(--on-primary)" : "var(--ink-soft)",
+                      }}
+                      onClick={() => setFuenteEditar(f.value)}>
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
 
           {accion === "posponer" && (
             <div style={{ marginTop: 16 }}>
@@ -573,8 +620,9 @@ function ModalAccionesPendiente({
           <button type="button" className="fl-btn ghost sm" onClick={onClose} disabled={busy}>
             Cancelar
           </button>
-          <button type="button" className="fl-btn primary sm" onClick={confirmar} disabled={busy}>
-            {busy ? "…" : accion === "posponer" ? "Posponer" : "Confirmar no aplica"}
+          <button type="button" className="fl-btn primary sm" onClick={confirmar}
+            disabled={busy || (accion === "ejecutar" && !fuenteEditar)}>
+            {busy ? "…" : accion === "ejecutar" ? "Confirmar ejecución" : accion === "posponer" ? "Posponer" : "Confirmar no aplica"}
           </button>
         </footer>
       </div>
