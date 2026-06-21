@@ -969,7 +969,7 @@ export default function VistaSemanal({
 
   const idxVisible = SEMANAS.indexOf(semanaVisible);
   const puedeIzq = idxVisible > 0;
-  const puedeDer = semanaVisible !== semanaActivaMes;
+  const puedeDer = idxVisible < SEMANAS.length - 1;
 
   const bolsillos = movimientos.filter((m) => m.tipoSnapshot === "pago_fraccionado");
   const conceptos  = movimientos.filter((m) => m.tipoSnapshot !== "pago_fraccionado");
