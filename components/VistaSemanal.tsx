@@ -1318,20 +1318,28 @@ export default function VistaSemanal({
                   <>
                     <p style={{ fontWeight: 600, fontSize: 13, padding: "0 14px 8px" }}>Conceptos ejecutados</p>
                     <div style={{ maxHeight: 256, overflowY: "auto" }}>
-                      {ejecutados.length === 0
+                      {ejecutados.length === 0 && consumos.length === 0
                         ? <p style={{ padding: "5px 14px", fontSize: 13, color: "var(--muted)" }}>Sin ejecutados esta semana.</p>
-                        : ejecutados.map(m => (
-                            <div key={m.id} style={{ display: "flex", justifyContent: "space-between", padding: "5px 14px", fontSize: 13 }}>
-                              <span style={{ flex: 1, marginRight: 12 }}>{m.nombreSnapshot}</span>
-                              <span style={{ fontVariantNumeric: "tabular-nums" }}>{COP(m.montoEjecutado ?? 0)}</span>
-                            </div>
-                          ))
+                        : <>
+                            {ejecutados.map(m => (
+                              <div key={m.id} style={{ display: "flex", justifyContent: "space-between", padding: "5px 14px", fontSize: 13 }}>
+                                <span style={{ flex: 1, marginRight: 12 }}>{m.nombreSnapshot}</span>
+                                <span style={{ fontVariantNumeric: "tabular-nums" }}>{COP(m.montoEjecutado ?? 0)}</span>
+                              </div>
+                            ))}
+                            {consumos.map(c => (
+                              <div key={c.id} style={{ display: "flex", justifyContent: "space-between", padding: "5px 14px", fontSize: 13 }}>
+                                <span style={{ flex: 1, marginRight: 12 }}>{c.descripcion}</span>
+                                <span style={{ fontVariantNumeric: "tabular-nums" }}>{COP(c.monto)}</span>
+                              </div>
+                            ))}
+                          </>
                       }
                     </div>
-                    {ejecutados.length > 0 && (
+                    {(ejecutados.length > 0 || consumos.length > 0) && (
                       <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 14px 0", borderTop: "1px solid var(--hair)", fontSize: 13, fontWeight: 700, marginTop: 4 }}>
                         <span>Total</span>
-                        <span style={{ fontVariantNumeric: "tabular-nums" }}>{COP(totalEjecutadoH2)}</span>
+                        <span style={{ fontVariantNumeric: "tabular-nums" }}>{COP(totalEjecutado)}</span>
                       </div>
                     )}
                   </>
