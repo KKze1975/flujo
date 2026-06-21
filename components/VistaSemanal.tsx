@@ -1290,6 +1290,25 @@ export default function VistaSemanal({
                   <span>Total</span>
                   <span>{COP(totalPresupuestado)}</span>
                 </div>
+                {ejecutados.length > 0 && (
+                  <>
+                    <p style={{ fontWeight: 600, fontSize: 13, padding: "12px 14px 8px", borderTop: "1px solid var(--hair)", marginTop: 4 }}>
+                      Conceptos ejecutados
+                    </p>
+                    <div style={{ maxHeight: 160, overflowY: "auto" }}>
+                      {ejecutados.map(m => (
+                        <div key={m.id} style={{ display: "flex", justifyContent: "space-between", padding: "5px 14px", fontSize: 13 }}>
+                          <span style={{ flex: 1, marginRight: 12 }}>{m.nombreSnapshot}</span>
+                          <span style={{ fontVariantNumeric: "tabular-nums" }}>{COP(m.montoEjecutado ?? 0)}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 14px 0", borderTop: "1px solid var(--hair)", fontSize: 13, fontWeight: 700, marginTop: 4 }}>
+                      <span>Total</span>
+                      <span style={{ fontVariantNumeric: "tabular-nums" }}>{COP(totalEjecutadoH2)}</span>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
