@@ -1259,7 +1259,16 @@ export default function VistaSemanal({
           </div>
           <div ref={presupuestadoPopoverRef} style={{ position: "relative", marginTop: 6 }}>
             <p className="sub" style={{ fontSize: 12 }}>
-              {COP(totalEjecutado)} de{" "}
+              <button
+                type="button"
+                style={{ fontWeight: 700, textDecoration: "underline dotted", cursor: "pointer", background: "none", border: "none", color: "inherit", fontSize: "inherit", padding: 0 }}
+                onClick={(e) => {
+                  setPresupuestadoAnchor((e.currentTarget as HTMLButtonElement).getBoundingClientRect());
+                  setShowPresupuestadoPopover(v => !v);
+                }}
+              >
+                {COP(totalEjecutado)}
+              </button>{" "}de{" "}
               <button
                 type="button"
                 style={{ fontWeight: 700, textDecoration: "underline dotted", cursor: "pointer", background: "none", border: "none", color: "inherit", fontSize: "inherit", padding: 0 }}
