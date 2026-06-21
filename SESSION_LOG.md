@@ -218,3 +218,46 @@ Ninguno. Los 5 tickets completaron implementación y `tsc --noEmit` limpio. Veri
 7. **OBS-4 · `toggleEditar` posiblemente código muerto**: la función permanece en VistaSemanal pero ya no se invoca desde el lápiz de pendientes. Requiere auditoría.
 8. **OBS-4 · `razonPostergacion` no expuesto en UI**: la API acepta el campo pero `ModalAccionesPendiente` no lo solicita al usuario.
 9. **OBS-4 · Destino default S1 en lugar de semana activa**: UX menor — el usuario debe seleccionar explícitamente aunque la semana siguiente sea la natural.
+
+---
+
+## Sesión FIX BL-QA-01 / BL-QA-02 · 20 junio 2026
+
+### Piezas completadas
+
+| Commit | Hash | Descripción |
+|---|---|---|
+| BL-QA-01 | `454fd95` | Deduplicar bolsillos pago_fraccionado por conceptoId |
+| BL-QA-02 | `8f4ace1` | Restaurar edición monto+fuente en lápiz pendientes |
+
+### DoD BL-QA-01
+
+| Punto | Estado | Evidencia |
+|---|---|---|
+| Lista Pendientes: una sola ficha por concepto pago_fraccionado | ✓ | `bolsillosDedup` agrupa por conceptoId; `bolsillosPendientes` filtra sobre el dedup |
+| Lista Ejecutados: una sola ficha por concepto pago_fraccionado | ✓ | `bolsillosEjecutados` filtra sobre el mismo `bolsillosDedup` |
+| Selector en ModalCorreccion sin opciones duplicadas | ✓ | prop `bolsillos` cambiada a `bolsillosDedup`; key `b.conceptoId` ya no colisiona |
+| No hay warnings de key duplicada en consola | ✓ | causa raíz eliminada |
+| `tsc --noEmit` limpio | ✓ | pasó antes del commit; hook pre-commit confirmó |
+
+### DoD BL-QA-02
+
+| Punto | Estado | Evidencia |
+|---|---|---|
+| Lápiz en pendiente abre modal con sección "Ejecutar" (monto + fuente) | ✓ | `ModalAccionesPendiente` tiene tab "ejecutar" como default; muestra input monto + chips fuente |
+| Confirmar ejecución llama PATCH `tipo: "ejecutar"` con monto y fuente | ✓ | `confirmar()` con `accion === "ejecutar"` construye body correcto y llama `/api/mes/[mes]/movimientos/[id]` |
+| Confirmar ejecución sin fuente seleccionada está disabled | ✓ | `disabled={busy \|\| (accion === "ejecutar" && !fuenteEditar)}` |
+| Modal también muestra opciones Posponer / No aplica (OBS-4 intacto) | ✓ | tabs "posponer" y "no_aplica" preservados con lógica sin cambios |
+| El concepto desaparece de Pendientes tras ejecutar | ✓ | `onUpdated` actualiza `movimientos`; recomputa `pendientes` con `estado !== "pendiente"` |
+| El concepto desaparece de Pendientes tras posponer | ✓ | OBS-4 inalterado |
+| `tsc --noEmit` limpio | ✓ | pasó antes del commit; hook pre-commit confirmó |
+
+### Deuda técnica encontrada esta sesión
+
+10. **BL-QA-01 · "Cerrar bolsillo" ejecuta solo el MOV representante**: cuando un concepto `pago_fraccionado` tiene múltiples MOVs, el botón "Cerrar bolsillo" llama `patchar(mov.id, ...)` donde `mov` es el primer MOV del grupo. Los demás MOVs quedan pendientes. El bolsillo no desaparecerá de Pendientes hasta que todos los MOVs sean ejecutados (ya sea vía "Cerrar bolsillo" repetido o via cerrar-semana). Impacto: UX confuso si hay múltiples MOVs activos para el mismo concepto. Scope: fuera de BL-QA-01 (que solo pedía una ficha por concepto, no que el cierre ejecute todos los MOVs).
+
+11. **BL-QA-02 · `toggleEditar` y Panel Editar son ahora código muerto**: la función `toggleEditar` y el bloque JSX "Panel Editar" (lines ~1037-1075 y ~1579-1631) no son invocados desde ningún lugar. El lápiz ya abre `ModalAccionesPendiente`. Candidatos a eliminar en sesión de limpieza.
+
+### Próxima acción
+
+Re-QA en localhost por Camilo con checklist de 8 puntos (ver ESTADO.md sesión 20-jun).
