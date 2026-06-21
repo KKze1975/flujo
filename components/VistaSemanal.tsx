@@ -961,11 +961,9 @@ export default function VistaSemanal({
   const [ingresosAngieLocal, setIngresosAngieLocal] = useState<IngresoAngie[]>(ingresosAngie);
   const [showPresupuestadoPopover, setShowPresupuestadoPopover] = useState(false);
   const [presupuestadoAnchor, setPresupuestadoAnchor] = useState<DOMRect | null>(null);
-  const [popoverBolsilloId, setPopoverBolsilloId] = useState<string | null>(null);
-  const [bolsilloAnchor, setBolsilloAnchor] = useState<DOMRect | null>(null);
+  const [desgloseModal, setDesgloseModal] = useState<Movimiento | null>(null);
   const [posponiendo, setPosponiendo] = useState<Movimiento | null>(null);
   const presupuestadoPopoverRef = useRef<HTMLDivElement>(null);
-  const bolsilloRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   const idxVisible = SEMANAS.indexOf(semanaVisible);
   const puedeIzq = idxVisible > 0;
@@ -1186,19 +1184,6 @@ export default function VistaSemanal({
     return () => document.removeEventListener("mousedown", handleClick);
   }, [showPresupuestadoPopover]);
 
-  useEffect(() => {
-    if (!popoverBolsilloId) return;
-    const activeId = popoverBolsilloId;
-    function handleClick(e: MouseEvent) {
-      const ref = bolsilloRefs.current.get(activeId);
-      if (ref && !ref.contains(e.target as Node)) {
-        setPopoverBolsilloId(null);
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [popoverBolsilloId]);
-
   return (
     <div className="t-calido screen-anim">
       {/* App bar */}
@@ -1415,15 +1400,12 @@ export default function VistaSemanal({
                 const techo = mov.montoPresupuestado;
                 const pctB = techo > 0 ? Math.round((gastado / techo) * 100) : 0;
                 const over = gastado > techo;
-                const popoverWidth = 260;
-                const adjustedLeft = bolsilloAnchor
-                  ? Math.min(bolsilloAnchor.left, window.innerWidth - popoverWidth - 8)
-                  : 0;
                 return (
                   <div
                     key={mov.id}
-                    ref={(el) => { if (el) bolsilloRefs.current.set(mov.conceptoId, el as HTMLDivElement); else bolsilloRefs.current.delete(mov.conceptoId); }}
                     className="fl-concepto"
+                    style={tab === "ejecutados" ? { cursor: "pointer" } : undefined}
+                    onClick={tab === "ejecutados" ? () => setDesgloseModal(mov) : undefined}
                   >
                     <div className="top">
                       <div style={{ display: "flex", gap: 11, alignItems: "center", minWidth: 0 }}>
@@ -1435,16 +1417,9 @@ export default function VistaSemanal({
                       </div>
                       <div style={{ textAlign: "right", flexShrink: 0 }}>
                         {tab === "ejecutados" ? (
-                          <button
-                            type="button"
-                            style={{ fontWeight: 700, textDecoration: "underline dotted", cursor: "pointer", background: "none", border: "none", color: "inherit", fontSize: "inherit", padding: 0 }}
-                            onClick={(e) => {
-                              setBolsilloAnchor((e.currentTarget as HTMLButtonElement).getBoundingClientRect());
-                              setPopoverBolsilloId(id => id === mov.conceptoId ? null : mov.conceptoId);
-                            }}
-                          >
+                          <span style={{ fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
                             {COP(mov.montoEjecutado ?? gastado)}
-                          </button>
+                          </span>
                         ) : (
                           over
                             ? <span className="fl-badge neg" style={{ marginTop: 4 }}><span className="dot" />+{COP(gastado - techo)}</span>
@@ -1459,47 +1434,21 @@ export default function VistaSemanal({
                           style={{ flex: 1 }}
                           type="button"
                           disabled={busy}
-                          onClick={() => patchar(mov.id, {
-                            tipo: "ejecutar",
-                            montoEjecutado: gastado,
-                            fuenteEnMano: false,
-                            fuenteNequi: false,
-                            fuenteCamilo: false,
-                            fuenteAngie: false,
-                            ejecutor: "camilo",
-                          })}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            patchar(mov.id, {
+                              tipo: "ejecutar",
+                              montoEjecutado: gastado,
+                              fuenteEnMano: false,
+                              fuenteNequi: false,
+                              fuenteCamilo: false,
+                              fuenteAngie: false,
+                              ejecutor: "camilo",
+                            });
+                          }}
                         >
                           Cerrar bolsillo
                         </button>
-                      </div>
-                    )}
-                    {tab === "ejecutados" && popoverBolsilloId === mov.conceptoId && bolsilloAnchor && (
-                      <div style={{
-                        position: "fixed", top: bolsilloAnchor.bottom + 4, left: adjustedLeft, zIndex: 9999,
-                        background: "white", color: "#111111", border: "1px solid var(--hair)", borderRadius: 12,
-                        boxShadow: "0 4px 24px rgba(0,0,0,0.12)", minWidth: 260, padding: "12px 0",
-                      }}>
-                        <p style={{ fontWeight: 600, fontSize: 13, padding: "0 14px 8px" }}>{mov.nombreSnapshot}</p>
-                        <div style={{ maxHeight: 256, overflowY: "auto" }}>
-                          {consumosBolsillo.length === 0
-                            ? <p style={{ padding: "4px 14px", fontSize: 13, color: "var(--ink-faint)" }}>Sin consumos registrados</p>
-                            : consumosBolsillo.map(c => (
-                                <div key={c.id} style={{ padding: "5px 14px", fontSize: 13 }}>
-                                  <div style={{ display: "flex", justifyContent: "space-between" }}>
-                                    <span style={{ flex: 1, marginRight: 12 }}>{c.descripcion}</span>
-                                    <span style={{ fontVariantNumeric: "tabular-nums" }}>{COP(c.monto)}</span>
-                                  </div>
-                                  <p style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 2 }}>{c.fecha}</p>
-                                </div>
-                              ))
-                          }
-                        </div>
-                        {consumosBolsillo.length > 0 && (
-                          <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 14px 0", borderTop: "1px solid var(--hair)", fontSize: 13, fontWeight: 700, marginTop: 4 }}>
-                            <span>Total</span>
-                            <span>{COP(gastado)}</span>
-                          </div>
-                        )}
                       </div>
                     )}
                   </div>
@@ -1864,6 +1813,50 @@ export default function VistaSemanal({
           }}
         />
       )}
+
+      {/* BL-QA-04 · Modal desglose H3B bolsillo ejecutado */}
+      {desgloseModal && (() => {
+        const consumosBolsillo = consumos.filter(c => c.bolsilloId === desgloseModal.conceptoId);
+        const gastado = consumosBolsillo.reduce((sum, c) => sum + c.monto, 0);
+        return (
+          <div
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 800 }}
+            onClick={() => setDesgloseModal(null)}
+          >
+            <div
+              style={{ background: "var(--surface)", borderRadius: "20px 20px 0 0", padding: "20px 20px 32px", width: "100%", maxWidth: 480, maxHeight: "70vh", display: "flex", flexDirection: "column" }}
+              onClick={e => e.stopPropagation()}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                <p style={{ fontWeight: 700, fontSize: 16, margin: 0, color: "var(--ink)" }}>{desgloseModal.nombreSnapshot}</p>
+                <button type="button" style={{ background: "none", border: "none", cursor: "pointer", padding: 4, color: "var(--ink-soft)" }} onClick={() => setDesgloseModal(null)}>
+                  <Icon name="x" size={18} />
+                </button>
+              </div>
+              <div style={{ overflowY: "auto", flex: 1 }}>
+                {consumosBolsillo.length === 0
+                  ? <p style={{ fontSize: 13, color: "var(--ink-faint)" }}>Sin consumos registrados</p>
+                  : consumosBolsillo.map(c => (
+                      <div key={c.id} style={{ padding: "8px 0", borderBottom: "1px solid var(--hair)" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                          <span style={{ flex: 1, fontSize: 13, color: "var(--ink)" }}>{c.descripcion || "Sin descripción"}</span>
+                          <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600, fontSize: 13, flexShrink: 0 }}>{COP(c.monto)}</span>
+                        </div>
+                        <p style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 2 }}>{c.fecha}</p>
+                      </div>
+                    ))
+                }
+              </div>
+              {consumosBolsillo.length > 0 && (
+                <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 12, borderTop: "1px solid var(--hair)", fontSize: 13, fontWeight: 700, marginTop: 8, color: "var(--ink)" }}>
+                  <span>Total</span>
+                  <span>{COP(gastado)}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
