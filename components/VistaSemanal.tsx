@@ -964,6 +964,8 @@ export default function VistaSemanal({
   const [desgloseModal, setDesgloseModal] = useState<Movimiento | null>(null);
   const [posponiendo, setPosponiendo] = useState<Movimiento | null>(null);
   const presupuestadoPopoverRef = useRef<HTMLDivElement>(null);
+  const [h3bPopover, setH3bPopover] = useState<{ anchor: DOMRect; bolsilloId: string } | null>(null);
+  const h3bPopoverRef = useRef<HTMLDivElement>(null);
 
   const idxVisible = SEMANAS.indexOf(semanaVisible);
   const puedeIzq = idxVisible > 0;
@@ -1183,6 +1185,22 @@ export default function VistaSemanal({
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [showPresupuestadoPopover]);
+
+  useEffect(() => {
+    if (!h3bPopover) return;
+    function handleClick(e: MouseEvent) {
+      const target = e.target as HTMLElement;
+      if (
+        h3bPopoverRef.current &&
+        !h3bPopoverRef.current.contains(target) &&
+        !target.closest("[data-h3b-trigger]")
+      ) {
+        setH3bPopover(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [h3bPopover]);
 
   return (
     <div className="t-calido screen-anim">
@@ -1413,7 +1431,20 @@ export default function VistaSemanal({
                         <Ring pct={pctB} over={over} />
                         <div style={{ minWidth: 0 }}>
                           <p className="name">{mov.nombreSnapshot}</p>
-                          <p className="cat">{COP(gastado)} / {COP(techo)}</p>
+                          <p
+                            className="cat"
+                            data-h3b-trigger
+                            style={{ cursor: "pointer" }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setH3bPopover({
+                                anchor: (e.currentTarget as HTMLElement).getBoundingClientRect(),
+                                bolsilloId: mov.conceptoId,
+                              });
+                            }}
+                          >
+                            {COP(gastado)} / {COP(techo)}
+                          </p>
                         </div>
                       </div>
                       <div style={{ textAlign: "right", flexShrink: 0 }}>
@@ -1854,6 +1885,59 @@ export default function VistaSemanal({
           </div>
         </div>
       )}
+      {h3bPopover && (() => {
+        const items = consumos.filter(c => c.bolsilloId === h3bPopover.bolsilloId);
+        const total = items.reduce((s, c) => s + c.monto, 0);
+        return (
+          <div
+            ref={h3bPopoverRef}
+            style={{
+              position: "fixed",
+              top: h3bPopover.anchor.bottom + 4,
+              left: h3bPopover.anchor.left,
+              zIndex: 9999,
+              background: "white",
+              color: "#111111",
+              border: "1px solid var(--hair)",
+              borderRadius: 12,
+              boxShadow: "0 4px 24px rgba(0,0,0,0.12)",
+              minWidth: 260,
+              padding: "12px 0",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 14px 8px" }}>
+              <p style={{ fontWeight: 600, fontSize: 13, margin: 0 }}>Consumos H3B</p>
+              <button
+                type="button"
+                onClick={() => setH3bPopover(null)}
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: 18, lineHeight: 1, padding: 0, color: "#111" }}
+              >
+                ×
+              </button>
+            </div>
+            <div style={{ maxHeight: 256, overflowY: "auto" }}>
+              {items.length === 0 ? (
+                <p style={{ padding: "5px 14px", fontSize: 13, color: "var(--muted)" }}>
+                  Sin registros esta semana.
+                </p>
+              ) : (
+                items.map(c => (
+                  <div key={c.id} style={{ display: "flex", justifyContent: "space-between", padding: "5px 14px", fontSize: 13 }}>
+                    <span style={{ flex: 1, marginRight: 12 }}>{c.descripcion}</span>
+                    <span style={{ fontVariantNumeric: "tabular-nums" }}>{COP(c.monto)}</span>
+                  </div>
+                ))
+              )}
+            </div>
+            {items.length > 0 && (
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 14px 0", borderTop: "1px solid var(--hair)", fontSize: 13, fontWeight: 700, marginTop: 4 }}>
+                <span>Total</span>
+                <span style={{ fontVariantNumeric: "tabular-nums" }}>{COP(total)}</span>
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }
