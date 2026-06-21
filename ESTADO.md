@@ -1,5 +1,5 @@
 # FLUJO — Estado del Proyecto
-Actualizado: 15 junio 2026 | Fase: Go-live — Semana 1 producción — BL-10 construido pendiente QA Angie
+Actualizado: 20 junio 2026 | Fase: Go-live — S3 cerrado — Loop OBS-1/2/3/4 aprobado para construir
 
 ---
 
@@ -2805,3 +2805,378 @@ BL-02 → BL-06 → QA-7jun-01
 - PR #5 (dev → main): pendiente merge — QA completado, listo para producción.
 - BL-04 y BL-05: cerrados por diseño, absorbidos en BL-11.
 - Próxima sesión: merge PR #5 → BL-02.
+
+---
+
+## Sesión 20 junio 2026 — DISEÑO · Cierre S3 + Observaciones producción
+
+### Tipo de sesión
+DISEÑO — Análisis de observaciones de uso real en producción. Sin código abierto.
+
+### Contexto
+Sesión de cierre de S3 con Angie activa en producción. Cuatro observaciones de usabilidad
+y confiabilidad identificadas durante el uso real de la semana. Diseño completo aprobado
+para construcción en loop autónomo.
+
+---
+
+### Estado Sheet producción al cierre S3
+
+Leído directamente desde Google Drive. Datos reales al 20 junio 2026.
+
+**Movimientos S3 ejecutados (fuente Angie):** $750.000
+**Consumos H3B S3 (fuente Angie):** $690.070
+**Total salida fuente Angie S3:** $1.440.070
+**Pendientes S3 reales** (descontando Entretenimiento y Frutas ya pagados): $426.000
+
+| Pendiente | Monto |
+|---|---:|
+| PS Plus | 60.000 |
+| Uber One | 16.000 |
+| Provisión Mireyita | 100.000 |
+| Víveres y otros | 250.000 |
+
+---
+
+### Observaciones de producción — diseño aprobado
+
+#### OBS-1 — Barra morada: totalEjecutado incompleto para pago_fraccionado
+
+**Problema:** para conceptos `pago_fraccionado`, el movimiento H2 permanece `pendiente`
+durante la semana. El gasto real ocurre en H3B. La barra no refleja ese gasto en tiempo real.
+
+**Diseño aprobado:**
+
+| Campo | Fuente | Momento |
+|---|---|---|
+| `totalPresupuestado` | H2 `monto_presupuestado` | Siempre |
+| `totalEjecutado` durante semana | H2 ejecutados (fijos) + suma consumos H3B (pago_fraccionado) de esa semana | Tiempo real |
+| `totalEjecutado` post cierre | H2 `monto_ejecutado` escrito por cerrar-semana | Al cerrar semana |
+
+Al ejecutar POST `cerrar-semana`: para cada H2 con `tipo_snapshot = pago_fraccionado`
+de la semana → escribir `monto_ejecutado` = suma H3B correspondiente + `estado = ejecutado`
++ `fecha_ejecucion` = fecha del cierre. Si no hay consumos H3B: `monto_ejecutado = 0`,
+estado `ejecutado` igualmente.
+
+---
+
+#### OBS-2 — Bolsillos vs Pendientes: separación genera confusión operativa
+
+**Problema:** los bolsillos `pago_fraccionado` aparecen en carousel separado de la lista
+de Pendientes. Operacionalmente son pendientes de consumo gradual — la separación confunde.
+
+**Diseño aprobado:**
+- Sección carousel de bolsillos eliminada de VistaSemanal.
+- Fichas `pago_fraccionado` se integran en lista de Pendientes — posiciones fijas 1, 2, 3.
+- Orden entre ellas: Entretenimiento · Frutas y verduras · Víveres (orden H2).
+- Cada ficha muestra: nombre + indicador avance (suma H3B semana / `monto_presupuestado` H2) + botón "Cerrar bolsillo".
+- Botón "Cerrar bolsillo" (acción manual): PATCH H2 → `monto_ejecutado` = suma H3B semana,
+  `estado = ejecutado`, `fecha_ejecucion` = hoy. Ficha pasa a Ejecutados.
+- POST `cerrar-semana` consolida automáticamente bolsillos no cerrados manualmente.
+- En Ejecutados: comportamiento existente sin cambios — al tocar monto despliega desglose H3B.
+- Semana cerrada modo lectura: bolsillos ejecutados aparecen en Ejecutados correctamente.
+
+---
+
+#### OBS-3 — Imprevistos: no hay categoría para gastos sin naturaleza clara
+
+**Problema:** gastos imprevistos se clasifican forzosamente en el bolsillo más cercano
+disponible, contaminando datos de cada categoría.
+
+**Diseño aprobado:**
+
+Concepto nuevo en H1:
+```
+nombre: Imprevistos
+categoria: Compromisos Financieros
+tipo: pago_fraccionado
+frecuencia: mensual
+semana_default: variable
+monto_referencia: 250000
+requiere_aprobacion: FALSE
+estado_concepto: activo
+```
+
+- Techo de referencia $250.000. Sobre techo: alerta visual, no bloquea (`sobre_techo = TRUE`).
+- Fuente de pago: define el usuario al registrar.
+- En VistaSemanal Pendientes: ficha idéntica a los otros tres — posición 4 en la lista.
+- Desde FAB: opción explícita del usuario. Claude Haiku NO lo sugiere automáticamente.
+- Desde Ejecutados: usuario puede reclasificar consumo existente a Imprevistos.
+- Cierre de semana: mismo comportamiento que OBS-2.
+
+**Nota operativa:** concepto creado en Sheet de dev para construcción y QA.
+Debe agregarse manualmente al Sheet de producción antes del merge a main.
+
+---
+
+#### OBS-4 — Posponer/No aplica: solo disponible en M1 desktop, no en VistaSemanal
+
+**Problema:** desde VistaSemanal mobile no hay forma de posponer o descartar un concepto
+sin salir de la vista.
+
+**Diseño aprobado:**
+- Opciones "Posponer" y "No aplica" en modal lápiz existente de VistaSemanal.
+- Aplica solo a fijos/discrecionales — NO a `pago_fraccionado`.
+
+**No aplica:** PATCH H2 `estado = no_aplica`.
+
+**Posponer:** selector de semana destino: S1, S2, S3, S4 del mes actual + "Mes siguiente".
+- Posponer a semana del mes actual: PATCH H2 `semana = destino`.
+  Bloqueo: si semana destino ya tiene cierre en H5A → error, no ejecutar PATCH.
+- Posponer a mes siguiente: movimiento actual → `estado = pospuesto`. Crear fila nueva
+  en H2 del mes siguiente con `semana = sin_asignar` y datos del concepto copiados.
+
+---
+
+### Análisis de riesgos pre-construcción
+
+| Riesgo | Severidad | Resolución |
+|---|---|---|
+| BL-01 abierto contamina Imprevistos H3B | Alta | BL-01 es ticket 1 del loop — prerequisito de OBS-3 |
+| POST cerrar-semana no escribe H2 individual | Alta | OBS-1 lo construye explícitamente |
+| Imprevistos ausente en junio 2026 H2 | Media | Inserción directa en Sheet de dev en OBS-3-P1 |
+| Claude Haiku sugiere Imprevistos automáticamente | Media | Instrucción explícita en system prompt — OBS-3-P3 |
+| Posponer a mes siguiente — lógica no existe | Media | OBS-4-P4 la construye |
+| Posponer a semana cerrada | Baja | Bloqueo explícito en OBS-4-P3 |
+
+---
+
+### Cola de construcción actualizada
+
+```
+BL-01 → OBS-1 → OBS-2 → OBS-3 → OBS-4 → BL-02 → BL-06 → QA-7jun-01
+```
+
+BL-01 es prerequisito de OBS-3. Si BL-01 falla, el loop se detiene.
+
+---
+
+### Artefactos generados
+
+- `LOOP-MAESTRO.md` — prompt de orquestación autónoma para Claude Code (5 tickets en secuencia)
+
+---
+
+### Deuda técnica nueva
+
+- OBS-3-DT1: Imprevistos pendiente de agregar manualmente al Sheet de producción antes del
+  merge de OBS-3 a main. Verificar en SESSION_LOG.md post-construcción.
+
+---
+
+### Estado al cierre
+
+- Diseños OBS-1 a OBS-4 aprobados para construir.
+- LOOP-MAESTRO.md listo para ejecución en Claude Code.
+- Sin código abierto — sesión de diseño pura.
+- PR #5 (BL-10/BL-11/BL-11b): pendiente merge — QA completado, listo para producción.
+  Merge debe ocurrir antes de ejecutar el loop de construcción.
+
+### Próxima sesión
+
+1. Merge PR #5 a main.
+2. Ejecutar LOOP-MAESTRO.md en Claude Code (rama dev).
+3. QA de Angie en preview URL de dev.
+
+---
+
+## Sesión CONSTRUCCIÓN · 20 junio 2026
+
+### Lo que ocurrió
+
+- PR #5 mergeado a main ✅
+- Loop BL-01/OBS-1..4 ejecutado por Claude Code — 5 tickets commiteados en rama `dev`
+- PR #6 abierto acumulando todos los cambios
+- SESSION_LOG retroactivo generado (commit fe9464d tras el loop)
+- `node scripts/seed-imprevistos.mjs` ejecutado contra dev Sheet — guard activado, concepto ya existía
+- QA en localhost ejecutado por Camilo — PR #6 **no aprobado**, dos bugs bloqueantes encontrados
+
+### Bugs bloqueantes PR #6
+
+| ID | Descripción | Origen | Archivo |
+|---|---|---|---|
+| BL-QA-01 | Fichas de bolsillo duplicadas por MOV en lugar de agrupar por `conceptoId` — afecta lista Pendientes/Ejecutados y selector ModalCorreccion | OBS-2 | VistaSemanal.tsx:367 |
+| BL-QA-02 | Lápiz en pendientes eliminó edición de monto+fuente — OBS-4 reemplazó el modal en lugar de extenderlo | OBS-4 | VistaSemanal.tsx:1241–1292 |
+
+### Causa raíz BL-QA-01
+
+Log de consola confirma: `Encountered two children with the same key RECREACION_1748100035`.
+`bolsillosPendientes` itera sobre movimientos H2 sin deduplicar por `conceptoId`.
+Un concepto `pago_fraccionado` con múltiples MOVs genera múltiples fichas.
+
+### Causa raíz BL-QA-02
+
+Modal del lápiz pre-loop (main) tenía: monto ejecutado + selector de fuente + Confirmar/Cancelar → PATCH `tipo: ejecutar`.
+OBS-4 introdujo `ModalAccionesPendiente` (Posponer/No aplica) reemplazando ese panel en lugar de integrarlo.
+
+### Pendientes operativos
+
+- Imprevistos debe agregarse manualmente al Sheet de **producción** antes del merge a main (checklist promoción)
+- `.env.local` actualmente apunta a dev Sheet (`1p5hvKINy512I-BOEA5ujjynUnJVdnvniAiqCQTYDJ-w`) — restaurar a prod antes de cualquier trabajo que no sea QA local
+
+### Aprendizajes de sesión
+
+- SESSION_LOG es prerrequisito del PR, no documentación posterior. PROMPT_AGENTE.md actualizado con restricción 5 modificada y criterio de parada 6.
+- Observación metodológica generada para HG-SDD v6: `OBS_METODOLOGIA_SESSION_LOG.md`
+
+### Artefactos generados esta sesión
+
+- `PROMPT_AGENTE_actualizado.md` — restricción 5 + criterio de parada 6
+- `OBS_METODOLOGIA_SESSION_LOG.md` — observación para HG-SDD v6
+- `PROMPT_FIX_BL-QA-01_BL-QA-02.md` — prompt listo para ejecutar en Claude Code
+
+### Cola de construcción actualizada
+
+BL-QA-01 → BL-QA-02 → [re-QA Camilo] → QA Angie → merge PR #6 → BL-02 → BL-06 → QA-7jun-01
+
+### Próxima sesión
+
+1. Ejecutar `PROMPT_FIX_BL-QA-01_BL-QA-02.md` en Claude Code.
+2. Re-QA en localhost por Camilo con checklist de 8 puntos.
+3. Si pasa: QA de Angie en preview URL.
+4. Si pasa Angie: checklist de promoción (seed prod + merge PR #6).
+5. Actualizar PROMPT_AGENTE.md en repo dev con versión corregida.
+4. Merge por ticket según resultados de QA.
+
+---
+
+## Sesión QA · 20 junio 2026
+
+### Tipo de sesión
+QA — Re-QA PR #6 tras corrección BL-QA-01/BL-QA-02.
+
+### Resultado del re-QA Camilo
+
+**BL-QA-01 y BL-QA-02: aprobados** — todos los puntos del checklist verificados.
+
+**Nuevos bugs bloqueantes encontrados durante inspección extendida:**
+
+| ID | Tipo | Descripción |
+|---|---|---|
+| BL-QA-03 | Falso positivo (dato corrupto) | Barra S3 mostraba $1.909.996 en lugar de $1.659.996 — causa: MOV duplicado de Entretenimiento en S3 del Sheet de dev |
+| BL-QA-04 | Bug código | Modal desglose H3B desapareció en bolsillos ejecutados — no se abre nada al tocar |
+| BL-QA-05 | Dato corrupto dev | Entretenimiento tenía dos MOVs en S3 — eliminado manualmente |
+| BL-QA-06 | Dato + seed | Imprevistos ausente en Pendientes — seed disparó guard contra concepto retirado; concepto nuevo nunca fue creado |
+
+**BL-QA-03 cerrado:** eliminación del MOV duplicado (BL-QA-05) corrigió la barra automáticamente.
+**BL-QA-05 cerrado:** MOV duplicado eliminado manualmente del Sheet de dev.
+
+### Corrección de diseño OBS-3
+
+Imprevistos es `frecuencia: semanal` (no mensual como decía el doc).
+`monto_referencia: 250.000` es el techo **por semana**.
+El resto del diseño aprobado se mantiene igual.
+
+### PR #6 — estado
+
+**No aprobado.** Bloqueantes pendientes: BL-QA-04, BL-QA-06.
+
+### Cola de construcción actualizada
+
+```
+BL-QA-04 → BL-QA-06 → [re-QA Camilo] → QA Angie → checklist promoción → merge PR #6 → BL-02 → BL-06 → QA-7jun-01
+```
+
+### Artefactos generados
+
+- `PROMPT_FIX_BL-QA-04_BL-QA-06.md` — prompt listo para ejecutar en Claude Code
+
+### Próxima sesión
+
+1. Ejecutar `PROMPT_FIX_BL-QA-04_BL-QA-06.md` en Claude Code.
+2. Re-QA en preview URL por Camilo.
+3. Si pasa: QA de Angie.
+4. Si pasa Angie: checklist de promoción (seed prod Imprevistos + merge PR #6).
+
+---
+
+## Sesión QA · 20 junio 2026 — continuación
+
+### Lo que ocurrió
+
+- BL-QA-06 aprobado en re-QA: Imprevistos aparece en Pendientes con ficha correcta
+- BL-QA-04 requirió dos intentos adicionales de fix — ambos fallaron por razón diferente:
+  - Intento 1 (commit 5b82b62): colocó el modal en tab Pendientes en lugar de Ejecutados
+  - Intento 2: mismo error — agente no encontró el componente correcto vía graphify
+- Diagnóstico final BL-QA-04: la feature de desglose H3B en fichas de bolsillo
+  no existía antes — Entretenimiento es concepto nuevo y Frutas/Víveres nunca
+  tuvieron esa lógica implementada. Es feature nueva, no regresión.
+- Diseño aclarado: tap en el monto $X / $250.000 de la ficha de bolsillo →
+  popover idéntico al de "Conceptos presupuestados" de la barra superior,
+  con consumos H3B de la semana activa + total al pie.
+  Aplica tanto en tab Pendientes como en Ejecutados.
+- Dato operativo: concepto Imprevistos creado manualmente en Sheet de producción
+  (COMPROMISOS_FINANCIEROS_1781979860619, frecuencia: semanal,
+  monto_referencia: 250000, estado_concepto: activo). MOV se agrega al momento
+  del merge según semana activa en ese momento.
+
+### Estado PR #6
+
+No aprobado. BL-QA-04 pendiente.
+
+### Artefactos generados
+
+- PROMPT_REFIX_BL-QA-04_final.md — prompt listo para ejecutar en Claude Code
+
+### Cola de construcción actualizada
+
+BL-QA-04 → [re-QA Camilo] → QA Angie → checklist promoción → merge PR #6 → BL-02 → BL-06 → QA-7jun-01
+
+### Próxima sesión
+
+1. Ejecutar PROMPT_REFIX_BL-QA-04_final.md en Claude Code.
+2. Re-QA Camilo con checklist BL-QA-04.
+3. Si pasa: QA Angie.
+4. Si pasa Angie: checklist de promoción (agregar MOV Imprevistos en prod según semana activa + merge PR #6).
+
+---
+
+## Sesión CONSTRUCCIÓN · 21 junio 2026
+
+### Tipo de sesión
+CONSTRUCCIÓN — ejecución BL-QA-04 + fixes adicionales + preparación merge PR #6.
+
+### Lo que ocurrió
+
+**BL-QA-04 resuelto** (commit 1f66ef8):
+- Tap en monto `$X / $Y` de ficha bolsillo → popover con consumos H3B de la semana activa
+- Funciona en tab Pendientes y Ejecutados
+- Popover: descripción + monto por fila, total al pie, cierre con × o tap fuera
+- Sin consumos → "Sin registros esta semana."
+- `e.stopPropagation()` en trigger — tap en resto del card no abre popover
+
+**Fixes adicionales en PR #6 (misma rama dev):**
+
+| Commit | Ticket | Descripción |
+|---|---|---|
+| 66bd7f6 | FIX-MODAL-EJ | stopPropagation en título ficha ejecutados — ya no abre desgloseModal |
+| 73205fd | FIX-S4-NAV | Flecha → habilitada hacia S4 futura — replica comportamiento de semanas pasadas |
+| 47e73ce | FIX-BARRA-EJ | Sección "Conceptos ejecutados" agregada al popover de barra morada |
+| ea9ed56 | FIX-BARRA-POPOVER-MODO | Estado `popoverMode` diferencia presupuestado vs ejecutado |
+| (trigger) | FIX-BARRA-EJ-TRIGGER | onClick agregado en monto ejecutado de barra morada |
+
+**Correcciones de datos Sheet dev:**
+- `tipo_snapshot` corregido de `pago_fraccionado` a `fijo` en MOVs 028/029/030 (Fondo transporte, Fondo emergencia, CDT NU)
+- `tipo` corregido en H1 para los mismos tres conceptos
+- MOVs de Imprevistos (`COMPROMISOS_FINANCIEROS_1782005151968`) insertados en H2 dev para S1/S2/S4 (S3 ya existía)
+
+**Correcciones de datos Sheet producción (pre-merge):**
+- `tipo` corregido en H1 para TRANSPORTE_1748100037, METAS_FAMILIARES_1748100038, METAS_FAMILIARES_1748100039 → `fijo`
+- `tipo_snapshot` corregido en H2 para MOVs 028/029/030 → `fijo`
+- 4 MOVs de Imprevistos (`COMPROMISOS_FINANCIEROS_1781979860619`) insertados en H2 prod: S1/S2/S3/S4, monto 250000, estado pendiente
+
+**QA:**
+- Re-QA Camilo: 9 puntos BL-QA-04 aprobados + fixes adicionales verificados
+- QA Angie: aprobado
+
+### Estado PR #6
+
+**Listo para merge.** Todos los bloqueantes resueltos. Datos prod corregidos.
+
+### Próxima acción
+
+Merge PR #6 (dev → main) en GitHub. Verificar deploy Vercel sin errores.
+
+### Cola post-merge
+
+BL-02 → BL-06 → QA-7jun-01

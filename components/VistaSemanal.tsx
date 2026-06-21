@@ -166,10 +166,15 @@ function ModalCorreccion({
     if (scenario === "ejecutor") patch = { ejecutor };
     if (scenario === "fuente")   patch = { ...fuentes };
     if (scenario === "clasif") {
-      const selectedId = bolsilloId ?? consumo.bolsilloId;
-      const h2 = bolsillos.find((m) => m.conceptoId === selectedId);
+      // Resolve the bolsillo ensuring selectedId is always the H1 concepto id (CATEGORIA_xxx).
+      // When consumo.bolsilloId is corrupted (e.g. MOV_xxx from pre-T45 data), matching by b.id
+      // finds the bolsillo and b.conceptoId self-heals the value written to H3B.
+      const selectedBolsillo = bolsilloId
+        ? bolsillos.find((b) => b.conceptoId === bolsilloId)
+        : bolsillos.find((b) => b.id === consumo.bolsilloId || b.conceptoId === consumo.bolsilloId);
+      const selectedId = selectedBolsillo?.conceptoId ?? consumo.bolsilloId;
       const gastado = consumos.filter(c => c.bolsilloId === selectedId).reduce((sum, c) => sum + c.monto, 0);
-      const techo = h2?.montoPresupuestado ?? 0;
+      const techo = selectedBolsillo?.montoPresupuestado ?? 0;
       patch = { bolsilloId: selectedId, clasificado: true, sobreTecho: techo > 0 && gastado >= techo };
     }
     if (scenario === "semana")   patch = { semana };
@@ -433,6 +438,193 @@ function ModalCorreccion({
             </div>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ── Modal Posponer / No aplica (pendientes) ───────────────────────────────────
+
+function ModalAccionesPendiente({
+  movimiento,
+  mes,
+  semanasCerradas,
+  onClose,
+  onUpdated,
+}: {
+  movimiento: Movimiento;
+  mes: string;
+  semanasCerradas: Semana[];
+  onClose: () => void;
+  onUpdated: (updated: Movimiento) => void;
+}) {
+  type Accion = "ejecutar" | "posponer" | "no_aplica";
+  type Destino = Semana | "siguiente";
+
+  const [accion, setAccion] = useState<Accion>("ejecutar");
+  const [destino, setDestino] = useState<Destino>("S1");
+  const [montoEditar, setMontoEditar] = useState(String(movimiento.montoPresupuestado));
+  const [fuenteEditar, setFuenteEditar] = useState<Fuente | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const semanas: Semana[] = ["S1", "S2", "S3", "S4"];
+
+  async function confirmar() {
+    setBusy(true);
+    setError(null);
+    try {
+      let body: Record<string, unknown>;
+      if (accion === "ejecutar") {
+        const monto = Number(montoEditar);
+        if (isNaN(monto) || monto <= 0) { setError("Monto inválido"); setBusy(false); return; }
+        body = {
+          tipo: "ejecutar",
+          montoEjecutado: monto,
+          fuenteEnMano:  fuenteEditar === "en_mano",
+          fuenteNequi:   fuenteEditar === "nequi",
+          fuenteCamilo:  fuenteEditar === "camilo",
+          fuenteAngie:   fuenteEditar === "angie",
+          ejecutor: "camilo",
+        };
+      } else if (accion === "no_aplica") {
+        body = { tipo: "no_aplica" };
+      } else if (destino === "siguiente") {
+        body = { tipo: "mover_mes_siguiente" };
+      } else {
+        body = { tipo: "posponer", nuevaSemana: destino };
+      }
+      const res = await fetch(`/api/mes/${mes}/movimientos/${movimiento.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error((data as { error?: string }).error ?? "Error");
+      onUpdated(data as Movimiento);
+      onClose();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Error desconocido");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const btnStyle = (active: boolean) => ({
+    fontSize: 10.5 as const, padding: "4px 10px",
+    background: active ? "var(--primary-soft)" : "var(--surface-2)",
+    color: active ? "var(--primary)" : "var(--ink-soft)",
+    border: active ? "1.5px solid var(--primary)" : "1.5px solid var(--line)",
+  });
+
+  return (
+    <div className="dk-modal-backdrop" onClick={onClose}>
+      <div className="dk-modal" onClick={(e) => e.stopPropagation()}>
+        <header className="dk-modal-head">
+          <div className="lhs">
+            <p className="eyebrow"><Icon name="pencil" size={11} /> Opciones</p>
+            <h3>{movimiento.nombreSnapshot}</h3>
+          </div>
+          <button type="button" className="dk-modal-x" onClick={onClose}>
+            <Icon name="x" size={15} />
+          </button>
+        </header>
+
+        <div className="dk-modal-body">
+          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+            {(["ejecutar", "posponer", "no_aplica"] as Accion[]).map(a => (
+              <button key={a} type="button"
+                className={`fl-btn ghost sm${accion === a ? " primary" : ""}`}
+                style={btnStyle(accion === a)}
+                onClick={() => setAccion(a)}
+              >
+                {a === "ejecutar" ? "Ejecutar" : a === "posponer" ? "Posponer" : "No aplica"}
+              </button>
+            ))}
+          </div>
+
+          {accion === "ejecutar" && (
+            <>
+              <div style={{ marginTop: 16 }}>
+                <p className="dk-exp-lbl">Monto ejecutado</p>
+                <div className="dk-amtrow">
+                  <input
+                    className="dk-amt-in"
+                    type="number"
+                    value={montoEditar}
+                    onChange={e => setMontoEditar(e.target.value)}
+                    style={{ width: "100%", textAlign: "right", fontFeatureSettings: '"tnum" 1', fontWeight: 600 }}
+                  />
+                </div>
+              </div>
+              <div style={{ marginTop: 12 }}>
+                <p className="dk-exp-lbl">Fuente de pago</p>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7 }}>
+                  {FUENTES.map(f => (
+                    <button key={f.value} type="button" className="fl-chip"
+                      style={{
+                        justifyContent: "center", cursor: "pointer",
+                        background: fuenteEditar === f.value ? "var(--primary)" : "var(--surface-2)",
+                        color: fuenteEditar === f.value ? "var(--on-primary)" : "var(--ink-soft)",
+                      }}
+                      onClick={() => setFuenteEditar(f.value)}>
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          {accion === "posponer" && (
+            <div style={{ marginTop: 16 }}>
+              <p className="dk-exp-lbl">Semana destino</p>
+              <div className="dk-seg2" style={{ gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
+                {semanas.map(s => {
+                  const cerrada = semanasCerradas.includes(s);
+                  return (
+                    <button key={s} type="button"
+                      className={destino === s ? "on" : ""}
+                      disabled={cerrada}
+                      onClick={() => setDestino(s)}
+                      title={cerrada ? `${s} ya cerrada` : ""}
+                    >
+                      {s}{cerrada ? " ×" : ""}
+                    </button>
+                  );
+                })}
+                <button type="button"
+                  className={destino === "siguiente" ? "on" : ""}
+                  onClick={() => setDestino("siguiente")}
+                >
+                  Mes sig.
+                </button>
+              </div>
+            </div>
+          )}
+
+          {accion === "no_aplica" && (
+            <p style={{ marginTop: 12, fontSize: 13.5, color: "var(--ink-soft)", lineHeight: 1.5 }}>
+              El concepto no aplica para esta semana y no será ejecutado en este período.
+            </p>
+          )}
+
+          {error && (
+            <div style={{ background: "var(--neg-soft)", color: "var(--neg)", borderRadius: 10, padding: "8px 12px", fontSize: 12.5, fontWeight: 600, marginTop: 8 }}>
+              {error}
+            </div>
+          )}
+        </div>
+
+        <footer className="dk-modal-foot">
+          <button type="button" className="fl-btn ghost sm" onClick={onClose} disabled={busy}>
+            Cancelar
+          </button>
+          <button type="button" className="fl-btn primary sm" onClick={confirmar}
+            disabled={busy || (accion === "ejecutar" && !fuenteEditar)}>
+            {busy ? "…" : accion === "ejecutar" ? "Confirmar ejecución" : accion === "posponer" ? "Posponer" : "Confirmar no aplica"}
+          </button>
+        </footer>
       </div>
     </div>
   );
@@ -731,6 +923,7 @@ export default function VistaSemanal({
   semanaActiva,
   movimientosInit,
   cierreSemana,
+  semanasCerradas = [],
   consumosInit = [],
   ingresosAngie = [],
   actor = "camilo",
@@ -741,6 +934,7 @@ export default function VistaSemanal({
   semanaActiva: Semana;
   movimientosInit: Movimiento[];
   cierreSemana: CierreSemana | null;
+  semanasCerradas?: Semana[];
   consumosInit?: ConsumoH3[];
   ingresosAngie?: IngresoAngie[];
   actor?: Actor;
@@ -767,14 +961,16 @@ export default function VistaSemanal({
   const [ingresosAngieLocal, setIngresosAngieLocal] = useState<IngresoAngie[]>(ingresosAngie);
   const [showPresupuestadoPopover, setShowPresupuestadoPopover] = useState(false);
   const [presupuestadoAnchor, setPresupuestadoAnchor] = useState<DOMRect | null>(null);
-  const [popoverBolsilloId, setPopoverBolsilloId] = useState<string | null>(null);
-  const [bolsilloAnchor, setBolsilloAnchor] = useState<DOMRect | null>(null);
+  const [popoverMode, setPopoverMode] = useState<"presupuestado" | "ejecutado">("presupuestado");
+  const [desgloseModal, setDesgloseModal] = useState<Movimiento | null>(null);
+  const [posponiendo, setPosponiendo] = useState<Movimiento | null>(null);
   const presupuestadoPopoverRef = useRef<HTMLDivElement>(null);
-  const bolsilloRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const [h3bPopover, setH3bPopover] = useState<{ anchor: DOMRect; bolsilloId: string } | null>(null);
+  const h3bPopoverRef = useRef<HTMLDivElement>(null);
 
   const idxVisible = SEMANAS.indexOf(semanaVisible);
   const puedeIzq = idxVisible > 0;
-  const puedeDer = semanaVisible !== semanaActivaMes;
+  const puedeDer = idxVisible < SEMANAS.length - 1;
 
   const bolsillos = movimientos.filter((m) => m.tipoSnapshot === "pago_fraccionado");
   const conceptos  = movimientos.filter((m) => m.tipoSnapshot !== "pago_fraccionado");
@@ -785,8 +981,10 @@ export default function VistaSemanal({
     m => m.estado !== "no_aplica" && m.estado !== "pospuesto" && m.estado !== "pospuesto_mes_siguiente"
   );
   const totalPresupuestado = movimientosPresupuestados.reduce((s, m) => s + m.montoPresupuestado, 0);
+  // Exclude pago_fraccionado from H2 sum — their spending is always counted via H3B consumos.
+  // After cerrar-semana writes estado=ejecutado to pago_fraccionado H2, this prevents double-counting.
   const totalEjecutadoH2 = movimientos
-    .filter((m) => m.estado === "ejecutado")
+    .filter((m) => m.estado === "ejecutado" && m.tipoSnapshot !== "pago_fraccionado")
     .reduce((s, m) => s + (m.montoEjecutado ?? 0), 0);
   const totalEjecutadoH3 = consumos.reduce((s, c) => s + c.monto, 0);
   const totalEjecutado = totalEjecutadoH2 + totalEjecutadoH3;
@@ -943,7 +1141,24 @@ export default function VistaSemanal({
     } catch {}
   }
 
-  const lista = tab === "pendientes" ? pendientes : ejecutados;
+  const bolsillosDedup: Movimiento[] = (() => {
+    const map = new Map<string, { rep: Movimiento; movs: Movimiento[] }>();
+    for (const mov of bolsillos) {
+      const entry = map.get(mov.conceptoId);
+      if (!entry) map.set(mov.conceptoId, { rep: mov, movs: [mov] });
+      else entry.movs.push(mov);
+    }
+    return Array.from(map.values()).map(({ rep, movs }) => ({
+      ...rep,
+      montoPresupuestado: movs.reduce((s, m) => s + m.montoPresupuestado, 0),
+      estado: movs.every(m => m.estado === "ejecutado") ? "ejecutado" : rep.estado,
+    } as Movimiento));
+  })();
+  const bolsillosPendientes = bolsillosDedup.filter(b => b.estado !== "ejecutado");
+  const bolsillosEjecutados = bolsillosDedup.filter(b => b.estado === "ejecutado");
+  const lista = tab === "pendientes"
+    ? [...bolsillosPendientes, ...pendientes]
+    : [...bolsillosEjecutados, ...ejecutados];
   const consumosPendientes = consumos.filter(c => !c.clasificado);
 
   // Polling: refresca consumos cada 5s mientras haya items sin clasificar
@@ -973,17 +1188,20 @@ export default function VistaSemanal({
   }, [showPresupuestadoPopover]);
 
   useEffect(() => {
-    if (!popoverBolsilloId) return;
-    const activeId = popoverBolsilloId;
+    if (!h3bPopover) return;
     function handleClick(e: MouseEvent) {
-      const ref = bolsilloRefs.current.get(activeId);
-      if (ref && !ref.contains(e.target as Node)) {
-        setPopoverBolsilloId(null);
+      const target = e.target as HTMLElement;
+      if (
+        h3bPopoverRef.current &&
+        !h3bPopoverRef.current.contains(target) &&
+        !target.closest("[data-h3b-trigger]")
+      ) {
+        setH3bPopover(null);
       }
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
-  }, [popoverBolsilloId]);
+  }, [h3bPopover]);
 
   return (
     <div className="t-calido screen-anim">
@@ -1042,13 +1260,32 @@ export default function VistaSemanal({
           </div>
           <div ref={presupuestadoPopoverRef} style={{ position: "relative", marginTop: 6 }}>
             <p className="sub" style={{ fontSize: 12 }}>
-              {COP(totalEjecutado)} de{" "}
               <button
                 type="button"
                 style={{ fontWeight: 700, textDecoration: "underline dotted", cursor: "pointer", background: "none", border: "none", color: "inherit", fontSize: "inherit", padding: 0 }}
                 onClick={(e) => {
-                  setPresupuestadoAnchor((e.currentTarget as HTMLButtonElement).getBoundingClientRect());
-                  setShowPresupuestadoPopover(v => !v);
+                  if (showPresupuestadoPopover && popoverMode === "ejecutado") {
+                    setShowPresupuestadoPopover(false);
+                  } else {
+                    setPresupuestadoAnchor((e.currentTarget as HTMLButtonElement).getBoundingClientRect());
+                    setPopoverMode("ejecutado");
+                    setShowPresupuestadoPopover(true);
+                  }
+                }}
+              >
+                {COP(totalEjecutado)}
+              </button>{" "}de{" "}
+              <button
+                type="button"
+                style={{ fontWeight: 700, textDecoration: "underline dotted", cursor: "pointer", background: "none", border: "none", color: "inherit", fontSize: "inherit", padding: 0 }}
+                onClick={(e) => {
+                  if (showPresupuestadoPopover && popoverMode === "presupuestado") {
+                    setShowPresupuestadoPopover(false);
+                  } else {
+                    setPresupuestadoAnchor((e.currentTarget as HTMLButtonElement).getBoundingClientRect());
+                    setPopoverMode("presupuestado");
+                    setShowPresupuestadoPopover(true);
+                  }
                 }}
               >
                 {COP(totalPresupuestado)}
@@ -1060,19 +1297,45 @@ export default function VistaSemanal({
                 background: "white", color: "#111111", border: "1px solid var(--hair)", borderRadius: 12,
                 boxShadow: "0 4px 24px rgba(0,0,0,0.12)", minWidth: 260, padding: "12px 0",
               }}>
-                <p style={{ fontWeight: 600, fontSize: 13, padding: "0 14px 8px" }}>Conceptos presupuestados</p>
-                <div style={{ maxHeight: 256, overflowY: "auto" }}>
-                  {movimientosPresupuestados.map(m => (
-                    <div key={m.id} style={{ display: "flex", justifyContent: "space-between", padding: "5px 14px", fontSize: 13 }}>
-                      <span style={{ flex: 1, marginRight: 12 }}>{m.nombreSnapshot}</span>
-                      <span style={{ fontVariantNumeric: "tabular-nums" }}>{COP(m.montoPresupuestado)}</span>
+                {popoverMode === "presupuestado" && (
+                  <>
+                    <p style={{ fontWeight: 600, fontSize: 13, padding: "0 14px 8px" }}>Conceptos presupuestados</p>
+                    <div style={{ maxHeight: 256, overflowY: "auto" }}>
+                      {movimientosPresupuestados.map(m => (
+                        <div key={m.id} style={{ display: "flex", justifyContent: "space-between", padding: "5px 14px", fontSize: 13 }}>
+                          <span style={{ flex: 1, marginRight: 12 }}>{m.nombreSnapshot}</span>
+                          <span style={{ fontVariantNumeric: "tabular-nums" }}>{COP(m.montoPresupuestado)}</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 14px 0", borderTop: "1px solid var(--hair)", fontSize: 13, fontWeight: 700, marginTop: 4 }}>
-                  <span>Total</span>
-                  <span>{COP(totalPresupuestado)}</span>
-                </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 14px 0", borderTop: "1px solid var(--hair)", fontSize: 13, fontWeight: 700, marginTop: 4 }}>
+                      <span>Total</span>
+                      <span>{COP(totalPresupuestado)}</span>
+                    </div>
+                  </>
+                )}
+                {popoverMode === "ejecutado" && (
+                  <>
+                    <p style={{ fontWeight: 600, fontSize: 13, padding: "0 14px 8px" }}>Conceptos ejecutados</p>
+                    <div style={{ maxHeight: 256, overflowY: "auto" }}>
+                      {ejecutados.length === 0
+                        ? <p style={{ padding: "5px 14px", fontSize: 13, color: "var(--muted)" }}>Sin ejecutados esta semana.</p>
+                        : ejecutados.map(m => (
+                            <div key={m.id} style={{ display: "flex", justifyContent: "space-between", padding: "5px 14px", fontSize: 13 }}>
+                              <span style={{ flex: 1, marginRight: 12 }}>{m.nombreSnapshot}</span>
+                              <span style={{ fontVariantNumeric: "tabular-nums" }}>{COP(m.montoEjecutado ?? 0)}</span>
+                            </div>
+                          ))
+                      }
+                    </div>
+                    {ejecutados.length > 0 && (
+                      <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 14px 0", borderTop: "1px solid var(--hair)", fontSize: 13, fontWeight: 700, marginTop: 4 }}>
+                        <span>Total</span>
+                        <span style={{ fontVariantNumeric: "tabular-nums" }}>{COP(totalEjecutadoH2)}</span>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -1160,99 +1423,13 @@ export default function VistaSemanal({
           </div>
         )}
 
-        {/* Bolsillos carousel */}
-        {bolsillos.length > 0 && (
-          <>
-            <p className="fl-sectlabel">Bolsillos · techo semanal</p>
-            <div style={{
-              display: "flex",
-              overflowX: "auto",
-              gap: 10,
-              scrollSnapType: "x mandatory",
-              paddingBottom: 4,
-            }}>
-              {bolsillos.map((b) => {
-                const consumosBolsillo = consumos.filter(c => c.bolsilloId === b.conceptoId);
-                const gastado = consumosBolsillo.reduce((sum, c) => sum + c.monto, 0);
-                const techo = b.montoPresupuestado;
-                const pctB  = techo > 0 ? Math.round((gastado / techo) * 100) : 0;
-                const over  = gastado > techo;
-                const popoverWidth = 260;
-                const adjustedLeft = bolsilloAnchor
-                  ? Math.min(bolsilloAnchor.left, window.innerWidth - popoverWidth - 8)
-                  : 0;
-                return (
-                  <div
-                    key={b.id}
-                    ref={(el) => { if (el) bolsilloRefs.current.set(b.conceptoId, el); else bolsilloRefs.current.delete(b.conceptoId); }}
-                    className="fl-card"
-                    style={{
-                      position: "relative", minWidth: 155, flexShrink: 0, scrollSnapAlign: "start",
-                      display: "flex", flexDirection: "column", gap: 8, padding: "12px 14px",
-                    }}
-                  >
-                    <div className="fl-bolsillo">
-                      <Ring pct={pctB} over={over} />
-                      <div className="meta">
-                        <p className="n">{b.nombreSnapshot}</p>
-                        <p className="amt">
-                          <button
-                            type="button"
-                            style={{ fontWeight: 700, textDecoration: "underline dotted", cursor: "pointer", background: "none", border: "none", color: "inherit", fontSize: "inherit", padding: 0 }}
-                            onClick={(e) => {
-                              setBolsilloAnchor((e.currentTarget as HTMLButtonElement).getBoundingClientRect());
-                              setPopoverBolsilloId(id => id === b.conceptoId ? null : b.conceptoId);
-                            }}
-                          >
-                            {COP(gastado)}
-                          </button>
-                          {" "}<span style={{ color: "var(--ink-faint)" }}>/ {COP(techo)}</span>
-                        </p>
-                      </div>
-                    </div>
-                    {over
-                      ? <span className="fl-badge neg"><span className="dot" />+{COP(gastado - techo)}</span>
-                      : <span className="fl-badge pos">{COP(techo - gastado)} libre</span>}
-                    {popoverBolsilloId === b.conceptoId && bolsilloAnchor && (
-                      <div style={{
-                        position: "fixed", top: bolsilloAnchor.bottom + 4, left: adjustedLeft, zIndex: 9999,
-                        background: "white", color: "#111111", border: "1px solid var(--hair)", borderRadius: 12,
-                        boxShadow: "0 4px 24px rgba(0,0,0,0.12)", minWidth: 260, padding: "12px 0",
-                      }}>
-                        <p style={{ fontWeight: 600, fontSize: 13, padding: "0 14px 8px" }}>{b.nombreSnapshot}</p>
-                        <div style={{ maxHeight: 256, overflowY: "auto" }}>
-                          {consumosBolsillo.length === 0
-                            ? <p style={{ padding: "4px 14px", fontSize: 13, color: "var(--ink-faint)" }}>Sin consumos registrados</p>
-                            : consumosBolsillo.map(c => (
-                                <div key={c.id} style={{ padding: "5px 14px", fontSize: 13 }}>
-                                  <div style={{ display: "flex", justifyContent: "space-between" }}>
-                                    <span style={{ flex: 1, marginRight: 12 }}>{c.descripcion}</span>
-                                    <span style={{ fontVariantNumeric: "tabular-nums" }}>{COP(c.monto)}</span>
-                                  </div>
-                                  <p style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 2 }}>{c.fecha}</p>
-                                </div>
-                              ))
-                          }
-                        </div>
-                        {consumosBolsillo.length > 0 && (
-                          <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 14px 0", borderTop: "1px solid var(--hair)", fontSize: 13, fontWeight: 700, marginTop: 4 }}>
-                            <span>Total</span>
-                            <span>{COP(gastado)}</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </>
-        )}
 
         {/* Tabs */}
         <div className="fl-tabs">
           {(["pendientes", "ejecutados"] as const).map((t) => {
-            const count = t === "pendientes" ? pendientes.length : ejecutados.length + consumosPendientes.length;
+            const count = t === "pendientes"
+              ? bolsillosPendientes.length + pendientes.length
+              : bolsillosEjecutados.length + ejecutados.length + consumosPendientes.length;
             return (
               <button
                 key={t}
@@ -1281,6 +1458,81 @@ export default function VistaSemanal({
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {lista.map((mov) => {
+              if (mov.tipoSnapshot === "pago_fraccionado") {
+                const consumosBolsillo = consumos.filter(c => c.bolsilloId === mov.conceptoId);
+                const gastado = consumosBolsillo.reduce((sum, c) => sum + c.monto, 0);
+                const techo = mov.montoPresupuestado;
+                const pctB = techo > 0 ? Math.round((gastado / techo) * 100) : 0;
+                const over = gastado > techo;
+                const ejecutado = mov.estado === "ejecutado";
+                return (
+                  <div
+                    key={mov.id}
+                    className="fl-concepto"
+                    style={ejecutado ? { cursor: "pointer" } : undefined}
+                    onClick={ejecutado ? () => setDesgloseModal(mov) : undefined}
+                  >
+                    <div className="top">
+                      <div style={{ display: "flex", gap: 11, alignItems: "center", minWidth: 0 }}>
+                        <Ring pct={pctB} over={over} />
+                        <div style={{ minWidth: 0 }}>
+                          <p className="name" onClick={(e) => e.stopPropagation()}>{mov.nombreSnapshot}</p>
+                          <p
+                            className="cat"
+                            data-h3b-trigger
+                            style={{ cursor: "pointer" }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setH3bPopover({
+                                anchor: (e.currentTarget as HTMLElement).getBoundingClientRect(),
+                                bolsilloId: mov.conceptoId,
+                              });
+                            }}
+                          >
+                            {COP(gastado)} / {COP(techo)}
+                          </p>
+                        </div>
+                      </div>
+                      <div style={{ textAlign: "right", flexShrink: 0 }}>
+                        {ejecutado ? (
+                          <span style={{ fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
+                            {COP(mov.montoEjecutado ?? gastado)}
+                          </span>
+                        ) : (
+                          over
+                            ? <span className="fl-badge neg" style={{ marginTop: 4 }}><span className="dot" />+{COP(gastado - techo)}</span>
+                            : <span className="fl-badge warn" style={{ marginTop: 4 }}><span className="dot" />{COP(techo - gastado)} libre</span>
+                        )}
+                      </div>
+                    </div>
+                    {!ejecutado && modoSemana !== "lectura" && (
+                      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                        <button
+                          className="fl-btn ghost sm"
+                          style={{ flex: 1 }}
+                          type="button"
+                          disabled={busy}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            patchar(mov.id, {
+                              tipo: "ejecutar",
+                              montoEjecutado: gastado,
+                              fuenteEnMano: false,
+                              fuenteNequi: false,
+                              fuenteCamilo: false,
+                              fuenteAngie: false,
+                              ejecutor: "camilo",
+                            });
+                          }}
+                        >
+                          Cerrar bolsillo
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
               const panelActivo = panel?.id === mov.id;
               const catIcon = CAT_ICON[mov.categoriaSnapshot] ?? "wallet";
               return (
@@ -1328,8 +1580,8 @@ export default function VistaSemanal({
                       <button
                         className="fl-btn ghost sm"
                         type="button"
-                        onClick={() => toggleEditar(mov.id)}
-                        title="Editar monto"
+                        onClick={() => setPosponiendo(mov)}
+                        title="Posponer / No aplica"
                       >
                         <Icon name="pencil" size={15} />
                       </button>
@@ -1599,7 +1851,7 @@ export default function VistaSemanal({
       {corrigiendoConsumo && (
         <ModalCorreccion
           consumo={corrigiendoConsumo}
-          bolsillos={bolsillos}
+          bolsillos={bolsillosDedup}
           consumos={consumos}
           onClose={() => setCorrigiendoConsumo(null)}
           onSaved={updated => {
@@ -1607,6 +1859,20 @@ export default function VistaSemanal({
           }}
           onRevertido={id => {
             setConsumos(prev => prev.filter(c => c.id !== id));
+          }}
+        />
+      )}
+
+      {/* OBS-4 · Modal Posponer / No aplica */}
+      {posponiendo && (
+        <ModalAccionesPendiente
+          movimiento={posponiendo}
+          mes={mes}
+          semanasCerradas={semanasCerradas}
+          onClose={() => setPosponiendo(null)}
+          onUpdated={updated => {
+            setMovimientos(prev => prev.map(m => m.id === updated.id ? updated : m));
+            setPosponiendo(null);
           }}
         />
       )}
@@ -1625,6 +1891,99 @@ export default function VistaSemanal({
           }}
         />
       )}
+
+      {/* BL-QA-04 · Modal desglose H3B bolsillo ejecutado */}
+      {desgloseModal !== null && (
+        <div
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 800 }}
+          onClick={() => setDesgloseModal(null)}
+        >
+          <div
+            style={{ background: "var(--surface)", borderRadius: "20px 20px 0 0", padding: "20px 20px 32px", width: "100%", maxWidth: 480, maxHeight: "70vh", display: "flex", flexDirection: "column" }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <p style={{ fontWeight: 700, fontSize: 16, margin: 0, color: "var(--ink)" }}>{desgloseModal.nombreSnapshot}</p>
+              <button type="button" style={{ background: "none", border: "none", cursor: "pointer", padding: 4, color: "var(--ink-soft)" }} onClick={() => setDesgloseModal(null)}>
+                <Icon name="x" size={18} />
+              </button>
+            </div>
+            <div style={{ overflowY: "auto", flex: 1 }}>
+              {consumos.filter(c => c.bolsilloId === desgloseModal.conceptoId).length === 0
+                ? <p style={{ fontSize: 13, color: "var(--ink-faint)" }}>Sin consumos registrados</p>
+                : consumos.filter(c => c.bolsilloId === desgloseModal.conceptoId).map(c => (
+                    <div key={c.id} style={{ padding: "8px 0", borderBottom: "1px solid var(--hair)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                        <span style={{ flex: 1, fontSize: 13, color: "var(--ink)" }}>{c.descripcion || "Sin descripción"}</span>
+                        <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600, fontSize: 13, flexShrink: 0 }}>{COP(c.monto)}</span>
+                      </div>
+                      <p style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 2 }}>{c.fecha}</p>
+                    </div>
+                  ))
+              }
+            </div>
+            {consumos.filter(c => c.bolsilloId === desgloseModal.conceptoId).length > 0 && (
+              <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 12, borderTop: "1px solid var(--hair)", fontSize: 13, fontWeight: 700, marginTop: 8, color: "var(--ink)" }}>
+                <span>Total</span>
+                <span>{COP(consumos.filter(c => c.bolsilloId === desgloseModal.conceptoId).reduce((s, c) => s + c.monto, 0))}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      {h3bPopover && (() => {
+        const items = consumos.filter(c => c.bolsilloId === h3bPopover.bolsilloId);
+        const total = items.reduce((s, c) => s + c.monto, 0);
+        return (
+          <div
+            ref={h3bPopoverRef}
+            style={{
+              position: "fixed",
+              top: h3bPopover.anchor.bottom + 4,
+              left: h3bPopover.anchor.left,
+              zIndex: 9999,
+              background: "white",
+              color: "#111111",
+              border: "1px solid var(--hair)",
+              borderRadius: 12,
+              boxShadow: "0 4px 24px rgba(0,0,0,0.12)",
+              minWidth: 260,
+              padding: "12px 0",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 14px 8px" }}>
+              <p style={{ fontWeight: 600, fontSize: 13, margin: 0 }}>Consumos H3B</p>
+              <button
+                type="button"
+                onClick={() => setH3bPopover(null)}
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: 18, lineHeight: 1, padding: 0, color: "#111" }}
+              >
+                ×
+              </button>
+            </div>
+            <div style={{ maxHeight: 256, overflowY: "auto" }}>
+              {items.length === 0 ? (
+                <p style={{ padding: "5px 14px", fontSize: 13, color: "var(--muted)" }}>
+                  Sin registros esta semana.
+                </p>
+              ) : (
+                items.map(c => (
+                  <div key={c.id} style={{ display: "flex", justifyContent: "space-between", padding: "5px 14px", fontSize: 13 }}>
+                    <span style={{ flex: 1, marginRight: 12 }}>{c.descripcion}</span>
+                    <span style={{ fontVariantNumeric: "tabular-nums" }}>{COP(c.monto)}</span>
+                  </div>
+                ))
+              )}
+            </div>
+            {items.length > 0 && (
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 14px 0", borderTop: "1px solid var(--hair)", fontSize: 13, fontWeight: 700, marginTop: 4 }}>
+                <span>Total</span>
+                <span style={{ fontVariantNumeric: "tabular-nums" }}>{COP(total)}</span>
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }
