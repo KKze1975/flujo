@@ -2977,4 +2977,63 @@ BL-01 es prerequisito de OBS-3. Si BL-01 falla, el loop se detiene.
 1. Merge PR #5 a main.
 2. Ejecutar LOOP-MAESTRO.md en Claude Code (rama dev).
 3. QA de Angie en preview URL de dev.
+
+---
+
+## Sesión CONSTRUCCIÓN · 20 junio 2026
+
+### Lo que ocurrió
+
+- PR #5 mergeado a main ✅
+- Loop BL-01/OBS-1..4 ejecutado por Claude Code — 5 tickets commiteados en rama `dev`
+- PR #6 abierto acumulando todos los cambios
+- SESSION_LOG retroactivo generado (commit fe9464d tras el loop)
+- `node scripts/seed-imprevistos.mjs` ejecutado contra dev Sheet — guard activado, concepto ya existía
+- QA en localhost ejecutado por Camilo — PR #6 **no aprobado**, dos bugs bloqueantes encontrados
+
+### Bugs bloqueantes PR #6
+
+| ID | Descripción | Origen | Archivo |
+|---|---|---|---|
+| BL-QA-01 | Fichas de bolsillo duplicadas por MOV en lugar de agrupar por `conceptoId` — afecta lista Pendientes/Ejecutados y selector ModalCorreccion | OBS-2 | VistaSemanal.tsx:367 |
+| BL-QA-02 | Lápiz en pendientes eliminó edición de monto+fuente — OBS-4 reemplazó el modal en lugar de extenderlo | OBS-4 | VistaSemanal.tsx:1241–1292 |
+
+### Causa raíz BL-QA-01
+
+Log de consola confirma: `Encountered two children with the same key RECREACION_1748100035`.
+`bolsillosPendientes` itera sobre movimientos H2 sin deduplicar por `conceptoId`.
+Un concepto `pago_fraccionado` con múltiples MOVs genera múltiples fichas.
+
+### Causa raíz BL-QA-02
+
+Modal del lápiz pre-loop (main) tenía: monto ejecutado + selector de fuente + Confirmar/Cancelar → PATCH `tipo: ejecutar`.
+OBS-4 introdujo `ModalAccionesPendiente` (Posponer/No aplica) reemplazando ese panel en lugar de integrarlo.
+
+### Pendientes operativos
+
+- Imprevistos debe agregarse manualmente al Sheet de **producción** antes del merge a main (checklist promoción)
+- `.env.local` actualmente apunta a dev Sheet (`1p5hvKINy512I-BOEA5ujjynUnJVdnvniAiqCQTYDJ-w`) — restaurar a prod antes de cualquier trabajo que no sea QA local
+
+### Aprendizajes de sesión
+
+- SESSION_LOG es prerrequisito del PR, no documentación posterior. PROMPT_AGENTE.md actualizado con restricción 5 modificada y criterio de parada 6.
+- Observación metodológica generada para HG-SDD v6: `OBS_METODOLOGIA_SESSION_LOG.md`
+
+### Artefactos generados esta sesión
+
+- `PROMPT_AGENTE_actualizado.md` — restricción 5 + criterio de parada 6
+- `OBS_METODOLOGIA_SESSION_LOG.md` — observación para HG-SDD v6
+- `PROMPT_FIX_BL-QA-01_BL-QA-02.md` — prompt listo para ejecutar en Claude Code
+
+### Cola de construcción actualizada
+
+BL-QA-01 → BL-QA-02 → [re-QA Camilo] → QA Angie → merge PR #6 → BL-02 → BL-06 → QA-7jun-01
+
+### Próxima sesión
+
+1. Ejecutar `PROMPT_FIX_BL-QA-01_BL-QA-02.md` en Claude Code.
+2. Re-QA en localhost por Camilo con checklist de 8 puntos.
+3. Si pasa: QA de Angie en preview URL.
+4. Si pasa Angie: checklist de promoción (seed prod + merge PR #6).
+5. Actualizar PROMPT_AGENTE.md en repo dev con versión corregida.
 4. Merge por ticket según resultados de QA.
