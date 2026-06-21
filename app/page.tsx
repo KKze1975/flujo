@@ -12,12 +12,19 @@ function semanaActual(): Semana {
   return "S4";
 }
 
+function mesActual(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+}
+
 export default async function Home() {
   const provider = getProvider();
   const semana = semanaActual();
 
   const meses = await provider.getMeses();
-  const mesActivo = meses.length > 0 ? meses[meses.length - 1] : null;
+  const mesActivo = mesActual();
 
   let metricas = null;
 
