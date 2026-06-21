@@ -1400,12 +1400,13 @@ export default function VistaSemanal({
                 const techo = mov.montoPresupuestado;
                 const pctB = techo > 0 ? Math.round((gastado / techo) * 100) : 0;
                 const over = gastado > techo;
+                const ejecutado = mov.estado === "ejecutado";
                 return (
                   <div
                     key={mov.id}
                     className="fl-concepto"
-                    style={tab === "ejecutados" ? { cursor: "pointer" } : undefined}
-                    onClick={tab === "ejecutados" ? () => setDesgloseModal(mov) : undefined}
+                    style={ejecutado ? { cursor: "pointer" } : undefined}
+                    onClick={ejecutado ? () => setDesgloseModal(mov) : undefined}
                   >
                     <div className="top">
                       <div style={{ display: "flex", gap: 11, alignItems: "center", minWidth: 0 }}>
@@ -1416,7 +1417,7 @@ export default function VistaSemanal({
                         </div>
                       </div>
                       <div style={{ textAlign: "right", flexShrink: 0 }}>
-                        {tab === "ejecutados" ? (
+                        {ejecutado ? (
                           <span style={{ fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
                             {COP(mov.montoEjecutado ?? gastado)}
                           </span>
@@ -1427,7 +1428,7 @@ export default function VistaSemanal({
                         )}
                       </div>
                     </div>
-                    {tab === "pendientes" && modoSemana !== "lectura" && (
+                    {!ejecutado && modoSemana !== "lectura" && (
                       <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
                         <button
                           className="fl-btn ghost sm"
@@ -1815,48 +1816,44 @@ export default function VistaSemanal({
       )}
 
       {/* BL-QA-04 · Modal desglose H3B bolsillo ejecutado */}
-      {desgloseModal && (() => {
-        const consumosBolsillo = consumos.filter(c => c.bolsilloId === desgloseModal.conceptoId);
-        const gastado = consumosBolsillo.reduce((sum, c) => sum + c.monto, 0);
-        return (
+      {desgloseModal !== null && (
+        <div
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 800 }}
+          onClick={() => setDesgloseModal(null)}
+        >
           <div
-            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 800 }}
-            onClick={() => setDesgloseModal(null)}
+            style={{ background: "var(--surface)", borderRadius: "20px 20px 0 0", padding: "20px 20px 32px", width: "100%", maxWidth: 480, maxHeight: "70vh", display: "flex", flexDirection: "column" }}
+            onClick={e => e.stopPropagation()}
           >
-            <div
-              style={{ background: "var(--surface)", borderRadius: "20px 20px 0 0", padding: "20px 20px 32px", width: "100%", maxWidth: 480, maxHeight: "70vh", display: "flex", flexDirection: "column" }}
-              onClick={e => e.stopPropagation()}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                <p style={{ fontWeight: 700, fontSize: 16, margin: 0, color: "var(--ink)" }}>{desgloseModal.nombreSnapshot}</p>
-                <button type="button" style={{ background: "none", border: "none", cursor: "pointer", padding: 4, color: "var(--ink-soft)" }} onClick={() => setDesgloseModal(null)}>
-                  <Icon name="x" size={18} />
-                </button>
-              </div>
-              <div style={{ overflowY: "auto", flex: 1 }}>
-                {consumosBolsillo.length === 0
-                  ? <p style={{ fontSize: 13, color: "var(--ink-faint)" }}>Sin consumos registrados</p>
-                  : consumosBolsillo.map(c => (
-                      <div key={c.id} style={{ padding: "8px 0", borderBottom: "1px solid var(--hair)" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                          <span style={{ flex: 1, fontSize: 13, color: "var(--ink)" }}>{c.descripcion || "Sin descripción"}</span>
-                          <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600, fontSize: 13, flexShrink: 0 }}>{COP(c.monto)}</span>
-                        </div>
-                        <p style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 2 }}>{c.fecha}</p>
-                      </div>
-                    ))
-                }
-              </div>
-              {consumosBolsillo.length > 0 && (
-                <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 12, borderTop: "1px solid var(--hair)", fontSize: 13, fontWeight: 700, marginTop: 8, color: "var(--ink)" }}>
-                  <span>Total</span>
-                  <span>{COP(gastado)}</span>
-                </div>
-              )}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <p style={{ fontWeight: 700, fontSize: 16, margin: 0, color: "var(--ink)" }}>{desgloseModal.nombreSnapshot}</p>
+              <button type="button" style={{ background: "none", border: "none", cursor: "pointer", padding: 4, color: "var(--ink-soft)" }} onClick={() => setDesgloseModal(null)}>
+                <Icon name="x" size={18} />
+              </button>
             </div>
+            <div style={{ overflowY: "auto", flex: 1 }}>
+              {consumos.filter(c => c.bolsilloId === desgloseModal.conceptoId).length === 0
+                ? <p style={{ fontSize: 13, color: "var(--ink-faint)" }}>Sin consumos registrados</p>
+                : consumos.filter(c => c.bolsilloId === desgloseModal.conceptoId).map(c => (
+                    <div key={c.id} style={{ padding: "8px 0", borderBottom: "1px solid var(--hair)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                        <span style={{ flex: 1, fontSize: 13, color: "var(--ink)" }}>{c.descripcion || "Sin descripción"}</span>
+                        <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600, fontSize: 13, flexShrink: 0 }}>{COP(c.monto)}</span>
+                      </div>
+                      <p style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 2 }}>{c.fecha}</p>
+                    </div>
+                  ))
+              }
+            </div>
+            {consumos.filter(c => c.bolsilloId === desgloseModal.conceptoId).length > 0 && (
+              <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 12, borderTop: "1px solid var(--hair)", fontSize: 13, fontWeight: 700, marginTop: 8, color: "var(--ink)" }}>
+                <span>Total</span>
+                <span>{COP(consumos.filter(c => c.bolsilloId === desgloseModal.conceptoId).reduce((s, c) => s + c.monto, 0))}</span>
+              </div>
+            )}
           </div>
-        );
-      })()}
+        </div>
+      )}
     </div>
   );
 }
