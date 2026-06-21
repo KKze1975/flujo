@@ -352,3 +352,50 @@ Dos bugs en el fix anterior:
 | Modal tiene botón X de cierre | ✓ código | `<Icon name="x" />` → `setDesgloseModal(null)` |
 | Tab Pendientes sin cambios | ✓ código | `ejecutado = false` en bolsillosPendientes → `onClick = undefined` |
 | `tsc --noEmit` limpio | ✓ | Hook pre-commit confirmado |
+
+---
+
+## Sesión BL-QA-04 FINAL — Desglose H3B en fichas de bolsillo · 21 junio 2026
+
+### Commit
+
+| Hash | Descripción |
+|---|---|
+| `1f66ef8` | BL-QA-04: desglose H3B en fichas bolsillo |
+
+### Causa raíz y contexto
+
+Los intentos anteriores agregaron `onClick` al card completo (solo en Ejecutados) y
+usaron el `desgloseModal` existente. El DoD pedía una feature distinta: tap
+específicamente en el **texto de monto** (`$X / $Y`) de la ficha, en **ambos tabs**
+(Pendientes y Ejecutados). El modal existente seguía siendo útil para Ejecutados y
+se conserva intacto.
+
+### Implementación
+
+Cuatro cambios en `components/VistaSemanal.tsx`:
+
+1. **Estado nuevo**: `h3bPopover: { anchor: DOMRect; bolsilloId: string } | null` + `h3bPopoverRef`
+2. **useEffect click-outside**: cierra el popover al tocar fuera; preserva trigger con `data-h3b-trigger` para evitar flicker al re-tocar el mismo monto
+3. **Trigger en `<p className="cat">`**: `e.stopPropagation()` + `setH3bPopover({anchor, bolsilloId: mov.conceptoId})` — impide que en Ejecutados dispare el `setDesgloseModal` del card
+4. **JSX del popover**: div `position:fixed` con mismos estilos que el popover de "Conceptos presupuestados"; lista `consumos.filter(c => c.bolsilloId === h3bPopover.bolsilloId)` + total al pie + botón × de cierre
+
+No se hace fetch adicional — `consumos` ya está filtrado por semana activa desde el servidor.
+
+### DoD BL-QA-04
+
+| Punto | DoD | Estado |
+|---|---|---|
+| Tap monto ficha Entretenimiento (Pendientes) → popover H3B S3 | Pendiente re-QA preview |
+| Tap monto ficha Frutas y verduras (Pendientes) → popover H3B S3 | Pendiente re-QA preview |
+| Tap monto ficha Víveres y otros (Pendientes) → popover H3B S3 | Pendiente re-QA preview |
+| Tap monto ficha bolsillo en Ejecutados → mismo popover | Pendiente re-QA preview |
+| Popover muestra descripción + monto por consumo + total al pie | ✓ código | `c.descripcion`, `COP(c.monto)`, footer con reduce |
+| Sin consumos → "Sin registros esta semana." | ✓ código | rama `items.length === 0` |
+| Popover cierra al tocar fuera o con botón × | ✓ código | useEffect mousedown + `onClick={() => setH3bPopover(null)}` |
+| Tap en otra parte del card NO abre el popover | ✓ código | `e.stopPropagation()` en trigger; resto del card sin handler |
+| `tsc --noEmit` limpio | ✓ | Hook pre-commit `✓ Verificaciones pasadas.` (exit 0) |
+
+### Próxima acción
+
+Re-QA en preview URL `https://flujo-git-dev-camilo-s-projects10.vercel.app` por Camilo.
