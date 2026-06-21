@@ -319,3 +319,36 @@ El script `seed-imprevistos-v2.mjs` quedó incluido en el commit `2431f16` (BL-Q
 ### Próxima acción
 
 Re-QA en preview URL por Camilo. Checklist BL-QA-04 + BL-QA-06.
+
+---
+
+## Sesión RE-FIX BL-QA-04 · 20 junio 2026
+
+### Commit
+
+| Hash | Descripción |
+|---|---|
+| `5b82b62` | BL-QA-04 re-fix: condición dato puro + JSX estándar |
+
+### Causa raíz
+
+Dos bugs en el fix anterior:
+1. **Condición `tab === "ejecutados"`**: React puede reutilizar nodos DOM entre cambios de tab, dejando el handler en estado incorrecto (stale closure entre renders). El resultado es que el onClick podía estar activo en Pendientes e inactivo en Ejecutados.
+2. **IIFE `(() => { ... })()`** en el modal: patrón no estándar en JSX de React/Next.js que puede causar comportamiento impredecible (el IIFE se re-ejecuta en cada render pero la referencia del elemento cambia).
+
+### Fix
+
+- `tab === "ejecutados"` → `mov.estado === "ejecutado"` (dato directo del Sheet, inmune a stale closure)
+- `{desgloseModal && (() => { ... })()}` → `{desgloseModal !== null && ( <div>...</div> )}`
+- `tab === "pendientes"` en "Cerrar bolsillo" → `!ejecutado` (mismo dato)
+
+### DoD BL-QA-04 (re-verificar en preview)
+
+| Punto | Estado | Evidencia |
+|---|---|---|
+| Tocar bolsillo ejecutado (Ejecutados) abre modal | ✓ código | `onClick={ejecutado ? () => setDesgloseModal(mov) : undefined}` donde `ejecutado = mov.estado === "ejecutado"` |
+| Modal muestra consumos H3B del conceptoId | ✓ código | `consumos.filter(c => c.bolsilloId === desgloseModal.conceptoId)` |
+| Cada item: descripción + monto + fecha | ✓ código | `c.descripcion`, `COP(c.monto)`, `c.fecha` |
+| Modal tiene botón X de cierre | ✓ código | `<Icon name="x" />` → `setDesgloseModal(null)` |
+| Tab Pendientes sin cambios | ✓ código | `ejecutado = false` en bolsillosPendientes → `onClick = undefined` |
+| `tsc --noEmit` limpio | ✓ | Hook pre-commit confirmado |
