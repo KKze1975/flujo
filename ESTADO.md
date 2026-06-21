@@ -3037,3 +3037,94 @@ BL-QA-01 → BL-QA-02 → [re-QA Camilo] → QA Angie → merge PR #6 → BL-02 
 4. Si pasa Angie: checklist de promoción (seed prod + merge PR #6).
 5. Actualizar PROMPT_AGENTE.md en repo dev con versión corregida.
 4. Merge por ticket según resultados de QA.
+
+---
+
+## Sesión QA · 20 junio 2026
+
+### Tipo de sesión
+QA — Re-QA PR #6 tras corrección BL-QA-01/BL-QA-02.
+
+### Resultado del re-QA Camilo
+
+**BL-QA-01 y BL-QA-02: aprobados** — todos los puntos del checklist verificados.
+
+**Nuevos bugs bloqueantes encontrados durante inspección extendida:**
+
+| ID | Tipo | Descripción |
+|---|---|---|
+| BL-QA-03 | Falso positivo (dato corrupto) | Barra S3 mostraba $1.909.996 en lugar de $1.659.996 — causa: MOV duplicado de Entretenimiento en S3 del Sheet de dev |
+| BL-QA-04 | Bug código | Modal desglose H3B desapareció en bolsillos ejecutados — no se abre nada al tocar |
+| BL-QA-05 | Dato corrupto dev | Entretenimiento tenía dos MOVs en S3 — eliminado manualmente |
+| BL-QA-06 | Dato + seed | Imprevistos ausente en Pendientes — seed disparó guard contra concepto retirado; concepto nuevo nunca fue creado |
+
+**BL-QA-03 cerrado:** eliminación del MOV duplicado (BL-QA-05) corrigió la barra automáticamente.
+**BL-QA-05 cerrado:** MOV duplicado eliminado manualmente del Sheet de dev.
+
+### Corrección de diseño OBS-3
+
+Imprevistos es `frecuencia: semanal` (no mensual como decía el doc).
+`monto_referencia: 250.000` es el techo **por semana**.
+El resto del diseño aprobado se mantiene igual.
+
+### PR #6 — estado
+
+**No aprobado.** Bloqueantes pendientes: BL-QA-04, BL-QA-06.
+
+### Cola de construcción actualizada
+
+```
+BL-QA-04 → BL-QA-06 → [re-QA Camilo] → QA Angie → checklist promoción → merge PR #6 → BL-02 → BL-06 → QA-7jun-01
+```
+
+### Artefactos generados
+
+- `PROMPT_FIX_BL-QA-04_BL-QA-06.md` — prompt listo para ejecutar en Claude Code
+
+### Próxima sesión
+
+1. Ejecutar `PROMPT_FIX_BL-QA-04_BL-QA-06.md` en Claude Code.
+2. Re-QA en preview URL por Camilo.
+3. Si pasa: QA de Angie.
+4. Si pasa Angie: checklist de promoción (seed prod Imprevistos + merge PR #6).
+
+---
+
+## Sesión QA · 20 junio 2026 — continuación
+
+### Lo que ocurrió
+
+- BL-QA-06 aprobado en re-QA: Imprevistos aparece en Pendientes con ficha correcta
+- BL-QA-04 requirió dos intentos adicionales de fix — ambos fallaron por razón diferente:
+  - Intento 1 (commit 5b82b62): colocó el modal en tab Pendientes en lugar de Ejecutados
+  - Intento 2: mismo error — agente no encontró el componente correcto vía graphify
+- Diagnóstico final BL-QA-04: la feature de desglose H3B en fichas de bolsillo
+  no existía antes — Entretenimiento es concepto nuevo y Frutas/Víveres nunca
+  tuvieron esa lógica implementada. Es feature nueva, no regresión.
+- Diseño aclarado: tap en el monto $X / $250.000 de la ficha de bolsillo →
+  popover idéntico al de "Conceptos presupuestados" de la barra superior,
+  con consumos H3B de la semana activa + total al pie.
+  Aplica tanto en tab Pendientes como en Ejecutados.
+- Dato operativo: concepto Imprevistos creado manualmente en Sheet de producción
+  (COMPROMISOS_FINANCIEROS_1781979860619, frecuencia: semanal,
+  monto_referencia: 250000, estado_concepto: activo). MOV se agrega al momento
+  del merge según semana activa en ese momento.
+
+### Estado PR #6
+
+No aprobado. BL-QA-04 pendiente.
+
+### Artefactos generados
+
+- PROMPT_REFIX_BL-QA-04_final.md — prompt listo para ejecutar en Claude Code
+
+### Cola de construcción actualizada
+
+BL-QA-04 → [re-QA Camilo] → QA Angie → checklist promoción → merge PR #6 → BL-02 → BL-06 → QA-7jun-01
+
+### Próxima sesión
+
+1. Ejecutar PROMPT_REFIX_BL-QA-04_final.md en Claude Code.
+2. Re-QA Camilo con checklist BL-QA-04.
+3. Si pasa: QA Angie.
+4. Si pasa Angie: checklist de promoción (agregar MOV Imprevistos en prod según semana activa + merge PR #6).
