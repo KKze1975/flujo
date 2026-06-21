@@ -3128,3 +3128,55 @@ BL-QA-04 → [re-QA Camilo] → QA Angie → checklist promoción → merge PR #
 2. Re-QA Camilo con checklist BL-QA-04.
 3. Si pasa: QA Angie.
 4. Si pasa Angie: checklist de promoción (agregar MOV Imprevistos en prod según semana activa + merge PR #6).
+
+---
+
+## Sesión CONSTRUCCIÓN · 21 junio 2026
+
+### Tipo de sesión
+CONSTRUCCIÓN — ejecución BL-QA-04 + fixes adicionales + preparación merge PR #6.
+
+### Lo que ocurrió
+
+**BL-QA-04 resuelto** (commit 1f66ef8):
+- Tap en monto `$X / $Y` de ficha bolsillo → popover con consumos H3B de la semana activa
+- Funciona en tab Pendientes y Ejecutados
+- Popover: descripción + monto por fila, total al pie, cierre con × o tap fuera
+- Sin consumos → "Sin registros esta semana."
+- `e.stopPropagation()` en trigger — tap en resto del card no abre popover
+
+**Fixes adicionales en PR #6 (misma rama dev):**
+
+| Commit | Ticket | Descripción |
+|---|---|---|
+| 66bd7f6 | FIX-MODAL-EJ | stopPropagation en título ficha ejecutados — ya no abre desgloseModal |
+| 73205fd | FIX-S4-NAV | Flecha → habilitada hacia S4 futura — replica comportamiento de semanas pasadas |
+| 47e73ce | FIX-BARRA-EJ | Sección "Conceptos ejecutados" agregada al popover de barra morada |
+| ea9ed56 | FIX-BARRA-POPOVER-MODO | Estado `popoverMode` diferencia presupuestado vs ejecutado |
+| (trigger) | FIX-BARRA-EJ-TRIGGER | onClick agregado en monto ejecutado de barra morada |
+
+**Correcciones de datos Sheet dev:**
+- `tipo_snapshot` corregido de `pago_fraccionado` a `fijo` en MOVs 028/029/030 (Fondo transporte, Fondo emergencia, CDT NU)
+- `tipo` corregido en H1 para los mismos tres conceptos
+- MOVs de Imprevistos (`COMPROMISOS_FINANCIEROS_1782005151968`) insertados en H2 dev para S1/S2/S4 (S3 ya existía)
+
+**Correcciones de datos Sheet producción (pre-merge):**
+- `tipo` corregido en H1 para TRANSPORTE_1748100037, METAS_FAMILIARES_1748100038, METAS_FAMILIARES_1748100039 → `fijo`
+- `tipo_snapshot` corregido en H2 para MOVs 028/029/030 → `fijo`
+- 4 MOVs de Imprevistos (`COMPROMISOS_FINANCIEROS_1781979860619`) insertados en H2 prod: S1/S2/S3/S4, monto 250000, estado pendiente
+
+**QA:**
+- Re-QA Camilo: 9 puntos BL-QA-04 aprobados + fixes adicionales verificados
+- QA Angie: aprobado
+
+### Estado PR #6
+
+**Listo para merge.** Todos los bloqueantes resueltos. Datos prod corregidos.
+
+### Próxima acción
+
+Merge PR #6 (dev → main) en GitHub. Verificar deploy Vercel sin errores.
+
+### Cola post-merge
+
+BL-02 → BL-06 → QA-7jun-01
