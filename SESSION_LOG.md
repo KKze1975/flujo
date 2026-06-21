@@ -516,3 +516,55 @@ popover ya existente que incluye ambas secciones.
 ### Próxima acción
 
 Re-QA en preview URL `https://flujo-git-dev-camilo-s-projects10.vercel.app` por Camilo.
+
+---
+
+## Sesión Diagnóstico S4 + Fix Popover Barra · 21 junio 2026
+
+### Bug 1 — Fichas en S4 · DIAGNÓSTICO (DATA, no código)
+
+Script `scripts/diag-s4.mjs` ejecutado contra Sheet dev (eliminado tras lectura).
+
+**MOVs con semana=S4 en H2 (mes 2026-06):**
+
+| MOV | Nombre | tipo_snapshot | estado |
+|---|---|---|---|
+| MOV_1780841388005 | Mesada Emma | fijo | pendiente |
+| MOV_1780841388009 | Mesada Lucas | fijo | pendiente |
+| MOV_1780841388013 | Empleada Mireyita | fijo | pendiente |
+| MOV_1780841388018 | Chucherías viernes | discrecional | pendiente |
+| MOV_1780841388019 | Abono capital TC | fijo | pendiente |
+| MOV_1780841388026 | Entretenimiento | pago_fraccionado | pendiente |
+| MOV_1780841388028 | Fondo transporte | pago_fraccionado | pendiente |
+| MOV_1780841388029 | Fondo de emergencia | pago_fraccionado | pendiente |
+| MOV_1780841388030 | CDT NU | pago_fraccionado | pendiente |
+| MOV_1780841388035 | Frutas y verduras | pago_fraccionado | pendiente |
+| MOV_1780841388039 | Víveres y otros | pago_fraccionado | pendiente |
+
+Sin MOVs de pago_fraccionado con semana=null en 2026-06.
+
+**Diagnóstico:** CDT NU, Fondo transporte, Fondo de emergencia son **pago_fraccionado** (no "non-pago_fraccionado" como indicaba el reporte). Están asignados a S4 explícitamente en H2. La API los devuelve correctamente para semana=S4. El commit `73205fd` es correcto — simplemente habilitó la navegación que los hizo visibles.
+
+**Acción:** Sin cambio de código. Deuda técnica: el usuario debe verificar si CDT NU / Fondo transporte / Fondo de emergencia en S4 son intencionales o si deben corregirse manualmente en el Sheet.
+
+---
+
+### Bug 2 — Popover barra modo · Commit `ea9ed56`
+
+**Causa raíz:** `showPresupuestadoPopover` era booleano sin modo — ambos botones abrían el mismo popover con ambas secciones.
+
+**Fix:** Estado `popoverMode: "presupuestado" | "ejecutado"`. Cada trigger button abre/cierra el popover en su modo; el contenido se renderiza condicionalmente.
+
+### DoD Bug 2
+
+| Punto | Estado |
+|---|---|
+| Tap en monto ejecutado → popover muestra SOLO ejecutados | ✓ código — `popoverMode === "ejecutado"` |
+| Tap en monto presupuestado → popover muestra SOLO presupuestados | ✓ código — `popoverMode === "presupuestado"` |
+| Mismo botón mientras abierto → cierra popover | ✓ código — guard `if (showPresupuestadoPopover && popoverMode === ...)` |
+| Sin ejecutados → "Sin ejecutados esta semana." | ✓ código — rama `ejecutados.length === 0` |
+| `tsc --noEmit` limpio | ✓ — hook pre-commit confirmado |
+
+### Próxima acción
+
+Re-QA en preview URL `https://flujo-git-dev-camilo-s-projects10.vercel.app` por Camilo.
