@@ -399,3 +399,86 @@ No se hace fetch adicional — `consumos` ya está filtrado por semana activa de
 ### Próxima acción
 
 Re-QA en preview URL `https://flujo-git-dev-camilo-s-projects10.vercel.app` por Camilo.
+
+---
+
+## Sesión Fix Modal Ejecutados + S4 Nav + Barra EJ · 21 junio 2026
+
+### Commits
+
+| Hash | Ticket | Descripción |
+|---|---|---|
+| `66bd7f6` | FIX-MODAL-EJ | stopPropagation en título ficha ejecutados |
+| `73205fd` | FIX-S4-NAV | habilitar navegación a semana futura S4 |
+| `47e73ce` | FIX-BARRA-EJ | agregar conceptos ejecutados en popover barra morada |
+
+---
+
+### FIX-MODAL-EJ — Causa raíz y decisión
+
+El `div.fl-concepto` del bolsillo tiene `onClick={ejecutado ? () => setDesgloseModal(mov) : undefined}`,
+introducido en BL-QA-04 (commit `2431f16`), **no en OBS-2**. El `<p className="name">` (título) no
+tenía `stopPropagation`, por lo que cualquier tap en el título propagaba al card y abría el
+`desgloseModal` (bottom-sheet).
+
+**Fix:** `onClick={(e) => e.stopPropagation()}` en `<p className="name">`. La `desgloseModal`
+via card-onClick se conserva para ring, badge y espacio vacío del card (DoD: "tap en resto del
+card → comportamiento sin cambios").
+
+### DoD FIX-MODAL-EJ
+
+| Punto | Estado |
+|---|---|
+| Tap en título de ficha bolsillo en Ejecutados → no abre modal | ✓ código — stopPropagation en p.name |
+| Tap en monto `$X / $Y` → sigue abriendo popover H3B | ✓ código — p.cat sin cambios |
+| Tap en ring/badge/espacio del card → desgloseModal (sin cambios) | ✓ código — card onClick intacto |
+| `tsc --noEmit` limpio | ✓ — hook pre-commit confirmado |
+
+---
+
+### FIX-S4-NAV — Causa raíz y decisión
+
+`puedeDer = semanaVisible !== semanaActivaMes` bloqueaba la flecha → cuando se está en
+la semana activa, impidiendo navegar a S4 futura.
+
+**Fix:** `puedeDer = idxVisible < SEMANAS.length - 1` — habilita la flecha desde cualquier
+semana que no sea la última, independientemente de si la siguiente es futura.
+
+El gate modal ya manejaba correctamente semanas futuras (`SEMANAS.indexOf(semanaVisible) > SEMANAS.indexOf(semanaActivaMes)` → "Aún no iniciada" / "Planear semana" → `modoSemana = "edicion"`). La función `navegar(s)` ya fetcheaba datos para cualquier semana sin guards adicionales.
+
+### DoD FIX-S4-NAV
+
+| Punto | Estado |
+|---|---|
+| Flecha → habilitada en S3 (activa) | ✓ código — puedeDer = idxVisible < 3 |
+| Navegar a S4 → gate modal "Aún no iniciada" + "Planear semana" | ✓ código — gate modal intacto |
+| En modo "Planear semana" en S4 → lápiz visible | ✓ código — modoSemana="edicion", guard es modoSemana !== "lectura" |
+| Semanas anteriores sin cambios | ✓ código — puedeIzq intacto |
+| `tsc --noEmit` limpio | ✓ — hook pre-commit confirmado |
+
+---
+
+### FIX-BARRA-EJ — Causa raíz y decisión
+
+El popover de "Conceptos presupuestados" de la barra morada no tenía contraparte
+ejecutada. Los datos ya estaban disponibles: `ejecutados` (línea 977) y `totalEjecutadoH2`
+(línea 985-987).
+
+**Fix:** Sección "Conceptos ejecutados" agregada dentro del popover, después del footer
+de presupuestados. Muestra `m.nombreSnapshot` + `COP(m.montoEjecutado ?? 0)` + total.
+Solo visible cuando `ejecutados.length > 0`. No incluye `pago_fraccionado` (excluidos
+por la variable `ejecutados`). Sin fetch adicional.
+
+### DoD FIX-BARRA-EJ
+
+| Punto | Estado |
+|---|---|
+| Tap en barra → popover muestra conceptos ejecutados de la semana | ✓ código — sección ejecutados con map + total |
+| Nombre + monto por concepto + total al pie | ✓ código — m.nombreSnapshot + COP(m.montoEjecutado ?? 0) + totalEjecutadoH2 |
+| Presupuestados siguen apareciendo sin cambios | ✓ código — sección presupuestados intacta |
+| Sin ejecutados → sección no aparece | ✓ código — guard ejecutados.length > 0 |
+| `tsc --noEmit` limpio | ✓ — hook pre-commit confirmado |
+
+### Próxima acción
+
+Re-QA en preview URL `https://flujo-git-dev-camilo-s-projects10.vercel.app` por Camilo.
