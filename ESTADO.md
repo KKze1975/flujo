@@ -3228,3 +3228,71 @@ Estable. PR #6 y PR #7 en main. Sin bugs conocidos.
 ### Cola siguiente sesión
 
 BL-02 → BL-06 → QA-7jun-01
+
+---
+
+## Sesión DEBUGGING · 22 junio 2026 — H3B-JULIO-01
+
+### Tipo de sesión
+DEBUGGING — Bug de producción. Registros FAB H3B guardando en mes/semana incorrectos.
+
+### Síntomas reportados
+
+- Consumos registrados desde el FAB el 22 junio quedaban con `mes: 2026-07 / semana: S4`
+  en lugar de `mes: 2026-06 / semana: S4`.
+- Causa estructural: julio había sido activado accidentalmente, generando 69 MOVs
+  prematuros en H2 de producción.
+
+### Causa raíz confirmada
+
+**Patrón idéntico a FIX-MES-ACTIVO** — el endpoint H3B y el componente `RegistroRapido`
+inferían el mes activo desde los MOVs existentes en H2, no desde la fecha del sistema.
+Con MOVs de julio presentes, ambos devolvían julio. Mismo error raíz, tercera instancia.
+
+### Datos corruptos corregidos directamente en Sheet de producción
+
+| id_consumo | Campo | Valor incorrecto | Valor corregido |
+|---|---|---|---|
+| CONSUMO_1782170083338 | mes | 2026-07 | 2026-06 |
+| CONSUMO_1782170083338 | semana | S4 | S4 (sin cambio) |
+| CONSUMO_1782170131704 | mes | 2026-07 | 2026-06 |
+| CONSUMO_1782170131704 | semana | S4 | S4 (sin cambio) |
+
+69 MOVs de julio eliminados de H2 (todos `estado: pendiente`, ninguno ejecutado).
+H2 producción queda con 73 filas — todas pertenecientes a `mes: 2026-06`.
+
+### Correcciones de código — PR #8 (mergeado a main)
+
+| Commit | Descripción |
+|---|---|
+| 2d78f29 | Endpoint H3B: `mes` calculado desde `new Date()` en servidor — nunca desde `body.mes` |
+| bc2001f | `RegistroRapido`: `mes` calculado desde `new Date()` en cliente — elimina dependencia de `/api/meses` |
+
+**Defensa en capas resultante:**
+- El cliente calcula mes desde su reloj — nunca lo toma del estado de navegación ni de la API.
+- El servidor recalcula mes desde su reloj — nunca acepta `mes` del body aunque llegue.
+- Un mes incorrecto en el cuerpo del POST es ahora físicamente ignorado.
+
+### Invariante formalizado
+
+**I-14** agregado a `INVARIANTS.md`: el mes activo y la semana activa nunca se infieren
+desde datos del Sheet — siempre desde `new Date()` en el servidor. Aplica a todos los
+endpoints. Violación produce datos silenciosamente corruptos.
+
+### Pendiente verificación
+
+- P5: registrar consumo desde FAB en producción post-deploy y confirmar `mes: 2026-06`
+  en Sheet. Verificación end-to-end pendiente de confirmación por Camilo.
+
+### Aprendizaje — candidato a HG-SDD
+
+El mismo error raíz apareció tres veces en tres lugares distintos (page.tsx, endpoint H3B,
+componente RegistroRapido). La corrección puntual no es suficiente — se necesita auditoría
+activa de todos los endpoints al introducir cualquier lógica que calcule mes o semana.
+Grep de auditoría pendiente como deuda técnica H3B-JULIO-DT1.
+
+### Cola siguiente sesión
+
+1. P5: verificación end-to-end post-deploy PR #8.
+2. Grep auditoría de endpoints — deuda técnica H3B-JULIO-DT1.
+3. Continuar con BL-02 → BL-06 → QA-7jun-01.
