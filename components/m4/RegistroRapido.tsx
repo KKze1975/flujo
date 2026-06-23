@@ -6,27 +6,23 @@ import Icon from "@/components/ui/Icon";
 
 type Estado = "idle" | "registrando" | "exito";
 
+function mesActual(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+}
+
 export default function RegistroRapido({ onClose, onSuccess }: { onClose?: () => void; onSuccess?: () => void }) {
   const [estado, setEstado] = useState<Estado>("idle");
   const [error, setError] = useState<string | null>(null);
-  const [mesActivo, setMesActivo] = useState<string | null>(null);
 
   useEffect(() => {
     if (estado === "exito") onSuccess?.();
   }, [estado]);
 
-  useEffect(() => {
-    fetch("/api/meses")
-      .then((r) => r.json())
-      .then((data: { meses?: { mes: string }[] }) => {
-        const meses = (data.meses ?? []).map((m) => m.mes);
-        if (meses.length > 0) setMesActivo(meses[meses.length - 1]);
-      })
-      .catch(() => {});
-  }, []);
-
   async function handleSubmitInput(payload: Payload) {
-    if (!mesActivo) { setError("Mes activo no disponible."); return; }
+    const mesActivo = mesActual();
     setEstado("registrando");
     setError(null);
     try {
