@@ -613,3 +613,94 @@ causando discrepancia entre la lista del popover y el monto de la barra.
 | Popover muestra todos los items que suman el total | ✓ — H2 + H3 en lista |
 | Total popover coincide con total barra | ✓ — ambos usan `totalEjecutado` |
 | `tsc --noEmit` limpio | ✓ — hook pre-commit confirmado |
+
+---
+
+## SESSION H3B-JULIO-01 — Registros FAB con mes/semana incorrectos + MOVs julio prematuros · 2026-06-22
+
+### P1 — Diagnóstico de código
+
+- **Endpoint encontrado:** `app/api/registro/sin-concepto/route.ts` — ruta `POST /api/registro/sin-concepto`
+- **Campo `mes` (línea 94, antes del fix):**
+  ```typescript
+  body.mes,   // viene del cliente — NO calculado server-side
+  ```
+- **Campo `semana` (línea 89):**
+  ```typescript
+  const semana = semanaActual();   // calculado desde new Date().getDate() ✓
+  ```
+- **Causa raíz confirmada: SÍ**
+  El cliente (`RegistroRapido`) pasa `mes` en el body, obtenido de `/api/meses`. Ese endpoint devolvió `2026-07` porque H2 tenía 30 MOVs de julio cargados anticipadamente. El endpoint H3B escribió `body.mes` sin validación, violando el invariante I-01/I-02.
+
+### P2 — Fix de código
+
+**Archivo:** `app/api/registro/sin-concepto/route.ts`
+
+Antes (línea 94):
+```typescript
+body.mes,
+```
+
+Después (líneas 87–94):
+```typescript
+const mes = mesActual();
+// ...
+mes,
+```
+
+Nueva función añadida (líneas 58–63, idéntica a `app/page.tsx:15-20`):
+```typescript
+function mesActual(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+}
+```
+
+Campo `mes` en tipo `Body` cambiado a opcional (`mes?: string`) — el servidor ya no lo usa.
+Validación `!body.mes` eliminada de la guarda de campos requeridos.
+
+- **tsc --noEmit:** limpio ✓
+- **Commit:** `2d78f29`
+
+### P2b — Fix causa raíz en RegistroRapido (alcance ampliado con confirmación del usuario)
+
+**Archivo:** `components/m4/RegistroRapido.tsx`
+
+La causa raíz estaba en el cliente: `RegistroRapido` llamaba a `/api/meses`, tomaba el último elemento de la lista (`meses[meses.length - 1]`) y lo usaba como mes activo. Como H2 tenía MOVs de julio, el último mes era `2026-07`.
+
+Fix: eliminar el `useEffect` que fetcha `/api/meses` y el estado `mesActivo`. Reemplazar por cálculo directo desde `new Date()` en el momento del submit usando `mesActual()` — mismo patrón que `app/page.tsx`.
+
+- Antes: `const [mesActivo, setMesActivo] = useState<string | null>(null)` + `useEffect(() => fetch("/api/meses")...)`
+- Después: `const mesActivo = mesActual()` calculado en `handleSubmitInput`
+- **tsc --noEmit:** limpio ✓
+- **Commit:** `bc2001f`
+
+### P3 — Corrección consumos H3B en producción
+
+- Script: `scripts/fix-h3b-julio-01.mjs --prod`
+- CONSUMO_1782170083338: mes `2026-07` → `2026-06` (fila 32, col C) ✓
+- CONSUMO_1782170131704: mes `2026-07` → `2026-06` (fila 33, col C) ✓
+- Verificación post-escritura: ambas filas releídas con `mes=2026-06` ✓
+
+### P4 — Eliminación MOVs julio en producción
+
+**Anomalía encontrada:** el prompt indicaba "exactamente 30 filas" pero en producción había 69 MOVs de julio (batch de 69 IDs consecutivos, no 30). Todas con `mes=2026-07` y `estado=pendiente`.
+
+- Lote 1 (`fix-h2-julio-01.mjs --prod`): 30 filas eliminadas (`MOV_1782011977286`→`MOV_1782011977315`) ✓
+- Verificación post-lote-1: quedaban 39 filas — criterio de parada activado, usuario consultado
+- Lote 2 (`fix-h2-julio-01b.mjs --prod`): 39 filas eliminadas (`MOV_1782011977316`→`MOV_1782011977354`) ✓
+- Verificación final: 0 filas con `mes=2026-07` en H2, total H2 = 73 filas ✓
+
+### P5 — Verificación end-to-end
+
+- (pendiente — post-deploy)
+
+### Deuda técnica encontrada
+
+13. **H3B-JULIO-01 · Origen del lote doble de MOVs de julio**: se eliminaron 69 MOVs de julio en lugar de los 30 estimados. El flujo que los creó (inicio de mes prematuro) generó 69 entradas en un solo batch. Verificar qué script o acción los creó para evitar repetición.
+
+### Criterios de parada activados
+
+- **P4 lote 1**: verificación post-eliminación falló (39 filas restantes). Consultado con usuario antes de continuar. Autorizado y completado.

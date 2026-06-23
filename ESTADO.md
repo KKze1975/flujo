@@ -3180,3 +3180,51 @@ Merge PR #6 (dev → main) en GitHub. Verificar deploy Vercel sin errores.
 ### Cola post-merge
 
 BL-02 → BL-06 → QA-7jun-01
+
+---
+
+## Sesión CONSTRUCCIÓN · 21 junio 2026 — continuación post-merge PR #6
+
+### Tipo de sesión
+CONSTRUCCIÓN — fixes urgentes en prod post-merge PR #6.
+
+### Lo que ocurrió
+
+**Merge PR #6 completado:**
+- Merge commit: a1e16fc
+- 21 archivos integrados (2652 inserciones, 174 eliminaciones)
+- Rama dev eliminada en remoto tras merge
+
+**Bugs encontrados en producción post-merge:**
+
+| ID | Descripción | Causa raíz |
+|---|---|---|
+| FIX-MES-ACTIVO | App mostraba julio como mes activo | Mes inferido desde MOVs en H2 — Sheet tiene MOVs de julio presupuestados anticipadamente |
+| FIX-POPOVER-EJ-FILTRO | Popover barra no mostraba todos los conceptos ejecutados | Filtro del popover no incluía H3 consumos — total barra y detalle desalineados |
+
+**Fixes implementados en rama dev — PR #7:**
+
+| Commit | Ticket | Descripción |
+|---|---|---|
+| c9f5699 | FIX-MES-ACTIVO | app/page.tsx: mesActual() usa new Date() — mes activo ya no depende de MOVs en H2 |
+| 7b861f6 | FIX-POPOVER-EJ-FILTRO | VistaSemanal.tsx: popover ejecutados lista H2 ejecutados + H3 consumos. Total footer = totalEjecutado |
+
+**PR #7:** https://github.com/KKze1975/flujo/pull/7
+- Merge commit: a4e887b
+- 3 archivos integrados: app/page.tsx, components/VistaSemanal.tsx, SESSION_LOG.md
+- QA Angie: aprobado
+- Deploy Vercel: exitoso
+
+### Verificación post-deploy en producción
+
+- [x] Mes activo muestra junio correctamente
+- [x] Popover barra morada muestra todos los conceptos ejecutados
+- [x] Total popover coincide con total barra
+
+### Estado producción
+
+Estable. PR #6 y PR #7 en main. Sin bugs conocidos.
+
+### Cola siguiente sesión
+
+BL-02 → BL-06 → QA-7jun-01
