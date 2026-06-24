@@ -3296,3 +3296,56 @@ Grep de auditoría pendiente como deuda técnica H3B-JULIO-DT1.
 1. P5: verificación end-to-end post-deploy PR #8.
 2. Grep auditoría de endpoints — deuda técnica H3B-JULIO-DT1.
 3. Continuar con BL-02 → BL-06 → QA-7jun-01.
+
+---
+
+## Sesión CONSTRUCCIÓN · 24 junio 2026 — BL-12 + corrección datos S4
+
+### Tipo de sesión
+CONSTRUCCIÓN + corrección de datos de producción.
+
+### Incidente: cierre accidental S4 junio
+
+Angie cerró S4 de junio por accidente el miércoles 24 junio (semana activa).
+Causa: botón "Cerrar semana" ejecutaba el POST directamente sin confirmación.
+
+**Corrección de datos ejecutada:**
+- Fila `CIERRE_1782311490385` (2026-06 / S4) eliminada del tab `H5` en producción.
+- Verificación post-eliminación: H5 quedó con exactamente 3 filas (S1-2025-05, S2-2026-06, S3-2026-06).
+- S4 junio reactivada. MOVs pendientes y consumos de S4 intactos.
+- Nota: el tab de cierres se llama `H5` (no `H5A`) — verificar consistencia con referencias en codebase.
+
+### BL-12 — Modal de confirmación cierre de semana
+
+**Diseño aprobado:** freno de confirmación explícita antes de ejecutar el cierre.
+- Modal con texto: `"¿Cerrar semana S[n]? Esta acción no se puede deshacer."`
+- Dos botones: `Cancelar` (cierra modal, no ejecuta) / `Cerrar semana` (ejecuta POST existente).
+- Sin cambios en el endpoint. Sin datos calculados en el modal.
+
+**Implementación:**
+- Commit: `6389e0f` — BL-12: modal de confirmación antes de cerrar semana
+- Archivo: `VistaSemanal.tsx` — estado `showConfirmCierre` + modal condicional
+- `tsc --noEmit` ✓
+- PR #9 mergeado a main — fast-forward, rama dev eliminada.
+- QA Angie: aprobado 24 junio 2026.
+
+### DoD BL-12
+- [x] Tap en "Cerrar semana" muestra modal con número de semana dinámico
+- [x] Cancelar cierra modal sin efectos
+- [x] Cerrar semana ejecuta POST existente y cierra modal
+- [x] tsc --noEmit limpio
+- [x] QA Angie — aprobado 24 junio 2026
+- [x] Merge PR #9 a main — fast-forward, rama dev eliminada
+
+### Estado producción
+
+BL-12 en producción (deploy Vercel automático post-merge).
+Nota: al abrir próxima sesión de construcción, sincronizar dev con main antes de cualquier trabajo
+(`git checkout dev && git pull origin main`).
+
+### Cola siguiente sesión
+
+1. Sincronizar dev con main al abrir.
+2. P5: verificación end-to-end post-deploy PR #8.
+3. Grep auditoría endpoints — deuda técnica H3B-JULIO-DT1.
+4. Continuar BL-02 → BL-06 → QA-7jun-01.
