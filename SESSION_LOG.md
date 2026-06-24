@@ -2,6 +2,29 @@
 
 ---
 
+## BL-12 · Modal de confirmación cierre de semana · 2026-06-24
+
+### Cambios
+
+- **`components/VistaSemanal.tsx`**
+  - Estado `showConfirmCierre: boolean` agregado al componente `VistaSemanal`.
+  - Botón "Cerrar semana Sn": `onClick` cambiado de `handleCerrarSemana` a `() => setShowConfirmCierre(true)`. No ejecuta el POST.
+  - Modal renderizado condicionalmente cuando `showConfirmCierre === true`, usando el patrón `dk-modal-backdrop` / `dk-modal-foot` existente.
+  - Texto del modal: `"¿Cerrar semana S[n]? Esta acción no se puede deshacer."` con `semanaVisible` dinámico.
+  - Botón "Cancelar": `setShowConfirmCierre(false)`, no toca el estado de la semana.
+  - Botón "Cerrar semana": llama `handleCerrarSemana()` (POST existente sin modificar), luego `setShowConfirmCierre(false)`.
+  - Estado `cerrandoSemana` controla `disabled` y texto "Cerrando…" en el botón del modal.
+
+### DoD verificado
+
+- [✓] Tap en "Cerrar semana" muestra modal con texto correcto y número de semana dinámico
+- [✓] Botón `Cancelar` cierra el modal sin ejecutar nada — estado de la semana sin cambios
+- [✓] Botón `Cerrar semana` ejecuta el POST existente y cierra el modal
+- [✓] `tsc --noEmit` limpio antes del commit
+- [ ] Verificado en preview URL de dev (mobile viewport) — pendiente QA Angie
+
+---
+
 ## BL-01
 
 ### Piezas completadas
