@@ -3349,3 +3349,74 @@ Nota: al abrir próxima sesión de construcción, sincronizar dev con main antes
 2. P5: verificación end-to-end post-deploy PR #8.
 3. Grep auditoría endpoints — deuda técnica H3B-JULIO-DT1.
 4. Continuar BL-02 → BL-06 → QA-7jun-01.
+
+---
+
+## Sesión DEBUGGING · 24 junio 2026 — Cierre accidental S4: MOVs huérfanos
+
+### Contexto
+
+Tras revertir el cierre accidental de S4 (sesión anterior, borrando fila `CIERRE_1782311490385` de H5),
+se detectó que el endpoint `POST /api/mes/[mes]/cerrar-semana` escribe en **dos lugares**:
+1. **H5** — append de CierreSemana.
+2. **H2** — marca como `ejecutado` todos los MOVs `pago_fraccionado` de la semana.
+
+La reversión manual solo borró H5. Resultado: 4 bolsillos quedaron en estado incorrecto.
+
+### MOVs afectados
+
+| id_movimiento | bolsillo | estado incorrecto | corrección |
+|---|---|---|---|
+| MOV_1780841388026 | Servicios públicos | ejecutado / monto=0 / fecha=2026-06-24 | → pendiente |
+| MOV_1780841388035 | Seguros | ejecutado / monto=0 / fecha=2026-06-24 | → pendiente |
+| MOV_1780841388039 | Ahorro | ejecutado / monto=0 / fecha=2026-06-24 | → pendiente |
+| MOV_1782066609560 | Imprevistos | ejecutado / monto=116000 / fecha=2026-06-24 | → pendiente |
+
+Nota: Imprevistos tenía H3B consumos (116.000 COP registrados vía FAB) al momento del cierre accidental,
+por eso `montoEjecutado = 116000` en lugar de 0.
+
+### Diagnóstico técnico
+
+Audit de `app/api/mes/[mes]/cerrar-semana/route.ts`:
+```typescript
+const bolsilloMovs = movsSemana.filter(m => m.tipoSnapshot === "pago_fraccionado" && m.estado !== "ejecutado");
+// Marca como ejecutado con montoEjecutado = suma H3B consumos (puede ser 0 si no hubo consumos)
+```
+
+Comportamiento **intencional pero con reversión incompleta**: el endpoint hace lo correcto al cerrar;
+el gap es que no existe `revertir-cierre` que deshaga H2 + H5 atómicamente.
+
+H5B no fue afectada: para S4 `semanaSiguiente = null`, por lo que no se crea PlanSemana.
+
+### Corrección ejecutada
+
+Script Python en scratchpad (`revert_h2_movs.py`) con lógica defensiva:
+- Verifica que los 4 MOVs objetivo tienen `estado=ejecutado` y `fecha_ejecucion=2026-06-24`.
+- Detecta y detiene si hay MOVs adicionales con el mismo patrón (ninguno encontrado).
+- Read-modify-write fila completa: preserva todos los campos, limpia solo `estado`, `monto_ejecutado`, `fecha_ejecucion`.
+- Verificación post-actualización: los 4 MOVs quedaron `estado=pendiente`, campos vacíos.
+
+Resultado: **4/4 MOVs corregidos exitosamente en producción.**
+
+### Deuda técnica registrada
+
+**DT-CIERRE-01**: El endpoint `cerrar-semana` no es reversible. Al borrar una fila de H5 manualmente,
+los bolsillos (`pago_fraccionado`) en H2 quedan incorrectamente marcados como `ejecutado`.
+
+Fix pendiente: `POST /api/mes/[mes]/revertir-cierre?semana=Sn` que revierta H5 + H2 en una sola
+operación atómica.
+
+### DoD
+
+- [x] 4 MOVs H2 revertidos a `pendiente` en producción.
+- [x] Verificación post-script confirmada.
+- [x] DT-CIERRE-01 documentada.
+- [x] Sin cambios de código en el repo (solo script en scratchpad, no commiteado).
+
+### Cola siguiente sesión
+
+1. Sincronizar dev con main al abrir (`git checkout dev && git pull origin main`).
+2. P5: verificación end-to-end post-deploy PR #8.
+3. Grep auditoría endpoints — deuda técnica H3B-JULIO-DT1.
+4. Implementar DT-CIERRE-01 (`revertir-cierre` endpoint).
+5. Continuar BL-02 → BL-06 → QA-7jun-01.
