@@ -967,6 +967,7 @@ export default function VistaSemanal({
   const presupuestadoPopoverRef = useRef<HTMLDivElement>(null);
   const [h3bPopover, setH3bPopover] = useState<{ anchor: DOMRect; bolsilloId: string } | null>(null);
   const h3bPopoverRef = useRef<HTMLDivElement>(null);
+  const [showConfirmCierre, setShowConfirmCierre] = useState(false);
 
   const idxVisible = SEMANAS.indexOf(semanaVisible);
   const puedeIzq = idxVisible > 0;
@@ -1354,7 +1355,7 @@ export default function VistaSemanal({
             <button
               type="button"
               disabled={cerrandoSemana}
-              onClick={handleCerrarSemana}
+              onClick={() => setShowConfirmCierre(true)}
               style={{
                 width: "100%", background: "rgba(255,255,255,0.15)",
                 border: "1.5px solid rgba(255,255,255,0.45)", color: "var(--on-primary)",
@@ -1939,6 +1940,40 @@ export default function VistaSemanal({
           </div>
         </div>
       )}
+      {/* BL-12 · Modal confirmación cierre de semana */}
+      {showConfirmCierre && (
+        <div className="dk-modal-backdrop" onClick={() => setShowConfirmCierre(false)}>
+          <div className="dk-modal" onClick={e => e.stopPropagation()}>
+            <div className="dk-modal-body" style={{ textAlign: "center", padding: "24px 20px 16px" }}>
+              <p style={{ fontSize: 15, fontWeight: 700, margin: "0 0 8px", color: "var(--ink)" }}>
+                ¿Cerrar semana {semanaVisible}?
+              </p>
+              <p style={{ fontSize: 13, color: "var(--ink-soft)", margin: 0 }}>
+                Esta acción no se puede deshacer.
+              </p>
+            </div>
+            <footer className="dk-modal-foot">
+              <button
+                type="button"
+                className="fl-btn ghost sm"
+                onClick={() => setShowConfirmCierre(false)}
+                disabled={cerrandoSemana}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="fl-btn primary sm"
+                disabled={cerrandoSemana}
+                onClick={async () => { await handleCerrarSemana(); setShowConfirmCierre(false); }}
+              >
+                {cerrandoSemana ? "Cerrando…" : "Cerrar semana"}
+              </button>
+            </footer>
+          </div>
+        </div>
+      )}
+
       {h3bPopover && (() => {
         const items = consumos.filter(c => c.bolsilloId === h3bPopover.bolsilloId);
         const total = items.reduce((s, c) => s + c.monto, 0);
