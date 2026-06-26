@@ -79,10 +79,12 @@ export default function PantallaMeses({
   resúmenes: init,
   metricas,
   modoHistorial = false,
+  mesActivo,
 }: {
   resúmenes: ResumenMes[];
   metricas: MetricasMes | null;
   modoHistorial?: boolean;
+  mesActivo: string;
 }) {
   const router = useRouter();
   const [resúmenes, setResúmenes] = useState(init);
@@ -91,7 +93,6 @@ export default function PantallaMeses({
 
   const mesesExistentes = resúmenes.map((r) => r.mes);
   const próximo = mesSiguiente(mesesExistentes);
-  const másReciente = mesesExistentes[mesesExistentes.length - 1];
 
   const handleInicializar = async () => {
     setInicializando(true);
@@ -110,7 +111,7 @@ export default function PantallaMeses({
     }
   };
 
-  const semanaHref = metricas ? `/mes/${metricas.mes}/semana` : "/";
+  const semanaHref = `/mes/${mesActivo}/semana`;
 
   return (
     <div className="t-calido screen-anim">
@@ -240,7 +241,7 @@ export default function PantallaMeses({
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {[...resúmenes].reverse().map((r) => {
-              const esMásReciente = r.mes === másReciente;
+              const esMásReciente = r.mes === mesActivo;
               const pos = r.superavit >= 0;
               return (
                 <button

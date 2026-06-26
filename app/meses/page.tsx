@@ -12,6 +12,13 @@ function semanaActual(): Semana {
   return "S4";
 }
 
+function mesActual(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+}
+
 export default async function MesesPage({
   searchParams,
 }: {
@@ -55,10 +62,11 @@ export default async function MesesPage({
   );
 
   const semana = semanaActual();
+  const mesActivo = mesActual();
   let metricas = null;
 
-  if (meses.length > 0) {
-    const mesReciente = meses[meses.length - 1];
+  if (meses.includes(mesActivo)) {
+    const mesReciente = mesActivo;
     const [movsReciente, ingresosAngieReciente, ingresosCamiloReciente, cierres, saldosCuenta] = await Promise.all([
       provider.getMovimientos(mesReciente),
       provider.getIngresosAngie(mesReciente).catch(() => []),
@@ -114,6 +122,7 @@ export default async function MesesPage({
       resúmenes={resúmenes}
       metricas={metricas}
       modoHistorial={modoHistorial}
+      mesActivo={mesActivo}
     />
   );
 }
