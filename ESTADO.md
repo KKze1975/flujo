@@ -3420,3 +3420,48 @@ operación atómica.
 3. Grep auditoría endpoints — deuda técnica H3B-JULIO-DT1.
 4. Implementar DT-CIERRE-01 (`revertir-cierre` endpoint).
 5. Continuar BL-02 → BL-06 → QA-7jun-01.
+
+---
+
+## DEBUGGING — Mes activo se contaminaba al inicializar mes futuro · 26 jun 2026
+
+### Incidente
+Al inicializar Julio 2026 estando el calendario en Junio 2026, Julio quedó como mes activo de la app. Comportamiento esperado: poder inicializar/planear un mes futuro sin alterar el mes activo.
+
+### Diagnóstico (causa raíz confirmada — hipótesis H-B)
+`app/meses/page.tsx:61` tomaba `meses[meses.length - 1]` (el último mes con filas en H2) como mes activo. Al inicializar Julio, el array pasó a `["2026-05","2026-06","2026-07"]` y el último elemento (Julio) se interpretó como activo. **Violación directa de I-14** (el mes activo debe derivarse de `new Date()`, nunca inferirse del Sheet). No cubierta por el PR #8.
+
+### Fix (commit 1b36707 → PR #12 → merge a main)
+- `app/meses/page.tsx`: agrega `mesActual()` derivada de `new Date()`; la usa para `mesActivo`. Guard cambia de `if (meses.length > 0)` a `if (meses.includes(mesActivo))` — métricas solo para el mes calendario vigente.
+- `components/PantallaMeses.tsx`: recibe `mesActivo` como prop (badge "Activo" y `semanaHref` del BottomNav). Elimina `másReciente` que infería del Sheet.
+
+### Modelo confirmado
+Decisión de diseño registrada: **"mes inicializado/planificable" ≠ "mes activo"**. Un mes futuro puede inicializarse y quedar en lista sin badge, sin volverse activo. El activo deriva exclusivamente de `new Date()` (I-14 reforzada).
+
+### DoD — verificado en producción por Camilo
+- `/meses`: Junio con badge "Activo"; Julio en lista sin badge. ✓
+- Métricas del tope con datos reales de Junio (no ceros de Julio). ✓
+- BottomNav "Esta semana" → `/mes/2026-06/semana`. ✓
+- `tsc --noEmit` pasa. ✓
+
+### EXCEPCIÓN DE PROCESO — [CAMILO: COMPLETAR]
+<!-- El merge de PR #12 a main se ejecutó sin sign-off de QA de Angie en preview (precondición dura documentada). Registrar una de dos:
+  (a) "Excepción consciente: fix de bajo riesgo, mergeado sin QA de Angie. Aceptada por Camilo el [fecha]."
+  (b) "QA de Angie realizada el [fecha/medio], no reflejada en el log de Code."
+Elegir y completar antes de ejecutar este append. -->
+
+### Deuda técnica nueva (registrada, no corregida inline)
+- **DT-FECHA-01:** `mesActual()` y `semanaActual()` duplicadas en 3+ archivos → consolidar en `lib/utils/fecha.ts`. **Prioridad elevada:** es la causa estructural de esta clase de bug; mientras la derivación de fecha esté duplicada, cada copia es una oportunidad de reincidir en violación de I-14 por divergencia. Candidato a backlog priorizado, no pila general. Próxima sesión: CONSTRUCCIÓN, ticket propio con DoD que verifique los 3+ archivos.
+- **DT-DEADCODE-01:** `app/page.tsx:26` — `getMeses()` se llama pero el resultado nunca se usa. Eliminar (ticket separado de DT-FECHA-01).
+
+### Pendiente operativo
+Planeación de Julio: el ingreso recibido fue menor de lo esperado. Con el bug resuelto, Julio ya es inicializable/planificable sin contaminar el mes activo. La planeación con presupuesto reducido queda como siguiente tarea de producto (no de código).
+
+### Cola siguiente sesión
+
+1. Sincronizar dev con main al abrir (`git checkout dev && git pull origin main`).
+2. Completar excepción de proceso PR #12 (comentario arriba).
+3. DT-FECHA-01: consolidar `mesActual()` / `semanaActual()` en `lib/utils/fecha.ts` (ticket propio).
+4. DT-DEADCODE-01: eliminar `getMeses()` sin usar en `app/page.tsx`.
+5. DT-CIERRE-01: `POST /api/mes/[mes]/revertir-cierre` (endpoint reversión atómica H5 + H2).
+6. Continuar BL-02 → BL-06 → QA-7jun-01.
