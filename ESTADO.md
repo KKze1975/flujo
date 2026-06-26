@@ -3465,3 +3465,17 @@ Planeación de Julio: el ingreso recibido fue menor de lo esperado. Con el bug r
 4. DT-DEADCODE-01: eliminar `getMeses()` sin usar en `app/page.tsx`.
 5. DT-CIERRE-01: `POST /api/mes/[mes]/revertir-cierre` (endpoint reversión atómica H5 + H2).
 6. Continuar BL-02 → BL-06 → QA-7jun-01.
+
+---
+
+## CORRECCIÓN DE CIERRE — Bug mes activo H-B · 26 jun 2026
+
+Dos puntos del bloque de cierre anterior quedaron incompletos. Se resuelven aquí.
+
+### Corrección 1 — QA (resuelve el marcador pendiente)
+**Angie validó QA del fix (PR #12).** Precondición de sign-off cumplida. La validación no quedó reflejada en el log de Code pero fue confirmada por Camilo al cierre. Excepción de proceso no aplica.
+
+### Corrección 2 — Reclasificación de la tarea de planeación de Julio
+El bloque anterior la registró como "pendiente operativo". Se reclasifica:
+
+**TK-PLAN-JULIO — tipo: DISEÑO / producto (NO construcción).** Planear Julio 2026 con ingreso menor de lo esperado. No toca código; es distribución de presupuesto reducido sobre la estructura del mes ya inicializado. Habilitada ahora que inicializar Julio no contamina el mes activo. Abrir como sesión de DISEÑO independiente; no mezclar con DT-FECHA-01 (CONSTRUCCIÓN).
