@@ -3963,3 +3963,70 @@ MOV_1782565828414 del prompt — el guard semántico evitó una escritura errón
 3. Resolver DT-PLAN-01 (UI no excluye no_aplica pre-existentes del comprometido).
 4. Retirar Préstamo Papá y auditar duplicado Apoyo Mariella en H1.
 5. Retomar cola anterior: DT-CAPTURA-01 → T51 debugging → PR #15.
+
+---
+
+## Workaround BUG-REGRESION-01 — Saldo inicial Julio · 27 jun 2026
+
+### Problema
+Al cerrar planificación de Julio, la app no mostró el modal de saldo inicial y pasó
+directamente a Ejecución. Resultado: `nu_camilo / 2026-07` quedó con `saldo_inicial = $0`
+en H4!P:V. Todos los pagos ejecutados con ese saldo habrían quedado sin fuente de cuenta.
+
+### Diagnóstico (confirmado por auditoría de código)
+
+El modal `ModalConfirmarSaldos.tsx` existe y su lógica es correcta:
+`handleSwitchToEjecucion()` → si `!saldosOk` → modal → confirmar → `setView("ejecucion")`.
+
+El bypass accidental está en `MesM1Desktop.tsx:943`:
+```
+onClick={() => setSaldosOk(true)}  // ← marca saldosOk sin mostrar modal ni escribir H4
+```
+Este botón dejó pasar a Ejecución con `saldosOk = true` en UI pero saldo $0 en Sheet.
+
+**BUG-REGRESION-01 reclasificado:** no es regresión de PR — es bypass accidental
+en `MesM1Desktop.tsx:943`. Ticket de construcción: eliminar bypass o redirigir a
+`handleSwitchToEjecucion()`.
+
+### Hallazgo adicional — saldo inicial mal posicionado
+El primer workaround script escribió la fila de `nu_camilo` en columnas A–G (rango
+IngresoAngie) en lugar de P–V (rango SaldoCuenta). `getSaldosCuenta()` lee H4!P:V —
+la fila nunca habría sido encontrada. Lección: los scripts de PATCH a H4 deben
+especificar el rango P:V explícitamente, no usar append genérico a la pestaña.
+
+### Estructura real de H4
+| Columnas | Sección | Leída en |
+|---|---|---|
+| A–N | IngresoAngie | H4!A:N |
+| P–V | SaldoCuenta | H4!P:V |
+
+### Corrección aplicada
+- Las 4 filas de saldo para 2026-07 ya existían en H4!P:V (creadas por el init del mes):
+  `SALDO_1782521807435_nu_camilo / nu_angie / arq / en_mano`
+- Solo faltaba el valor de `nu_camilo` — estaba en $0
+- PATCH directo: H4!S6 → `saldo_inicial = 11.450.000` · `fecha_confirmacion = 2026-06-27`
+
+### Estado final H4!P:V · 2026-07
+| Cuenta | saldo_inicial | Estado |
+|---|---|---|
+| nu_camilo | $11.450.000 | ✅ corregido |
+| nu_angie | $0 | ✅ correcto |
+| arq | $0 | ✅ correcto |
+| en_mano | $0 | ✅ correcto |
+
+`saldosOk = true` · Saldo Camilo visible en sidebar UI ✅
+
+### Desbloqueado
+Ejecución de pagos de Julio habilitada a partir del 27 jun 2026.
+
+### Ticket pendiente
+**T53 — Fix bypass saldo inicial `MesM1Desktop.tsx:943`**
+Eliminar `onClick={() => setSaldosOk(true)}` o redirigir a `handleSwitchToEjecucion()`.
+No mezclar con T51/PR#15. Abrir después de que PR#15 esté mergeado.
+
+### Cola siguiente sesión
+1. Ejecutar pagos de Julio — confirmar que fuente de cuenta queda registrada correctamente.
+2. T53: fix bypass `MesM1Desktop.tsx:943`.
+3. DT-PLAN-01: UI no excluye no_aplica pre-existentes del comprometido.
+4. Retirar Préstamo Papá y auditar duplicado Apoyo Mariella en H1.
+5. Retomar: DT-CAPTURA-01 → T51 debugging → PR #15.
