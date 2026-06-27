@@ -4128,3 +4128,66 @@ const mes = body.mes ?? mesActual()
 ### Estado
 Documentado. No abrir ticket hasta que T53 y PR#15 estén cerrados.
 Agrupar con DT-FECHA-01 cuando se abra esa consolidación.
+
+---
+
+## Inicio ejecución S1 Julio 2026 · 27 jun 2026
+
+### Contexto
+Primera ejecución de pagos de Julio. Se ejecutó parcialmente S1 — Servicios y Arriendo.
+Workaround DT-MES-01 activo: no se registraron gastos libres (H3B) porque `new Date()`
+devuelve `2026-06` hasta el 29 de junio. Solo se ejecutaron conceptos presupuestados
+(PATCH H2) que usan el mes de la URL del request.
+
+### Conceptos ejecutados · 27 jun 2026
+
+| Concepto | Presupuestado | Ejecutado | Diferencia | Cuenta |
+|---|---|---|---|---|
+| Agua | $250.000 | $559.000 | +$309.000 | nu_camilo |
+| Energía | $284.998 | $256.000 | -$28.998 | nu_camilo |
+| Gas | $104.090 | $103.000 | -$1.090 | nu_camilo |
+| Internet y TV | $122.000 | $122.000 | $0 | nu_camilo |
+| Celular Camilo | $69.299 | $62.000 | -$7.299 | nu_camilo |
+| Arriendo y Administración | $5.172.500 | $5.172.500 | $0 | nu_camilo |
+| **Total** | **$6.002.887** | **$6.274.500** | **+$271.613** | |
+
+### Desviación Agua
+$559.000 ejecutado vs $250.000 presupuestado — desviación de $309.000 (más del doble).
+Pendiente confirmar si es factura bimestral o consumo anormal.
+El presupuesto de Agua requiere recalibración para meses futuros.
+
+### Saldo cuenta Camilo · fin de sesión
+| | |
+|---|---|
+| Saldo inicial Julio | $11.450.000 |
+| Ejecutado 27 jun | -$6.274.500 |
+| **Saldo actual** | **$5.175.500** |
+
+### Balance semanal · post ejecución parcial S1
+
+| Semana | Ingresos | Comprometido | Balance neto |
+|---|---|---|---|
+| S1 | $12.950.000 | $12.927.000 | +$23K |
+| S2 | $2.000.000 | $1.949.000 | +$74K |
+| S3 | $2.000.000 | $1.746.000 | +$328K |
+| S4 | $2.000.000 | $1.626.000 | +$702K |
+| **Mes** | **$18.950.000** | **$18.248.000** | **+$702K** |
+
+Nota: Imprevistos excluidos del comprometido — son techo por semana, no compromiso fijo.
+S2-S4 usan montos presupuestados — se actualizan al ejecutar.
+
+### Pendientes S1 para próxima sesión
+- Colegio hijos: $3.988.000
+- EPS/ARL/Pensión: $540.000
+- Plan complementario: $740.000
+- Mercado mensual: $600.000
+- Mesadas Emma y Lucas
+- Ayuda mamá servicios
+- Frutas y verduras / Víveres
+
+### Cola siguiente sesión
+1. Continuar ejecución S1 — Colegio, EPS, Plan complementario primero
+2. Desde el 29 jun: habilitar registro de gastos libres H3B (DT-MES-01 resuelto por fecha)
+3. T53: fix bypass MesM1Desktop.tsx:943
+4. Recalibrar presupuesto Agua para meses futuros (H1)
+5. DT-PLAN-01 · Iniciativa E · cola técnica anterior
