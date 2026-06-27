@@ -3528,3 +3528,117 @@ Consecuencias observadas:
 5. El bug secundario del sync de semanas queda corregido: conceptos `frecuencia === "semanal"` excluidos del loop de reasignación en `cerrarPlanificacion`
 6. `tsc --noEmit` pasa limpio
 7. Verificado en producción con `/admin/trazabilidad`
+
+---
+
+## Sesión DEBUGGING · 26 jun 2026 — Auditoría de totales Julio + Bug propagación H1→H2
+
+### Tipo de sesión
+DEBUGGING — múltiples hilos resueltos en secuencia.
+
+---
+
+### Hilo 1 — Auditoría de totales de planeación Julio
+
+#### Hallazgo
+Motor de cálculo de planeación **correcto**. Todos los totales del Balance Mes y
+flujos semanales verificados contra Sheet crudo — delta cero en totales mensuales,
+diferencia ≤$223 en flujos semanales (redondeo de display al millar). La desconfianza
+de Camilo no tenía fundamento en el motor; quedó convertida en certeza documentada.
+
+#### Anomalías encontradas (no afectaban el balance)
+- H2 Entretenimiento Julio: `monto_presupuestado = $550K` vs H1 `monto_referencia = $150K` (stale)
+- H2 Imprevistos Julio: `monto_presupuestado = $250K` vs H1 `monto_referencia = $0` (stale)
+- H2 Entretenimiento Julio: falta fila S1, hay S4 duplicado — total cuadraba por compensación
+
+#### Corrección nomenclatura de invariante
+La regla "mes activo desde `new Date()`" está formalizada como **I-01** en
+`INVARIANTS.md`, no como I-14. Una nota suelta en el cuerpo de I-01 referenciaba
+"I-14 sesión 22 junio" — generó confusión de nomenclatura. El invariante vigente
+es I-01. No existe I-14 en el archivo formal.
+
+---
+
+### Hilo 2 — Experimento de reset y reproducción de bugs Julio
+
+#### Metodología
+Reset de Julio en producción + script de captura instrumentada para aislar en qué
+acción de planeación exacta aparece cada anomalía.
+
+#### Hallazgo principal
+**El bug es post-inicialización.** "Activar siguiente mes" genera Julio limpio y
+correcto (H2 sincronizado con H1, distribución S1-S4 correcta, sin stale). Las
+anomalías fueron introducidas por acciones de planeación en la UI, no por la
+rutina de generación.
+
+#### Infraestructura creada (commiteada en dev)
+- `scripts/captura-julio.mjs` — snapshot de solo lectura del Sheet, numerado,
+  con resumen de comprometido por semana. Correr con:
+  `node scripts/captura-julio.mjs "descripción del paso"`
+- `scripts/INSTRUCCIONES_EXPERIMENTO.md` — protocolo para Camilo
+
+#### Deuda técnica identificada
+- **DT-CAPTURA-01:** `captura-julio.mjs` apunta a producción en lugar de dev.
+  Puede confundir en sesiones de verificación. Corregir antes del próximo
+  experimento de debugging.
+
+---
+
+### Hilo 3 — Bug confirmado: propagación H1→H2 en cambio de monto
+
+#### Causa raíz
+`handleSavePlan` en `components/m1/ConceptoBoard.tsx` actualizaba H1
+(`monto_referencia`) pero nunca propagaba el nuevo valor a H2
+(`monto_presupuestado` de las filas del mes activo). Resultado: el plan visual
+mostraba el valor nuevo pero el Sheet que governa el balance real conservaba el
+valor anterior.
+
+#### Tres paths del mismo bug
+| Path | Estado |
+|---|---|
+| VistaPlanificacion tabla inline | Corregido (commits 9951223 + 8bda547, sesión anterior) |
+| ConceptoBoard "Monto planeado" | Corregido (commit eccdfbd, esta sesión) |
+| ModalEditarConcepto (botón ✎) | Pendiente — T52 |
+
+#### Fix (commit eccdfbd · rama dev · PR #15)
+`handleSavePlan` en `ConceptoBoard.tsx:754` ahora llama `actualizar_monto` en H2
+para cada fila pendiente del concepto después de actualizar H1, usando el mismo
+endpoint construido en la sesión anterior. Verificado: cambio de Entretenimiento
+de $250K a $300K propagó a las 4 filas S1-S4 en H2. Las otras 65 filas de Julio
+intactas. `tsc --noEmit` pasa limpio (54s, 0 errores).
+
+#### DoD verificado (dev)
+- [x] `tsc --noEmit` limpio
+- [x] H1 `monto_referencia` Entretenimiento = 300.000 ✓
+- [x] H2 `monto_presupuestado` × 4 filas Entretenimiento = 300.000 ✓
+- [x] 65 filas restantes de Julio intactas ✓
+- [x] Commit eccdfbd en dev ✓
+- [x] PR #15 actualizado ✓
+- [x] Sin merge a main — pendiente QA Angie ✓
+
+---
+
+### T52 — Pendiente de apertura
+**ModalEditarConcepto (botón ✎):** mismo bug de no-propagación H1→H2, componente
+distinto. Abrir como ticket independiente después de que PR #15 pase QA de Angie
+y se mergee a main. No mezclar con PR #15.
+
+---
+
+### Iniciativa D — Event log de movimientos (identificada, no abierta)
+Durante el experimento surgió la necesidad de un registro granular permanente de
+cada acción que modifica el presupuesto (quién, qué cambió, valor anterior, valor
+nuevo, timestamp). La arquitectura actual es state-based: H2 guarda estado final,
+no historia de movimientos. La Iniciativa D propone agregar una capa de eventos
+inmutables encima del estado. **Deferred:** requiere sesión de DISEÑO independiente.
+No abrir hasta que PR #15 esté mergeado y T52 definido.
+
+---
+
+### Cola siguiente sesión
+
+1. QA de Angie en Preview URL de PR #15 — merge condicional a main.
+2. Abrir T52: `ModalEditarConcepto` propagación H1→H2.
+3. Corregir DT-CAPTURA-01 (`captura-julio.mjs` apunta a prod en lugar de dev).
+4. Sesión DISEÑO: Iniciativa D — Event log de movimientos.
+5. Retomar DT-FECHA-01 (consolidar `mesActual()` / `semanaActual()` en `lib/utils/fecha.ts`).
