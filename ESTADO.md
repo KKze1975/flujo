@@ -4072,3 +4072,59 @@ No abrir hasta que T53 y PR#15 estén cerrados.
 
 ### Cola
 Abrir sesión DISEÑO — Iniciativa E después de estabilizar T53 y PR#15.
+
+---
+
+## DT-MES-01 — mesActual() ignora body.mes en endpoint H3B · 27 jun 2026
+
+### Identificado en
+Sesión TK-PLAN-JULIO · auditoría pre-ejecución · 27 jun 2026
+
+### Contexto
+Al intentar ejecutar pagos de Julio (2026-07) el 27 de junio, se auditó el endpoint
+de registro de gastos para verificar qué valor de `mes` escribe en H3B. El mes activo
+según `new Date()` en el servidor es `2026-06` — Julio fue activado manualmente en la UI.
+
+### Problema
+`POST /api/h3b/...` declara `mes?: string` como campo opcional en el tipo Body (línea 65)
+pero nunca lo lee. En línea 96 llama `mesActual()` directamente, ignorando `body.mes`.
+
+Resultado: si el usuario está en la UI de un mes futuro activado manualmente, cualquier
+gasto libre registrado se escribe en H3B con el mes del servidor (`2026-06`), no el mes
+de la UI (`2026-07`). Dato corrupto silencioso — el sistema no lanza error.
+
+### Alcance del riesgo
+
+| Flujo | Endpoint | Mes usado | Riesgo |
+|---|---|---|---|
+| Ejecutar concepto presupuestado | PATCH /api/mes/[mes]/movimientos/[id] | Mes de la URL | ✅ Sin riesgo |
+| Registrar gasto libre / imprevisto | POST /api/h3b/... | mesActual() servidor | ⚠️ Riesgo real |
+
+### Workaround activo · Julio 2026
+No registrar gastos libres (imprevistos, gastos no presupuestados en H3B) hasta el
+29 de junio, cuando `new Date()` devuelva `2026-07` en el servidor. Solo ejecutar
+conceptos presupuestados (PATCH a H2) durante el 27–28 de junio.
+
+### Causa raíz
+Misma familia que I-01 — `mesActual()` llamado directamente en el endpoint en lugar
+de usar el mes del contexto del request. El campo `body.mes` fue declarado pero nunca
+implementado — dead field.
+
+### Relación con deuda existente
+Candidato para DT-FECHA-01 (consolidación de utilidades de fecha — `mesActual()` /
+`semanaActual()` duplicados en 3+ archivos). La corrección es: leer `body.mes` si
+existe, y solo llamar `mesActual()` como fallback cuando el campo no viene en el request.
+
+### Fix propuesto
+En el endpoint POST H3B, línea 96:
+```
+// Antes
+const mes = mesActual()
+
+// Después
+const mes = body.mes ?? mesActual()
+```
+
+### Estado
+Documentado. No abrir ticket hasta que T53 y PR#15 estén cerrados.
+Agrupar con DT-FECHA-01 cuando se abra esa consolidación.
