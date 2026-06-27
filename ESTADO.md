@@ -3682,3 +3682,284 @@ próxima sesión de debugging antes de proponer un fix.
 3. Si el fix es correcto pero el script estaba mal: re-hacer QA en Preview.
 4. Si el fix tiene un bug real: debugging de ConceptoBoard antes de nueva QA.
 5. PR #15 permanece abierto — no mergear hasta QA aprobada.
+
+---
+
+## TK-PLAN-JULIO — Planeación Julio 2026 · 27 jun 2026
+
+### Tipo de sesión
+DISEÑO / producto. No toca código. Workaround activo por bug T51 (PR #15 sin mergear).
+
+### Contexto
+Ingreso Camilo de Julio menor al esperado ($11.450.000 vs histórico ~$12.200.000).
+Ingreso Angie S1 reducido ($1.500.000 vs $2.000.000 habitual). S2/S3/S4 en valor estándar.
+Julio inicializado limpio — confirmado por experimento de reset sesión anterior.
+
+### Metodología de sesión
+Log manual acción por acción llevado en Claude.ai. Cada acción documentada con:
+valor anterior → valor nuevo → efecto observable en UI → verificación aritmética.
+Workaround T51: cambios de monto ejecutados vía script Claude Code directo a H2,
+sin pasar por UI (que contamina H1 permanentemente).
+
+### Estado inicial (línea de partida real)
+- Total H2 Julio inicializado: $19.971.211 (69 movimientos)
+- no_aplica pre-existente al inicio de sesión: Entretenimiento S1 ($250.000)
+- Comprometido ejecutable real al inicio: $19.721.211
+- Total disponible: $18.950.000
+- Déficit inicial: -$771.211
+
+### Acciones ejecutadas
+
+| # | Concepto | Acción | Monto | Semana | Vía |
+|---|---|---|---|---|---|
+| 1 | Ingreso Camilo | Registrar $11.450.000 | — | — | UI |
+| 2 | Ingreso Angie S1 | Registrar $1.500.000 (reducido) | — | S1 | UI |
+| 3 | Prime Video | no_aplica | $50.000 | S1 | UI |
+| 4 | El País | no_aplica | $45.000 | S1 | UI |
+| 5 | Disney+ | no_aplica | $60.000 | S1 | UI |
+| 6 | Seguros de vida Camilo | no_aplica | $100.000 | S1 | UI |
+| 7 | Apoyo Mariella | no_aplica (duplicado) | $100.000 | S2 | UI |
+| 8 | Préstamo Papá | no_aplica (retirar H1) | $100.000 | S3 | UI |
+| 9 | Provisión Mireyita | no_aplica | $100.000 | S3 | UI |
+| 10 | Game Pass | no_aplica | $50.000 | S3 | UI |
+| 11 | CDT NU | no_aplica | $100.000 | S4 | UI |
+| 12 | Abono capital TC | no_aplica | $300.000 | S4 | UI |
+| 13 | EPS/ARL/Pensión | S2 → S1 | $540.000 | — | UI |
+| 14 | Plan complementario | S2 → S1 | $740.000 | — | UI |
+| 15 | PS Plus | S1 → S4 | $60.000 | — | UI |
+| 16 | Uber One | S1 → S4 | $16.000 | — | UI |
+| 17 | Celular Angie | S1 → S4 | $80.000 | — | UI |
+| 18 | Frida | S1 → S4 (semana) | $300.000 | — | UI |
+| 19 | Frida | monto $300K → $150K solo Julio · MOV_1782565828418 · H2!H127 | $150.000 | S4 | Claude Code |
+| 20a | Frutas y verduras × 4 | monto $200K → $150K solo Julio | $200.000 | S1-S4 | Claude Code |
+| 20b | Víveres y otros × 4 | monto $250K → $200K solo Julio | $200.000 | S1-S4 | Claude Code |
+| 21 | Préstamo Leonardo | S1 → S3 | $320.840 | — | UI |
+| 22 | Cerrar planificación | Transición a Ejecución | — | — | UI |
+
+### Balance final (Sheet — fuente de verdad)
+
+| Semana | Comprometido | Ingresos | Balance neto real |
+|---|---|---|---|
+| S1 | $12.951.383 | $12.950.000 | +$5K |
+| S2 | $1.848.996 | $2.000.000 | +$151K |
+| S3 | $1.645.836 | $2.000.000 | +$505K |
+| S4 | $1.319.996 | $2.000.000 | +$1.184K |
+| **Mes** | **$17.766.211** | **$18.950.000** | **+$1.184K superávit** |
+
+### Bugs y deuda identificados en sesión
+
+**DT-PLAN-01 — Bug UI: no_aplica pre-existente no excluido del comprometido**
+Entretenimiento S1 tenía `estado = no_aplica` en H2 desde la inicialización pero la UI
+lo seguía contando en el comprometido ($250.000 de sesgo). Los `no_aplica` marcados
+durante la sesión sí se excluían correctamente. Hipótesis: la UI recalcula comprometido
+solo sobre cambios de estado de la sesión actual, no sobre el estado real del Sheet al
+cargar. Efecto: todos los balances netos de la UI mostraron $250K peor de la realidad
+durante toda la sesión.
+
+**BUG-REGRESION-01 — Modal saldo inicial desapareció en "Cerrar planificación"**
+Comportamiento esperado: al hacer clic en "Cerrar planificación" aparece modal pidiendo
+saldo inicial de cuentas (principalmente cuenta Camilo) antes de pasar a Ejecución.
+Comportamiento actual: transición directa a Ejecución sin capturar saldo.
+Impacto: todos los movimientos de Julio quedarían con cuentas en ceros — dato corrupto.
+Workaround activo: no ejecutar ningún pago hasta registrar saldo inicial vía script.
+Candidato probable: regresión introducida por PR #12 o un commit reciente en main.
+Prioridad: bloqueante para inicio de ejecución de Julio.
+
+**Deuda de catálogo:**
+- Apoyo Mariella: concepto duplicado — auditar y retirar el incorrecto de H1.
+- Préstamo Papá: retirar de H1 (`estado_concepto → retirado`).
+
+---
+
+## Historia de usuario — Planeación de inicio de mes (M1) · 27 jun 2026
+
+**Actor principal:** Camilo
+**Momento:** Primeros días del mes, después de recibir ingreso
+**Duración típica:** 30-60 minutos
+**Contexto:** Camilo opera solo en este momento. Angie llega informada al Momento 2.
+
+### El problema que resuelve
+
+El ingreso de Camilo llega en dólares, se convierte a pesos, y el monto varía cada mes
+por tasa de cambio. El presupuesto base (H1) es una referencia construida en un mes
+"normal" — pero ningún mes es exactamente normal. La planeación es el ritual donde
+Camilo reconcilia la realidad del mes con el presupuesto ideal, tomando decisiones
+explícitas sobre qué aplica, qué no, y cómo distribuir el flujo semana a semana.
+
+Sin este ritual, los pagos se ejecutan contra un presupuesto que no refleja la realidad
+del mes — y las desviaciones se acumulan sin trazabilidad.
+
+### Paso 1 — Registrar ingresos
+
+**Qué hace:** Camilo ingresa el monto real recibido ese mes. Primero el suyo (ingreso
+principal, cuenta Camilo). Luego el de Angie semana a semana — porque el ingreso de
+Angie puede variar entre semanas y esa granularidad importa para el flujo.
+
+**Por qué importa la granularidad semanal de Angie:** el modelo financiero de la familia
+asume que Angie financia la segunda mitad del mes. Cada semana S2/S3/S4 se sostiene
+principalmente con su aporte. Si S1 de Angie llega reducida (como en Julio 2026 —
+$1.500.000 vs $2.000.000 habitual), eso crea un hueco específico en S1 que no se puede
+ignorar.
+
+**Lo que el sistema hace:** calcula automáticamente
+`total_disponible = ingreso_camilo + suma(aportes_angie)` y lo contrasta con el
+`comprometido` (suma de `monto_presupuestado` en H2 para el mes).
+
+**Decisión de diseño importante:** el ingreso de Angie no se registra como un monto
+mensual único sino semana a semana. Esto refleja la realidad de su flujo de caja. Cada
+concepto que Angie ejecuta durante la semana se asume financiado por su ingreso de esa
+semana, no por un pool mensual.
+
+### Paso 2 — Leer el balance inicial y localizar el déficit
+
+**Qué hace:** Camilo lee el balance proyectado del mes y el desglose por semana.
+
+**Qué busca:** no solo si hay déficit sino en qué semana está concentrado. Esa
+información determina la estrategia.
+
+**Cómo interpreta el desglose semanal — aprendizaje crítico:**
+La UI muestra flujo acumulado rodante, no déficit aislado por semana. S2 no muestra
+cuánto le falta a S2 — muestra cuánto le falta al mes hasta el final de S2, heredando
+el remanente de S1. Esto significa:
+- Un déficit en S4 es manejable — hay tres semanas de ingresos de Angie para recuperarlo.
+- Un déficit en S1 es estructural — S1 concentra los pagos más pesados (arriendo,
+  colegio, salud) y solo cuenta con el ingreso de Camilo más el aporte reducido de Angie S1.
+- El número de S4 = la diferencia total del mes. Si S4 es positivo, el mes cierra bien.
+
+**En Julio 2026:** déficit inicial de ~$771K real, concentrado en S1 por el peso de los
+fijos. S2/S3/S4 mostraban déficit acumulado heredado de S1, no déficit propio.
+
+### Paso 3 — Liberar presupuesto: marcar no_aplica
+
+**Qué hace:** Camilo revisa cada concepto y decide cuáles no aplican ese mes.
+
+**La lógica de decisión — no es arbitraria:**
+
+*Membresías discrecionales:* Prime Video, Disney+, El País, Game Pass. Se evalúan mes
+a mes según disponibilidad. En un mes de ingreso reducido son los primeros en caer.
+Son reversibles — el siguiente mes pueden volver.
+
+*Compromisos financieros diferibles:* Abono capital TC ($300K), CDT NU ($100K). Son
+metas de largo plazo importantes, pero en un mes apretado ceden ante los fijos del hogar.
+La decisión es consciente y tiene costo: se retrasa la liquidación de deuda o el ahorro,
+pero se protege el flujo del mes.
+
+*Conceptos que revelan deuda de catálogo:* Apoyo Mariella (duplicado) y Préstamo Papá
+(concepto a retirar). La planeación es el momento donde estos errores se hacen visibles
+— la persona está mirando cada concepto con ojos frescos.
+
+*Conceptos intocables aunque haya déficit:* Arriendo, Colegio, EPS, Plan complementario,
+Préstamo Leonardo, Ayuda mamá. No porque el sistema los bloquee sino porque Camilo los
+clasifica mentalmente como no negociables.
+
+**Efecto observable esperado:** cada `no_aplica` reduce el comprometido y mejora la
+diferencia total y el balance de la semana correspondiente. El usuario verifica esto
+después de cada acción — es el feedback loop que confirma que el sistema responde.
+
+### Paso 4 — Redistribuir: mover conceptos entre semanas
+
+**Qué hace:** Camilo mueve conceptos de una semana a otra para aplanar el flujo acumulado.
+
+**La lógica de aplanamiento:**
+
+*Mover de S2 a S1:* conceptos cuyo pago real cae en S1 pero estaban asignados a S2 por
+defecto. EPS ($540K) y Plan complementario ($740K) — el cobro real ocurre en los primeros
+días del mes. Moverlos a S1 reconoce la realidad del flujo de caja. S1 entra en rojo
+en la UI pero el ingreso de Camilo los cubre.
+
+*Mover de S1 a S4:* conceptos que pueden diferirse sin consecuencia operativa. PS Plus,
+Uber One, Celular Angie, Frida — ninguno tiene fecha de cobro crítica en S1. Moverlos
+a S4 alivia S1 y aprovecha el remanente acumulado de los aportes de Angie.
+
+*Mover de S1 a S3:* Préstamo Leonardo ($320.840). No es urgente en S1 y S3 tiene
+capacidad de absorción después de los movimientos anteriores.
+
+**Criterio de aplanamiento exitoso:** todas las semanas en balance positivo real, sin
+que ninguna semana quede con un hueco que el flujo de Angie no pueda cubrir.
+S4 en positivo = mes cerrado.
+
+### Paso 5 — Ajustar montos para el mes (workaround T51 activo)
+
+**Qué hace:** Camilo reduce el monto de algunos conceptos específicamente para este mes,
+sin afectar el presupuesto base permanente de meses futuros.
+
+**La distinción crítica que el sistema no maneja bien todavía:**
+- *Cambio permanente:* "bajamos Entretenimiento para siempre" → debe ir a H1.
+- *Cambio del mes:* "este mes Frida baja porque el ingreso es menor" → solo H2 del mes activo.
+
+La UI actual no distingue entre ambos — cualquier cambio de monto toca H1 (bug T51).
+Workaround: ejecutar cambios temporales directamente en H2 vía script, preservando H1.
+
+**Decisiones de monto en Julio 2026 y su razonamiento:**
+- Frida $300K → $150K: gasto no urgente, se reduce a la mitad. No es eliminación.
+- Frutas y verduras $200K → $150K × 4 semanas: ajuste de austeridad absorbible.
+- Víveres y otros $250K → $200K × 4 semanas: mismo criterio.
+
+**Efecto acumulado:** $550K liberados en el mes.
+
+### Paso 6 — Cerrar planificación
+
+**Qué hace:** Camilo confirma que el balance está aceptable y ejecuta "Cerrar planificación".
+
+**Qué debería pasar:** modal de verificación de saldo inicial de cuentas (principalmente
+cuenta Camilo) antes de pasar a Ejecución. Sin saldo inicial registrado, el sistema no
+puede calcular de qué cuenta sale cada pago ni el balance real por fuente durante el mes.
+
+**Comportamiento actual (bug BUG-REGRESION-01):** transición directa a Ejecución sin
+capturar saldo. Todos los movimientos del mes quedarían con cuentas en ceros.
+
+**Criterio de éxito:** saldo inicial registrado, sistema en modo Ejecución, Angie puede
+ver el plan del mes y está lista para el Momento 2.
+
+### Tensiones y fricciones identificadas en sesión
+
+**Tensión 1 — Cambio temporal vs. permanente:** el sistema no distingue semánticamente
+entre "cambio de monto para este mes" y "cambio permanente". Causa raíz de T51 y
+problema de diseño — el usuario piensa "este mes Frida baja" pero el sistema interpreta
+"Frida baja para siempre".
+
+**Tensión 2 — Flujo acumulado vs. déficit por semana:** la UI muestra flujo acumulado
+rodante, financieramente correcto pero cognitivamente exigente. Un usuario nuevo no lo
+interpretaría correctamente sin explicación. "S2 en -$1,1M" cuando $946K vienen de S1
+es contraintuitivo.
+
+**Tensión 3 — Workaround como proceso:** tres acciones requirieron salir de la UI y usar
+Claude Code para PATCH directo al Sheet. Funciona con Camilo como operador técnico, pero
+es una fricción que no puede existir en el flujo normal. La resolución de T51 la elimina.
+
+**Fricción operativa — DT-PLAN-01:** la UI no excluye del comprometido los `no_aplica`
+pre-inicializados. Genera sesgo sistemático de $250K durante toda la sesión. En un mes
+apretado puede provocar decisiones de recorte innecesarias.
+
+### Lo que esta historia revela para el diseño futuro
+
+1. **El cambio de monto "solo para este mes" necesita ser un concepto de primera clase
+   en la UI.** El usuario lo necesita en cada mes de ingreso variable. No puede ser workaround.
+
+2. **El desglose semanal necesita una capa de explicación.** Mostrar "S2: -$1,1M" sin
+   contexto del arrastre de S1 es fuente de confusión. Una etiqueta "incluye -$946K de S1"
+   cambiaría la experiencia de lectura.
+
+3. **El modal de saldo inicial es parte del ritual, no un detalle técnico.** Es el momento
+   donde Camilo confirma con qué base real arranca el mes. Su desaparición (BUG-REGRESION-01)
+   no es solo un bug — es la pérdida de un paso del ritual financiero.
+
+4. **La planeación es un proceso de negociación con el presupuesto base**, no de ejecución
+   ciega de lo que H1 dice. El sistema debe facilitar esa negociación — distinguir entre
+   intocables, diferibles y discrecionales — sin que el usuario tenga que mantener esa
+   taxonomía en su cabeza.
+
+### Lección de proceso
+
+Los prompts de PATCH a Claude Code nunca deben depender de IDs hardcodeados. Siempre
+buscar por campos semánticos (`mes + nombre_snapshot`) y verificar valor actual antes
+de escribir. En esta sesión el script de Frida encontró MOV_1782565828418 en lugar del
+MOV_1782565828414 del prompt — el guard semántico evitó una escritura errónea.
+
+### Cola siguiente sesión
+
+1. **BLOQUEANTE:** Investigar y reparar BUG-REGRESION-01 (modal saldo inicial).
+2. Registrar saldo inicial Camilo Julio vía workaround antes de ejecutar cualquier pago.
+3. Resolver DT-PLAN-01 (UI no excluye no_aplica pre-existentes del comprometido).
+4. Retirar Préstamo Papá y auditar duplicado Apoyo Mariella en H1.
+5. Retomar cola anterior: DT-CAPTURA-01 → T51 debugging → PR #15.
