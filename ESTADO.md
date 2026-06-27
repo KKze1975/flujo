@@ -3642,3 +3642,43 @@ No abrir hasta que PR #15 esté mergeado y T52 definido.
 3. Corregir DT-CAPTURA-01 (`captura-julio.mjs` apunta a prod en lugar de dev).
 4. Sesión DISEÑO: Iniciativa D — Event log de movimientos.
 5. Retomar DT-FECHA-01 (consolidar `mesActual()` / `semanaActual()` en `lib/utils/fecha.ts`).
+
+---
+
+## QA PR #15 — Fallida · 26 jun 2026
+
+### Resultado
+QA rechazada. PR #15 **no mergeable** hasta resolver el bug real.
+
+### Qué se verificó
+- URL de Preview: `flujo-git-dev-camil-s-projects10.vercel.app` (rama dev)
+- Acción: cambiar "MONTO PLANEADO" en ConceptoBoard → guardar
+- Resultado observado: solo H1 cambia — comportamiento idéntico al bug original
+- Commit en Preview: eccdfbd (confirmado — es el código del fix)
+
+### Conclusión
+El fix de ConceptoBoard (commit eccdfbd) no produce el comportamiento correcto
+en el entorno de Preview. La propagación H1→H2 no ocurre desde la UI real,
+aunque la verificación local con el script de captura lo dio como correcto.
+
+### Hipótesis del falso positivo en DoD
+**DT-CAPTURA-01 como causa probable.** `captura-julio.mjs` apunta al Sheet de
+producción, no al de dev. Durante la verificación, Code leyó producción y reportó
+H2 actualizado — pero H2 de dev nunca cambió. El DoD se verificó contra el Sheet
+equivocado, produciendo un falso positivo. Esta hipótesis debe confirmarse en la
+próxima sesión de debugging antes de proponer un fix.
+
+### Estado de deuda técnica
+- **DT-CAPTURA-01** (ya registrada): `captura-julio.mjs` apunta a producción.
+  Confirmada como probable causa del falso positivo en DoD de T51.
+  Prioridad: corregir antes de cualquier verificación futura con este script.
+
+### Cola siguiente sesión
+
+1. DEBUGGING: confirmar hipótesis DT-CAPTURA-01 — verificar a qué Sheet apunta
+   `captura-julio.mjs` y si H2 de dev realmente cambió con el fix.
+2. Si DT-CAPTURA-01 confirmada: corregir el script y re-verificar el fix en dev
+   contra el Sheet correcto.
+3. Si el fix es correcto pero el script estaba mal: re-hacer QA en Preview.
+4. Si el fix tiene un bug real: debugging de ConceptoBoard antes de nueva QA.
+5. PR #15 permanece abierto — no mergear hasta QA aprobada.
