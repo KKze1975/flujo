@@ -765,6 +765,24 @@ export default function ConceptoBoard({
         // B2: actualizar TODOS los movimientos del concepto, no solo el editado
         setMovs(prev => prev.map(m => m.conceptoId === mov.conceptoId ? { ...m, montoPresupuestado: editedMonto } : m));
         onMovimientoUpdate({ ...mov, montoPresupuestado: editedMonto });
+
+        // T51: propagar monto_presupuestado a H2 del mes activo.
+        // Solo filas pendiente — ejecutados y no_aplica/pospuesto no se actualizan
+        // porque su monto ya es final o no serán pagados este mes.
+        const filasPendientes = movs.filter(m => m.conceptoId === mov.conceptoId && m.estado === "pendiente");
+        for (const fila of filasPendientes) {
+          const h2Res = await fetch(`/api/mes/${mes}/movimientos/${fila.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tipo: "actualizar_monto", montoPresupuestado: editedMonto }),
+          });
+          if (!h2Res.ok) {
+            let msg = "error desconocido";
+            try { const d = await h2Res.json(); msg = (d as { error?: string }).error ?? msg; } catch { /* ignore */ }
+            console.error(`[T51] H1 actualizado pero H2 fila ${fila.id} falló:`, msg);
+            setError(`Monto guardado en H1, pero H2 no se actualizó (${fila.id}): ${msg}`);
+          }
+        }
       } catch (e: unknown) {
         setError(e instanceof Error ? e.message : "Error desconocido");
         setBusy(false);
