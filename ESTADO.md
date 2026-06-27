@@ -4030,3 +4030,45 @@ No mezclar con T51/PR#15. Abrir después de que PR#15 esté mergeado.
 3. DT-PLAN-01: UI no excluye no_aplica pre-existentes del comprometido.
 4. Retirar Préstamo Papá y auditar duplicado Apoyo Mariella en H1.
 5. Retomar: DT-CAPTURA-01 → T51 debugging → PR #15.
+
+---
+
+## Iniciativa E — Soporte de meses con 5 semanas · 27 jun 2026
+
+### Identificada en
+Sesión TK-PLAN-JULIO · 27 jun 2026
+
+### Contexto operativo
+El modelo de semanas de Flujo define S1 como la semana que arranca el 29 del mes
+anterior — esto es operativo real, no un workaround. Siempre ha sido así. Julio 2026
+tiene una quinta semana al final del mes (28–31 jul) que el modelo actual no puede
+representar. Este caso es recurrente — ocurre en cualquier mes donde el calendario
+genera 5 semanas.
+
+### Problema
+El enum `semana` en H2, H3B y H5 está definido como `S1 / S2 / S3 / S4`. No existe
+S5. Los meses con 5 semanas no pueden representar la última semana en el sistema —
+ni sus compromisos, ni el aporte de Angie correspondiente, ni el cierre semanal.
+
+### Impacto en Julio 2026
+- Semana extra: 28–31 jul
+- Aporte Angie S5: ~$2.000.000 adicionales
+- Superávit real del mes sube de +$1.184K a ~+$3.184K
+- Workaround Julio: semana 28–31 jul se absorbe en S4 operativamente
+  hasta que Iniciativa E esté construida
+
+### Alcance técnico
+La iniciativa es una extensión del enum, no un rediseño del modelo:
+- H2, H3B, H5: enum `semana` agrega valor `S5`
+- Inicialización del mes: detectar si el mes requiere S5 (lógica de calendario)
+  y generar filas S5 condicionalmente — meses normales siguen con 4 semanas
+- UI: mostrar S5 condicionalmente cuando existe
+- Lógica de cierre semanal: soporte de `cerrar-semana` para S5
+- H4 Angie: quinto aporte opcional cuando aplica
+
+### Estado
+Identificada. Requiere sesión de DISEÑO independiente antes de construir.
+No abrir hasta que T53 y PR#15 estén cerrados.
+
+### Cola
+Abrir sesión DISEÑO — Iniciativa E después de estabilizar T53 y PR#15.
