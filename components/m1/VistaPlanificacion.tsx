@@ -89,6 +89,9 @@ export default function VistaPlanificacion({
   // Estado local de movimientos — se actualiza tras PATCHes en planificación
   const [movs, setMovs] = useState<Movimiento[]>(movimientos);
 
+  // Montos cambiados en planificación: conceptoId → nuevo monto (se propagan a H2 al cerrar)
+  const [dirtyMontos, setDirtyMontos] = useState<Map<string, number>>(new Map());
+
   const [savingBorrador, setSavingBorrador] = useState(false);
   const [savingCierre, setSavingCierre] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -184,7 +187,12 @@ export default function VistaPlanificacion({
 
   const setConceptoMod = (id: string, partial: Partial<Pick<Concepto, "semanaDefault" | "notas" | "monto">>) => {
     setConceptos((prev) => prev.map((c) => c.id === id ? { ...c, ...partial } : c));
-    setDirtyIds((prev) => new Set(prev).add(id));
+    if (partial.monto !== undefined) {
+      setDirtyMontos((prev) => new Map(prev).set(id, partial.monto!));
+    }
+    if (partial.semanaDefault !== undefined || partial.notas !== undefined) {
+      setDirtyIds((prev) => new Set(prev).add(id));
+    }
   };
 
   const guardarIngresoCamilo = async () => {
@@ -243,7 +251,7 @@ export default function VistaPlanificacion({
       const res = await fetch(`/api/conceptos/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ semanaDefault: c.semanaDefault, notas: c.notas, monto: c.monto }),
+        body: JSON.stringify({ semanaDefault: c.semanaDefault, notas: c.notas }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Error al guardar concepto");
@@ -325,15 +333,35 @@ export default function VistaPlanificacion({
     setSavingCierre(true);
     setError(null);
     try {
-      // 1. Guardar H1
+      // 1. Guardar H1 (semanaDefault y notas — el monto va a H2, no a H1)
       const conceptosFinales = await persistirH1();
 
-      // 2. Sincronizar semanas en H2 — solo movimientos pendientes con semana_default fija
       const updatedMovs = [...movs];
+
+      // 2. Propagar montos modificados a H2 — filas pendientes del concepto
+      for (const [conceptoId, nuevoMonto] of dirtyMontos) {
+        const pendientes = updatedMovs.filter((m) => m.conceptoId === conceptoId && m.estado === "pendiente");
+        for (const mov of pendientes) {
+          const res = await fetch(`/api/mes/${mes}/movimientos/${mov.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tipo: "actualizar_monto", montoPresupuestado: nuevoMonto }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error ?? "Error al actualizar monto en H2");
+          const idx = updatedMovs.findIndex((m) => m.id === mov.id);
+          if (idx >= 0) updatedMovs[idx] = data as Movimiento;
+        }
+      }
+      setDirtyMontos(new Map());
+
+      // 3. Sincronizar semanas en H2 — solo movimientos pendientes con semana_default fija
+      //    Excluye conceptos frecuencia=semanal (tienen S1-S4 distintas, no una semana default)
       for (const mov of movs) {
         if (mov.estado !== "pendiente") continue;
         const concepto = conceptosFinales.find((c) => c.id === mov.conceptoId);
         if (!concepto || concepto.semanaDefault === "variable") continue;
+        if (concepto.frecuencia === "semanal") continue;
         if (mov.semana === concepto.semanaDefault) continue;
         const res = await fetch(`/api/mes/${mes}/movimientos/${mov.id}`, {
           method: "PATCH",
@@ -346,7 +374,7 @@ export default function VistaPlanificacion({
         if (idx >= 0) updatedMovs[idx] = data as Movimiento;
       }
 
-      // 3. Notificar a MesM1 — actualiza movs y cambia a vista ejecución
+      // 4. Notificar a MesM1 — actualiza movs y cambia a vista ejecución
       onCerrar(updatedMovs);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Error desconocido");
@@ -761,8 +789,8 @@ export default function VistaPlanificacion({
         <div className="mx-auto flex max-w-screen-xl items-center justify-between">
           <div className="flex items-center gap-4">
             <span className="text-xs text-gray-400">
-              {dirtyIds.size > 0
-                ? `${dirtyIds.size} cambio${dirtyIds.size > 1 ? "s" : ""} sin guardar en H1`
+              {dirtyIds.size > 0 || dirtyMontos.size > 0
+                ? `${dirtyIds.size + dirtyMontos.size} cambio${dirtyIds.size + dirtyMontos.size > 1 ? "s" : ""} sin guardar`
                 : "Sin cambios pendientes"}
             </span>
             <button

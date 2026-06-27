@@ -20,6 +20,7 @@ type PatchBody =
   | { tipo: "posponer"; nuevaSemana?: Semana; razonPostergacion?: string | null }
   | { tipo: "no_aplica" }
   | { tipo: "reasignar_semana"; semana: Semana }
+  | { tipo: "actualizar_monto"; montoPresupuestado: number }
   | { tipo: "mover_mes_siguiente" }
   | { tipo: "revertir_mes_siguiente" }
   | { tipo: "revertir_ejecucion" };
@@ -41,7 +42,7 @@ export async function PATCH(
     return Response.json({ error: "Body inválido." }, { status: 400 });
   }
 
-  if (!body?.tipo || !["ejecutar", "posponer", "no_aplica", "reasignar_semana", "mover_mes_siguiente", "revertir_mes_siguiente", "revertir_ejecucion"].includes(body.tipo)) {
+  if (!body?.tipo || !["ejecutar", "posponer", "no_aplica", "reasignar_semana", "actualizar_monto", "mover_mes_siguiente", "revertir_mes_siguiente", "revertir_ejecucion"].includes(body.tipo)) {
     return Response.json({ error: "tipo inválido." }, { status: 400 });
   }
 
@@ -99,6 +100,11 @@ export async function PATCH(
         return Response.json({ error: "semana inválida." }, { status: 400 });
       }
       patch = { semana: body.semana };
+    } else if (body.tipo === "actualizar_monto") {
+      if (typeof body.montoPresupuestado !== "number" || body.montoPresupuestado < 0) {
+        return Response.json({ error: "montoPresupuestado inválido." }, { status: 400 });
+      }
+      patch = { montoPresupuestado: body.montoPresupuestado };
     } else if (body.tipo === "mover_mes_siguiente") {
       patch = { estado: "pospuesto_mes_siguiente" };
       // Create corresponding H2 row in the next month so it shows in planning
