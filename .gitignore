@@ -49,3 +49,8 @@ next-env.d.ts
 /graphify-out/
 
 dev-server.log
+
+# Experimento Julio 2026 — datos de producción, no commitear
+scripts/backup-julio-defectuoso.json
+scripts/capturas/
+scripts/reset-julio.mjs
