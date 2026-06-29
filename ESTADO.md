@@ -4324,3 +4324,115 @@ correcto; no se eleva a deuda técnica (no cumple criterio de INVARIANTS.md).
 3. Recalibrar presupuesto Agua para meses futuros (H1)
 4. T52 (tercer path familia bug T51) — definir antes de abrir
 5. DT-PLAN-01 · Iniciativa E · cola técnica anterior
+
+---
+
+## Sesión DEBUGGING — DT-PLAN-01 · 29 jun 2026
+
+### Tipo de sesión
+DEBUGGING. Diagnóstico antes que solución. Un ticket activo.
+
+### Síntoma reportado
+Camilo reportó dificultad de seguimiento en producción: saldos M1 planificación
+desviados ~$250K, concepto Entretenimiento no figuraba correctamente en vista
+semanal y saldos. Operando "por instrumentos" sobre Julio 2026 en vivo.
+
+### Diagnóstico — Capa de datos (Lectura 1, prod)
+
+Sheet de producción confirmado correcto:
+- Entretenimiento Julio: 4 filas, S1=no_aplica, S2/S3/S4=pendiente, $250K cada una.
+- Comprometido ejecutable real: $18.166.211 (excluye no_aplica/pospuesto).
+- Delta bruto−ejecutable: $1.255.000 (no solo $250K — 10+ conceptos no_aplica
+  marcados en sesión de planeación).
+- Campo `semana` válido en las 4 filas de Entretenimiento. BL-M4-02 descartado.
+- `sobre_techo` no existe como columna en H2 — hallazgo colateral, ver deuda.
+
+**Conclusión capa de datos:** Sheet correcto. Defecto exclusivamente en UI.
+
+### Diagnóstico — Capa de UI (Lectura 2, código)
+
+Causa raíz confirmada: `totalComprometido` y `balancePorSemana`/`balancePlanificacion`
+calculaban desde H1 (conceptos), no desde H2 (movimientos). Para conceptos
+`frecuencia=semanal`, siempre multiplicaban `c.monto × 4` sin consultar estado
+real de cada MOV. Errores en direcciones opuestas:
+
+| Componente | Lógica | Error |
+|---|---|---|
+| `MesM1Desktop.tsx` | Excluye concepto si TODOS sus movs son no_aplica | Sobrecuenta $250K |
+| `VistaPlanificacion.tsx` | `movOverrides` excluye concepto si ALGÚN mov es no_aplica | Infracuenta $750K |
+
+Sesgo neto de visualización: hasta $1.000.000 dependiendo de la vista.
+
+Diagnóstico adicional confirmado durante QA post-fix: branch no-semanal de
+`balancePlanificacion` (`MesM1Desktop.tsx:492`) también usaba `c.monto` de H1
+en vez de `mov.montoPresupuestado` de H2 — mismo patrón, afectaba S4 en ~$174K.
+Fix autorizado por Camilo en misma sesión.
+
+### Fix aplicado
+
+**PR #17** — DT-PLAN-01 principal
+- Commit fix: `c8a2250` (dev)
+- Merge commit: `ae985d3` (main)
+- Archivos: `components/MesM1Desktop.tsx`, `components/m1/VistaPlanificacion.tsx`
+- Cambios:
+  - 1A: `totalComprometido` en `MesM1Desktop` → lee `movs` filtrado por estado (H2)
+  - 1B: `balancePlanificacion` branch semanal → lookup por `conceptoId + semana` en `movs`
+  - 2A: `totalComprometido` en `VistaPlanificacion` → lee `movs` filtrado (bypasea `movOverrides`)
+  - 2B: `balancePorSemana` → agrupa `movs` por semana en vez de leer `semanaDefault` de H1
+- QA: Angie aprobó en Preview PR #17.
+
+**PR #18** — Fix branch no-semanal
+- Commit fix: `56b28a5` (dev)
+- Merge commit: `af7be54` (main)
+- Archivo: `components/MesM1Desktop.tsx:492`
+- Cambio: `c.monto` → `mov.montoPresupuestado` en branch no-semanal de `balancePlanificacion`
+- QA: Angie aprobó presencialmente.
+
+### Verificación post-deploy
+
+- Comprometido total Julio: $18.166.211 ✓
+- S1/S2/S3 correctos ✓
+- S4 muestra $1.625.996 ✓
+- Entretenimiento visible con S2/S3/S4 ejecutables ✓
+- Saldo en mano -$150K: comportamiento esperado — Camilo registró préstamo de
+  Emma intencionalmente como deuda en `en_mano`. No es bug.
+
+### Deuda técnica identificada en sesión
+
+**DT-SOBRE-TECHO-01** — `sobre_techo` no existe como columna en H2.
+El diseño de bolsillos asume `sobre_techo = TRUE` como mecanismo de trazabilidad
+de sobregiro (ESTADO.md líneas 2896-2901). La lectura de prod confirmó que la
+columna no existe. El mecanismo no está persistiendo. No es bloqueante hoy.
+Requiere auditoría antes de activar flujo de bolsillos.
+
+**DT-PLAN-02** — `movOverrides` en `VistaPlanificacion` no se sincroniza con
+PATCHes de sesión para estados intermedios. El handler `marcarNoAplica` actualiza
+`movOverrides` correctamente para el concepto completo, pero la inicialización
+colapsa estados mixtos (concepto con MOVs parcialmente no_aplica). El fix de hoy
+bypasea `movOverrides` para cálculos numéricos; la lógica de presentación de cards
+no fue tocada. Pendiente revisar si genera inconsistencias visuales en sesión.
+
+**Magnitud real DT-PLAN-01 (corrección al registro anterior):** el sesgo de
+visualización era de hasta $1.255.000 (delta bruto−ejecutable real), no solo
+$250K como registrado en el cierre de planeación de Julio. El cierre anterior
+subestimó el impacto.
+
+### Estado
+
+| Item | Estado |
+|---|---|
+| DT-PLAN-01 | ✅ Resuelto — PR #17 + PR #18 en producción |
+| PR #17 | ✅ Mergeado — ae985d3 |
+| PR #18 | ✅ Mergeado — af7be54 |
+| DT-SOBRE-TECHO-01 | 📋 Documentado — no bloqueante |
+| DT-PLAN-02 | 📋 Documentado — no bloqueante |
+
+### Cola siguiente sesión
+1. Continuar ejecución S1 — Colegio, EPS, Plan complementario
+2. Registro de gastos libres H3B (DT-MES-01 resuelto por fecha desde 29 jun)
+3. Recalibrar presupuesto Agua para meses futuros (H1)
+4. T52 (tercer path familia bug T51) — definir antes de abrir
+5. Iniciativa E — sesión DISEÑO (precondiciones cumplidas: T51, T53, DT-PLAN-01 cerrados)
+6. DT-SOBRE-TECHO-01 · DT-PLAN-02 · cola técnica
+
+---
