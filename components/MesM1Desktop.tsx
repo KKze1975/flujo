@@ -465,8 +465,10 @@ export default function MesM1Desktop({
   }, [conceptosLocal, movs, mesNombre]);
 
   const totalComprometido = useMemo(() =>
-    conceptosActivosMes.reduce((sum, c) => sum + (c.frecuencia === "semanal" ? c.monto * 4 : c.monto), 0),
-    [conceptosActivosMes]
+    movs
+      .filter(m => !["no_aplica", "pospuesto", "pospuesto_mes_siguiente"].includes(m.estado))
+      .reduce((sum, m) => sum + m.montoPresupuestado, 0),
+    [movs]
   );
 
   const diferenciaTotal = ingresoTotal - totalComprometido;
@@ -478,7 +480,14 @@ export default function MesM1Desktop({
       const s = SEMANAS[i];
       const aporteAngie = Number(aportes[s]) || 0;
       const comprometido = conceptosActivosMes.reduce((sum, c) => {
-        if (c.frecuencia === "semanal") return sum + c.monto;
+        if (c.frecuencia === "semanal") {
+        const movSem = movs.find(m =>
+          m.conceptoId === c.id &&
+          m.semana === s &&
+          !["no_aplica", "pospuesto", "pospuesto_mes_siguiente"].includes(m.estado)
+        );
+        return movSem ? sum + movSem.montoPresupuestado : sum;
+      }
         const mov = movs.find(m => m.conceptoId === c.id && m.estado !== "no_aplica" && m.estado !== "pospuesto_mes_siguiente");
         return mov?.semana === s ? sum + c.monto : sum;
       }, 0);

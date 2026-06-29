@@ -127,9 +127,11 @@ export default function VistaPlanificacion({
     return name.charAt(0).toUpperCase() + name.slice(1);
   }, [mes]);
 
-  const totalComprometido = useMemo(
-    () => conceptosActivosMes.reduce((sum, c) => sum + (c.frecuencia === "semanal" ? c.monto * 4 : c.monto), 0),
-    [conceptosActivosMes]
+  const totalComprometido = useMemo(() =>
+    movs
+      .filter(m => !["no_aplica", "pospuesto", "pospuesto_mes_siguiente"].includes(m.estado))
+      .reduce((sum, m) => sum + m.montoPresupuestado, 0),
+    [movs]
   );
 
   const ingresoCamiloNum = Number(montoCamilo) || 0;
@@ -155,16 +157,19 @@ export default function VistaPlanificacion({
     let remanente = ingresoCamiloNum;
     for (const s of SEMANAS) {
       const aporteAngie = Number(aportes[s]) || 0;
-      const comprometido = conceptosActivosMes
-        .filter((c) => c.frecuencia === "semanal" || c.semanaDefault === s)
-        .reduce((sum, c) => sum + c.monto, 0);
+      const comprometido = movs
+        .filter(m =>
+          m.semana === s &&
+          !["no_aplica", "pospuesto", "pospuesto_mes_siguiente"].includes(m.estado)
+        )
+        .reduce((sum, m) => sum + m.montoPresupuestado, 0);
       const disponible = remanente + aporteAngie;
       const diferencia = disponible - comprometido;
       result.push({ semana: s, remanteAnterior: remanente, aporteAngie, disponible, comprometido, diferencia });
       remanente = diferencia;
     }
     return result;
-  }, [conceptosActivosMes, aportes, ingresoCamiloNum]);
+  }, [movs, aportes, ingresoCamiloNum]);
 
   // ── Grupos para tabla ─────────────────────────────────────────────────────
 
