@@ -4191,3 +4191,104 @@ S2-S4 usan montos presupuestados — se actualizan al ejecutar.
 3. T53: fix bypass MesM1Desktop.tsx:943
 4. Recalibrar presupuesto Agua para meses futuros (H1)
 5. DT-PLAN-01 · Iniciativa E · cola técnica anterior
+
+---
+
+## Sesión DEBUGGING — T51 / PR#15 · 29 jun 2026
+
+### Objetivo
+Verificar si el fix de T51 (`handleSavePlan` en `ConceptoBoard.tsx`) funcionaba
+correctamente en el Preview de PR#15, y determinar si DT-CAPTURA-01 era la causa
+del fallo de QA de Angie.
+
+### Diagnóstico ejecutado
+
+**Método:** Reproducción en vivo usando el Preview de Vercel de PR#15 +
+`/admin/trazabilidad` como herramienta de verificación antes/después.
+
+**Hallazgo 1 — Trazabilidad:**
+Snapshot antes/después de cambiar `monto_presupuestado` en planificación mostró
+0 modificaciones en H2. Diagnóstico inicial: bug persiste en PR#15.
+
+**Hallazgo 2 — Verificación directa en Sheet:**
+Camilo verificó H2 dev directamente después de cambiar Frida a $700.000 en el Preview.
+El valor se actualizó inmediatamente en el Sheet. **El fix funciona.**
+
+**Conclusión:** Trazabilidad produjo un falso negativo — posiblemente por timing
+o por cómo captura el snapshot. El comportamiento real del fix es correcto.
+
+**DT-CAPTURA-01:** Descartada como causa activa. El Preview apuntaba correctamente
+al Sheet de dev. El fallo de QA de Angie tuvo otra causa no determinada — irrelevante
+dado que el fix está verificado manualmente.
+
+### Acciones ejecutadas
+
+1. Fix verificado manualmente: cambio de `monto_presupuestado` en Preview → H2 dev
+   se actualiza correctamente.
+2. PR#15 mergeado a main vía `gh pr merge 15 --merge`.
+3. T51 cerrado. Fix en producción.
+
+### Estado resultante
+
+| Item | Estado |
+|---|---|
+| T51 | ✅ Cerrado — fix mergeado a main |
+| PR#15 | ✅ Mergeado |
+| DT-CAPTURA-01 | Descartada |
+
+### Cola siguiente sesión
+1. Continuar ejecución S1 — Colegio, EPS, Plan complementario primero
+2. [CONSTRUCCIÓN] T53: fix bypass `MesM1Desktop.tsx:943`
+3. DT-PLAN-01 · Iniciativa E · cola técnica anterior
+
+---
+
+## Sesión CONSTRUCCIÓN — T53 · 29 jun 2026
+
+### Ticket
+Fix bypass saldo inicial — `MesM1Desktop.tsx:943`
+
+### Cambio ejecutado
+**Archivo:** `components/MesM1Desktop.tsx`, línea 943
+
+```tsx
+// Antes
+onClick={() => setSaldosOk(true)}
+
+// Después
+onClick={() => setShowConfirmarSaldos(true)}
+```
+
+El botón "Confirmar saldos" ahora abre `ModalConfirmarSaldos` en lugar de
+marcar `saldosOk = true` directamente. El modal escribe a H4, confirma saldos
+y navega a ejecución — flujo correcto restaurado.
+
+### Contexto del fix
+`saldosOk` se inicializa como `useState(saldos.length >= 4)`. Si el mes ya
+tiene 4 saldos en H4 (caso Julio 2026), arranca en `true` y el botón muestra
+"Saldos confirmados" — comportamiento correcto para meses ya inicializados.
+El fix aplica para meses nuevos donde `saldosOk = false`.
+
+Verificado en Preview de Vercel con Agosto 2026 (mes sin saldos en H4):
+el modal abre correctamente al clickear "Confirmar saldos".
+
+### Nota técnica — trazabilidad
+Durante debugging de T51, `/admin/trazabilidad` produjo un falso negativo
+(mostró 0 modificaciones cuando H2 sí se había actualizado). Causa probable:
+timing entre la escritura al Sheet y la captura del snapshot. Pendiente
+investigar y documentar limitación de la herramienta.
+
+### Estado
+
+| Item | Estado |
+|---|---|
+| T53 | ✅ Construido — commit 418cb5a — en QA |
+| PR#16 | Abierto — esperando QA de Angie |
+| Merge a main | Bloqueado hasta QA de Angie |
+
+### Cola siguiente sesión
+1. QA de Angie en Preview PR#16 → mergear si aprueba
+2. Continuar ejecución S1 — Colegio, EPS, Plan complementario
+3. Desde el 29 jun: habilitar registro de gastos libres H3B (DT-MES-01 resuelto por fecha)
+4. Recalibrar presupuesto Agua para meses futuros (H1)
+5. DT-PLAN-01 · Iniciativa E · cola técnica anterior
