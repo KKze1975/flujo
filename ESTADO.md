@@ -4240,3 +4240,55 @@ dado que el fix está verificado manualmente.
 1. Continuar ejecución S1 — Colegio, EPS, Plan complementario primero
 2. [CONSTRUCCIÓN] T53: fix bypass `MesM1Desktop.tsx:943`
 3. DT-PLAN-01 · Iniciativa E · cola técnica anterior
+
+---
+
+## Sesión CONSTRUCCIÓN — T53 · 29 jun 2026
+
+### Ticket
+Fix bypass saldo inicial — `MesM1Desktop.tsx:943`
+
+### Cambio ejecutado
+**Archivo:** `components/MesM1Desktop.tsx`, línea 943
+
+```tsx
+// Antes
+onClick={() => setSaldosOk(true)}
+
+// Después
+onClick={() => setShowConfirmarSaldos(true)}
+```
+
+El botón "Confirmar saldos" ahora abre `ModalConfirmarSaldos` en lugar de
+marcar `saldosOk = true` directamente. El modal escribe a H4, confirma saldos
+y navega a ejecución — flujo correcto restaurado.
+
+### Contexto del fix
+`saldosOk` se inicializa como `useState(saldos.length >= 4)`. Si el mes ya
+tiene 4 saldos en H4 (caso Julio 2026), arranca en `true` y el botón muestra
+"Saldos confirmados" — comportamiento correcto para meses ya inicializados.
+El fix aplica para meses nuevos donde `saldosOk = false`.
+
+Verificado en Preview de Vercel con Agosto 2026 (mes sin saldos en H4):
+el modal abre correctamente al clickear "Confirmar saldos".
+
+### Nota técnica — trazabilidad
+Durante debugging de T51, `/admin/trazabilidad` produjo un falso negativo
+(mostró 0 modificaciones cuando H2 sí se había actualizado). Causa probable:
+timing entre la escritura al Sheet y la captura del snapshot. Pendiente
+investigar y documentar limitación de la herramienta.
+
+### Estado
+
+| Item | Estado |
+|---|---|
+| T53 | ✅ Construido — commit 418cb5a — en QA |
+| PR#16 | Abierto — esperando QA de Angie |
+| Merge a main | Bloqueado hasta QA de Angie |
+
+### Cola siguiente sesión
+1. QA de Angie en Preview PR#16 → mergear si aprueba
+2. Continuar ejecución S1 — Colegio, EPS, Plan complementario
+3. Desde el 29 jun: habilitar registro de gastos libres H3B (DT-MES-01 resuelto por fecha)
+4. Recalibrar presupuesto Agua para meses futuros (H1)
+5. DT-PLAN-01 · Iniciativa E · cola técnica anterior
