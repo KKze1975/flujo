@@ -727,3 +727,106 @@ Fix: eliminar el `useEffect` que fetcha `/api/meses` y el estado `mesActivo`. Re
 ### Criterios de parada activados
 
 - **P4 lote 1**: verificación post-eliminación falló (39 filas restantes). Consultado con usuario antes de continuar. Autorizado y completado.
+
+---
+
+## Sesión DEBUGGING — Reset Julio + Instrumentación · 2026-06-26
+
+### Objetivo
+
+Preparar el experimento de reproducción del bug de inicialización de Julio 2026.
+No se escribe fix. El producto es: (1) Julio eliminado del Sheet de producción,
+(2) script de captura operacional para monitorear el experimento.
+
+### Paso 0 — Backup del estado defectuoso
+
+Script: `scripts/reset-julio.mjs` (no commiteado).
+
+Estado de Julio antes del reset (guardado en `scripts/backup-julio-defectuoso.json`):
+
+| Pestaña | Filas julio (mes=2026-07) |
+|---|---|
+| H2 (movimientos) | **69 filas** (61 pendiente, 8 no_aplica — datos de AUDITORIA_JULIO.md) |
+| H3B (consumos) | **0 filas** (los 2 consumos incorrectos ya habían sido corregidos en sesión 2026-06-22) |
+| H4A (ingreso Camilo) | **1 fila** ($11,450,000 confirmado) |
+| H4B (aportes Angie) | **4 filas** (S1–S4, $2,000,000 c/u) |
+| H5A/H5B | **0 filas** (verificado en Paso 1) |
+
+### Paso 1 — H5 verificado
+
+H5A: 0 filas de julio · H5B: 0 filas de julio.
+Condición de parada NOT activada. Procedimiento continuado.
+
+### Paso 2 — Borrado de Julio
+
+| Pestaña | Borradas | Otros meses conservados |
+|---|---|---|
+| H2 | 69 | 73 (junio y anteriores) |
+| H3B | 0 | — |
+| H4A | 1 | 2 |
+| H4B | 4 | 8 |
+
+Verificación cruzada post-borrado:
+- Julio restante: H2=0 H3B=0 H4A=0 H4B=0 ✓
+- Filas de junio en H2: 73 antes y 73 después — intactas ✓
+- H5 intacto ✓ · H1 intacto ✓ · H4C/H4D intactos ✓
+
+### Paso 3 — Verificación I-01
+
+Verificado via code review (dev server no estaba corriendo en esta sesión).
+
+`app/page.tsx` líneas 15–20 implementan `mesActual()`:
+```typescript
+function mesActual(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+}
+```
+
+Línea 27: `const mesActivo = mesActual()` — el mes activo se calcula desde `new Date()`
+del servidor, NO desde el contenido de H2.
+
+**Conclusión I-01: SE MANTIENE.** Con Julio eliminado de H2, `getMeses()` devolverá
+solo Junio y meses anteriores, pero `mesActivo` seguirá siendo `2026-06` (junio)
+porque hoy es 2026-06-26. La app mostrará Junio como mes activo y ofrecerá
+"activar siguiente mes → Julio" desde ese contexto.
+
+Fix aplicado en commit `c9f5699` (sesión 2026-06-21).
+
+### Paso 4 — Script de captura
+
+Script creado: `scripts/captura-julio.mjs` (commiteado a `dev`).
+
+- Lee H2, H3B, H4A, H4B para mes=2026-07 desde producción (PROD_GOOGLE_SHEET_ID)
+- Genera `scripts/capturas/snapshot-NNN-<slug>.json` con número secuencial
+- Imprime resumen: H2 filas, comprometido total, desglose S1–S4
+- Excluye `estado=no_aplica` del comprometido (mismo criterio que el motor de la app)
+- Detecta y reporta montos no parseables en lugar de ignorarlos silenciosamente
+
+### Paso 5 — Baseline
+
+```
+[SNAPSHOT 001] "baseline post-reset"
+  H2: 0 filas | Comprometido total: $0 | S1:$0 S2:$0 S3:$0 S4:$0
+  → scripts/capturas/snapshot-001-baseline-post-reset.json
+```
+
+Baseline confirma: Sheet en estado limpio. Punto de partida del experimento establecido.
+
+### Entregables completados
+
+- [x] `scripts/backup-julio-defectuoso.json` — evidencia del estado previo al reset
+- [x] Sheet producción con 0 filas de 2026-07 en H2, H3B, H4A, H4B
+- [x] Filas de Junio intactas (73/73)
+- [x] `scripts/captura-julio.mjs` operacional
+- [x] `scripts/capturas/snapshot-001-baseline-post-reset.json` con comprometido=$0
+- [x] `scripts/INSTRUCCIONES_EXPERIMENTO.md` generado
+- [x] SESSION_LOG.md actualizado
+- [x] `.gitignore` actualizado (backup, capturas/, reset-julio.mjs excluidos)
+
+### Próxima acción (Camilo)
+
+Seguir `scripts/INSTRUCCIONES_EXPERIMENTO.md` para reproducir la planeación de Julio
+paso a paso, capturando un snapshot después de cada acción.
