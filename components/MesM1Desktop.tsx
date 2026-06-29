@@ -488,8 +488,8 @@ export default function MesM1Desktop({
         );
         return movSem ? sum + movSem.montoPresupuestado : sum;
       }
-        const mov = movs.find(m => m.conceptoId === c.id && m.estado !== "no_aplica" && m.estado !== "pospuesto_mes_siguiente");
-        return mov?.semana === s ? sum + c.monto : sum;
+        const mov = movs.find(m => m.conceptoId === c.id && !["no_aplica", "pospuesto", "pospuesto_mes_siguiente"].includes(m.estado));
+        return mov?.semana === s ? sum + mov.montoPresupuestado : sum;
       }, 0);
       const disponible = remanente + aporteAngie;
       const diferencia = disponible - comprometido;
