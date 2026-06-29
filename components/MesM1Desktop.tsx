@@ -940,7 +940,7 @@ export default function MesM1Desktop({
                     : <><Icon name="wallet" size={15} /> Ingreso Camilo</>}
                 </button>
                 <button className="fl-btn ghost sm"
-                  onClick={() => setSaldosOk(true)}
+                  onClick={() => setShowConfirmarSaldos(true)}
                   style={saldosOk ? { color: "var(--pos)", borderColor: "var(--pos)" } : undefined}>
                   {saldosOk
                     ? <><Icon name="check" size={15} /> Saldos confirmados</>
