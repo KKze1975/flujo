@@ -4292,3 +4292,35 @@ investigar y documentar limitación de la herramienta.
 3. Desde el 29 jun: habilitar registro de gastos libres H3B (DT-MES-01 resuelto por fecha)
 4. Recalibrar presupuesto Agua para meses futuros (H1)
 5. DT-PLAN-01 · Iniciativa E · cola técnica anterior
+
+---
+
+## Cierre CONSTRUCCIÓN — T53 en producción · 29 jun 2026
+
+**Tipo de sesión:** CONSTRUCCIÓN. Un solo ticket activo (T53).
+
+### Resultado
+- T53 (fix bypass saldo inicial `MesM1Desktop.tsx:943`) **mergeado y en producción**.
+- QA de Angie aprobada en Preview PR#16: modal de saldo inicial abre al cerrar
+  planificación, saldo se captura para iniciar ejecución y se refleja en saldos.
+- PR#16 mergeado a main (`gh pr merge 16 --merge`).
+- Deploy Production: commit `9605476` (Merge PR#16), branch `main`, Ready.
+
+### Estado
+| Item | Estado |
+|---|---|
+| T53 | ✅ En producción — commit 9605476 |
+| PR#16 | ✅ Mergeado |
+| BUG-REGRESION-01 | ✅ Resuelto vía T53 (ya no por workaround) |
+
+### Nota de verificación
+QA validó persistencia por lectura tras captura. No se verificó explícitamente
+recarga de sesión para confirmar write persistido en H4. Comportamiento observado
+correcto; no se eleva a deuda técnica (no cumple criterio de INVARIANTS.md).
+
+### Cola siguiente sesión
+1. Continuar ejecución S1 — Colegio, EPS, Plan complementario
+2. Desde el 29 jun: registro de gastos libres H3B (DT-MES-01 resuelto por fecha)
+3. Recalibrar presupuesto Agua para meses futuros (H1)
+4. T52 (tercer path familia bug T51) — definir antes de abrir
+5. DT-PLAN-01 · Iniciativa E · cola técnica anterior
