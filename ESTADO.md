@@ -4696,3 +4696,12 @@ patrón de error que la familia `DT-LABEL-*` ya había costado corregir antes.
 - QA de Angie en Preview URL → merge a `main` si aprueba.
 - Resto de la cola sin cambios: Iniciativa E / S5 (`[DISEÑO]` pendiente de
   abrir), `DT-MES-01`, `DT-SOBRE-TECHO-01`, `DT-PLAN-02`.
+
+---
+
+## MERGE CONFIRMADO — FEAT-BARRA-FALTAPAGAR-01 · 30 junio 2026
+
+QA de Angie aprobado en Preview URL — funcionamiento correcto de la barra
+superior (número protagonista "falta por pagar", popovers de los 3 modos,
+sin regresión en presupuestado/ejecutado). PR #23 mergeado a `main`.
+Ticket cerrado.
