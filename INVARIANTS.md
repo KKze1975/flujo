@@ -62,3 +62,9 @@ explícito en el DoD: aplicar mismo cambio al Sheet de prod antes del merge.
 ## I-11 — main protegido
 `git push origin main` directo está bloqueado. Todo cambio a prod
 va por PR desde dev.
+
+## I-12 — Confirmar path activo antes de causa raíz
+Un componente puede contener el patrón exacto del bug y no estar en el
+path de import activo (entrypoint → producción). Antes de declarar causa
+raíz, trazar el import hasta `app/`. Grep localiza candidatos, no confirma
+ejecución.
