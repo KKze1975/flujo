@@ -4614,3 +4614,37 @@ real tenía 11). En ambos casos el hard stop de auditoría/anchor-guard ya
 exigido por la metodología atrapó el error antes de escritura — el patrón
 se sostuvo, pero vale la pena reforzarlo: verificar contra el repo real,
 no contra copias o memoria, es el paso que más veces salvó esta sesión.
+
+---
+
+## FEAT-BARRA-FALTAPAGAR-01 · 30 junio 2026
+
+**Ticket cerrado en construcción.** Tercer dato "falta por pagar" en barra morada de VistaSemanal.
+
+### Decisión de diseño tomada
+`Math.max(0, montoPresupuestado - gastado)` para bolsillos sobre techo: el sobregiro no resta del total de "falta por pagar". Ese dato pertenece a la traceability de `sobre_techo` (cola: DT-SOBRE-TECHO-01).
+
+### Fórmula verificada contra datos reales (dev Sheet)
+```
+totalFaltaPagar =
+    pendientes.reduce((s, m) => s + m.montoPresupuestado, 0)
+  + bolsillosPendientes.reduce((s, b) => {
+      const gastado = consumos.filter(c => c.bolsilloId === b.conceptoId).reduce((sum, c) => sum + c.monto, 0);
+      return s + Math.max(0, b.montoPresupuestado - gastado);
+    }, 0)
+```
+Caso verificado: Imprevistos Jun S3 — $250K presupuestado, $100K consumido (taxi + gato), saldo $150K ✓
+
+### Archivos modificados
+- `components/VistaSemanal.tsx` — único archivo
+
+### Cambios en la barra
+- Eliminado: subtítulo "Ejecutado esta semana"
+- Número protagonista: `totalFaltaPagar` (tappable → nuevo popover `falta_pagar`)
+- Línea secundaria: `$X presupuestado / $Y ejecutado` (ambos tappables, popovers existentes sin cambios)
+- Fix posicionamiento: `left: Math.min(anchor.left, window.innerWidth - 278)` — aplica a los 3 modos
+
+### Estado
+- Commit: `4fcebe2` en rama `dev`
+- PR #23: https://github.com/KKze1975/flujo/pull/23 — pendiente QA de Angie en Preview URL
+- No mergear a `main` hasta DoD visual verificado
