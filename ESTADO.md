@@ -4648,3 +4648,51 @@ Caso verificado: Imprevistos Jun S3 — $250K presupuestado, $100K consumido (ta
 - Commit: `4fcebe2` en rama `dev`
 - PR #23: https://github.com/KKze1975/flujo/pull/23 — pendiente QA de Angie en Preview URL
 - No mergear a `main` hasta DoD visual verificado
+
+---
+
+## Corrección y cierre — Sesión 2026-06-30 [DISEÑO → CONSTRUCCIÓN]
+
+### Corrección al bloque anterior
+El bloque `## FEAT-BARRA-FALTAPAGAR-01 · 30 junio 2026` (línea 4620) describe
+la línea secundaria como `$X presupuestado / $Y ejecutado`. Eso quedó
+desactualizado: el JSX real no lleva la etiqueta "ejecutado" en el segundo
+monto — spec final fue `$X presupuestado` / `$Y` solo, sin redundancia
+textual con la barra de progreso. No se edita el bloque anterior por ser
+append-only; esta nota es la corrección de referencia.
+
+### Proceso de diseño — no documentado en el cierre anterior
+- "Falta por pagar" se evaluó en tres variantes antes de B3: A (resta
+  presupuestado−ejecutado), B1 (suma pendientes sin bolsillos), B2 (B1 +
+  bolsillos a monto completo). B1 excluía bolsillos por completo; B2
+  sobreestimaba ignorando consumo parcial. B3 fue la única matemáticamente
+  correcta.
+- Dos sesiones de diagnóstico read-only con Claude Code precedieron la
+  construcción: la primera levantó estructura de `VistaSemanal.tsx` y
+  confirmó el mecanismo `popoverMode` reutilizable; la segunda, con loop de
+  evaluación y stops explícitos (máximo 3 iteraciones, criterios de parada
+  predefinidos), resolvió en una sola iteración cómo se calcula el consumo
+  de bolsillo (`consumos.filter(c => c.bolsilloId === b.conceptoId)`),
+  verificado contra 3 casos reales de dev incluyendo consumo parcial.
+- Tres opciones de jerarquía visual evaluadas (tres-en-línea / protagonista
+  con contexto secundario / protagonista con preview del mayor pendiente).
+  Elegida: protagonista. Iteración posterior eliminó redundancia textual
+  (subtítulo, conteo de conceptos junto al número, "%" repetido).
+
+### QA visual — resultado (actualiza el "pendiente" del bloque anterior)
+Verificado en Preview URL a 375px, no solo declarado: popover `falta_pagar`
+con orden descendente correcto, footer = número de barra, los 3 modos de
+popover contenidos en viewport tras el fix de clamp, popovers
+`presupuestado`/`ejecutado` sin regresión visual ni funcional, subtítulo
+"Ejecutado esta semana" confirmado ausente en todos los estados.
+
+### Lección de proceso
+El loop de diagnóstico con stops explícitos evitó construir sobre una
+hipótesis no verificada (B1 o B2), que habría producido un número plausible
+pero incorrecto en presencia de bolsillos con consumo parcial — mismo
+patrón de error que la familia `DT-LABEL-*` ya había costado corregir antes.
+
+### Pendiente para próxima sesión
+- QA de Angie en Preview URL → merge a `main` si aprueba.
+- Resto de la cola sin cambios: Iniciativa E / S5 (`[DISEÑO]` pendiente de
+  abrir), `DT-MES-01`, `DT-SOBRE-TECHO-01`, `DT-PLAN-02`.
