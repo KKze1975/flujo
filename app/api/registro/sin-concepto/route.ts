@@ -1,5 +1,6 @@
 import { google } from "googleapis";
 import type { NextRequest } from "next/server";
+import { mesActual, semanaActual } from "@/lib/utils/fecha";
 
 const H3B_HEADERS = [
   "id_consumo", "id_bolsillo", "mes", "semana", "descripcion",
@@ -45,21 +46,6 @@ async function ensureH3(sheets: ReturnType<typeof getSheets>) {
     valueInputOption: "RAW",
     requestBody: { values: [H3B_HEADERS] },
   });
-}
-
-function semanaActual(): "S1" | "S2" | "S3" | "S4" {
-  const dia = new Date().getDate();
-  if (dia <= 7)  return "S1";
-  if (dia <= 14) return "S2";
-  if (dia <= 21) return "S3";
-  return "S4";
-}
-
-function mesActual(): string {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  return `${y}-${m}`;
 }
 
 type Body = {
