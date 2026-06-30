@@ -961,7 +961,7 @@ export default function VistaSemanal({
   const [ingresosAngieLocal, setIngresosAngieLocal] = useState<IngresoAngie[]>(ingresosAngie);
   const [showPresupuestadoPopover, setShowPresupuestadoPopover] = useState(false);
   const [presupuestadoAnchor, setPresupuestadoAnchor] = useState<DOMRect | null>(null);
-  const [popoverMode, setPopoverMode] = useState<"presupuestado" | "ejecutado">("presupuestado");
+  const [popoverMode, setPopoverMode] = useState<"presupuestado" | "ejecutado" | "falta_pagar">("presupuestado");
   const [desgloseModal, setDesgloseModal] = useState<Movimiento | null>(null);
   const [posponiendo, setPosponiendo] = useState<Movimiento | null>(null);
   const presupuestadoPopoverRef = useRef<HTMLDivElement>(null);
@@ -1161,6 +1161,12 @@ export default function VistaSemanal({
     ? [...bolsillosPendientes, ...pendientes]
     : [...bolsillosEjecutados, ...ejecutados];
   const consumosPendientes = consumos.filter(c => !c.clasificado);
+  const totalFaltaPendientes = pendientes.reduce((s, m) => s + m.montoPresupuestado, 0);
+  const totalFaltaBolsillos  = bolsillosPendientes.reduce((s, b) => {
+    const gastado = consumos.filter(c => c.bolsilloId === b.conceptoId).reduce((sum, c) => sum + c.monto, 0);
+    return s + Math.max(0, b.montoPresupuestado - gastado);
+  }, 0);
+  const totalFaltaPagar = totalFaltaPendientes + totalFaltaBolsillos;
 
   // Polling: refresca consumos cada 5s mientras haya items sin clasificar
   useEffect(() => {
@@ -1250,32 +1256,32 @@ export default function VistaSemanal({
         </div>
         <p className="sub">{mesLabel}</p>
         <div style={{ marginTop: 14 }}>
-          <div className="fl-row" style={{ marginBottom: 7 }}>
-            <span className="balance-label" style={{ margin: 0 }}>Ejecutado esta semana</span>
-            <span className="fl-num" style={{ fontSize: 14, color: "var(--appbar-ink)", fontWeight: 700 }}>
-              {pct}%
-            </span>
-          </div>
-          <div className="fl-bar" style={{ background: "var(--appbar-hair)" }}>
-            <i style={{ width: `${Math.min(pct, 100)}%`, background: "var(--on-primary)" }} />
-          </div>
-          <div ref={presupuestadoPopoverRef} style={{ position: "relative", marginTop: 6 }}>
-            <p className="sub" style={{ fontSize: 12 }}>
+          <div ref={presupuestadoPopoverRef} style={{ position: "relative" }}>
+            <div className="fl-row" style={{ marginBottom: 7, alignItems: "flex-end" }}>
               <button
                 type="button"
-                style={{ fontWeight: 700, textDecoration: "underline dotted", cursor: "pointer", background: "none", border: "none", color: "inherit", fontSize: "inherit", padding: 0 }}
+                style={{ background: "none", border: "none", padding: 0, color: "inherit", cursor: "pointer", textAlign: "left" }}
                 onClick={(e) => {
-                  if (showPresupuestadoPopover && popoverMode === "ejecutado") {
+                  if (showPresupuestadoPopover && popoverMode === "falta_pagar") {
                     setShowPresupuestadoPopover(false);
                   } else {
                     setPresupuestadoAnchor((e.currentTarget as HTMLButtonElement).getBoundingClientRect());
-                    setPopoverMode("ejecutado");
+                    setPopoverMode("falta_pagar");
                     setShowPresupuestadoPopover(true);
                   }
                 }}
               >
-                {COP(totalEjecutado)}
-              </button>{" "}de{" "}
+                <span style={{ display: "block", fontSize: 11, opacity: 0.8, textDecoration: "underline dotted" }}>falta por pagar</span>
+                <span style={{ display: "block", fontSize: 20, fontWeight: 700, fontVariantNumeric: "tabular-nums", lineHeight: 1.2 }}>{COP(totalFaltaPagar)}</span>
+              </button>
+              <span className="fl-num" style={{ fontSize: 14, color: "var(--appbar-ink)", fontWeight: 700 }}>
+                {pct}%
+              </span>
+            </div>
+            <div className="fl-bar" style={{ background: "var(--appbar-hair)" }}>
+              <i style={{ width: `${Math.min(pct, 100)}%`, background: "var(--on-primary)" }} />
+            </div>
+            <p className="sub" style={{ fontSize: 12, marginTop: 6 }}>
               <button
                 type="button"
                 style={{ fontWeight: 700, textDecoration: "underline dotted", cursor: "pointer", background: "none", border: "none", color: "inherit", fontSize: "inherit", padding: 0 }}
@@ -1290,14 +1296,62 @@ export default function VistaSemanal({
                 }}
               >
                 {COP(totalPresupuestado)}
+              </button>{" "}presupuestado{" / "}
+              <button
+                type="button"
+                style={{ fontWeight: 700, textDecoration: "underline dotted", cursor: "pointer", background: "none", border: "none", color: "inherit", fontSize: "inherit", padding: 0 }}
+                onClick={(e) => {
+                  if (showPresupuestadoPopover && popoverMode === "ejecutado") {
+                    setShowPresupuestadoPopover(false);
+                  } else {
+                    setPresupuestadoAnchor((e.currentTarget as HTMLButtonElement).getBoundingClientRect());
+                    setPopoverMode("ejecutado");
+                    setShowPresupuestadoPopover(true);
+                  }
+                }}
+              >
+                {COP(totalEjecutado)}
               </button>
             </p>
             {showPresupuestadoPopover && presupuestadoAnchor && (
               <div style={{
-                position: "fixed", top: presupuestadoAnchor.bottom + 4, left: presupuestadoAnchor.left, zIndex: 9999,
+                position: "fixed",
+                top: presupuestadoAnchor.bottom + 4,
+                left: Math.min(presupuestadoAnchor.left, window.innerWidth - 278),
+                zIndex: 9999,
                 background: "white", color: "#111111", border: "1px solid var(--hair)", borderRadius: 12,
                 boxShadow: "0 4px 24px rgba(0,0,0,0.12)", minWidth: 260, padding: "12px 0",
               }}>
+                {popoverMode === "falta_pagar" && (
+                  <>
+                    <p style={{ fontWeight: 600, fontSize: 13, padding: "0 14px 8px" }}>Falta por pagar</p>
+                    <div style={{ maxHeight: 256, overflowY: "auto" }}>
+                      {(() => {
+                        const items = [
+                          ...pendientes.map(m => ({ key: m.id, nombre: m.nombreSnapshot, monto: m.montoPresupuestado })),
+                          ...bolsillosPendientes.map(b => {
+                            const gastado = consumos.filter(c => c.bolsilloId === b.conceptoId).reduce((sum, c) => sum + c.monto, 0);
+                            return { key: b.id, nombre: b.nombreSnapshot, monto: Math.max(0, b.montoPresupuestado - gastado) };
+                          }),
+                        ].filter(i => i.monto > 0).sort((a, b) => b.monto - a.monto);
+                        return items.length === 0
+                          ? <p style={{ padding: "5px 14px", fontSize: 13, color: "var(--muted)" }}>¡Todo pagado esta semana!</p>
+                          : items.map(item => (
+                              <div key={item.key} style={{ display: "flex", justifyContent: "space-between", padding: "5px 14px", fontSize: 13 }}>
+                                <span style={{ flex: 1, marginRight: 12 }}>{item.nombre}</span>
+                                <span style={{ fontVariantNumeric: "tabular-nums" }}>{COP(item.monto)}</span>
+                              </div>
+                            ));
+                      })()}
+                    </div>
+                    {totalFaltaPagar > 0 && (
+                      <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 14px 0", borderTop: "1px solid var(--hair)", fontSize: 13, fontWeight: 700, marginTop: 4 }}>
+                        <span>Total</span>
+                        <span style={{ fontVariantNumeric: "tabular-nums" }}>{COP(totalFaltaPagar)}</span>
+                      </div>
+                    )}
+                  </>
+                )}
                 {popoverMode === "presupuestado" && (
                   <>
                     <p style={{ fontWeight: 600, fontSize: 13, padding: "0 14px 8px" }}>Conceptos presupuestados</p>
