@@ -2,22 +2,8 @@ export const dynamic = "force-dynamic";
 
 import { getProvider } from "@/lib/data/provider";
 import PantallaMeses from "@/components/PantallaMeses";
-import type { SaldoCuenta, Semana } from "@/lib/data/types";
-
-function semanaActual(): Semana {
-  const dia = new Date().getDate();
-  if (dia <= 7)  return "S1";
-  if (dia <= 14) return "S2";
-  if (dia <= 21) return "S3";
-  return "S4";
-}
-
-function mesActual(): string {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  return `${y}-${m}`;
-}
+import type { SaldoCuenta } from "@/lib/data/types";
+import { mesActual, semanaActual } from "@/lib/utils/fecha";
 
 export default async function MesesPage({
   searchParams,
