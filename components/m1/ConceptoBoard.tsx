@@ -380,7 +380,7 @@ function ConceptCard({
           </p>
           <p className="dk-cc-cat">{mov.categoriaSnapshot}</p>
         </div>
-        {!isOpen && <span className="dk-cc-amt2">{copCompact(mov.montoPresupuestado)}</span>}
+        {!isOpen && <span className="dk-cc-amt2">{copCompact(isExec ? (mov.montoEjecutado ?? mov.montoPresupuestado) : mov.montoPresupuestado)}</span>}
         {isOpen  && <span className="dk-cc-chev open"><Icon name="arrow" size={14} /></span>}
       </div>
 

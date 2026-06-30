@@ -4436,3 +4436,117 @@ subestimó el impacto.
 6. DT-SOBRE-TECHO-01 · DT-PLAN-02 · cola técnica
 
 ---
+
+---
+
+## SESIÓN — 2026-06-29 [DEBUGGING → CONSTRUCCIÓN]
+
+### Resuelto
+
+**T54 — Label colapsado de movimiento ejecutado mostraba `montoPresupuestado` en vez de `montoEjecutado`.**
+- Síntoma: fila de Agua en M1 Ejecución (Desktop) mostraba $250K colapsada; al
+  expandir, el desplegable mostraba correctamente $559K (monto real ejecutado).
+  Confirmado con evidencia visual (screenshots), no solo reporte verbal.
+- Causa raíz: `components/m1/ConceptoBoard.tsx:383` leía `mov.montoPresupuestado`
+  incondicionalmente en estado colapsado (`!isOpen`), sin condicionar por
+  `estado === "ejecutado"`. La vista expandida sí leía el campo correcto en otro
+  punto del componente — de ahí la inconsistencia entre los dos estados de la
+  misma fila.
+- Fix: lectura condicional — `ejecutado ? (montoEjecutado ?? montoPresupuestado) : montoPresupuestado`.
+- Es **bug cosmético, no financiero**: el cálculo real de disponibilidad y balance
+  ya leía `montoEjecutado` correctamente (confirmado en diagnóstico de código,
+  ver nota de proceso abajo). La plata estaba bien descontada; el rótulo confundía.
+- Commit: `2767f47`. PR: [#20](https://github.com/KKze1975/flujo/pull/20). **No mergeado — pendiente QA Angie en Preview.**
+
+**Hallazgo de seguridad resuelto colateralmente — Hook de pre-commit inoperante en sustancia.**
+- Durante el commit de T54, el hook de verificación de Sheet ID hardcodeado se
+  colgó (>5min) por escanear `node_modules` sin excluirlo.
+- Al diagnosticar el cuelgue se descubrió un bug más serio: el hook **nunca
+  detectó correctamente** un Sheet ID hardcodeado, ni siquiera antes del problema
+  de rendimiento. Causa: `grep "GOOGLE_SHEET_ID"` sin ancla `^` matcheaba tanto
+  `GOOGLE_SHEET_ID=` como `PROD_GOOGLE_SHEET_ID=` en `.env.local`, y `tr -d
+  '[:space:]'` concatenaba ambos valores en una sola cadena que no aparece en
+  ningún archivo real. La verificación pasaba trivialmente siempre.
+- Fix: extracción anclada (`^GOOGLE_SHEET_ID=`, `^PROD_GOOGLE_SHEET_ID=`) +
+  `--exclude-dir=node_modules --exclude-dir=.git --exclude-dir=.next`.
+- Verificado 3/3: bloquea ID de prod hardcodeado, bloquea ID de dev hardcodeado,
+  no bloquea string de control sin relación (sin falsos positivos).
+- **Deuda abierta**: el hook vive solo en `.git/hooks/pre-commit`, no versionado
+  (no hay Husky, `.githooks/`, ni mecanismo equivalente). No viaja a otro
+  WorkSpace ni a CI futuro. Cualquier entorno nuevo necesita este fix replicado
+  manualmente hasta que se versione.
+
+### Nota de proceso — falso diagnóstico durante la sesión
+
+El primer diagnóstico de código de esta sesión concluyó que la causa raíz de
+"persiste valor H1 tras editar" estaba en `VistaPlanificacion.tsx` (estado
+local desconectado de `MesM1Desktop`). Esa conclusión tenía dos errores
+encadenados:
+
+1. Un grep incompleto omitió la línea donde `setConceptoMod` sí actualizaba el
+   estado local — invalidando parte de la causa raíz reportada.
+2. Más grave: `VistaPlanificacion` **es código muerto** — solo se importa desde
+   `MesM1.tsx`, que a su vez solo es referenciado desde un archivo `.bak`
+   excluido del build. El path activo real es
+   `MesM1ClientWrapper → MesM1Desktop/MesM1Mobile → ConceptoBoard`.
+
+El hard stop de auditoría (paso 0, definido en el prompt de construcción) evitó
+que se escribiera un fix sobre código sin efecto en producción. La causa real
+se confirmó después con evidencia visual directa (screenshots del síntoma en
+M1 Ejecución), no con una segunda ronda de grep.
+
+**Lección operativa**: antes de diagnosticar sobre un componente, confirmar que
+está en el path de import activo (trazar desde `app/` o el entrypoint real),
+no asumirlo por nombre o ubicación de archivo. Aplica también hacia atrás:
+revisar si otros diagnósticos previos en ESTADO.md asumieron rutas de
+componentes sin esa verificación.
+
+### Pendiente — prioridad inmediata
+
+**Semana activa no avanza tras el viernes de cierre (URGENTE — riesgo de pérdida de registros).**
+- Hoy lunes 29-jun-2026: ya pasó el viernes 26-jun, que para Camilo marca el
+  cierre de S4 y el inicio de ciclo siguiente (regla de negocio: "la semana la
+  marca el viernes de cobro/pago", no el calendario corrido).
+- El sistema sigue mostrando S4 como semana activa. Camilo no puede registrar
+  movimientos vía M4 semanal para lo que él considera la semana nueva.
+- **Riesgo operativo concreto**: si esto no se resuelve antes de que Camilo
+  necesite registrar movimientos de la semana entrante, esos registros se
+  pierden o se escriben mal etiquetados.
+- **No es un bug aislado — es un hueco de diseño no cerrado** que choca con dos
+  invariantes/iniciativas existentes:
+  - I-14 (semana/mes activo se deriva de `new Date()` en servidor, nunca se infiere)
+  - Iniciativa E (meses de 5 semanas, S5 necesaria — S1 siempre arranca el 29
+    del mes anterior), ya identificada como bloqueante de este mismo problema
+- **Decisión de método**: NO se resuelve en esta sesión de construcción ni se
+  parchea bajo presión de tiempo. Requiere sesión `[DISEÑO]` dedicada para
+  decidir cómo se deriva la frontera de semana (viernes real vs. fecha corrida)
+  antes de tocar código — exactamente el tipo de decisión que el hard stop de
+  "no tecnología hasta flujos validados" protege.
+- **Acción inmediata recomendada para Camilo mientras se diseña la solución**:
+  definir manualmente cómo registrar movimientos de la semana entrante en el
+  interín (¿registro manual fuera de sistema temporal? ¿forzar `semana=S1` del
+  ciclo nuevo aunque la UI no lo marque activo?) — esto se decide en la sesión
+  DISEÑO, no aquí, pero la sesión debe abrirse ya dada la urgencia.
+
+### Pendiente — documentado, no resuelto hoy
+
+- **DT-LABEL-COMPROMETIDO-01**: tarjeta "Por semana" en sidebar de M1 Desktop
+  (`MesM1Desktop.tsx:883`) muestra `comprometido` = suma de `montoPresupuestado`
+  de todos los movimientos de la semana, en vez de monto ejecutado real. Mismo
+  patrón que T54, componente distinto. No es el cálculo real de balance
+  (`diferencia`), que ya es correcto — es otra etiqueta de referencia visual.
+  Confirmado en diagnóstico de código de esta sesión, no atacado.
+- **Operación manual fuera de sistema — reasignación de fondos.** Camilo
+  reasignó manualmente una porción del fondo reservado para colegio de los
+  niños hacia pagos de primera necesidad (salud, tarjeta de crédito Crece), por
+  un faltante de aproximadamente $1.200.000 en la disponibilidad inicial del
+  ciclo de julio causado por un gasto no registrado a tiempo. El pago de
+  colegio correspondiente se reprograma para semana 2. Operación ejecutada
+  fuera del sistema — no hay mecanismo actual para registrar reasignación
+  entre bolsillos/cuentas reservadas. Reitera la necesidad ya identificada de
+  integración de correos bancarios (NU/Nequi) para conciliación de gasto real,
+  ya en la cola de iniciativas futuras.
+
+### Branch/PR
+- PR #20 (T54) abierto contra `main`, pendiente QA Angie en Preview URL antes de merge.
+- Fix de hook local, sin PR (no versionado, no aplica).
