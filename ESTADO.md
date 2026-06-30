@@ -4550,3 +4550,67 @@ componentes sin esa verificación.
 ### Branch/PR
 - PR #20 (T54) abierto contra `main`, pendiente QA Angie en Preview URL antes de merge.
 - Fix de hook local, sin PR (no versionado, no aplica).
+
+---
+
+## CIERRE DEFINITIVO — Sesión 2026-06-29 [DEBUGGING → CONSTRUCCIÓN]
+
+### Mergeado a producción
+
+| Ticket | PR | Commit merge | Estado |
+|---|---|---|---|
+| DT-FECHA-01 | [#21](https://github.com/KKze1975/flujo/pull/21) | `26520ccf` | MERGED — deploy READY |
+| T54 + docs (ESTADO.md, I-12) | [#20](https://github.com/KKze1975/flujo/pull/20) | `8855a041` | MERGED — deploy READY |
+
+`dev` y `main` sincronizados en `8855a04` (fast-forward limpio). QA confirmado
+por Angie en ambos Previews antes de merge.
+
+**DT-FECHA-01** — resuelve el bug raíz de la sesión: la regla de Iniciativa E
+("S1 arranca el día 29 del mes anterior") estaba documentada desde el 27-jun
+pero nunca implementada en código — existía en 8 copias duplicadas de
+`mesActual()`/`semanaActual()`, ninguna con la lógica del día 29. Consolidado
+en `lib/utils/fecha.ts`, usando timezone explícito `America/Bogota` (no UTC
+implícito). 8/8 casos de verificación pasados, incluyendo rollover de fin de
+año y el límite exacto offset 6→S1 / offset 7→S2. Cierra también DT-FECHA-01
+como deuda técnica de duplicación ya identificada previamente.
+
+**T54** — label colapsado de movimiento ejecutado en `ConceptoBoard.tsx`
+corregido: ahora muestra `montoEjecutado` real en vez de `montoPresupuestado`
+cuando `estado === "ejecutado"`.
+
+### Verificación pendiente (acción de Camilo, no de Code)
+
+Confirmar visualmente en `flujo-dun.vercel.app` (producción, sesión
+autenticada) que:
+1. Dashboard muestra mes/semana activa = julio S1.
+2. Movimiento Agua muestra $559K en estado colapsado (no $250K).
+
+### Pendiente real — sin resolver, prioridad para próxima sesión
+
+- **Iniciativa E / S5 — sesión [DISEÑO] pendiente de abrir.** El fix de hoy
+  resuelve la transición de mes/semana (día 29) pero mantiene el workaround
+  ya documentado: offset de día ≥28 dentro del ciclo se absorbe en S4. La
+  pregunta de diseño real — tamaño variable de S5 según el mes, monto de
+  aporte de Angie correspondiente (fijo vs. proporcional) — sigue sin
+  decisión. No es urgente como lo de hoy; es la pieza que falta para que el
+  ciclo de julio cierre completo a fin de mes.
+- **DT-LABEL-COMPROMETIDO-01** — tarjeta "Por semana" en `MesM1Desktop.tsx:883`
+  sigue mostrando `comprometido` = suma de `montoPresupuestado` en vez de
+  ejecutado real. Documentado en sesión anterior, no atacado.
+- **Hook de pre-commit sin versionar** — corregido en sustancia y rendimiento
+  esta sesión, pero vive solo en `.git/hooks/pre-commit` local. No viaja a
+  otro WorkSpace ni a CI futuro.
+- **Operación manual fondo colegio → salud/TC** — ya documentada en el primer
+  append de esta sesión, sin mecanismo de sistema para reasignación entre
+  bolsillos/cuentas reservadas.
+
+### Lecciones de proceso de esta sesión (ya en INVARIANTS.md como I-12)
+
+Dos diagnósticos de código en esta sesión apuntaron inicialmente a causas
+incorrectas por no trazar el path de import activo (`VistaPlanificacion`,
+código muerto) o por trabajar sobre copias de archivo desactualizadas
+(`INVARIANTS.md`, donde la copia de proyecto tenía 5 invariantes y el repo
+real tenía 11). En ambos casos el hard stop de auditoría/anchor-guard ya
+exigido por la metodología atrapó el error antes de escritura — el patrón
+se sostuvo, pero vale la pena reforzarlo: verificar contra el repo real,
+no contra copias o memoria, es el paso que más veces salvó esta sesión.
