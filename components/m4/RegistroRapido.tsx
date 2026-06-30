@@ -3,9 +3,15 @@
 import { useState, useEffect } from "react";
 import InputRegistro, { type Payload } from "@/components/m4/InputRegistro";
 import Icon from "@/components/ui/Icon";
-import { mesActual } from "@/lib/utils/fecha";
 
 type Estado = "idle" | "registrando" | "exito";
+
+function mesActual(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+}
 
 export default function RegistroRapido({ onClose, onSuccess }: { onClose?: () => void; onSuccess?: () => void }) {
   const [estado, setEstado] = useState<Estado>("idle");

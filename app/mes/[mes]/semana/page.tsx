@@ -2,8 +2,15 @@ export const dynamic = "force-dynamic";
 
 import { getProvider } from "@/lib/data/provider";
 import VistaSemanal from "@/components/VistaSemanal";
-import type { Actor } from "@/lib/data/types";
-import { semanaActual } from "@/lib/utils/fecha";
+import type { Semana, Actor } from "@/lib/data/types";
+
+function semanaActual(): Semana {
+  const dia = new Date().getDate();
+  if (dia <= 7)  return "S1";
+  if (dia <= 14) return "S2";
+  if (dia <= 21) return "S3";
+  return "S4";
+}
 
 const MESES_FULL = [
   "", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
