@@ -830,3 +830,280 @@ Baseline confirma: Sheet en estado limpio. Punto de partida del experimento esta
 
 Seguir `scripts/INSTRUCCIONES_EXPERIMENTO.md` para reproducir la planeación de Julio
 paso a paso, capturando un snapshot después de cada acción.
+
+## Sesión DIAGNÓSTICO — DT-MOVER-MES-01 / Ticket B (Uber One) · 2026-07-03
+
+Modo: solo lectura. No se editó código ni se abrió PR. `dev` sincronizada con
+`main` (merge `35ef151`, sin conflictos) antes de iniciar.
+
+### Respuestas
+
+**1. Lectura de los tres puntos preliminares — CORRECTA, confirmada línea por línea.**
+- `app/api/mes/[mes]/movimientos/[id]/route.ts:108-140` (rama `mover_mes_siguiente`):
+  marca el movimiento origen `estado: "pospuesto_mes_siguiente"` (línea 109) y llama
+  `provider.crearMovimientosMes([...])` con `semana: null` (línea 121) creando la fila
+  del mes siguiente.
+- `lib/data/sheets.ts:285-291` (`getMovimientosByMesYSemana`): `todos.filter(m => m.semana === semana || (m.semana === null && m.estado !== "ejecutado"))` — confirmado exacto.
+- **Import path activo confirmado (I-12):** `lib/data/provider.ts:6-11` — `getProvider()`
+  instancia únicamente `SheetsDataProvider` (línea 8). `MockDataProvider` existe en
+  `lib/data/mock.ts` con una implementación equivalente pero **no está conectado a
+  ningún endpoint activo** — no hay divergencia de import path.
+  `app/api/mes/[mes]/semana/[semana]/route.ts:33` llama
+  `provider.getMovimientosByMesYSemana(mes, semana)` — esta es la ruta que sirve la
+  vista semanal M4 (`VistaSemanal`). Confirmado que es efectivamente
+  `sheets.ts:285` la que ejecuta en producción.
+
+**2. No existe ningún bloqueo o validación de "cierre de planificación" en el código.**
+- No existe ningún endpoint de cierre mensual. `app/api/mes/[mes]/` solo contiene:
+  `route.ts`, `saldos`, `consumos/[semana]`, `cerrar-m1`, `iniciar`, `conceptos`,
+  `cerrar-semana`, `semana/[semana]` — ninguno implementa el prerequisito
+  `COUNT(H2 WHERE semana = sin_asignar) = 0` documentado en `ESTADO.md:322-323`
+  ("Prerequisito cierre de planificación").
+- `lib/data/sheets.ts:1006-1011`: `getCierreMensual` y `createCierreMensual` existen
+  en la interfaz (`lib/data/index.ts:68`) y en `SheetsDataProvider` pero ambas
+  **lanzan `"Not implemented yet"`**. La función de cierre mensual/planificación no
+  está construida — no es que falte solo la validación, falta la feature completa.
+- Observación (no es la validación documentada, es un efecto colateral del punto 2):
+  `app/api/mes/[mes]/cerrar-m1/route.ts:19-27` bloquea el cierre de S1 si
+  `getMovimientosByMesYSemana(mes, "S1").filter(estado==="pendiente").length > 0`.
+  Como el punto 2 mete cualquier `semana:null` + `pendiente` en **toda** semana
+  consultada, un movimiento pospuesto a mes siguiente con `semana:null` bloquearía
+  también el cierre de S1, S2, S3 y S4 vía `cerrar-semana`. Esto no es el prerequisito
+  de "cierre de planificación" descrito en `ESTADO.md` (que no existe en código);
+  es un bloqueo accidental de los cierres *semanales* ya implementados.
+
+**3. `"sin_asignar"` como string literal — NO aparece en código de la app.**
+Único hallazgo: `ESTADO.md:116,320,323,940,2928` (documentación/diseño) y
+`scripts/diagnostico-dt-plan-01.mjs:225` (script de diagnóstico ad-hoc, no forma
+parte de la app). Cero coincidencias en `app/`, `components/`, `lib/`. Confirma la
+exploración previa.
+
+**4. Caso Uber One reconstruido contra el Sheet real — diverge de lo esperado.**
+- Dev (`GOOGLE_SHEET_ID` activo en `.env.local`, prefijo `1p5hv...`): 0 filas con
+  `semana` vacía en julio 2026; Uber One aparece como fila única
+  `semana=S1, estado=pendiente`. El Sheet de dev fue reseteado/reconstruido en una
+  sesión anterior (`scripts/reset-julio-v2.mjs`, backups `backup-julio-dev-v2.json`)
+  y **no refleja el estado del bug original** — no sirve para reconstruir el caso.
+- Producción (`PROD_GOOGLE_SHEET_ID`, consulta de solo lectura vía
+  `spreadsheets.values.get`, script `scripts/check-uberone-prod-readonly.mjs`
+  creado en esta sesión, no commiteado):
+  - `H2` fila 16, mes `2026-06`, `semana: S4`, `estado: pospuesto_mes_siguiente`
+    → el origen que ejecutó `mover_mes_siguiente`.
+  - `H2` fila 145, mes `2026-07`, `semana: (null)`, `estado: pendiente`
+    → la fila creada por `mover_mes_siguiente`, coincide exactamente con lo
+    predicho por el punto 1.
+  - `H2` fila 90, mes `2026-07`, `semana: S4`, `estado: pendiente`
+    → **fila adicional no explicada por los puntos 1-2**: un segundo movimiento
+    de Uber One en julio, mismo `conceptoId` (`MEMBRESIAS_1748100016`), con
+    `semana: S4` explícita. Esto es un duplicado — probablemente la inicialización
+    normal del mes (`crearMovimientosMes` al iniciar julio con `semanaDefault`)
+    coexistiendo con la fila trasladada desde junio. El caso real en producción no
+    es solo "un movimiento con semana null visible en todas las semanas" sino
+    "Uber One duplicado en julio: una instancia regular (S4) + una trasladada
+    (null)", y la de `semana:null` es la que aparece pegada en cada semana por el
+    bug del punto 2.
+
+**5. Otro lugar que trata `semana === null` distinto al backend — SÍ, en frontend M1.**
+- `components/MesM1Desktop.tsx:433-434` sí tiene un caso especial para
+  `semana === null`, pero acotado a `estado === "ejecutado"` y usado solo para
+  atribuir el monto ejecutado a una semana de balance vía
+  `semanaFromFecha(m.fechaEjecucion, mes)` — no aplica a movimientos `pendiente`.
+- El resto de vistas frontend (`MesM1Desktop.tsx:382,403,429` "filtrados"/"rows",
+  `MesM1Mobile.tsx:168,171`, `MesM1.tsx:133,137,156`,
+  `components/m1/VistaPlanificacion.tsx:162`) filtran por **igualdad exacta**
+  `m.semana === s`, sin ninguna lógica de inclusión para `null`. Efecto:
+  en la vista M1 (planificación, `GET /api/mes/[mes]` → `provider.getMovimientos`,
+  sin filtrar por semana en el backend) un movimiento con `semana: null` y
+  `estado: pendiente` **no aparece en ningún grupo de semana** en la tabla
+  agrupada por semana (ninguna `s` de `SEMANAS` es `=== null`) — queda invisible
+  en esa vista, mientras que la vista semanal M4 (`VistaSemanal.tsx`, que consume
+  directamente la respuesta de `getMovimientosByMesYSemana` sin refiltrar —
+  confirmado línea 667: `mov.semana ?? "—"` se renderiza tal cual) lo muestra en
+  **cada** semana. Divergencia real: la misma fila es invisible en M1 y omnipresente
+  en M4.
+
+### Divergencias del import path activo (I-12)
+Ninguna. `MockDataProvider` no está en el path de import activo — mencionado en el
+punto 1 solo para descartarlo explícitamente.
+
+### Observaciones fuera de scope (no desarrolladas)
+- El Sheet de dev no refleja el estado del bug (fue reseteado en sesión previa) —
+  cualquier verificación futura de este ticket contra dev requerirá reproducir el
+  escenario manualmente o usar producción de solo lectura.
+- Duplicación de Uber One en julio prod (filas 90 y 145) tiene una causa probable
+  (inicialización normal de mes + traslado desde junio coexistiendo) que no se
+  investigó a fondo — fuera de las 5 preguntas de scope.
+- Script de solo lectura creado en esta sesión: `scripts/check-uberone-prod-readonly.mjs`
+  (no commiteado, solo usa `spreadsheets.values.get`, ninguna escritura).
+
+### Criterios de parada activados
+Ninguno. Las 5 preguntas tuvieron respuesta observable en repo/Sheet.
+
+## Sesión DIAGNÓSTICO — Auditoría duplicados H2 · 2026-07-03
+
+Continuación de DT-MOVER-MES-01. Modo solo lectura contra producción
+(`spreadsheets.values.get` con rango explícito por tab, ningún write).
+`dev` ya estaba sincronizada con `main` (sin commits nuevos desde la sesión
+anterior). `INVARIANTS.md` sin cambios (I-12, I-15 vigentes).
+
+### Duplicados encontrados (criterio literal: mismo `conceptoId`, estado
+pendiente/ejecutado, mismo mes — sin excepciones)
+
+Cruce contra H2 producción completo (144 filas, únicos meses presentes:
+`2026-06` y `2026-07` — no hay más meses en el Sheet). **18 grupos**
+cumplen el criterio literal. Desglosados por causa real (ver siguiente
+sección para la evidencia H1 que sustenta esta clasificación):
+
+**16 grupos — NO son duplicados reales, son conceptos `frecuencia: semanal`
+(H1) con 4 filas/mes por diseño, una por semana S1-S4:**
+- `MERCADO_Y_ALIMENTACION_1748100025` (Mesada Emma) · 2026-06 y 2026-07 · 4 filas c/u
+- `MERCADO_Y_ALIMENTACION_1748100026` (Mesada Lucas) · 2026-06 y 2026-07 · 4 filas c/u
+- `MERCADO_Y_ALIMENTACION_1748100027` (Empleada Mireyita) · 2026-06 y 2026-07 · 4 filas c/u
+- `MERCADO_Y_ALIMENTACION_1748100029` (Chucherías viernes) · 2026-06 y 2026-07 · 4 filas c/u
+- `RECREACION_1748100035` (Entretenimiento) · 2026-06 (4 filas) y 2026-07 (2 filas activas — S2/S3 son `no_aplica`, excluidas del criterio)
+- `MERCADO_Y_ALIMENTACION_1779730807245` (Frutas y verduras) · 2026-06 y 2026-07 · 4 filas c/u
+- `MERCADO_Y_ALIMENTACION_1779730807246` (Víveres y otros) · 2026-06 y 2026-07 · 4 filas c/u
+- `COMPROMISOS_FINANCIEROS_1781979860619` (Imprevistos) · 2026-06 y 2026-07 · 4 filas c/u
+
+Evidencia (H1, columna `frecuencia`): los 8 conceptos anteriores tienen
+`frecuencia = semanal`. `app/api/mes/[mes]/iniciar/route.ts:102-103` confirma
+que para `frecuencia === "semanal"` la inicialización de mes crea
+deliberadamente una fila por cada una de las 4 semanas
+(`SEMANAS.map(s => ({...base, semana: s}))`). Los montos ejecutados
+difieren entre filas de un mismo grupo (ej. Frutas y verduras S1=170500,
+S3=121300, S4=174700) — consistente con 4 gastos semanales distintos del
+mismo concepto, no con el mismo gasto contado 4 veces.
+
+**2 grupos — SÍ son anomalías reales** (concepto `frecuencia: mensual`,
+donde 1 fila/mes es lo esperado y hay 2):
+
+- `MEMBRESIAS_1748100014` (PS Plus) · mes=`2026-07`:
+  - fila 88, `MOV_1782565828379`, `semana: S4`, `estado: pendiente`, `montoPresupuestado: 60000`, `montoEjecutado: (vacío)`, `fechaEjecucion: null`
+  - fila 144, `MOV_1782767829728`, `semana: (null)`, `estado: ejecutado`, `montoPresupuestado: 60000`, `montoEjecutado: 60000`, `fechaEjecucion: 2026-07-01`
+- `MEMBRESIAS_1748100016` (Uber One) · mes=`2026-07`:
+  - fila 90, `MOV_1782565828381`, `semana: S4`, `estado: pendiente`, `montoPresupuestado: 16000`, `montoEjecutado: (vacío)`, `fechaEjecucion: null`
+  - fila 145, `MOV_1782767835789`, `semana: (null)`, `estado: pendiente`, `montoPresupuestado: 16000`, `montoEjecutado: (vacío)`, `fechaEjecucion: null`
+
+Evidencia (H1): ambos conceptos tienen `frecuencia = mensual`,
+`semana_default = S1` — un mes activo de cada uno debería producir
+exactamente 1 fila en H2.
+
+### Origen de la fila "regular" por caso
+
+Evidencia por `id_movimiento` (timestamp unix embebido en `MOV_{ts}`,
+convertido a fecha):
+
+| Fila | conceptoId | mes | semana | estado | id_movimiento -> fecha creación |
+|---|---|---|---|---|---|
+| 16 (junio) | Uber One | 2026-06 | S4 | pospuesto_mes_siguiente | `MOV_1780841387994` -> 2026-06-07 (creación original de junio) |
+| 90 (julio, "regular") | Uber One | 2026-07 | S4 | pendiente | `MOV_1782565828381` -> **2026-06-27T13:10:28Z** |
+| 145 (julio, "traslado") | Uber One | 2026-07 | null | pendiente | `MOV_1782767835789` -> **2026-06-29T21:17:15Z** |
+| 14 (junio) | PS Plus | 2026-06 | S4 | pospuesto_mes_siguiente | `MOV_1780841387992` -> 2026-06-07 |
+| 88 (julio, "regular") | PS Plus | 2026-07 | S4 | pendiente | `MOV_1782565828379` -> **2026-06-27T13:10:28Z** |
+| 144 (julio, "traslado") | PS Plus | 2026-07 | null | ejecutado | `MOV_1782767829728` -> **2026-06-29T21:17:09Z** |
+
+La fila "regular" (S4) **no** corresponde a la asignación normal de
+`semana_default` (`S1` para ambos conceptos en H1) — su `semana` es `S4`,
+igual a la semana que tenía la fila de junio en el momento de marcarse
+`pospuesto_mes_siguiente`.
+
+**Causa identificada en código, no en conjetura:** `app/api/mes/[mes]/iniciar/route.ts`
+implementa **su propio mecanismo de traslado**, independiente del de
+`movimientos/[id]/route.ts`:
+- Líneas 109-120: al inicializar un mes nuevo, `iniciar` busca en
+  `movimientosPrevios` (mes anterior) las filas con
+  `estado === "pospuesto_mes_siguiente"` y crea una fila nueva copiando
+  `semana: m.semana` (la semana que tenía en el mes anterior, **no** null).
+- Esto es exactamente lo que reproducen las filas 88/90 (S4, timestamp
+  2026-06-27T13:10:28Z, ambas 2ms de diferencia entre sí — mismo batch de
+  `crearMovimientosMes`, consistente con haber sido creadas por una sola
+  llamada a `iniciar` para julio).
+- `PantallaMeses.tsx:101` confirma que `POST /api/mes/[mes]/iniciar` es
+  una acción real invocable desde la UI (no código huérfano).
+
+Punto sin evidencia observable — no se resuelve por conjetura: para que
+`iniciar` haya recogido a Uber One/PS Plus como `pospuesto_mes_siguiente`
+el 2026-06-27, esas filas de junio ya debían tener ese estado antes de
+esa fecha. Pero si eso hubiera ocurrido vía el PATCH `mover_mes_siguiente`
+de `movimientos/[id]/route.ts`, ese mismo PATCH habría creado ya una fila
+de julio con `semana: null` en ese momento (antes del 06-27) — y esa fila
+no existe con ese timestamp; la única fila `semana: null` de julio tiene
+timestamp 06-29 (posterior a `iniciar`). Es decir: el estado
+`pospuesto_mes_siguiente` en la fila de junio se estableció por una vía
+distinta al flujo normal de PATCH antes del 06-27 (posiblemente edición
+directa de Sheet o alguno de los scripts de la carpeta `scripts/` con
+capacidad de escritura, p. ej. `reset-junio.mjs`, que reimplementa el
+mismo patrón de carryover para el par mayo-junio en su línea 160 — no
+confirmé si ese script específico tocó estos conceptos, quedaría fuera
+del alcance verificarlo con certeza). Luego, el 06-29, el PATCH
+`mover_mes_siguiente` sí se ejecutó (o se re-ejecutó) contra la fila de
+junio — que en ese momento ya estaba `pospuesto_mes_siguiente` — y creó la
+segunda fila de julio (`semana: null`) vía
+`movimientos/[id]/route.ts:115-140`. No hay guardia en ese endpoint que
+impida invocar `mover_mes_siguiente` sobre un movimiento que ya está en
+estado `pospuesto_mes_siguiente`.
+
+### Casos de doble conteo materializado (ejecutado + ejecutado, monto != 0)
+
+**Ninguno confirmado tras verificar con H1.** El cruce automático (criterio
+literal, sin distinguir frecuencia) marcó 7 grupos como "crítico" — los
+mismos 7 de los 8 conceptos `frecuencia: semanal` que tienen 2+ filas
+`ejecutado` con monto distinto de 0 en el mismo mes (Mesada Emma, Mesada
+Lucas, Empleada Mireyita, Chucherías viernes, Entretenimiento, Frutas y
+verduras, Víveres y otros — todas en 2026-06). Al confirmar
+`frecuencia: semanal` en H1 y observar que cada fila tiene
+`fechaEjecucion` distinta (una por semana) y montos ejecutados distintos
+entre sí, esto corresponde a 4 gastos semanales reales del mismo
+concepto, no a un mismo gasto contado dos veces. **Criterio de parada #2
+se activó nominalmente (positivo con el criterio literal) pero se
+resuelve como falso positivo con evidencia de H1 — no amerita detención
+del diagnóstico** (I-15: la respuesta era observable, se verificó antes
+de escalar).
+
+De los 2 duplicados reales (PS Plus, Uber One), ninguno tiene ambas filas
+en estado `ejecutado` con monto distinto de 0: Uber One tiene ambas filas
+`pendiente`; PS Plus tiene una `pendiente` (fila 88, sin ejecutar) y una
+`ejecutado` (fila 144, $60.000). Solo una de las dos representa un gasto
+real ejecutado — no hay pago duplicado materializado en ninguno de los
+dos casos. El presupuesto sí está inflado por partida doble en ambos
+casos (`montoPresupuestado` sumado dos veces si algún cálculo agrega
+todas las filas del mes sin deduplicar), pero eso es presupuesto
+comprometido, no ejecución duplicada.
+
+### Reproducibilidad del patrón desde código
+
+**Sí, reproducible — es un bug de flujo repetible, no requiere edición
+manual de Sheet.** Condición necesaria y suficiente identificada en código:
+
+1. Un concepto con `frecuencia !== "semanal"` (mensual) tiene una fila
+   `estado: pospuesto_mes_siguiente` en el mes M **antes** de que
+   `POST /api/mes/[M+1]/iniciar` se ejecute por primera vez para M+1.
+2. Al ejecutarse `iniciar` para M+1 (`app/api/mes/[mes]/iniciar/route.ts:108-120`),
+   el carryover propio de `iniciar` crea una fila en M+1 para ese
+   concepto (copiando la `semana` que tenía en M).
+3. Si en cualquier momento posterior se invoca (o reinvoca)
+   `PATCH .../movimientos/[id]` con `tipo: "mover_mes_siguiente"` sobre
+   la fila original de M (que sigue en `pospuesto_mes_siguiente`, sin
+   ninguna guardia que lo impida), el bloque
+   `movimientos/[id]/route.ts:108-140` crea una **segunda** fila en M+1
+   para el mismo concepto (esta vez con `semana: null`).
+
+El resultado es exactamente el patrón observado en los dos casos reales:
+dos filas del mismo concepto mensual en el mismo mes, una con `semana`
+heredada de M y otra con `semana: null`. Esto es reproducible por
+cualquier secuencia UI que dispare esas dos acciones (posponer al mes
+siguiente + inicializar el mes siguiente, en cualquier orden relativo,
+siempre que ambas terminen ejecutándose) — no requiere ediciones directas
+del Sheet. La única parte de la reconstrucción de este caso específico
+que no tiene evidencia 100% observable es qué disparó el estado
+`pospuesto_mes_siguiente` en junio antes del 06-27 (ver sección anterior).
+
+### Criterios de parada activados
+
+- Criterio #2 (doble conteo positivo) se activó nominalmente con el
+  cruce literal, pero se resolvió como falso positivo con evidencia de
+  H1 (`frecuencia: semanal`) antes de escalar — no se detuvo el resto
+  del diagnóstico. Ningún caso de doble conteo materializado real
+  sobrevive la verificación.
+- Criterio #1 (volumen) no aplica — 144 filas totales, 2 meses, todo
+  verificado en una sola pasada sin necesidad de dividir.
