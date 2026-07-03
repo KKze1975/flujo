@@ -52,18 +52,35 @@ export async function POST(
 
   const provider = getProvider();
 
-  const existentes = await provider.getMovimientos(mes);
-  if (existentes.length > 0) {
+  const [existentes, conceptos, movimientosPrevios] = await Promise.all([
+    provider.getMovimientos(mes),
+    provider.getConceptos(),
+    provider.getMovimientos(mesPrevio(mes)),
+  ]);
+
+  // TICKET-B-GUARDIA-01 P2: si ya hay filas en el mes destino, distinguir entre
+  // "el mes ya fue inicializado de verdad" (bloquear, comportamiento previo)
+  // y "solo hay filas de traslado creadas por mover_mes_siguiente antes de
+  // iniciar" (dejar continuar e inicializar el resto del mes sin duplicar
+  // esas filas). Un concepto con estado: pospuesto_mes_siguiente en el mes
+  // anterior es la única fuente legítima de una fila preexistente aquí.
+  const conceptoIdsPospuestos = new Set(
+    movimientosPrevios
+      .filter((m) => m.estado === "pospuesto_mes_siguiente")
+      .map((m) => m.conceptoId)
+  );
+  const soloTrasladosPrevios =
+    existentes.length > 0 &&
+    existentes.every((m) => conceptoIdsPospuestos.has(m.conceptoId));
+
+  if (existentes.length > 0 && !soloTrasladosPrevios) {
     return Response.json(
       { error: "El mes ya fue inicializado.", mes },
       { status: 409 }
     );
   }
 
-  const [conceptos, movimientosPrevios] = await Promise.all([
-    provider.getConceptos(),
-    provider.getMovimientos(mesPrevio(mes)),
-  ]);
+  const conceptoIdsExistentes = new Set(existentes.map((m) => m.conceptoId));
 
   const SEMANAS: Semana[] = ["S1", "S2", "S3", "S4"];
 
@@ -89,6 +106,10 @@ export async function POST(
 
   const desdeH1: Omit<Movimiento, "id">[] = conceptos
     .filter((c) => conceptoActivoEnMes(c, mes))
+    // TICKET-B-GUARDIA-01 P2: no duplicar la fila regular de un concepto que
+    // ya tiene una fila en el mes (traslado previo). Los semanales siempre
+    // generan sus 4 filas — su multiplicidad es por diseño, no un traslado.
+    .filter((c) => c.frecuencia === "semanal" || !conceptoIdsExistentes.has(c.id))
     .flatMap((c) => {
       const base = {
         ...baseFields,
@@ -105,9 +126,13 @@ export async function POST(
       return [{ ...base, semana: c.semanaDefault === "variable" ? null : (c.semanaDefault as Semana) }];
     });
 
-  // Conceptos pospuestos del mes anterior pasan a pendiente en este mes
+  // Conceptos pospuestos del mes anterior pasan a pendiente en este mes.
+  // TICKET-B-GUARDIA-01 P2: si ya existe una fila para ese conceptoId (creada
+  // por mover_mes_siguiente antes de que se corriera iniciar), se omite aquí
+  // para no duplicarla — la fila existente queda intacta.
   const carryover: Omit<Movimiento, "id">[] = movimientosPrevios
     .filter((m) => m.estado === "pospuesto_mes_siguiente")
+    .filter((m) => !conceptoIdsExistentes.has(m.conceptoId))
     .map((m) => ({
       ...baseFields,
       conceptoId: m.conceptoId,
@@ -121,7 +146,9 @@ export async function POST(
 
   const movimientosACrear = [...desdeH1, ...carryover];
 
-  const movimientos = await provider.crearMovimientosMes(movimientosACrear);
+  const movimientos = movimientosACrear.length > 0
+    ? await provider.crearMovimientosMes(movimientosACrear)
+    : [];
 
   return Response.json(
     { mes, total: movimientos.length, movimientos },

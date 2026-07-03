@@ -4705,3 +4705,256 @@ QA de Angie aprobado en Preview URL — funcionamiento correcto de la barra
 superior (número protagonista "falta por pagar", popovers de los 3 modos,
 sin regresión en presupuestado/ejecutado). PR #23 mergeado a `main`.
 Ticket cerrado.
+
+---
+
+## Sesión debugging VistaSemanal — 2 julio 2026
+
+### Ticket A — PS Plus desaparece tras ejecución de Angie [CERRADO]
+
+**Síntoma:** PS Plus ejecutado por Angie en S1 desapareció de ambas tabs
+(pendientes y ejecutados) en VistaSemanal julio.
+
+**Causa raíz:** `confirmarOK` en `VistaSemanal.tsx` (~línea 1098) tenía guard
+combinado `if (panel?.tipo !== "ok" || !panel.fuente) return;`. Cuando el
+usuario abría el panel OK sin seleccionar fuente de pago, la función retornaba
+silenciosamente sin llamar a `patchar` — la escritura a H2 nunca ocurría.
+`toggleOK` inicializa `fuente: null`, por lo que cualquier confirmación sin
+selección de fuente producía salida silenciosa.
+
+**Fix:** Guard partido en dos condiciones. La segunda llama a `setError` con
+mensaje visible antes de retornar:
+```typescript
+if (panel?.tipo !== "ok") return;
+if (!panel.fuente) { setError("Selecciona una fuente de pago antes de confirmar."); return; }
+```
+
+**Commit:** `8095bc3` en rama `dev` — `tsc --noEmit` limpio.
+**PR #24:** `fix: guard visible en confirmarOK cuando panel.fuente es null` →
+abierto contra `main`. Pendiente QA de Angie (flujo: abrir panel sin fuente →
+error visible; seleccionar fuente + confirmar → H2 actualizado).
+
+---
+
+### Ticket B — Uber One aparece en S1, S2, S3, S4 simultáneamente [STOP]
+
+**Síntoma:** Uber One visible en todas las semanas de julio en VistaSemanal.
+
+**Diagnóstico:** Tres hipótesis evaluadas con datos reales de H2 producción:
+- HB-1 (filtro `getMovimientosByMesYSemana`): descartada — filtro correcto,
+  Uber One tiene `semana=S1` en julio, no `semana=null`.
+- HB-2 (datos full-month en componente): descartada — SSR pasa solo movimientos
+  filtrados por semana; `navegar()` reemplaza estado, no acumula.
+- HB-3 (estado acumulativo en `navegar`): descartada — `setMovimientos` reemplaza.
+
+**STOP activado:** causa latente identificada pero no reproducible hoy. La función
+`mover_mes_siguiente` en `route.ts` siempre escribe `semana: null` al crear la
+fila del mes siguiente. Si Uber One llega con `semana=null` a un mes futuro,
+aparecerá en todas las semanas. La corrección requiere decisión de diseño
+(B3: pedir semana destino al mover al mes siguiente) — scope `[DISEÑO]`.
+
+**Deuda técnica registrada:** `DT-MOVER-MES-01` — ver sección deuda técnica.
+
+---
+
+### Invariant I-15 — agregado a INVARIANTS.md
+
+Preguntas con respuesta observable en el repo o en el Sheet no se escalan al
+usuario. Se ejecuta la lectura y se incorpora el dato. Solo se escala cuando
+la respuesta requiere una decisión de diseño con trade-offs que no tienen
+respuesta en el código o los datos.
+
+---
+
+### Error operativo — Frutas y verduras marcado como ejecutado
+
+- **Causa:** Error del usuario (Camilo), no bug de código.
+- **Fila:** H2 producción row 128 — `nombre_snapshot: "Frutas y verduras"`,
+  `tipo_snapshot: pago_fraccionado`, `semana: S1`, `mes: 2026-07`.
+- **Estado antes:** `ejecutado`, `monto_ejecutado: 0`, `fecha_ejecucion: 2026-07-02`,
+  `fuente_camilo: FALSE`, `fuente_angie: FALSE`.
+- **Acción:** Reversión manual ejecutada en esta sesión via
+  `scripts/revertir-frutas-verduras-prod.mjs` contra Sheet producción.
+- **Estado después:** `pendiente`, campos de ejecución vaciados.
+
+---
+
+### Hallazgo — Mercado mensual (H2 dev row 95) — patrón PR #24
+
+Fila en Sheet de **dev** (no producción): `nombre_snapshot: "Mercado mensual"`,
+`tipo_snapshot: pago_fraccionado`, `semana: S1`, `mes: 2026-07`,
+`estado: ejecutado`, `monto_ejecutado: 0`, `fuente_camilo: FALSE`,
+`fuente_angie: FALSE`, `fecha_ejecucion: 2026-07-03`.
+
+Patrón idéntico al bug corregido en PR #24: ejecución sin fuente seleccionada →
+`monto=0`, fuentes en FALSE. No revertida en esta sesión — pendiente decisión
+de Camilo sobre si aplica QA de PR #24 sobre dato de dev.
+
+---
+
+### Estado al cierre de sesión 2 julio 2026
+
+| Ítem | Estado |
+|---|---|
+| Ticket A — PS Plus | Fix mergeado a `main` — commit `9a5a867` — en producción |
+| Ticket B — Uber One | STOP — pendiente sesión `[DISEÑO]` |
+| I-15 en INVARIANTS.md | Agregado — mismo commit |
+| Frutas y verduras prod row 128 | Revertida — `estado: pendiente` |
+| Mercado mensual dev row 95 | Hallazgo registrado — no tocado |
+| PR #24 → `main` | Mergeado — 2026-07-03 |
+
+### Deuda técnica nueva esta sesión
+
+- **DT-MOVER-MES-01:** `mover_mes_siguiente` en `route.ts` siempre escribe
+  `semana: null` en la fila del mes siguiente. Cuando ese concepto llega al
+  mes destino con `semana=null` y `estado=pendiente`, `getMovimientosByMesYSemana`
+  lo incluye en todas las semanas simultáneamente. Fix requiere sesión `[DISEÑO]`:
+  opciones B1 (bloqueo hasta M1), B2 (auto-asignar semana activa), B3 (pedir
+  semana destino al usuario al mover). B3 recomendada — ver plan de la sesión.
+
+## Sesión Ticket B — 3 julio 2026 [DEBUGGING → DISEÑO → CONSTRUCCIÓN, pausada]
+
+**Ancla verificada:** este bloque se agrega después de la sección
+"Deuda técnica nueva esta sesión" / `DT-MOVER-MES-01` (cierre 2 julio 2026,
+última línea: "B3 recomendada — ver plan de la sesión.").
+
+### Recorrido de la sesión (para retomar sin perder contexto)
+
+1. **Corrección de proceso:** primer intento de diseño sobre Ticket B se
+   hizo sin verificar el repo real — llevó a proponer una solución (campo
+   `carry_over` nuevo, asignación a S1 en M1) que contradecía una regla ya
+   aprobada en ESTADO.md (`semana = sin_asignar` al posponer + prerequisito
+   de cierre de planificación). Se descartó ese camino al verificar.
+
+2. **Diagnóstico correcto delegado a Claude Code** (no a Claude.ai —
+   corrección de rol aplicada en esta sesión, ver INVARIANTS.md I-11/I-12).
+   Hallazgos confirmados contra repo y Sheet real:
+   - No existe endpoint de cierre mensual (`getCierreMensual`/
+     `createCierreMensual` → "Not implemented yet"). El prerequisito
+     documentado en ESTADO.md nunca se construyó.
+   - `semana === null` en H2 se trata de forma **opuesta** en M1 (invisible,
+     filtro por igualdad exacta) vs M4 (visible en las 4 semanas, filtro
+     inclusivo). Registrado como deuda técnica nueva: `DT-M1M4-NULL-01`
+     (nombre confirmado por Camilo — sin construir todavía).
+   - Causa raíz real de la duplicación de conceptos: dos mecanismos
+     independientes (`movimientos/[id]/route.ts` rama `mover_mes_siguiente`,
+     y `iniciar/route.ts`) trasladan conceptos al mes siguiente sin
+     verificar entre sí. Reproducible desde código, confirmado.
+
+3. **Auditoría de producción (solo lectura) — resultado:**
+   - 18 grupos cumplían el criterio literal de duplicado; 16 son falsos
+     positivos (8 conceptos `frecuencia: semanal` generan 4 filas/mes por
+     diseño — comportamiento correcto).
+   - 2 anomalías reales confirmadas: **PS Plus** y **Uber One**, ambos
+     `frecuencia: mensual`, duplicados en julio 2026.
+   - **Sin doble conteo materializado** (nunca ambas filas duplicadas en
+     `ejecutado` con monto simultáneo).
+   - Pendiente sin resolver, marcado explícitamente: origen de la fila de
+     junio en `pospuesto_mes_siguiente` — sin evidencia observable, no se
+     investigará más por decisión de Camilo (costo/beneficio).
+
+4. **Decisión de diseño tomada:** Guardia A (defensiva puntual en ambos
+   endpoints) sobre Opción B (campo explícito `mes_trasladado_a` +
+   migración de esquema). Razón: patrón detectado en n=2 casos
+   (mover_mes_siguiente/iniciar, y M1/M4), confirmado por Camilo como
+   "primera vez que lo noto como patrón" — insuficiente evidencia para
+   justificar el costo de una migración de esquema en producción.
+   **Invariante aprobado por Camilo — candidato a agregar a
+   INVARIANTS.md (I-16):** *"Estados derivados de una acción de traslado o
+   reasignación no deben inferirse por ausencia de valor (`null` como
+   sentinel) en más de un punto de consumo sin una fuente única que los
+   declare explícitamente. Segunda ocurrencia detectada: activa evaluación
+   de migración a estado explícito."*
+
+5. **TICKET-B-GUARDIA-01 — aprobado para construir. P1 y P2 completados,
+   DoD parcialmente verificado, ticket NO cerrado:**
+   - **P1** (commit `ee0b9e1`): guardia en `mover_mes_siguiente` — 400 si
+     ya existe fila del concepto en el mes destino, **excluyendo conceptos
+     `frecuencia: semanal`** (verificar en SESSION_LOG si la exclusión
+     consulta el campo `frecuencia` de H1 dinámicamente o es lista
+     hardcodeada — no confirmado en el resumen de cierre, pendiente).
+   - **P2** (commit `291e8bd`): guardia en `iniciar` — ya no bloquea la
+     inicialización completa del mes con 409 por una sola fila de traslado
+     preexistente; omite la duplicación puntual y continúa con el resto.
+   - `tsc --noEmit` limpio en ambos commits (`6f3dcb0` incluido).
+   - **DoD bullets 1 y 3: verificados con evidencia contra Sheet dev.**
+   - **DoD bullet 2: NO verificado** — la prueba quedó contaminada por el
+     hallazgo crítico de `crearMovimientosMes` (ver más abajo). No se
+     fuerza cierre.
+   - **No se creó PR** (correcto — DoD incompleto, según restricción 3 del
+     prompt). **No se corrió `generate-kanban.mjs`** — pendiente junto con el PR.
+   - Al verificar el DoD (bullet 2, iniciar octubre con traslado ya
+     existente) contra Sheet dev, la guardia funcionó correctamente
+     (respondió 400, no duplicó).
+   - Pero se descubrió que `crearMovimientosMes`
+     (`lib/data/sheets.ts:276-281`) usa `spreadsheets.values.append` sin
+     `insertDataOption: "INSERT_ROWS"` — sobrescribió 67 filas reales de
+     septiembre en Sheet dev en vez de agregarlas al final.
+   - **Bug preexistente, no introducido por la guardia.** Misma función
+     corre en `iniciar` y `mover_mes_siguiente` en producción — riesgo de
+     pérdida/corrupción silenciosa de datos históricos, no confirmado si
+     ya ocurrió en producción.
+   - Contradice principio ya documentado (`values.append` poco confiable,
+     usar `batchUpdate` con cálculo determinístico de fila) — este código
+     no lo sigue.
+   - Pruebas en vivo contra dev detenidas para no seguir corrompiendo datos.
+
+6. **Auditoría de producción (solo lectura) — resultado: SIN HALLAZGO
+   CRÍTICO.** Ejecutada contra H2 producción, ningún cambio de código ni
+   escritura en ningún Sheet:
+   - `id_movimiento`: 144/144 timestamps parseables, 0 duplicados, sin
+     huecos anómalos, sin contradicción timestamp/mes declarado.
+   - Conteo de filas por mes: siempre igual o mayor al esperado — nunca
+     menor (que sería la señal de sobrescritura). Julio (+2) explicado por
+     PS Plus/Uber One ya conocidos; junio (+5) explicado por 5 conceptos
+     retirados con fila legítima mientras estuvieron activos.
+   - 0 filas con `id_concepto` inexistente en H1, 0 divergencias en
+     `categoria_snapshot`/`tipo_snapshot`.
+   - 12 filas adyacentes a PS Plus/Uber One revisadas — intactas.
+   - **Salvedad, no resuelta:** el mecanismo disparador exacto de la
+     sobrescritura (por qué ocurrió en dev y no en las ~4 invocaciones de
+     `crearMovimientosMes` en producción desde go-live) no se determinó.
+     Decisión tomada: no perseguirlo — el fix (`batchUpdate` determinístico)
+     elimina la clase de bug independientemente de la causa exacta del
+     disparo. Mismo criterio de costo/beneficio ya aplicado al origen de
+     la fila de junio.
+
+7. **`FIX-CREARMOVIMIENTOSMES-01` — aprobado para construir, en ejecución
+   modo away (sin supervisión directa) al cierre de esta sesión.**
+   Alcance: migrar `crearMovimientosMes` de `values.append` a `batchUpdate`
+   con cálculo determinístico de fila. Ver prompt de construcción para
+   restricciones reforzadas (dev-only estricto, sin contacto a producción
+   bajo ninguna circunstancia, sin merge). Resultado pendiente de revisión
+   en la próxima sesión — **no asumir éxito hasta ver SESSION_LOG.md**.
+
+### Estado al cierre de esta sesión
+
+| Ítem | Estado |
+|---|---|
+| Ticket A — PS Plus | Cerrado, en producción (sesión anterior) |
+| TICKET-B-GUARDIA-01 (código guardia) | P1 (`ee0b9e1`) y P2 (`291e8bd`) commiteados, `tsc` limpio — DoD 1 y 3 verificados, DoD 2 sin verificar, no cerrado |
+| `crearMovimientosMes` — bug `values.append` | **Hallazgo crítico, fix aprobado y en ejecución away** |
+| Sheet dev — septiembre/octubre | Parcialmente corrompidos por la prueba — sin resetear, dejados como evidencia forense a decisión de Camilo |
+| Auditoría producción — riesgo `values.append` | Completada — sin hallazgo crítico, mecanismo disparador exacto sin determinar (no perseguido, decisión de costo/beneficio) |
+| `FIX-CREARMOVIMIENTOSMES-01` | Aprobado — corriendo en modo away al cierre de esta sesión, resultado no verificado todavía |
+| `DT-M1M4-NULL-01` | Nombrado y confirmado — sin construir |
+| Invariante "estado por ausencia de valor" | Aprobado — pendiente de agregar formalmente a INVARIANTS.md como I-16 |
+| Origen fila junio `pospuesto_mes_siguiente` | Sin resolver, cerrado por decisión de costo/beneficio — no reabrir sin nueva evidencia |
+
+### Próxima sesión — orden acordado, no ejecutar fuera de este orden
+
+**Primero de todo:** leer `SESSION_LOG.md` del resultado de
+`FIX-CREARMOVIMIENTOSMES-01` antes de cualquier otra cosa — se dejó
+corriendo sin supervisión directa, no se puede asumir que terminó limpio.
+
+1. Revisar resultado del fix — si hay criterios de parada activados o
+   DoD no verificado, resolverlo antes de avanzar.
+2. Retomar y cerrar DoD bullet 2 de TICKET-B-GUARDIA-01 (verificación
+   contaminada por el bug ahora corregido) — incluye confirmar si la
+   exclusión de conceptos `semanal` en P1 usa el campo `frecuencia` de H1
+   o una lista estática.
+3. Decidir sobre Sheet dev septiembre/octubre (resetear o conservar).
+4. Correr `generate-kanban.mjs` y crear el PR de TICKET-B-GUARDIA-01
+   cuando el DoD completo esté verificado.
+5. Pendiente de agenda, sin fecha: confirmación final de `DT-M1M4-NULL-01`
+   como ticket propio a construir.

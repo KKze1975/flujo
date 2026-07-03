@@ -68,3 +68,10 @@ Un componente puede contener el patrón exacto del bug y no estar en el
 path de import activo (entrypoint → producción). Antes de declarar causa
 raíz, trazar el import hasta `app/`. Grep localiza candidatos, no confirma
 ejecución.
+
+## I-15 — Preguntas con respuesta observable no se escalan al usuario
+Antes de escalar una pregunta a Camilo, verificar si la respuesta es
+observable en el repo o el Sheet mediante una acción de lectura.
+Si lo es, ejecutar la lectura e incorporar el dato al loop.
+Solo se escala cuando la respuesta requiere una decisión de diseño
+con trade-offs que no tienen respuesta en el código o los datos.

@@ -106,12 +106,29 @@ export async function PATCH(
       }
       patch = { montoPresupuestado: body.montoPresupuestado };
     } else if (body.tipo === "mover_mes_siguiente") {
-      patch = { estado: "pospuesto_mes_siguiente" };
-      // Create corresponding H2 row in the next month so it shows in planning
       const [year, month] = mes.split("-").map(Number);
       const nextMes = month === 12
         ? `${year + 1}-01`
         : `${year}-${String(month + 1).padStart(2, "0")}`;
+
+      // TICKET-B-GUARDIA-01 P1: un concepto no semanal solo puede tener una
+      // fila activa por mes en el mes destino. Si ya existe (por un traslado
+      // previo o por iniciar), no se traslada de nuevo.
+      const conceptos = await provider.getConceptos();
+      const concepto = conceptos.find((c) => c.id === mov.conceptoId);
+      if (concepto?.frecuencia !== "semanal") {
+        const movsDestino = await provider.getMovimientos(nextMes);
+        const yaExiste = movsDestino.some((m) => m.conceptoId === mov.conceptoId);
+        if (yaExiste) {
+          return Response.json(
+            { error: `Ya existe un movimiento de este concepto en ${nextMes}. No se puede trasladar de nuevo.` },
+            { status: 400 }
+          );
+        }
+      }
+
+      patch = { estado: "pospuesto_mes_siguiente" };
+      // Create corresponding H2 row in the next month so it shows in planning
       await provider.crearMovimientosMes([{
         conceptoId: mov.conceptoId,
         mes: nextMes,
