@@ -1095,7 +1095,8 @@ export default function VistaSemanal({
   }
 
   async function confirmarOK() {
-    if (panel?.tipo !== "ok" || !panel.fuente) return;
+    if (panel?.tipo !== "ok") return;
+    if (!panel.fuente) { setError("Selecciona una fuente de pago antes de confirmar."); return; }
     const mov = movimientos.find((m) => m.id === panel.id);
     if (!mov) return;
     await patchar(panel.id, {
