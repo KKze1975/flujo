@@ -1285,3 +1285,126 @@ bug de `crearMovimientosMes`.
   pendientes — no se ejecutan todavía porque el DoD no está completo
   (restricción #5 del ticket: SESSION_LOG con DoD verificado es
   prerrequisito del PR).
+
+## Sesión DIAGNÓSTICO — Auditoría producción · riesgo values.append · 2026-07-03
+
+Solo lectura contra producción (`spreadsheets.values.get`, rango explícito
+por tab). Ningún Sheet fue escrito — ni dev ni producción. `dev` ya estaba
+sincronizada con `main` (0 commits nuevos). `INVARIANTS.md` sin cambios
+(I-12, I-15 vigentes).
+
+## Hallazgo crítico (si existe) — primero, antes de cualquier otra cosa
+
+**Ninguno.** No se encontró evidencia de sobrescritura ya materializada en
+H2 producción. Los 144 registros de producción (2026-06: 73 filas,
+2026-07: 71 filas — sin cambios respecto a la auditoría de duplicados de
+la sesión anterior, confirmando que nada se escribió ahí desde entonces)
+son consistentes con el historial esperado, con las únicas anomalías ya
+conocidas y documentadas (PS Plus y Uber One duplicados en julio). El
+riesgo del bug de `crearMovimientosMes` sigue latente para producción
+(no se corrigió, ver sesión anterior), pero **no hay evidencia de que ya
+se haya materializado.**
+
+## 1. Continuidad de id_movimiento
+
+- 144/144 filas con `id_movimiento` parseable como `MOV_{timestamp}` —
+  ningún formato inesperado.
+- **(b) Timestamps duplicados exactos: 0.** Ninguna colisión de
+  timestamp entre filas distintas.
+- **(a) Huecos anómalos:** ninguno — no se encontró ningún salto mayor a
+  20 días entre timestamps consecutivos ordenados (umbral amplio elegido
+  para tolerar períodos normales sin actividad). Los 144 timestamps de
+  producción cubren un rango continuo sin cortes sospechosos.
+- **(c) Timestamp vs. mes declarado:** ninguna fila tiene un
+  `id_movimiento` cuyo timestamp se aleje (con margen de 45 días) del mes
+  que la fila declara en la columna `mes`. No hay filas de mayo (u otro
+  mes) coladas bajo un `mes: 2026-07`, por ejemplo.
+- **Conclusión:** la continuidad de `id_movimiento` en producción no
+  muestra ninguna de las tres señales buscadas. Esto es evidencia a
+  favor de que el patrón de sobrescritura reproducido en dev **no** dejó
+  rastro por esta vía en producción.
+
+## 2. Conteo de filas por mes vs. esperado
+
+Cálculo de "esperado" = conceptos con `estado_concepto: activo` **hoy**
+en H1, con ocurrencias mensual/bimestral=1, semanal=4 (solo si el mes
+está en `mes_activo_bimestral` para bimestrales).
+
+- `2026-06`: reales=73, esperado=68, diff=**+5**.
+- `2026-07`: reales=71, esperado=69, diff=**+2**.
+
+**Ambos diffs son positivos (más filas de las esperadas, nunca menos) —
+lo opuesto a la señal que indicaría sobrescritura/pérdida de datos.**
+Se investigó el origen exacto de cada diff, concepto por concepto, para
+no conformarse con el signo:
+
+- **julio +2: 100% explicado por PS Plus y Uber One** — exactamente los
+  dos duplicados ya documentados en la auditoría anterior (cada uno con
+  2 filas en vez de 1 esperada). Nada nuevo.
+- **junio +5: 100% explicado por 5 conceptos que hoy están
+  `estado_concepto: retirado`** pero tenían filas reales y legítimas en
+  junio cuando aún estaban activos — el cálculo de "esperado" los excluye
+  por estar retirados *hoy*, no porque falte algo en el Sheet. Los 5:
+  `RECREACION_1780843607574` (Pizzardi), `MERCADO_Y_ALIMENTACION_1780843684150`
+  (Chuches), `RECREACION_1780843866839` (Sin clasificar),
+  `COMPROMISOS_FINANCIEROS_1780844290823` (Universal),
+  `COMPROMISOS_FINANCIEROS_1780950917017` (Imprevistos) — cada uno con
+  exactamente 1 fila real en junio, consistente con conceptos
+  `discrecional`/de un solo uso que se crearon, se usaron una vez y se
+  retiraron. Verificado individualmente: ningún concepto activo hoy
+  muestra un conteo de filas **menor** al esperado en ningún mes.
+- **Ningún mes ni concepto muestra un déficit de filas** — la señal que
+  el punto 2 pedía buscar específicamente como indicio de sobrescritura
+  no aparece en ningún caso.
+
+## 3. Filas con datos inconsistentes
+
+- **0 filas** con `id_concepto` que no corresponda a ningún concepto
+  existente en H1 actual.
+- **0 filas** con `categoria_snapshot` o `tipo_snapshot` que diverjan del
+  concepto correspondiente en H1 (sobre las 144 filas totales).
+- No se encontró ninguna fila con combinación de columnas que sugiera una
+  escritura parcial (ej. `nombre_snapshot` de un concepto con
+  `categoria_snapshot` de otro). Resultado limpio en las tres columnas
+  revisadas.
+
+## 4. Cruce con PS Plus / Uber One
+
+Se revisaron las filas inmediatamente anterior y posterior (por `rowNum`
+de Sheet) a las 6 filas ya conocidas de estos dos conceptos (filas 14, 88,
+144 para PS Plus; 16, 90, 145 para Uber One):
+
+- Las 12 filas vecinas revisadas tienen `nombre_snapshot` que coincide
+  exactamente con el nombre actual en H1 para su `id_concepto`, `mes` y
+  `estado` coherentes con su posición esperada en la secuencia (Prime
+  Video, Game Pass, NY Times, Imprevistos — todas consistentes).
+- **Ninguna fila vecina muestra signos de daño o sobrescritura parcial**
+  más allá de la duplicación ya documentada (que es un problema de filas
+  *adicionales*, no de filas *dañadas*).
+
+## 5. Rango de riesgo temporal acotado
+
+No hay evidencia de que el riesgo se haya materializado, por lo que no
+se puede acotar un rango de fechas de **daño confirmado**. Sí se puede
+acotar la **exposición**: producción ha ejecutado `crearMovimientosMes`
+un número pequeño y contable de veces desde el go-live —
+aproximadamente 4 invocaciones conocidas hasta ahora: la inicialización
+de junio (`iniciar`, ~inicio de junio), la inicialización de julio
+(`iniciar`, ~2026-06-27 según timestamps de `id_movimiento`), y las dos
+llamadas a `mover_mes_siguiente` sobre PS Plus/Uber One (~2026-06-07 y
+~2026-06-29, según la auditoría de duplicados previa). En esas ~4
+invocaciones, el patrón de sobrescritura **no se manifestó** — el
+mecanismo exacto que sí lo disparó en dev (varias llamadas sucesivas en
+una ventana corta de segundos, en esta sesión de construcción anterior)
+no está confirmado como la única condición disparadora, así que no se
+puede afirmar que producción esté "a salvo" solo por no haberlo visto
+todavía en 4 ocasiones. El riesgo permanece latente para **cualquier
+invocación futura** de `iniciar` o `mover_mes_siguiente` en producción
+mientras `crearMovimientosMes` no incluya `insertDataOption: "INSERT_ROWS"`
+— no es un riesgo que dependa del mes calendario, sino de cada evento de
+escritura individual.
+
+## Criterios de parada activados
+
+- Ninguno. Las 5 preguntas tuvieron respuesta observable en H1/H2 de
+  producción sin necesidad de ninguna escritura de prueba.
