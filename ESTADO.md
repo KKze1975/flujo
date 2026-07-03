@@ -4705,3 +4705,109 @@ QA de Angie aprobado en Preview URL — funcionamiento correcto de la barra
 superior (número protagonista "falta por pagar", popovers de los 3 modos,
 sin regresión en presupuestado/ejecutado). PR #23 mergeado a `main`.
 Ticket cerrado.
+
+---
+
+## Sesión debugging VistaSemanal — 2 julio 2026
+
+### Ticket A — PS Plus desaparece tras ejecución de Angie [CERRADO]
+
+**Síntoma:** PS Plus ejecutado por Angie en S1 desapareció de ambas tabs
+(pendientes y ejecutados) en VistaSemanal julio.
+
+**Causa raíz:** `confirmarOK` en `VistaSemanal.tsx` (~línea 1098) tenía guard
+combinado `if (panel?.tipo !== "ok" || !panel.fuente) return;`. Cuando el
+usuario abría el panel OK sin seleccionar fuente de pago, la función retornaba
+silenciosamente sin llamar a `patchar` — la escritura a H2 nunca ocurría.
+`toggleOK` inicializa `fuente: null`, por lo que cualquier confirmación sin
+selección de fuente producía salida silenciosa.
+
+**Fix:** Guard partido en dos condiciones. La segunda llama a `setError` con
+mensaje visible antes de retornar:
+```typescript
+if (panel?.tipo !== "ok") return;
+if (!panel.fuente) { setError("Selecciona una fuente de pago antes de confirmar."); return; }
+```
+
+**Commit:** `8095bc3` en rama `dev` — `tsc --noEmit` limpio.
+**PR #24:** `fix: guard visible en confirmarOK cuando panel.fuente es null` →
+abierto contra `main`. Pendiente QA de Angie (flujo: abrir panel sin fuente →
+error visible; seleccionar fuente + confirmar → H2 actualizado).
+
+---
+
+### Ticket B — Uber One aparece en S1, S2, S3, S4 simultáneamente [STOP]
+
+**Síntoma:** Uber One visible en todas las semanas de julio en VistaSemanal.
+
+**Diagnóstico:** Tres hipótesis evaluadas con datos reales de H2 producción:
+- HB-1 (filtro `getMovimientosByMesYSemana`): descartada — filtro correcto,
+  Uber One tiene `semana=S1` en julio, no `semana=null`.
+- HB-2 (datos full-month en componente): descartada — SSR pasa solo movimientos
+  filtrados por semana; `navegar()` reemplaza estado, no acumula.
+- HB-3 (estado acumulativo en `navegar`): descartada — `setMovimientos` reemplaza.
+
+**STOP activado:** causa latente identificada pero no reproducible hoy. La función
+`mover_mes_siguiente` en `route.ts` siempre escribe `semana: null` al crear la
+fila del mes siguiente. Si Uber One llega con `semana=null` a un mes futuro,
+aparecerá en todas las semanas. La corrección requiere decisión de diseño
+(B3: pedir semana destino al mover al mes siguiente) — scope `[DISEÑO]`.
+
+**Deuda técnica registrada:** `DT-MOVER-MES-01` — ver sección deuda técnica.
+
+---
+
+### Invariant I-15 — agregado a INVARIANTS.md
+
+Preguntas con respuesta observable en el repo o en el Sheet no se escalan al
+usuario. Se ejecuta la lectura y se incorpora el dato. Solo se escala cuando
+la respuesta requiere una decisión de diseño con trade-offs que no tienen
+respuesta en el código o los datos.
+
+---
+
+### Error operativo — Frutas y verduras marcado como ejecutado
+
+- **Causa:** Error del usuario (Camilo), no bug de código.
+- **Fila:** H2 producción row 128 — `nombre_snapshot: "Frutas y verduras"`,
+  `tipo_snapshot: pago_fraccionado`, `semana: S1`, `mes: 2026-07`.
+- **Estado antes:** `ejecutado`, `monto_ejecutado: 0`, `fecha_ejecucion: 2026-07-02`,
+  `fuente_camilo: FALSE`, `fuente_angie: FALSE`.
+- **Acción:** Reversión manual ejecutada en esta sesión via
+  `scripts/revertir-frutas-verduras-prod.mjs` contra Sheet producción.
+- **Estado después:** `pendiente`, campos de ejecución vaciados.
+
+---
+
+### Hallazgo — Mercado mensual (H2 dev row 95) — patrón PR #24
+
+Fila en Sheet de **dev** (no producción): `nombre_snapshot: "Mercado mensual"`,
+`tipo_snapshot: pago_fraccionado`, `semana: S1`, `mes: 2026-07`,
+`estado: ejecutado`, `monto_ejecutado: 0`, `fuente_camilo: FALSE`,
+`fuente_angie: FALSE`, `fecha_ejecucion: 2026-07-03`.
+
+Patrón idéntico al bug corregido en PR #24: ejecución sin fuente seleccionada →
+`monto=0`, fuentes en FALSE. No revertida en esta sesión — pendiente decisión
+de Camilo sobre si aplica QA de PR #24 sobre dato de dev.
+
+---
+
+### Estado al cierre de sesión 2 julio 2026
+
+| Ítem | Estado |
+|---|---|
+| Ticket A — PS Plus | Fix mergeado a `main` — commit `9a5a867` — en producción |
+| Ticket B — Uber One | STOP — pendiente sesión `[DISEÑO]` |
+| I-15 en INVARIANTS.md | Agregado — mismo commit |
+| Frutas y verduras prod row 128 | Revertida — `estado: pendiente` |
+| Mercado mensual dev row 95 | Hallazgo registrado — no tocado |
+| PR #24 → `main` | Mergeado — 2026-07-03 |
+
+### Deuda técnica nueva esta sesión
+
+- **DT-MOVER-MES-01:** `mover_mes_siguiente` en `route.ts` siempre escribe
+  `semana: null` en la fila del mes siguiente. Cuando ese concepto llega al
+  mes destino con `semana=null` y `estado=pendiente`, `getMovimientosByMesYSemana`
+  lo incluye en todas las semanas simultáneamente. Fix requiere sesión `[DISEÑO]`:
+  opciones B1 (bloqueo hasta M1), B2 (auto-asignar semana activa), B3 (pedir
+  semana destino al usuario al mover). B3 recomendada — ver plan de la sesión.
