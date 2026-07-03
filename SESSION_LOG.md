@@ -1107,3 +1107,181 @@ que no tiene evidencia 100% observable es qué disparó el estado
   sobrevive la verificación.
 - Criterio #1 (volumen) no aplica — 144 filas totales, 2 meses, todo
   verificado en una sola pasada sin necesidad de dividir.
+
+## Sesión CONSTRUCCIÓN — TICKET-B-GUARDIA-01 · 2026-07-03
+
+**Estado: DETENIDA antes de completar el DoD, por decisión explícita de
+Camilo tras un hallazgo crítico fuera de scope (ver más abajo). Piezas de
+código completadas y commiteadas con `tsc --noEmit` limpio. PR NO creado
+— DoD no verificado en su totalidad.**
+
+### Piezas completadas y commits
+
+- **P1** (`app/api/mes/[mes]/movimientos/[id]/route.ts`, rama
+  `mover_mes_siguiente`): antes de crear la fila en el mes destino,
+  verifica si ya existe una fila con ese `conceptoId` en `mes destino`
+  vía `provider.getMovimientos(nextMes)`. Si existe, responde 400 sin
+  escribir. Se excluyen los conceptos con `frecuencia: semanal` (siempre
+  tienen 4 filas/mes por diseño — confirmado en la auditoría de
+  duplicados previa; aplicar la guardia ahí produciría falsos positivos,
+  exactamente la ambigüedad que el criterio de parada #7 pedía verificar
+  antes de asumir). Commit `ee0b9e1`.
+- **P2** (`app/api/mes/[mes]/iniciar/route.ts`): el early-exit
+  `existentes.length > 0 → 409` se refina para distinguir "el mes ya fue
+  inicializado de verdad" (se mantiene el 409) de "solo hay filas de
+  traslado creadas por `mover_mes_siguiente` antes de correr `iniciar`"
+  (se permite continuar, inicializando el resto del mes con normalidad y
+  omitiendo la fila de traslado duplicada para esos `conceptoId`
+  específicos — la fila existente queda intacta, sin tocarla). Commit
+  `291e8bd`.
+- `tsc --noEmit` limpio confirmado tras cada commit (hook de pre-commit
+  pasó en ambos).
+
+### Decisión de diseño: por qué se excluyen los conceptos `semanal` de P1
+
+El DoD pide una guardia genérica "¿ya existe fila para este conceptoId en
+el mes destino?", pero el criterio de parada #7 exige confirmar contra
+los 8 conceptos semanales identificados en la auditoría de duplicados
+antes de aplicarla sin excepciones. Un concepto `frecuencia: semanal`
+(ej. Mesada Emma) SIEMPRE tiene 4 filas activas por mes tras `iniciar` —
+aplicar la guardia sin excepción bloquearía con 400 cualquier intento de
+`mover_mes_siguiente` sobre una fila semanal en un mes ya inicializado,
+aun cuando eso no sea el patrón de bug real (que solo se observó en
+conceptos `frecuencia: mensual` — PS Plus, Uber One). La guardia P1 se
+restringe a `concepto.frecuencia !== "semanal"`. `Movimiento` no trae la
+frecuencia como snapshot propio, así que P1 consulta
+`provider.getConceptos()` y cruza por `conceptoId` — mismo patrón que
+usa `iniciar/route.ts` para su propio filtro de conceptos activos.
+
+### DoD — verificado contra Sheet dev (servidor local `npm run dev`,
+`.env.local` apunta a `GOOGLE_SHEET_ID` dev)
+
+**Bullet 3 (caso normal, sin regresión) — VERIFICADO.**
+`POST /api/mes/2026-09/iniciar` sobre un mes limpio (sin traslados
+pendientes de agosto): respuesta 201, `total: 69` movimientos creados.
+PS Plus (`MEMBRESIAS_1748100014`, `frecuencia: mensual`,
+`semana_default: S1`) creado con `semana: "S1"`, `estado: "pendiente"` —
+idéntico al comportamiento anterior a este ticket. Sin regresión.
+
+**Bullet 1 (repetir `mover_mes_siguiente` sobre el mismo origen) —
+VERIFICADO.**
+- 1er `PATCH /api/mes/2026-09/movimientos/MOV_1783082605793`
+  `{tipo: "mover_mes_siguiente"}` (PS Plus, mes destino 2026-10 vacío en
+  ese momento): 200, `estado: "pospuesto_mes_siguiente"`. Verificado:
+  2026-10 pasó a tener exactamente 1 fila (`semana: null`,
+  `estado: "pendiente"`).
+- 2do `PATCH` idéntico sobre el mismo `id` (`MOV_1783082605793`,
+  ya en `pospuesto_mes_siguiente`): **400** —
+  `"Ya existe un movimiento de este concepto en 2026-10. No se puede
+  trasladar de nuevo."` Verificado directamente contra el Sheet: 2026-10
+  se mantuvo en exactamente 1 fila para ese `conceptoId` — ninguna
+  segunda fila creada.
+
+**Bullet 2 (`iniciar` con concepto ya trasladado por P1) — GUARDIA
+VERIFICADA A NIVEL DE RESPUESTA, PERO CONTAMINADA POR UN HALLAZGO
+CRÍTICO FUERA DE SCOPE (ver sección siguiente) — no se considera
+cerrada.**
+`POST /api/mes/2026-10/iniciar` con la fila de PS Plus ya trasladada
+(desde bullet 1) devolvió **201** (no 409 — el early-exit relajado
+funcionó) con `total: 67` creados (no duplica a PS Plus). Hasta aquí, el
+comportamiento de la guardia P2 en sí es el esperado. Pero al verificar
+el Sheet directamente después de esta llamada se encontró daño en datos
+no relacionado con la guardia — ver siguiente sección. Esto deja bullet
+2 sin poder darse por cerrado con confianza total: no se puede
+distinguir con el 100% de certeza si el conteo "67" refleja exactamente
+lo que P2 pretendía omitir, o si además se vio afectado por el bug de
+sobreescritura. Pendiente de re-verificación en un entorno de prueba
+aislado, después de resolver el hallazgo crítico.
+
+### HALLAZGO CRÍTICO FUERA DE SCOPE — pérdida de datos en `crearMovimientosMes`
+
+Durante la verificación de bullet 2, se encontró que
+`lib/data/sheets.ts:276-281` (`crearMovimientosMes`) llama a
+`spreadsheets.values.append` con `range: "H2!A:Y"` **sin especificar
+`insertDataOption: "INSERT_ROWS"`**. El default de la API de Google
+Sheets para `values.append` es `OVERWRITE`, y en esta sesión se observó
+en vivo que el `append` de la llamada `iniciar` para 2026-10 (67 filas)
+**sobrescribió 67 filas reales de 2026-09 que ya existían** (filas de
+Sheet 194–260, verificado con lectura directa `spreadsheets.values.get`
+antes y después), en vez de agregarse después de la última fila real del
+Sheet. La fila de traslado de PS Plus en 2026-10 (creada en bullet 1,
+`MOV_1783082634377`) también desapareció sin dejar rastro.
+
+Evidencia:
+- Antes de la llamada `iniciar` de 2026-10: conteo por mes en dev —
+  2026-06: 71, 2026-07: 53, 2026-08: 68, 2026-09: 69 (68 + 1 pospuesta),
+  2026-10: 1 (el traslado de PS Plus).
+- Después de la llamada: 2026-06: 71, 2026-07: 53, 2026-08: 68,
+  **2026-09: 2** (solo quedaron las 2 últimas filas, "Imprevistos"
+  S3/S4), **2026-10: 67** (ocupando exactamente las filas de Sheet
+  194–260, donde antes vivían filas reales de 2026-09). La fila de
+  traslado de PS Plus en 2026-10 no aparece en ningún lado de H2.
+- `MOV_1783082634377` (traslado de PS Plus) buscado exhaustivamente en
+  todo H2 vía `spreadsheets.values.get({range: "H2!A:Y"})`: no encontrado.
+- No se encontraron filas vacías (gaps) en el rango actual — el
+  problema ocurrió durante la escritura, no es un gap preexistente
+  visible ahora.
+
+**Por qué es crítico y no se corrige inline:** `crearMovimientosMes` es
+el mismo método que usa `iniciar` y `mover_mes_siguiente` **en
+producción** — este no es un problema exclusivo del entorno de prueba.
+Cualquier secuencia de escrituras a H2 que dispare este patrón en la API
+de Sheets podría sobrescribir movimientos reales de familia sin ningún
+error visible (la llamada HTTP responde 200/201 normalmente). Corregirlo
+requiere tocar un método compartido por múltiples flujos (fuera del
+alcance de "guardia puntual" de este ticket) y idealmente un ticket
+propio con su propia verificación exhaustiva, dado el riesgo. **No se
+intentó reproducir el mecanismo exacto (posible condición de carrera
+entre llamadas sucesivas vs. detección de "fin de tabla" de la API de
+Sheets confundida) — eso también queda pendiente para el ticket que
+aborde esto.**
+
+**Estado del Sheet dev dejado por esta sesión:** 2026-09 tiene solo 2
+filas reales (de las 69 originales); 2026-10 tiene 67 filas (el lote de
+`iniciar`, sin la fila de traslado de PS Plus). 2026-06, 2026-07,
+2026-08 no fueron tocados y están intactos. Ningún dato de producción
+fue tocado en ningún momento de esta sesión. Camilo decidió, al
+reportarse este hallazgo, que la sesión se detenga aquí en vez de seguir
+probando en vivo — pendiente su decisión sobre si resetear 2026-09/2026-10
+en dev (siguiendo el patrón de `scripts/reset-julio-v2.mjs` /
+`reset-junio.mjs` de sesiones previas) y sobre cómo priorizar el fix del
+bug de `crearMovimientosMes`.
+
+### Deuda técnica documentada (no corregida inline)
+
+- **Bug de pérdida de datos en `crearMovimientosMes`** (ver sección
+  crítica arriba) — requiere ticket propio, afecta producción.
+- Patrón estructural más amplio (estados inferidos por ausencia de valor
+  — `semana: null` — en vez de declarados explícitamente) — ya
+  documentado como fuera de scope en el ticket original, no se tocó.
+- Origen no resuelto de por qué la fila de junio (PS Plus/Uber One en
+  producción) quedó en `pospuesto_mes_siguiente` antes del 2026-06-27 sin
+  pasar por el PATCH normal — deuda técnica ya documentada en la sesión
+  de auditoría anterior, no se investigó más en esta sesión (fuera de
+  scope explícito del ticket).
+
+### Criterios de parada activados
+
+- **Criterio #4 (cambio necesario fuera de scope encontrado)** — el bug
+  de `crearMovimientosMes` no se corrigió inline; documentado arriba como
+  deuda técnica crítica.
+- **Criterio #3 (DoD no verificable en preview URL)** — bullet 2 no se
+  puede dar por cerrado con confianza total por la contaminación del
+  hallazgo crítico; bullets 1 y 3 sí quedaron verificados con evidencia
+  observable antes de que ocurriera la corrupción.
+- Detención explícita solicitada por Camilo tras reportarse el hallazgo
+  crítico (no estaba en la lista original de criterios, pero se trató
+  con el mismo peso): no se continuó con más escrituras en vivo contra
+  el Sheet dev para evitar más corrupción de datos de prueba.
+
+### Pendiente para la próxima sesión (no ejecutado en esta)
+
+- Decisión de Camilo sobre reset de 2026-09/2026-10 en dev.
+- Decisión de Camilo sobre si abrir ticket propio para el bug de
+  `crearMovimientosMes` antes o junto con el cierre de este ticket.
+- Re-verificación de bullet 2 del DoD en un entorno controlado, una vez
+  resuelto o mitigado el hallazgo crítico.
+- `node scripts/generate-kanban.mjs` y creación del PR quedan
+  pendientes — no se ejecutan todavía porque el DoD no está completo
+  (restricción #5 del ticket: SESSION_LOG con DoD verificado es
+  prerrequisito del PR).
