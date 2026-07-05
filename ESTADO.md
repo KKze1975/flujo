@@ -5065,3 +5065,45 @@ barra ($2.369.896) y lo registrado en H5 al cerrar la semana ($2.314.896).
 Confirmado que se replica idéntica en el desglose por persona — origen no 
 está en esta feature, es preexistente en el mecanismo de cierre/H5. 
 Candidato a sesión DEBUGGING propia. No investigado más allá de la confirmación.
+
+## DT-POSPONER-ESTADO-01 · 5 julio 2026 — FIX COMPLETO, PENDIENTE QA ANGIE
+
+PR #28 (fix/dt-posponer-estado-01 → dev), sin merge — pendiente QA de Angie.
+
+Síntoma: conceptos pospuestos a otra semana del mismo mes desaparecían 
+permanentemente de "pendientes" en todas las vistas. Caso real: 
+"Colegio hijos" (MOV_1782565828384, $3.988.000, julio 2026) pospuesto 
+de S1 a S2, invisible en pendientes de S2.
+
+Causa raíz confirmada: el endpoint PATCH /api/mes/[mes]/movimientos/[id] 
+(acción posponer) escribía estado: "pospuesto" incondicionalmente, sin 
+distinguir si venía nuevaSemana (reasignación dentro del mismo mes) o no. 
+Esto contradecía el diseño original (OBS-4: posponer dentro del mismo mes 
+solo debía cambiar semana, no estado). Combinado con BL-M4-01 (vistas de 
+pendientes filtran estrictamente estado === "pendiente"), el resultado 
+era desaparición permanente del concepto pospuesto.
+
+Fix: cuando el patch incluye nuevaSemana, ahora escribe estado: "pendiente" 
+en la semana destino. El flujo real de "posponer sin nuevaSemana" 
+(confirmado existente en MesM1Mobile.tsx:398) se preservó intacto con 
+estado: "pospuesto".
+
+Alcance de datos verificado: solo 1 registro afectado en toda producción 
+(Colegio hijos) — no había más conceptos desaparecidos sin detectar. 
+Corregido con snapshot previo y verificación antes/después.
+
+Validación: loop de 3 casos contra servidor de dev real (no solo en 
+memoria), vía curl sobre el endpoint corriendo, revertidos tras la prueba.
+
+Confirmado explícitamente: mover_mes_siguiente es código separado, no 
+comparte lógica con este endpoint — no tocado, DT-MOVER-MES-01 sigue 
+abierto de forma independiente.
+
+## BUG-LABEL-MESM1-01 (nuevo, sin priorizar)
+Hallazgo colateral de DT-POSPONER-ESTADO-01: el botón etiquetado 
+"Mes siguiente" en MesM1Mobile.tsx:398 ejecuta posponer(), no 
+mover_mes_siguiente(). Mislabeling de UI con posible impacto en datos 
+históricos (usuarios pueden haber usado el botón creyendo mover un 
+concepto al mes siguiente, cuando en realidad lo pospuso dentro del 
+mismo mes). Severidad y alcance real del uso histórico sin evaluar. 
+Pendiente de priorización por Camilo.
