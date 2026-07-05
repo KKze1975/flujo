@@ -4958,3 +4958,32 @@ corriendo sin supervisión directa, no se puede asumir que terminó limpio.
    cuando el DoD completo esté verificado.
 5. Pendiente de agenda, sin fecha: confirmación final de `DT-M1M4-NULL-01`
    como ticket propio a construir.
+
+## DT-HEADER-H2-01 — Header de H2 desplazado a fila 145 (RESUELTO)
+Fecha: 2026-07-05
+Síntoma: cierre de semana S1 julio 2026 bloqueado ("Movimiento no encontrado"), 
+falta_por_pagar mostrando $0 con pendientes reales activos, presupuestado/ejecutado 
+con strikethrough inconsistente.
+Causa raíz: edición manual directa en Sheet de producción (ordenamiento descendente 
+de rango completo en H2, incluyendo fila de encabezado) desplazó el header de 
+fila 1 a fila 145. getMeses, getMovimientos, updateMovimiento, ensureH2Headers 
+(lib/data/sheets.ts) y resetH2 (app/api/admin/reset-mes/route.ts) asumen header 
+en fila 1 de forma hardcodeada — ninguna lo busca dinámicamente.
+Fix: batchUpdate atómico (moveDimension) moviendo fila 145 a posición 1. 
+Snapshot previo: scripts/backup-h2-header-fix-prod-1783269569750.json. 
+Verificado: 145 filas, header en fila 1, comparación fila-por-fila pre/post 
+sin diferencias, H1/H3B/H4/H5 intactas.
+Riesgos latentes documentados (no resueltos, fuera de alcance de este ticket):
+- ensureH2Headers() sobrescribiría destructivamente fila 1 si se llama con 
+  el header en posición incorrecta.
+- resetH2() borra rango 2:1000 con el mismo supuesto de header fijo en fila 1.
+Pendiente de decisión (Camilo): si se abre ticket de hardening para estos dos 
+riesgos, y si se define alguna protección (protección de rango, proceso, o 
+aceptación de riesgo) contra edición manual directa en Sheet de producción.
+
+## Hallazgo colateral — columnas ya existentes en H2
+Durante auditoría de Paso 2 se confirmó que H2 ya contiene monto_ejecutado_camilo 
+y monto_ejecutado_angie como columnas nativas. Esto invalida el enfoque de diseño 
+planteado en la sesión de DISEÑO abierta para la feature "ejecutado por persona 
+en barra at-a-glance" (que asumía derivar el split desde ejecutor + monto_ejecutado). 
+Sesión de DISEÑO queda pendiente de retomar con este dato como nuevo punto de partida.
