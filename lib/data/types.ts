@@ -80,7 +80,7 @@ export interface ConsumoH3 {
   semana: Semana;
   descripcion: string;
   monto: number;
-  ejecutor: Actor;
+  ejecutor: Actor | null;
   fuenteEnMano: boolean;
   fuenteNequi: boolean;
   fuenteCamilo: boolean;

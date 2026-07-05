@@ -80,10 +80,13 @@ function OriginalRecord({ consumo, flagClasif }: { consumo: ConsumoH3; flagClasi
         <span className="dk-otag">Semana {consumo.semana}</span>
         <span className="dk-otag">{fuente}</span>
         <span className="dk-otag">
-          <span className={`fl-person ${consumo.ejecutor === "camilo" ? "c" : "a"}`} style={{ width: 14, height: 14, fontSize: 8 }}>
-            {consumo.ejecutor === "camilo" ? "C" : "A"}
+          <span
+            className={`fl-person ${consumo.ejecutor === "camilo" ? "c" : consumo.ejecutor === "angie" ? "a" : ""}`}
+            style={{ width: 14, height: 14, fontSize: 8, ...(consumo.ejecutor ? {} : { background: "var(--ink-faint)" }) }}
+          >
+            {consumo.ejecutor === "camilo" ? "C" : consumo.ejecutor === "angie" ? "A" : "?"}
           </span>
-          {consumo.ejecutor === "camilo" ? "Camilo" : "Angie"}
+          {consumo.ejecutor === "camilo" ? "Camilo" : consumo.ejecutor === "angie" ? "Angie" : "Sin asignar"}
         </span>
       </div>
     </div>
@@ -120,7 +123,7 @@ function ModalCorreccion({
   const [scenario, setScenario] = useState<M5Scenario>(defaultScenario);
   const [descripcion, setDescripcion] = useState(consumo.descripcion);
   const [monto, setMonto] = useState(consumo.monto);
-  const [ejecutor, setEjecutor] = useState<Actor>(consumo.ejecutor);
+  const [ejecutor, setEjecutor] = useState<Actor>(consumo.ejecutor ?? "camilo");
   const [fuentes, setFuentes] = useState({
     fuenteCamilo: consumo.fuenteCamilo,
     fuenteAngie: consumo.fuenteAngie,
@@ -961,7 +964,7 @@ export default function VistaSemanal({
   const [ingresosAngieLocal, setIngresosAngieLocal] = useState<IngresoAngie[]>(ingresosAngie);
   const [showPresupuestadoPopover, setShowPresupuestadoPopover] = useState(false);
   const [presupuestadoAnchor, setPresupuestadoAnchor] = useState<DOMRect | null>(null);
-  const [popoverMode, setPopoverMode] = useState<"presupuestado" | "ejecutado" | "falta_pagar">("presupuestado");
+  const [popoverMode, setPopoverMode] = useState<"presupuestado" | "ejecutado" | "falta_pagar" | "angie" | "camilo">("presupuestado");
   const [desgloseModal, setDesgloseModal] = useState<Movimiento | null>(null);
   const [posponiendo, setPosponiendo] = useState<Movimiento | null>(null);
   const presupuestadoPopoverRef = useRef<HTMLDivElement>(null);
@@ -989,6 +992,23 @@ export default function VistaSemanal({
     .reduce((s, m) => s + (m.montoEjecutado ?? 0), 0);
   const totalEjecutadoH3 = consumos.reduce((s, c) => s + c.monto, 0);
   const totalEjecutado = totalEjecutadoH2 + totalEjecutadoH3;
+
+  // Desglose por persona — mismas dos fuentes que totalEjecutado (H2 sin pago_fraccionado + H3),
+  // partidas por ejecutor. Filas con ejecutor=null quedan fuera de ambas sumas (I-XX guard H3).
+  type ItemEjecutado = { key: string; nombre: string; monto: number };
+  function itemsPorPersona(persona: Actor): ItemEjecutado[] {
+    const h2Items: ItemEjecutado[] = movimientos
+      .filter((m) => m.ejecutor === persona && m.estado === "ejecutado" && m.tipoSnapshot !== "pago_fraccionado")
+      .map((m) => ({ key: m.id, nombre: m.nombreSnapshot, monto: m.montoEjecutado ?? 0 }));
+    const h3Items: ItemEjecutado[] = consumos
+      .filter((c) => c.ejecutor === persona)
+      .map((c) => ({ key: c.id, nombre: c.descripcion, monto: c.monto }));
+    return [...h2Items, ...h3Items];
+  }
+  const itemsAngie = itemsPorPersona("angie");
+  const itemsCamilo = itemsPorPersona("camilo");
+  const ejecutadoAngie = itemsAngie.reduce((s, i) => s + i.monto, 0);
+  const ejecutadoCamilo = itemsCamilo.reduce((s, i) => s + i.monto, 0);
   const pct = totalPresupuestado > 0
     ? Math.round((totalEjecutado / totalPresupuestado) * 100)
     : 0;
@@ -1220,8 +1240,27 @@ export default function VistaSemanal({
             <Icon name="back" size={17} />
           </button>
           <div style={{ flex: 1 }} />
-          {cierreSemanaState && (
+          {cierreSemanaState ? (
             <span className="fl-badge pos"><Icon name="check" size={12} /> Cerrada</span>
+          ) : (
+            idxVisible <= SEMANAS.indexOf(semanaActivaMes) && modoSemana !== "lectura" && (
+              // Reubicado lejos de los chips Angie/Camilo (FEAT-BARRA-EJECUTADO-PERSONA-01,
+              // handoff variante 3a) — antes vivía como botón ancho justo debajo de esa zona
+              // y sufría toques accidentales.
+              <button
+                type="button"
+                disabled={cerrandoSemana}
+                onClick={() => setShowConfirmCierre(true)}
+                style={{
+                  background: "#fff", border: "1px solid #fff", borderRadius: 10,
+                  padding: "8px 14px", fontSize: 12.5, fontWeight: 700, color: "#8a1257",
+                  boxShadow: "0 2px 8px rgba(0,0,0,.18)",
+                  cursor: cerrandoSemana ? "default" : "pointer", opacity: cerrandoSemana ? 0.6 : 1,
+                }}
+              >
+                {cerrandoSemana ? "Cerrando…" : "Cerrar semana"}
+              </button>
+            )
           )}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 0, marginBottom: 2 }}>
@@ -1314,6 +1353,46 @@ export default function VistaSemanal({
                 {COP(totalEjecutado)}
               </button>
             </p>
+            <div style={{ display: "flex", gap: 8 }}>
+              {(["angie", "camilo"] as const).map((persona) => {
+                const monto = persona === "angie" ? ejecutadoAngie : ejecutadoCamilo;
+                const ring = persona === "angie" ? "var(--warn)" : "var(--pos)";
+                const inicial = persona === "angie" ? "A" : "C";
+                const nombre = persona === "angie" ? "Angie" : "Camilo";
+                return (
+                  <button
+                    key={persona}
+                    type="button"
+                    style={{
+                      flex: 1, display: "flex", alignItems: "center", gap: 8, textAlign: "left",
+                      background: "rgba(255,255,255,.12)", border: "1px solid rgba(255,255,255,.22)",
+                      borderRadius: 12, padding: "9px 12px", cursor: "pointer", color: "inherit",
+                    }}
+                    onClick={(e) => {
+                      if (showPresupuestadoPopover && popoverMode === persona) {
+                        setShowPresupuestadoPopover(false);
+                      } else {
+                        setPresupuestadoAnchor((e.currentTarget as HTMLButtonElement).getBoundingClientRect());
+                        setPopoverMode(persona);
+                        setShowPresupuestadoPopover(true);
+                      }
+                    }}
+                  >
+                    <span style={{
+                      width: 22, height: 22, borderRadius: "50%", background: "#fff", color: "#6b1450",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 11, fontWeight: 700, flex: "none", boxShadow: `0 0 0 2px ${ring}`,
+                    }}>
+                      {inicial}
+                    </span>
+                    <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.25 }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,.65)" }}>{nombre}</span>
+                      <span style={{ fontSize: 14, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{COP(monto)}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
             {showPresupuestadoPopover && presupuestadoAnchor && (
               <div style={{
                 position: "fixed",
@@ -1400,32 +1479,41 @@ export default function VistaSemanal({
                     )}
                   </>
                 )}
+                {(popoverMode === "angie" || popoverMode === "camilo") && (() => {
+                  const items = popoverMode === "angie" ? itemsAngie : itemsCamilo;
+                  const total = popoverMode === "angie" ? ejecutadoAngie : ejecutadoCamilo;
+                  const nombre = popoverMode === "angie" ? "Angie" : "Camilo";
+                  return (
+                    <>
+                      <p style={{ fontWeight: 600, fontSize: 13, padding: "0 14px 8px" }}>Ejecutado por {nombre}</p>
+                      <div style={{ maxHeight: 256, overflowY: "auto" }}>
+                        {items.length === 0
+                          ? <p style={{ padding: "5px 14px", fontSize: 13, color: "var(--muted)" }}>Sin ejecutados esta semana.</p>
+                          : items.map(item => (
+                              <div key={item.key} style={{ display: "flex", justifyContent: "space-between", padding: "5px 14px", fontSize: 13 }}>
+                                <span style={{ flex: 1, marginRight: 12 }}>{item.nombre}</span>
+                                <span style={{ fontVariantNumeric: "tabular-nums" }}>{COP(item.monto)}</span>
+                              </div>
+                            ))
+                        }
+                      </div>
+                      {items.length > 0 && (
+                        <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 14px 0", borderTop: "1px solid var(--hair)", fontSize: 13, fontWeight: 700, marginTop: 4 }}>
+                          <span>Total</span>
+                          <span style={{ fontVariantNumeric: "tabular-nums" }}>{COP(total)}</span>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             )}
           </div>
         </div>
-        {/* Cierre de semana */}
-        {idxVisible <= SEMANAS.indexOf(semanaActivaMes) && !cierreSemanaState && modoSemana !== "lectura" && (
-          <div style={{ marginTop: 12 }}>
-            <button
-              type="button"
-              disabled={cerrandoSemana}
-              onClick={() => setShowConfirmCierre(true)}
-              style={{
-                width: "100%", background: "rgba(255,255,255,0.15)",
-                border: "1.5px solid rgba(255,255,255,0.45)", color: "var(--on-primary)",
-                borderRadius: 12, padding: "9px 16px", fontSize: 13, fontWeight: 700,
-                cursor: cerrandoSemana ? "default" : "pointer", opacity: cerrandoSemana ? 0.6 : 1,
-              }}
-            >
-              {cerrandoSemana ? "Cerrando…" : `Cerrar semana ${semanaVisible}`}
-            </button>
-            {cierreError && (
-              <p style={{ fontSize: 12, color: "rgba(255,120,120,0.95)", marginTop: 6, fontWeight: 600 }}>
-                {cierreError}
-              </p>
-            )}
-          </div>
+        {cierreError && (
+          <p style={{ fontSize: 12, color: "rgba(255,120,120,0.95)", marginTop: 8, marginBottom: 0, fontWeight: 600 }}>
+            {cierreError}
+          </p>
         )}
         {cierreSemanaState && (
           <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 6 }}>
@@ -1815,8 +1903,11 @@ export default function VistaSemanal({
                       </p>
                     </div>
                     <span className="dk-rec-who">
-                      <span className={`fl-person ${c.ejecutor === "camilo" ? "c" : "a"}`} style={{ width: 22, height: 22, fontSize: 10 }}>
-                        {c.ejecutor === "camilo" ? "C" : "A"}
+                      <span
+                        className={`fl-person ${c.ejecutor === "camilo" ? "c" : c.ejecutor === "angie" ? "a" : ""}`}
+                        style={{ width: 22, height: 22, fontSize: 10, ...(c.ejecutor ? {} : { background: "var(--ink-faint)" }) }}
+                      >
+                        {c.ejecutor === "camilo" ? "C" : c.ejecutor === "angie" ? "A" : "?"}
                       </span>
                     </span>
                     <span className="dk-rec-amt">{copCompact(c.monto)}</span>
