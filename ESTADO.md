@@ -5107,3 +5107,31 @@ históricos (usuarios pueden haber usado el botón creyendo mover un
 concepto al mes siguiente, cuando en realidad lo pospuso dentro del 
 mismo mes). Severidad y alcance real del uso histórico sin evaluar. 
 Pendiente de priorización por Camilo.
+
+## DT-HEADER-H2-01 — Cierre de mitigación (solo proceso) · 5 julio 2026
+
+Sesión [DISEÑO]: evaluados dos riesgos latentes documentados en el cierre
+de DT-HEADER-H2-01 (`ensureH2Headers()` y `resetH2()`, ambos con supuesto
+hardcodeado de posición de header/rango de datos).
+
+**Decisión:** no se construye hardening técnico. Mitigación aceptada:
+regla de proceso — Camilo no edita el Sheet de producción manualmente
+bajo ninguna circunstancia. Contexto: la única causa conocida de
+violación de esta regla (necesidad del dato de ejecutado por persona
+para cerrar S1) ya está resuelta en la app vía
+FEAT-BARRA-EJECUTADO-PERSONA-01 — no hay escenario conocido pendiente
+que motive un nuevo desvío.
+
+**Riesgo aceptado, no mitigado técnicamente:** `ensureH2Headers()` y
+`resetH2()` siguen sin verificar posición de header/rango antes de
+escribir. Cualquier causa distinta a edición manual de Camilo (script
+mal apuntado, migración futura, bug en otra función) que desplace el
+header sigue pudiendo disparar sobrescritura silenciosa. No hay
+detección ni trazabilidad de esto en código. Aceptado explícitamente,
+no reabrir sin nueva evidencia de que el vector real es distinto al de
+edición manual.
+
+`FIX-CREARMOVIMIENTOSMES-01` — cerrado como obsoleto: el diagnóstico del
+2026-07-03 confirmó que el riesgo de sobrescritura no está en
+`crearMovimientosMes()`/`values.append`, sino en `ensureH2Headers()`.
+Migrar a `batchUpdate` no habría cerrado el riesgo real. No se retoma.
