@@ -715,7 +715,7 @@ export class SheetsDataProvider implements IDataProvider {
       semana: col("semana") as Semana,
       descripcion: col("descripcion"),
       monto: Number(col("monto")) || 0,
-      ejecutor: (col("ejecutor") || "camilo") as Actor,
+      ejecutor: (col("ejecutor") || null) as Actor | null,
       fuenteEnMano: col("fuente_en_mano").toUpperCase() === "TRUE",
       fuenteNequi: col("fuente_nequi").toUpperCase() === "TRUE",
       fuenteCamilo: col("fuente_camilo").toUpperCase() === "TRUE",
@@ -732,7 +732,7 @@ export class SheetsDataProvider implements IDataProvider {
   private consumoH3ToRow(c: ConsumoH3): string[] {
     return [
       c.id, c.bolsilloId, c.mes, c.semana, c.descripcion,
-      String(c.monto), c.ejecutor,
+      String(c.monto), c.ejecutor ?? "",
       c.fuenteEnMano ? "TRUE" : "FALSE",
       c.fuenteNequi  ? "TRUE" : "FALSE",
       c.fuenteCamilo ? "TRUE" : "FALSE",
