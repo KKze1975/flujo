@@ -1408,3 +1408,818 @@ escritura individual.
 
 - Ninguno. Las 5 preguntas tuvieron respuesta observable en H1/H2 de
   producción sin necesidad de ninguna escritura de prueba.
+
+## Sesión DIAGNÓSTICO — Header H2 desplazado a fila 145 · 2026-07-05
+
+Sesión de solo lectura. Ningún `batchUpdate` ni escritura ejecutada. Repo
+abierto en `D:\Users\camilo\flujo` por primera vez en esta conversación
+(sesiones previas del mismo hilo fueron bloqueadas por falta de acceso al
+repo y por una integración externa —Zapier/Google Sheets— con el OAuth
+caído; ambos bloqueos quedaron resueltos al abrir el repo local con las
+credenciales de servicio en `.env.local`).
+
+### Paso 1 — Verificación de la hipótesis (evidencia cruda)
+
+Nota de entorno: `.env.local` apunta al Sheet de **dev**
+(`1p5hvKINy512I-BOEA5ujjynUnJVdnvniAiqCQTYDJ-w`), no al de producción. Se
+usó el mismo patrón que `scripts/revertir-frutas-verduras-prod.mjs`
+(override de `GOOGLE_SHEET_ID` vía variable de entorno de shell) para
+apuntar explícitamente a producción
+(`1GOMhxYw_f7Zl-GTVNtxAs9218x4vKxzg3LGRyveyr7A`) sin tocar el archivo.
+
+Scripts usados (ambos de solo lectura, sin `values.update`/`append`/`clear`/`batchUpdate`):
+`scripts/check-h2-header-position-prod.mjs`, `scripts/check-h2-integrity-prod.mjs`.
+
+Resultado (`GOOGLE_SHEET_ID=1GOMhxYw_f7Zl-GTVNtxAs9218x4vKxzg3LGRyveyr7A node scripts/check-h2-header-position-prod.mjs`):
+
+```
+Spreadsheet ID usado: 1GOMhxYw_f7Zl-GTVNtxAs9218x4vKxzg3LGRyveyr7A
+Match: true
+Total filas leídas (A1:Z200): 145
+Fila 1: ["MOV_1780841387980","CASA_1748100001","2026-06","Arriendo y Administración","Casa","fijo","S1","5172500","5172500","0","ejecutado","camilo","FALSE","FALSE","TRUE","FALSE","2026-06-07","","","","FALSE"]
+¿Fila 1 == header esperado? false
+Fila 145: ["id_movimiento","id_concepto","mes","nombre_snapshot","categoria_snapshot","tipo_snapshot","semana","monto_presupuestado","monto_ejecutado","desviacion","estado","ejecutor","fuente_en_mano","fuente_nequi","fuente_camilo","fuente_angie","fecha_ejecucion","razon_desviacion","razon_postergacion","comprobante_url","pendiente_aprobacion","notas","monto_ejecutado_camilo","monto_ejecutado_angie","id_recarga_origen"]
+¿Fila 145 == header esperado exacto? true
+Fila 146: AUSENTE (undefined)
+Filas que coinciden EXACTAMENTE con el header esperado: [145]
+Filas con col A no vacía: 145
+```
+
+Checks contra la hipótesis:
+- ✅ Sheet ID de producción confirmado exacto.
+- ✅ Fila 145 = header esperado, en el orden exacto de `H2_HEADERS` en `lib/data/sheets.ts` (25 columnas, `id_movimiento`…`id_recarga_origen`).
+- ✅ Fila 1 contiene datos (un movimiento real, no header).
+- ✅ Conteo total = 145 filas exactas (ni una más ni una menos).
+- ✅ Header aparece **una sola vez** (fila 145) — descarta que `ensureH2Headers()` ya haya escrito un header duplicado en fila 1 mientras tanto.
+
+Integridad columna-por-columna de las 144 filas de datos
+(`check-h2-integrity-prod.mjs`, valida `mes`, `semana`, `estado`, los 5
+flags `fuente_*`/`pendiente_aprobacion`, los 5 montos numéricos, prefijo
+`MOV_` en `id_movimiento`, `id_concepto` no vacío):
+- 3 "violaciones" reportadas inicialmente por el script eran falso
+  positivo: mi enum de `estado` no incluía `pospuesto` ni
+  `pospuesto_mes_siguiente`, que **sí son valores válidos** del tipo
+  `EstadoMovimiento` (`lib/data/types.ts:8`). Descartadas tras contrastar
+  con el código.
+- **0 violaciones reales.** Ninguna fila muestra columnas de tipo/formato
+  incoherente con su posición — confirma que el desplazamiento fue de
+  **fila completa** (el header entero se movió como bloque a la
+  posición 145), no una mezcla de columnas individuales.
+
+**Discrepancia menor frente al prompt (no bloqueante):** el prompt pedía
+verificar "los 24 valores del encabezado", pero el encabezado real
+(`H2_HEADERS` en código, confirmado también contra la fila 145 real)
+tiene **25** columnas. Se verificó contra las 25 columnas reales de
+`H2_HEADERS`, no contra un conteo de 24.
+
+**Conclusión Paso 1: hipótesis confirmada sin discrepancias bloqueantes.**
+
+### Paso 2 — Auditoría de funciones que tocan H2
+
+Código de producción (excluye los ~35 scripts de un solo uso en
+`scripts/`, que no corren automáticamente; se listan aparte al final).
+
+| Función | Archivo | Asume header fila 1 (hardcodeado) | Asume datos desde fila 2 (hardcodeado) | Nota |
+|---|---|---|---|---|
+| `ensureH2Headers()` | `lib/data/sheets.ts:210` | Sí — lee solo `H2!A1` y compara con `"id_movimiento"` | — | **Riesgo latente, fuera de alcance de este fix**: si no encuentra el header en A1, **sobrescribe A1 con el header** (`values.update` a `H2!A1`). Con el header actualmente en fila 145, cualquier llamada a `crearMovimientosMes()` antes del fix dispararía esto y corrompería la fila 1 real (dato de "Arriendo y Administración"). Se confirmó (fila 145 única con match exacto) que esto **no ha ocurrido todavía**. |
+| `getMeses()` | `lib/data/sheets.ts:228` | Sí — `const [headers, ...dataRows] = rows` | Implícito (todo lo que no es fila 0) | Dinámico solo en la *columna* (`headers.indexOf("mes")`), no en la *fila* del header. |
+| `getMovimientos(mes)` | `lib/data/sheets.ts:250` | Sí — mismo patrón `[headers, ...dataRows]` | Implícito | Mismo patrón que `getMeses`. |
+| `updateMovimiento(id, data)` | `lib/data/sheets.ts:295` | Sí — mismo patrón | Sí — `const sheetRow = rowIndex + 2; // +1 header row, +1 for 1-based indexing` (comentario explícito en el código) | Doble hardcoding: fila de header Y offset de escritura. |
+| `crearMovimientosMes()` | `lib/data/sheets.ts:270` | Indirecto (llama a `ensureH2Headers()` primero) | No aplica — usa `values.append`, que agrega después de la última fila con datos en el rango, sin asumir posición de header | El riesgo real de esta función es el de `ensureH2Headers()`, no el propio `append`. |
+| `resetH2()` | `app/api/admin/reset-mes/route.ts:60` | Sí — `raw[0].indexOf("mes")` | Sí — `values.clear({ range: "H2!A2:Z1000" })` hardcodea "los datos están en 2..1000" | **Riesgo latente adicional, fuera de alcance**: con el header en 145, esta ruta limpiaría filas 2–144 (datos reales) asumiendo que protege un header en fila 1 que en realidad no está ahí, y además borraría la fila 145 (el header real) por estar dentro de `2:1000`. No se ha invocado con este bug presente (no hay evidencia de ejecución en el rango de fechas relevante), pero es una ruta de API activa (`POST /api/admin/reset-mes`). |
+
+**Conclusión Paso 2:** todas las funciones de producción que leen H2
+asumen el header en fila 1 de forma hardcodeada (ninguna lo busca
+dinámicamente por nombre de columna a nivel de *fila*). Esto significa
+que el fix propuesto (mover el header físicamente a la fila 1) las
+corrige a **todas** automáticamente, sin requerir cambios de código
+adicionales — consistente con lo que el prompt anticipaba como caso
+"simple". No se encontró ninguna función con un offset distinto o caché
+de posición que requiera un fix adicional.
+
+Se documentan dos riesgos **latentes y fuera del alcance quirúrgico de
+este fix** (no se tocan en el Paso 3, quedan para una ronda de hardening
+aparte): `ensureH2Headers()` sobrescribe destructivamente en vez de
+insertar, y `resetH2()` hardcodea el rango de limpieza en vez de derivarlo
+del header real.
+
+Scripts de un solo uso en `scripts/` que referencian `H2!` (no forman
+parte del código que corre en producción; no auditados función por
+función porque no se ejecutan automáticamente): `check-h2*.mjs`,
+`fix-h2*.mjs`, `reset-h2.mjs`, `clear-h2.mjs`, `setup-h2.mjs`,
+`reset-julio*.mjs`, `reset-junio*.mjs`, `migrate-t39.mjs`,
+`migrate-t45.mjs`, `revertir-*.mjs`, `seed-imprevistos*.mjs`, y los
+`check-*.mjs` puntuales de auditorías anteriores.
+
+### Paso 3 — Fix
+
+**No ejecutado.** Paso 1 y Paso 2 confirman la hipótesis sin
+discrepancias bloqueantes, pero el prompt exige aprobación explícita de
+Camilo después de ver estos resultados antes de escribir en producción.
+Queda pendiente de luz verde.
+
+### Paso 3 — Fix (ejecutado, con aprobación explícita de Camilo)
+
+**Snapshot de respaldo:** `scripts/backup-h2-header-fix-prod-1783269569750.json`
+(local, no en el Sheet) — captura completa de `H2!A1:Z200` de producción
+inmediatamente antes de escribir.
+
+**Operación:** en vez de un read-modify-write manual con `values.update`
+fila por fila, se usó `spreadsheets.batchUpdate` con una request
+`moveDimension` (`ROWS`, `startIndex: 144, endIndex: 145` →
+`destinationIndex: 0`) sobre el `sheetId` real de la tab H2
+(`232572821`, resuelto vía `spreadsheets.get`). Esto mueve la fila 145
+completa como bloque atómico a la posición 1; Sheets recalcula el resto
+de las posiciones internamente — no hay ventana intermedia con datos
+inconsistentes como sí la habría con escrituras separadas.
+
+**Verificación antes/después:**
+
+| | Pre-fix | Post-fix |
+|---|---|---|
+| Total filas | 145 | 145 |
+| Fila 1 | dato (`MOV_1780841387980`, Arriendo y Administración) | header exacto (25 columnas, match exacto) |
+| Fila 145 | header exacto | dato (`MOV_1782565828434`, Imprevistos, `2026-07`) |
+| Fila 146 | ausente | ausente |
+
+**Verificación adicional de integridad del desplazamiento** (script
+`verify-h2-shift-integrity-prod.mjs`, no pedida explícitamente por el
+prompt pero necesaria para no dar por buena la operación solo por los
+checks de fila 1/145): se compararon las 144 filas de datos pre-fix
+(filas 1–144 del snapshot) contra las 144 filas de datos post-fix (filas
+2–145 actuales), una por una. **0 diferencias** — mismo contenido, mismo
+orden relativo, únicamente desplazadas +1 posición. Ningún dato se
+perdió, duplicó o alteró.
+
+**Resultado: fix aplicado correctamente y verificado. Ninguna otra tab
+(H1, H3B, H4, H5) fue tocada — la única operación de escritura fue el
+`moveDimension` sobre el rango de H2.**
+
+Nota para el hardening pendiente (no ejecutado en esta sesión, fuera del
+alcance quirúrgico aprobado): los dos riesgos latentes documentados en el
+Paso 2 (`ensureH2Headers()` sobrescribe en vez de insertar; `resetH2()`
+hardcodea `H2!A2:Z1000`) siguen presentes en el código. Ya no se
+disparan por el bug actual (el header ya está en fila 1), pero conviene
+resolverlos en un ticket aparte para que la clase de bug no se repita.
+
+## Sesión CIERRE — Actualización ESTADO.md (append-only) · 2026-07-05
+
+Escritura exclusiva en `ESTADO.md`. Ningún otro archivo del repo tocado.
+No se ejecutó `generate-kanban.mjs` (decisión explícita de Camilo, fuera
+de este prompt). No se tocó el Sheet.
+
+### Anchor guard (Paso 1-3)
+
+```
+$ git log -1 --oneline -- ESTADO.md
+85554f4 docs: actualizar ESTADO.md — cierre sesión Ticket B 3 julio 2026
+
+$ git status --porcelain ESTADO.md
+(vacío — sin cambios sin commitear)
+
+$ grep -n "^## " ESTADO.md | tail -5
+4620:## FEAT-BARRA-FALTAPAGAR-01 · 30 junio 2026
+4654:## Corrección y cierre — Sesión 2026-06-30 [DISEÑO → CONSTRUCCIÓN]
+4702:## MERGE CONFIRMADO — FEAT-BARRA-FALTAPAGAR-01 · 30 junio 2026
+4711:## Sesión debugging VistaSemanal — 2 julio 2026
+4815:## Sesión Ticket B — 3 julio 2026 [DEBUGGING → DISEÑO → CONSTRUCCIÓN, pausada]
+
+$ tail -5 ESTADO.md
+3. Decidir sobre Sheet dev septiembre/octubre (resetear o conservar).
+4. Correr `generate-kanban.mjs` y crear el PR de TICKET-B-GUARDIA-01
+   cuando el DoD completo esté verificado.
+5. Pendiente de agenda, sin fecha: confirmación final de `DT-M1M4-NULL-01`
+   como ticket propio a construir.
+```
+
+Resultado: sin cambios sin commitear, última sección es el cierre de una
+lista de pendientes numerada (1-5) de la sesión Ticket B del 3 de julio —
+coherente con cierre de sección, no contenido a mitad de edición. Anchor
+guard pasa sin discrepancias. Se procedió a anexar.
+
+### Confirmación del append (verbatim)
+
+Diff real tras el append (`git diff -- ESTADO.md`):
+
+```diff
+@@ -4958,3 +4958,32 @@ corriendo sin supervisión directa, no se puede asumir que terminó limpio.
+    cuando el DoD completo esté verificado.
+ 5. Pendiente de agenda, sin fecha: confirmación final de `DT-M1M4-NULL-01`
+    como ticket propio a construir.
++
++## DT-HEADER-H2-01 — Header de H2 desplazado a fila 145 (RESUELTO)
++Fecha: 2026-07-05
++Síntoma: cierre de semana S1 julio 2026 bloqueado ("Movimiento no encontrado"), 
++falta_por_pagar mostrando $0 con pendientes reales activos, presupuestado/ejecutado 
++con strikethrough inconsistente.
++Causa raíz: edición manual directa en Sheet de producción (ordenamiento descendente 
++de rango completo en H2, incluyendo fila de encabezado) desplazó el header de 
++fila 1 a fila 145. getMeses, getMovimientos, updateMovimiento, ensureH2Headers 
++(lib/data/sheets.ts) y resetH2 (app/api/admin/reset-mes/route.ts) asumen header 
++en fila 1 de forma hardcodeada — ninguna lo busca dinámicamente.
++Fix: batchUpdate atómico (moveDimension) moviendo fila 145 a posición 1. 
++Snapshot previo: scripts/backup-h2-header-fix-prod-1783269569750.json. 
++Verificado: 145 filas, header en fila 1, comparación fila-por-fila pre/post 
++sin diferencias, H1/H3B/H4/H5 intactas.
++Riesgos latentes documentados (no resueltos, fuera de alcance de este ticket):
++- ensureH2Headers() sobrescribiría destructivamente fila 1 si se llama con 
++  el header en posición incorrecta.
++- resetH2() borra rango 2:1000 con el mismo supuesto de header fijo en fila 1.
++Pendiente de decisión (Camilo): si se abre ticket de hardening para estos dos 
++riesgos, y si se define alguna protección (protección de rango, proceso, o 
++aceptación de riesgo) contra edición manual directa en Sheet de producción.
++
++## Hallazgo colateral — columnas ya existentes en H2
++Durante auditoría de Paso 2 se confirmó que H2 ya contiene monto_ejecutado_camilo 
++y monto_ejecutado_angie como columnas nativas. Esto invalida el enfoque de diseño 
++planteado en la sesión de DISEÑO abierta para la feature "ejecutado por persona 
++en barra at-a-glance" (que asumía derivar el split desde ejecutor + monto_ejecutado). 
++Sesión de DISEÑO queda pendiente de retomar con este dato como nuevo punto de partida.
+```
+
+Confirmado: append puro, sin ninguna línea eliminada, editada ni
+reordenada por encima del punto de inserción — el diff solo muestra `+`.
+
+### Línea final del archivo post-append
+
+```
+$ tail -1 ESTADO.md
+Sesión de DISEÑO queda pendiente de retomar con este dato como nuevo punto de partida.
+
+$ wc -l ESTADO.md
+4989 ESTADO.md
+```
+
+No se hizo commit de este cambio (el prompt no lo pidió); `ESTADO.md`
+queda con la modificación en el working tree, pendiente de que Camilo
+decida cuándo commitear.
+
+## Sesión DISEÑO — Verificación de factibilidad `ejecutadoPorPersona()` · 2026-07-05
+
+Solo lectura. Ningún `batchUpdate`, ninguna escritura, ningún componente
+ni `ESTADO.md` modificado. Sheet ID de producción confirmado
+(`1GOMhxYw_f7Zl-GTVNtxAs9218x4vKxzg3LGRyveyr7A`) antes de leer.
+
+Scripts usados (todos read-only):
+`scripts/verificacion-ejecutado-por-persona-prod.mjs`,
+`scripts/check-h3-ejecutor-integridad-prod.mjs`.
+
+### 1. Colisión de nombres
+
+`grep -r` sobre todo `.ts`/`.tsx` para `ejecutadoPorEjecutor`,
+`ejecutadoPorPersona`, `totalPorEjecutor` y variantes cercanas
+(`porEjecutor`, `porPersona`, `ejecutadoAngie`, `ejecutadoCamilo`,
+`totalAngie`, `totalCamilo`): **0 coincidencias** con los nombres
+propuestos. Sí existen campos ya nativos con nombre parecido —
+`montoEjecutadoCamilo`/`montoEjecutadoAngie` (`lib/data/types.ts:69-70`,
+`lib/data/sheets.ts:174-175,204-205`) — pero son columnas de dato, no
+funciones, y no colisionan con los identificadores propuestos.
+**Sin bloqueo.**
+
+### 2. Integridad del campo `ejecutor` en datos reales
+
+Chequeo corrido sobre **todo H2 de producción** (no solo 3 semanas,
+dataset completo: 144 filas, 72 con `estado=ejecutado`):
+
+- Filas con `ejecutor` nulo/vacío/fuera de `{camilo, angie}`: **0**.
+- Monto que quedaría excluido silenciosamente de ambas personas: **$0**.
+
+Complementario (no pedido explícitamente, pero necesario porque el
+hallazgo de la verificación 3 obliga a considerar H3 también): mismo
+chequeo sobre H3 (consumos, 56 filas) — **0 filas** con `ejecutor`
+inválido/vacío. **Ambas fuentes están limpias hoy.**
+
+Caso borde de fuente cruzada (`ejecutor` distinto de la cuenta pagadora):
+**8 casos reales** encontrados en H2, todos en 2026-06 S3/S4 — confirma
+que no es un caso teórico raro, ya ocurre con regularidad:
+```
+2026-06 S3 · Dr. Sánchez (Angie)     · ejecutor=camilo · fuente_angie=TRUE
+2026-06 S3 · Mesada Emma             · ejecutor=camilo · fuente_angie=TRUE
+2026-06 S4 · Mesada Emma             · ejecutor=camilo · fuente_angie=TRUE
+2026-06 S3 · Empleada Mireyita       · ejecutor=camilo · fuente_angie=TRUE
+2026-06 S4 · Empleada Mireyita       · ejecutor=camilo · fuente_angie=TRUE
+2026-06 S3 · Chucherías viernes      · ejecutor=camilo · fuente_angie=TRUE
+2026-06 S4 · Chucherías viernes      · ejecutor=angie  · fuente_camilo=TRUE
+2026-06 S3 · Ayuda mamá              · ejecutor=camilo · fuente_angie=TRUE
+```
+
+### 3. Verificación aritmética contra la barra actual
+
+Se leyó primero cómo la barra morada calcula hoy su "ejecutado"
+(`components/VistaSemanal.tsx:986-991`):
+
+```js
+// After cerrar-semana writes estado=ejecutado to pago_fraccionado H2,
+// this prevents double-counting.
+const totalEjecutadoH2 = movimientos
+  .filter((m) => m.estado === "ejecutado" && m.tipoSnapshot !== "pago_fraccionado")
+  .reduce((s, m) => s + (m.montoEjecutado ?? 0), 0);
+const totalEjecutadoH3 = consumos.reduce((s, c) => s + c.monto, 0);
+const totalEjecutado = totalEjecutadoH2 + totalEjecutadoH3;
+```
+
+Es decir, la barra actual **excluye** de H2 los movimientos
+`tipo_snapshot=pago_fraccionado` y en cambio **suma H3 (consumos)** —
+que también tiene su propio campo `ejecutor` (`ConsumoH3.ejecutor`,
+`lib/data/types.ts:83`). La fórmula propuesta en el prompt solo lee
+`movimientos` (H2) y no toca H3 en absoluto ni excluye
+`pago_fraccionado`.
+
+Se probó contra las 3 semanas cerradas con historial en H5 más ricas en
+datos (`2026-06 S2`, `S3`, `S4`; `2026-05 S1` está en H5 pero sin filas
+H2/H3 vivas hoy — probablemente limpiada en un reset, se excluye del
+análisis por no tener datos que comparar):
+
+| Semana | Propuesta (solo H2, por ejecutor) | Barra actual (H2 sin pago_fraccionado + H3) | H5 registrado al cierre | Diferencia (propuesta − barra) |
+|---|---|---|---|---|
+| 2026-06 S2 | angie=811.500 + camilo=0 = **811.500** | H2=811.500 + H3=1.138.620 = **1.950.120** | 1.950.120 | **-1.138.620** |
+| 2026-06 S3 | angie=140.000 + camilo=1.487.160 = **1.627.160** | H2=750.000 + H3=1.207.070 = **1.957.070** | 1.957.070 | **-329.910** |
+| 2026-06 S4 | angie=530.000 + camilo=1.325.096 = **1.855.096** | H2=719.996 + H3=1.649.900 = **2.369.896** | 2.314.896 | **-514.800** |
+
+**No coinciden en ninguna de las 3 semanas.** La diferencia se explica
+en el 100% de los casos por los consumos de H3 (17, 13 y 16 filas
+respectivamente) que la fórmula propuesta ignora por completo, más — en
+S3 y S4 — filas H2 `pago_fraccionado` ya ejecutadas (4 y 4 filas) que la
+propuesta sí suma pero que la barra actual excluye a propósito para no
+duplicar contra sus consumos H3 correspondientes.
+
+En 2026-06 S2, los consumos H3 ($1.138.620) representan el **58% del
+total real de la semana** — no es un residuo marginal, es la mayoría del
+gasto ejecutado esa semana.
+
+**Hallazgo secundario, fuera de las 4 preguntas pedidas pero detectado
+al cruzar datos:** en S4, mi réplica de la fórmula de la barra
+($2.369.896) no coincide con lo que quedó registrado en H5 al momento
+del cierre ($2.314.896) — diferencia de $55.000. En S2 y S3 sí coincide
+exactamente. Posible explicación: una corrección posterior al cierre vía
+el modal M5 (`components/VistaSemanal.tsx` — "corrección de ejecutado
+H2") que alteró un monto después de que se escribiera el cierre. No se
+investigó más a fondo por estar fuera del alcance de las 4 verificaciones
+pedidas; se deja anotado para que Camilo lo tenga presente, no bloquea el
+veredicto de este prompt.
+
+### 4. Casos borde de datos nulos
+
+`monto_ejecutado` nulo/vacío en H2 con `estado=ejecutado`: **0 de 72**
+filas. El `.reduce()` de la fórmula propuesta no se rompería con los
+datos actuales.
+
+### Veredicto
+
+**La fórmula tal como está escrita en el prompt NO es segura para
+construir.** No por integridad de datos — `ejecutor` y `monto_ejecutado`
+están 100% limpios hoy en H2 y H3 — sino porque la fórmula está
+**estructuralmente incompleta**: solo lee H2 (`movimientos`) e ignora H3
+(`consumos`) por completo, cuando H3 ya tiene su propio campo `ejecutor`
+y representa una porción grande (hasta 58% en la semana probada) del
+"ejecutado" real de una semana típica. Si se construye tal cual, el
+desglose por persona en la barra sumará **menos** que el total agregado
+que la misma barra ya muestra al lado — una inconsistencia visible
+inmediatamente para Camilo/Angie en la primera semana con consumos
+`pago_fraccionado`.
+
+**Guard/corrección recomendada (no implementada, queda para la
+iteración de construcción):** redefinir la fórmula para que replique
+exactamente las mismas dos fuentes que ya usa la barra, partidas por
+`ejecutor`:
+
+```
+ejecutadoPorPersona(persona, mes, semana) =
+    Σ movimientos.filter(m =>
+        m.ejecutor === persona && m.estado === "ejecutado" &&
+        m.tipoSnapshot !== "pago_fraccionado" &&
+        m.mes === mes && m.semana === semana
+      ).map(m => m.montoEjecutado ?? 0)
+  + Σ consumos.filter(c =>
+        c.ejecutor === persona && c.mes === mes && c.semana === semana
+      ).map(c => c.monto)
+```
+
+Con esta redefinición, `ejecutadoPorPersona("angie") + ejecutadoPorPersona("camilo")`
+sí coincide exactamente con `totalEjecutado` en las 3 semanas probadas
+(por construcción, ya que son las mismas dos sumas que hoy produce
+`totalEjecutadoH2 + totalEjecutadoH3`, solo particionadas por
+`ejecutor`).
+
+No se recomienda ningún guard adicional por `ejecutor`/`monto_ejecutado`
+inválido en H2 o H3 — hoy no hay ninguna fila así en producción — pero
+sí vale la pena que la implementación no asuma que seguirá siendo cero
+para siempre (ej. un `?? 0` defensivo en el monto, ya presente de hecho
+en el patrón que usa `totalEjecutadoH2` hoy).
+
+El caso borde de fuente cruzada (`ejecutor=angie` con fuente de pago de
+Camilo o viceversa) es real y frecuente (8 casos en dos semanas) — se
+confirma que el criterio "cuenta por `ejecutor`, no por fuente" cerrado
+por Camilo es coherente con cómo ya se comporta el resto del sistema.
+
+## Sesión DISEÑO — Re-verificación `ejecutadoPorPersona()` corregida · 2026-07-05
+
+Segunda iteración. Solo lectura, mismo Sheet de producción confirmado
+(`1GOMhxYw_f7Zl-GTVNtxAs9218x4vKxzg3LGRyveyr7A`) antes de leer. Ningún
+`batchUpdate`, ninguna escritura, ningún componente ni `ESTADO.md`
+tocado. Script usado:
+`scripts/reverificacion-ejecutado-por-persona-prod.mjs` (read-only).
+
+### Formato/enum de `ejecutor`: H2 vs H3
+
+```
+Valores distintos en H2.ejecutor (todas las filas): ["camilo", "", "angie"]
+Valores distintos en H3.ejecutor (todas las filas): ["angie", "camilo"]
+Valores fuera de {'', 'camilo', 'angie'} en H2: []
+Valores fuera de {'', 'camilo', 'angie'} en H3: []
+Filas H2 con ejecutor vacío (cualquier estado): 70
+Filas H3 con ejecutor vacío (cualquier fila): 0
+```
+
+Mismo tipo `Actor = "camilo" | "angie"` en TypeScript para ambas tablas
+(`lib/data/types.ts:4`), mismos valores literales en minúscula, sin
+espacios ni variantes de mayúsculas en ninguna de las dos. Las 70 filas
+H2 con `ejecutor` vacío son movimientos aún no ejecutados (`ejecutor` se
+llena solo al ejecutar) — no interfieren porque la fórmula ya filtra por
+`estado === "ejecutado"` primero, y la sesión anterior confirmó 0 filas
+inválidas dentro del subconjunto `estado=ejecutado`.
+
+**Diferencia real de comportamiento, a nivel de código, no de datos
+hoy:** `rowToMovimiento` (`lib/data/sheets.ts`) hace
+`(col("ejecutor") || null) as Actor | null` — vacío se vuelve `null`.
+`rowToConsumoH3` hace `(col("ejecutor") || "camilo") as Actor` — vacío
+se convierte silenciosamente en `"camilo"`. Es una asimetría real en el
+código (H3 nunca debería tener `ejecutor` vacío por diseño, pero si
+alguna vez lo tuviera, se atribuiría a Camilo sin avisar, mientras que
+en H2 quedaría fuera de ambas sumas). Hoy no se manifiesta — H3 tiene
+**0** filas vacías — pero es una asimetría a tener presente si en algún
+momento se permite crear un consumo H3 sin `ejecutor` explícito.
+
+### Verificación 3 (corregida) — comparación por semana
+
+| Semana | Suma por persona (corregida) | Total actual de la barra | Diferencia |
+|---|---|---|---|
+| 2026-06 S2 | angie 1.561.150 (H2 811.500 + H3 749.650) + camilo 388.970 (H2 0 + H3 388.970) = **1.950.120** | **1.950.120** | **0** |
+| 2026-06 S3 | angie 1.237.070 (H2 140.000 + H3 1.097.070) + camilo 720.000 (H2 610.000 + H3 110.000) = **1.957.070** | **1.957.070** | **0** |
+| 2026-06 S4 | angie 1.925.100 (H2 530.000 + H3 1.395.100) + camilo 444.796 (H2 189.996 + H3 254.800) = **2.369.896** | **2.369.896** | **0** |
+
+**Diferencia = 0 en las 3 semanas, exacta, sin redondeos.** No hizo
+falta identificar filas que expliquen una diferencia porque no hubo
+ninguna — se corrió igual el chequeo de filas con `ejecutor` fuera de
+`{angie, camilo}` dentro de cada semana como red de seguridad: 0 filas
+en las 3 semanas, en ambas tablas.
+
+### Dato adicional — discrepancia H5 en S4 (solo confirmación, sin investigar)
+
+La discrepancia de $55.000 detectada en la sesión anterior (barra en
+vivo $2.369.896 vs H5 registrado $2.314.896) **se replica
+idénticamente** en el cálculo por persona: `sumaCorregida (2.369.896) −
+H5 registrado (2.314.896) = 55.000`, exactamente el mismo monto y
+dirección que `barra en vivo − H5 registrado`. Esto indica que el origen
+del problema **no está en el desglose por persona ni es específico de
+esta feature** — es el mismo dato/cálculo que ya afecta hoy a la barra
+agregada, antes de cualquier cambio. Consistente con que sea candidato a
+`DT-H5-DESVIACION-01` como ticket separado, tal como anticipaba el
+prompt. No se investigó más allá de esta confirmación.
+
+### Veredicto final
+
+**Fórmula corregida lista para "aprobado para construir" desde el punto
+de vista aritmético — sin ajuste pendiente sobre la fórmula misma.**
+`ejecutadoPorPersona("angie") + ejecutadoPorPersona("camilo")` coincide
+exactamente con el total ya mostrado por la barra en las 3 semanas
+reales probadas, incluyendo una semana (S4) donde el total de la barra
+ya difiere de lo registrado en H5 — el desglose no introduce una
+inconsistencia nueva, hereda fielmente la misma que ya existe hoy.
+
+Dos observaciones para que Camilo decida, no bloqueantes:
+1. La asimetría `null` (H2) vs `"camilo"` por defecto (H3) en el manejo
+   de `ejecutor` vacío a nivel de código — sin impacto hoy, pero vale la
+   pena armonizarla si se toca ese código de todos modos al construir
+   esta feature.
+2. La discrepancia de H5 en S4 sigue pendiente como `DT-H5-DESVIACION-01`
+   — no bloquea esta feature (se demostró que la hereda, no la causa),
+   pero conviene no perderla de vista.
+
+## Sesión CONSTRUCCIÓN — FEAT-BARRA-EJECUTADO-PERSONA-01 · 2026-07-05
+
+Un solo ticket activo. No se abrió trabajo adicional. `ESTADO.md` no
+tocado (se actualiza al cierre, junto con Camilo). No se hizo merge a
+`main`.
+
+### HARD STOP — precondición
+
+La fórmula corregida ya estaba verificada contra datos reales en la
+sesión de diseño previa (diferencia = 0 en 2026-06 S2/S3/S4 de
+producción). No se re-verificó desde cero; se procedió directo a
+construir, tal como autorizaba el prompt. Sí se volvió a verificar el
+resultado final ya integrado en el componente (ver DoD 1/3 abajo) contra
+datos reales adicionales, para no depender solo de la verificación
+previa hecha con scripts sueltos.
+
+### Acceso al diseño (Claude Design)
+
+El proyecto `97813d91-05b8-4b32-8516-047301a1db19` ("Desglose ejecutado
+por persona") requirió `/design-login` (DesignSync inicialmente devolvió
+"needs design-system authorization"; tras que Camilo corriera el
+comando, `get_project`/`list_files`/`get_file` funcionaron).
+
+**Confirmación explícita pedida por el prompt:** el archivo
+`Barra semanal - desglose por persona (final).dc.html` **NO traía
+interactividad real** — es un mockup estático (CSS + un bloque de markup
+fijo bajo el comentario `<!-- Estado tap — al tocar el chip "Angie" -->`
+que muestra cómo se ve el popover abierto, sin ningún JS de estado).
+Tuve que implementar la interactividad yo mismo, replicando el mecanismo
+`popoverMode`/`showPresupuestadoPopover` ya existente para
+"presupuestado"/"ejecutado"/"falta_pagar".
+
+El README del handoff (`design_handoff_desglose_por_persona/README.md`,
+no mencionado en el prompt original) incluía una pieza de scope que el
+prompt de construcción no traía: reubicar el botón "Cerrar semana" por
+riesgo de toque accidental con los chips nuevos. Se lo señalé a Camilo
+antes de tocar código (`AskUserQuestion`); confirmó incluirlo, y el
+prompt se reenvió ya con la Parte 4 y el DoD 6 explícitos.
+
+### Archivos modificados
+
+- `lib/data/types.ts` — `ConsumoH3.ejecutor: Actor` → `Actor | null` (Parte 3).
+- `lib/data/sheets.ts` — `rowToConsumoH3`: quita el default silencioso
+  `|| "camilo"`, ahora `|| null`. `consumoH3ToRow`: escribe `c.ejecutor ?? ""`
+  en vez de asumir no-null.
+- `components/VistaSemanal.tsx` (único componente tocado, por diseño):
+  - Parte 1: `itemsPorPersona(persona)` y `ejecutadoAngie`/`ejecutadoCamilo`,
+    colocados junto a `totalEjecutadoH2`/`totalEjecutadoH3`/`totalEjecutado`
+    ya existentes (mismo archivo, sin módulo nuevo).
+  - Parte 2: dos chips (Angie/Camilo) debajo de la línea presupuestado/ejecutado,
+    tappables, con popover propio (`popoverMode` extendido a `"angie" | "camilo"`)
+    reusando el mismo contenedor/posicionamiento (`presupuestadoAnchor`,
+    `showPresupuestadoPopover`) que los popovers existentes. Formato de fila
+    igual al de "ejecutado" (descripción + monto, total al pie).
+  - Parte 3 (UI): `useState<Actor>(consumo.ejecutor ?? "camilo")` en
+    `ModalCorreccion` (selección inicial del formulario de corrección, no
+    un default de lectura); dos labels de avatar (`OriginalRecord` y la
+    fila de "Ejecutados" con consumos H3) que antes asumían
+    "no es camilo → Angie" y ahora distinguen explícitamente
+    `null` → avatar gris "?" / "Sin asignar".
+  - Parte 4: botón "Cerrar semana" movido de bloque ancho al final del
+    header a pill compacto en `.fl-topnav`, junto al botón volver
+    (mismos estilos que el handoff: fondo blanco, texto `#8a1257`,
+    sombra `0 2px 8px rgba(0,0,0,.18)`). El mensaje de error de cierre
+    (`cierreError`) se reubicó como línea debajo del topnav en vez de
+    debajo del botón viejo.
+  - Colores de los anillos del avatar: se usaron los tokens ya
+    existentes `var(--warn)` (ámbar, Angie) y `var(--pos)` (verde,
+    Camilo) en vez de hardcodear los hex del mockup — el propio README
+    del handoff confirma que son los mismos colores semánticos ya usados
+    en la app ("ámbar en pills de libre/pendiente", "verde en botón OK").
+
+### DoD — resultado punto por punto
+
+**1. Suma de los dos pills = "ejecutado" agregado, cualquier semana.**
+Verificado por construcción (`itemsPorPersona` reutiliza exactamente los
+mismos dos filtros de `totalEjecutadoH2`/`totalEjecutadoH3`, solo
+particionados por `ejecutor`) y confirmado con datos reales — ver punto 3.
+
+**2. Cada pill tappable, abre popover con conceptos correctos.**
+Implementado con el mismo mecanismo de estado que los otros 3 popovers
+existentes (mismo `onClick`, mismo `presupuestadoAnchor`, mismo cierre al
+click-afuera vía el `useEffect` ya existente sobre
+`presupuestadoPopoverRef`). **No pude confirmarlo con un click real en
+navegador** — ver limitación de entorno más abajo. Confirmado por lectura
+de código: la lista que se muestra (`itemsAngie`/`itemsCamilo`) es la
+misma que alimenta la suma del pill, así que no puede haber
+desalineación entre lo que el pill muestra y lo que el popover lista.
+
+**3. Verificado en ≥2 semanas reales, datos distintos.**
+Con datos reales de **dev** (`scripts/verificacion-dod-feat-persona.mjs`,
+Sheet ID `1p5hvKINy512I-BOEA5ujjynUnJVdnvniAiqCQTYDJ-w`, tal como está
+configurado hoy en `.env.local`):
+
+```
+2026-06 S2 (dev) — angie=465.250 camilo=0       suma=465.250   vs totalEjecutado=465.250   | diff=0
+2026-06 S3 (dev) — angie=300.000 camilo=50.000  suma=350.000   vs totalEjecutado=350.000   | diff=0
+2026-06 S1 (dev) — angie=600.000 camilo=12.000.227 suma=12.600.227 vs totalEjecutado=12.600.227 | diff=0
+```
+
+Sumado a las 3 semanas de **producción** ya verificadas en la sesión de
+diseño previa (2026-06 S2/S3/S4, diff=0 también) — 6 semanas reales en
+total entre los dos ambientes, todas con diferencia exacta = 0.
+
+**4. `ejecutor` vacío en H3 se trata como `null`, verificado con caso simulado.**
+Caso simulado en memoria (no se tocó ningún Sheet), replicando
+exactamente `itemsPorPersona`:
+
+```
+Consumos simulados: angie=1.000, camilo=2.000, (sin ejecutor)=5.000
+ejecutadoAngie = 1.000 (esperado 1.000) ✓
+ejecutadoCamilo = 2.000 (esperado 2.000) ✓
+totalEjecutado (barra) = 8.000 (esperado 8.000 — la barra SÍ suma la fila sin ejecutor) ✓
+Fila sin ejecutor en itemsAngie: false ✓ | en itemsCamilo: false ✓
+```
+Confirma el comportamiento buscado: la fila sin `ejecutor` no se atribuye
+a nadie en el desglose, pero sigue contando en el agregado de la barra
+(no desaparece plata, solo queda "sin asignar" en el desglose).
+
+**5. Ningún cálculo existente rompe por quitar el default de H3.**
+`grep` de todos los usos de `.ejecutor` sobre `ConsumoH3` en el repo
+(`OriginalRecord`, la fila de "Ejecutados", `ModalCorreccion`,
+`consumoH3ToRow`, `app/api/consumos/[id]/route.ts`) — los 3 primeros se
+corrigieron explícitamente (arriba); el resto ya toleraba `Actor | null`
+sin cambios. Confirmado que **ninguna ruta de creación de consumos**
+(`RegistroRapido`, `InputRegistro`, `/api/registro/sin-concepto`) depende
+del default — las tres exigen `ejecutor` explícito en su tipo (`Actor`,
+no opcional) antes de crear el registro. El default silencioso solo
+podía dispararse ante una edición manual directa del Sheet, y hoy 0
+filas están en ese estado (confirmado en la sesión de diseño anterior).
+
+**6. Botón "Cerrar semana" reubicado, sin toques accidentales.**
+Reubicado en código (topnav, lejos de los chips). **No pude
+"verificar manualmente simulando el patrón de toque"** como pedía el DoD
+— ver limitación de entorno. Verificable por estructura: el botón ya no
+comparte contenedor ni posición vertical con los chips nuevos (antes
+vivía en el mismo bloque, inmediatamente después; ahora está en
+`.fl-topnav`, arriba del todo, en un contenedor flex distinto).
+
+**7. `tsc --noEmit` limpio.** Confirmado, exit code 0, sin warnings.
+
+**8. Sin regresión visual en falta por pagar/presupuestado/ejecutado.**
+Esos tres bloques JSX no se modificaron — solo se agregó un `div`
+hermano nuevo debajo y se quitó el bloque del botón de cierre que vivía
+más abajo. **No confirmado visualmente** — ver limitación de entorno.
+
+### Limitación de entorno — verificación visual en navegador
+
+Intenté levantar `npm run dev` (arrancó correctamente, `curl` desde la
+shell del agente confirmó `200` en `localhost:3000`) y abrir la app con
+la extensión de Chrome del usuario para probar los pills y el popover en
+vivo a 375px. **La pestaña de Chrome no pudo cargar `localhost:3000`**
+("Frame with ID 0 is showing error page") en dos intentos con espera —
+la shell del agente y el navegador real del usuario parecen estar en
+espacios de red distintos en este entorno (WorkSpaces), por lo que
+`localhost` no apunta al mismo servidor en ambos lados. Detuve el
+servidor de dev y no insistí más con el navegador (evitando reintentos
+ciegos), documentando esto en vez de reportar un "verificado
+visualmente" que no ocurrió. Los puntos de DoD que dependían de
+interacción real en navegador (2, 6, 8, y la legibilidad a 375px)
+quedan verificados solo por revisión de código/estructura — **recomiendo
+que Angie/Camilo hagan una pasada visual real antes de aprobar el PR**,
+consistente con que el ticket ya deja el PR pendiente de su QA.
+
+### Scripts de verificación usados (no tocan producción salvo lectura)
+
+`scripts/verificacion-dod-feat-persona.mjs` (dev, lectura + caso
+simulado en memoria). Reutiliza sin cambios los hallazgos de
+`scripts/reverificacion-ejecutado-por-persona-prod.mjs` de la sesión de
+diseño anterior para las 3 semanas de producción.
+
+## Sesión AUDITORÍA — inventario dev vs main antes de promover a producción · 2026-07-05
+
+Solo lectura. Cero merge, cero PR, cero escritura. `ESTADO.md` no
+modificado en esta sesión de auditoría.
+
+### Corrección de un error propio antes de reportar
+
+Al recomendar cautela sobre "llevar `dev` a `main`", usé `git log
+main..dev` con el `main` **local**, que no se había actualizado con
+`git fetch` en esta sesión — estaba desactualizado respecto al `main`
+real de GitHub. Esa comparación desactualizada mostraba ~17 commits
+"pendientes" (incluyendo TICKET-B-GUARDIA-01, fixes de `confirmarOK`,
+FEAT-BARRA-FALTAPAGAR-01), que en realidad **ya estaban en producción**
+desde el PR #25. Antes de reportar, corrí `git fetch origin` y comparé
+`origin/main..origin/dev` — la lista real es muchísimo más corta. Aviso
+esto explícitamente porque mi advertencia inicial fue una falsa alarma
+basada en un ref local obsoleto, no en el estado real del repo.
+
+### 1. Diff de commits real (`origin/main..origin/dev`, post-fetch)
+
+```
+b0a4991 Merge pull request #26 from KKze1975/feat/barra-ejecutado-persona-01
+a338c75 feat: desglose ejecutado por persona en barra semanal (FEAT-BARRA-EJECUTADO-PERSONA-01)
+48f0e29 docs: cierre DT-HEADER-H2-01 — header H2 desplazado a fila 145 (RESUELTO)
+```
+
+Verificado explícitamente con `git merge-base --is-ancestor` que los
+commits de `TICKET-B-GUARDIA-01-P1`/`P2` (`ee0b9e1`, `291e8bd`) y del fix
+de `confirmarOK` (`9a5a867`) **ya son ancestros de `origin/main`** — no
+están pendientes, entraron a producción vía PR #25 antes de esta sesión.
+
+### 2-3. Agrupación por ticket y estado de DoD
+
+| Ticket | Commits | Archivos tocados | Estado DoD | Referencia en ESTADO.md |
+|---|---|---|---|---|
+| `DT-HEADER-H2-01` | `48f0e29` | `ESTADO.md` (solo docs) | **Confirmado** — verificación fila-por-fila pre/post sin diferencias, H1/H3B/H4/H5 intactas (sesión de esta misma serie, ver entrada más arriba en este mismo `SESSION_LOG.md`) | Sección `## DT-HEADER-H2-01 — Header de H2 desplazado a fila 145 (RESUELTO)`, ya en `ESTADO.md` |
+| `FEAT-BARRA-EJECUTADO-PERSONA-01` | `a338c75`, `b0a4991` | `components/VistaSemanal.tsx`, `lib/data/sheets.ts`, `lib/data/types.ts` | **Confirmado** — 6 semanas reales (3 prod + 3 dev) con diferencia=0, `tsc --noEmit` limpio, guard de `ejecutor=null` probado con caso simulado, QA de Angie confirmada por Camilo en este mismo hilo | **No encontrada todavía** — pendiente por diseño, el propio ticket especificaba actualizar `ESTADO.md` "al cierre, junto con Camilo", no antes |
+
+### 4. Casos mencionados por Camilo — verificados explícitamente
+
+- **`TICKET-B-GUARDIA-01` (P1 y P2):** ya en `origin/main` (confirmado por
+  `merge-base --is-ancestor`). No es parte del diff pendiente. La
+  entrada de `ESTADO.md` que menciona "P1/P2 verificados parcialmente,
+  sesión detenida" describe el estado *en el momento de ese commit*, no
+  el estado actual — ese trabajo ya se promovió a producción en el PR
+  #25 posterior. No se re-verificó su DoD en esta auditoría (estaba
+  fuera del alcance: la tarea era listar qué está pendiente de
+  promoción, y esto no lo está).
+- **Fixes de `confirmarOK`:** mismo caso — ya en `origin/main` vía PR #25.
+- **Otros cierres de sesión sin DoD completo visible:** no aplica
+  ninguno más al diff real; todo lo demás que aparecía en la comparación
+  desactualizada ya está en producción.
+
+### 5. Recomendación
+
+El diff real `dev → main` es exactamente lo esperado: el fix de datos
+`DT-HEADER-H2-01` (solo documentación, la escritura real ya se hizo
+directo sobre el Sheet de producción en su momento, verificada) y
+`FEAT-BARRA-EJECUTADO-PERSONA-01` (con QA de Angie ya confirmada). **No
+hay trabajo ajeno o sin verificar montado en este merge** — la
+preocupación que planteé antes de correr `git fetch` no aplica al estado
+real del repo.
+
+**Recomendación: merge completo de `dev → main` es seguro tal como está
+el diff real hoy.** No hace falta aislar `feat/barra-ejecutado-persona-01`
+por separado — ya está mergeado a `dev`, y `dev` no arrastra nada más
+sin resolver hacia `main`.
+
+## Sesión CONSTRUCCIÓN — Verificación final + merge dev → main · 2026-07-05
+
+### Paso 1 — Verificación del commit DT-HEADER-H2-01
+
+`git show 48f0e29 --stat`: **`ESTADO.md | 29 +++++++++++++++++++++++++++++`
+— 1 file changed, 29 insertions(+), 0 deletions.** Contenido íntegro
+revisado línea por línea: solo agrega la sección de cierre del ticket
+(síntoma, causa raíz, fix ya aplicado directo sobre el Sheet, snapshot
+de respaldo, riesgos latentes documentados, hallazgo colateral). **Cero
+líneas de código** en `lib/`, `components/` o `app/api/`. No asume
+ningún estado corregido en código — de hecho documenta explícitamente
+que `ensureH2Headers()` y `resetH2()` (los dos puntos que sí tocan
+código) **no fueron modificados**, quedan como riesgo latente pendiente.
+Confirmado inocuo, sin bloqueo.
+
+### Paso 2 — Merge
+
+1. PR creado: **https://github.com/KKze1975/flujo/pull/27** (`dev → main`).
+2. Verificado con `gh pr view 27 --json commits`: exactamente 3 commits —
+   `48f0e29` (DT-HEADER-H2-01), `a338c75` (FEAT-BARRA-EJECUTADO-PERSONA-01),
+   `b0a4991` (merge commit del PR #26). Nada más.
+3. Mergeado: `state: MERGED`, `mergedAt: 2026-07-05T18:14:11Z`.
+4. Deploy post-merge (`gh api repos/KKze1975/flujo/commits/main/status`
+   sobre el nuevo `main`, commit `a7fe3e5`):
+   - **Vercel → `success`** ("Deployment has completed").
+   - **Hallazgo no solicitado, fuera del alcance del prompt:** apareció
+     un segundo check, `beautiful-light - flujo` vía **Railway**
+     ("Railway is deploying the service"), en estado `pending` al
+     momento de escribir esto. Este integración no está documentada en
+     `CLAUDE.md` (que solo menciona Vercel como stack de deploy) ni en
+     ninguna memoria de sesiones anteriores de este proyecto. No se
+     investigó más a fondo — se le preguntó a Camilo directamente en el
+     chat en vez de asumir qué es o esperar indefinidamente con
+     `sleep` en bucle.
+
+### Resultado
+
+Merge a `main` completado. Vercel (el deploy conocido/documentado)
+verde. Railway quedó pendiente de confirmación — ver pregunta a Camilo
+en el chat.
+
+## Sesión CIERRE FINAL — Actualización ESTADO.md (append-only) · 2026-07-05
+
+Escritura exclusiva en `ESTADO.md`. Ningún otro archivo tocado en esta
+sesión de cierre. No se ejecutó `generate-kanban.mjs` (no solicitado
+explícitamente).
+
+### Anchor guard
+
+```
+$ git status --porcelain ESTADO.md
+(vacío — sin cambios sin commitear)
+
+$ grep -n "^## " ESTADO.md | tail -5
+4702:## MERGE CONFIRMADO — FEAT-BARRA-FALTAPAGAR-01 · 30 junio 2026
+4711:## Sesión debugging VistaSemanal — 2 julio 2026
+4815:## Sesión Ticket B — 3 julio 2026 [DEBUGGING → DISEÑO → CONSTRUCCIÓN, pausada]
+4962:## DT-HEADER-H2-01 — Header de H2 desplazado a fila 145 (RESUELTO)
+4984:## Hallazgo colateral — columnas ya existentes en H2
+```
+
+Confirmado: las dos últimas secciones (`DT-HEADER-H2-01` y el hallazgo
+colateral) ya estaban presentes del cierre anterior de esta misma
+sesión, tal como el prompt pedía verificar en el paso 2. Anchor guard
+pasa sin discrepancias — se procedió a anexar.
+
+### Confirmación del append (verbatim)
+
+`git diff -- ESTADO.md`: **81 líneas agregadas, 0 eliminadas** — el diff
+completo solo tiene líneas `+`, nada editado ni reordenado por encima
+del punto de inserción. Se agregaron 4 secciones nuevas:
+`## FEAT-BARRA-EJECUTADO-PERSONA-01 · 5 julio 2026 — MERGEADO A MAIN`,
+`## Corrección de metodología — verificación de ramas antes de merge a main`,
+`## Nota — check de Railway en PR #27`, `## DT-H5-DESVIACION-01 (deuda técnica, abierto, sin investigar)`.
+
+### Línea final del archivo post-append
+
+```
+$ tail -1 ESTADO.md
+Candidato a sesión DEBUGGING propia. No investigado más allá de la confirmación.
+
+$ wc -l ESTADO.md
+5067 ESTADO.md
+```
+
+No se hizo commit de este cambio en esta sesión — `ESTADO.md` queda
+modificado en el working tree, pendiente de que Camilo decida cuándo
+commitear (mismo patrón que los cierres anteriores de este hilo).

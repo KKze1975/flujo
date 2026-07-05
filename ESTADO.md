@@ -4987,3 +4987,81 @@ y monto_ejecutado_angie como columnas nativas. Esto invalida el enfoque de dise�
 planteado en la sesión de DISEÑO abierta para la feature "ejecutado por persona 
 en barra at-a-glance" (que asumía derivar el split desde ejecutor + monto_ejecutado). 
 Sesión de DISEÑO queda pendiente de retomar con este dato como nuevo punto de partida.
+
+## FEAT-BARRA-EJECUTADO-PERSONA-01 · 5 julio 2026 — MERGEADO A MAIN
+
+PR #26 (feat/barra-ejecutado-persona-01 → dev) y PR #27 (dev → main) 
+mergeados. Deploy Vercel: success, sin errores.
+
+Contexto: originado en hallazgo colateral de la sesión DEBUGGING de 
+DT-HEADER-H2-01 — columnas monto_ejecutado_camilo/monto_ejecutado_angie 
+ya existentes en H2 llevaron a rediseñar el desglose de ejecutado por 
+persona en la barra at-a-glance de VistaSemanal.
+
+Decisión de diseño clave: la métrica usa `ejecutor` (quién ejecutó el 
+movimiento), no monto_ejecutado_camilo/angie (de dónde salió la plata) — 
+son preguntas distintas. Caso borde confirmado: ejecutor=angie con fuente 
+de cuenta de Camilo cuenta hacia Angie, por diseño.
+
+Fórmula (verificada, diferencia=0 en 6 semanas reales — 3 prod + 3 dev):
+  ejecutadoPorPersona(persona, semana) =
+    H2.filter(ejecutor=persona, estado=ejecutado, tipo_snapshot≠pago_fraccionado, semana)
+      .sum(monto_ejecutado)
+    + H3.filter(ejecutor=persona, semana).sum(monto)
+
+Construido (lib/data/types.ts, lib/data/sheets.ts, components/VistaSemanal.tsx):
+- Parte 1: métrica itemsPorPersona/ejecutadoAngie/ejecutadoCamilo.
+- Parte 2: dos chips tappables con popover (mecanismo popoverMode existente).
+- Parte 3: fix de asimetría — ConsumoH3.ejecutor ahora Actor | null, 
+  eliminado default silencioso a "camilo" (hallazgo de verificación previa 
+  a construcción). Auditoría de usos existentes: ninguno dependía del default.
+- Parte 4: botón "Cerrar semana" reubicado a topnav (variante 3a del handoff 
+  de diseño) — mitiga riesgo de toque accidental introducido por los chips 
+  nuevos. Agregado tras confirmación explícita de Camilo, fuera del prompt 
+  de construcción original.
+
+Hallazgo de proceso: el .dc.html del handoff de Claude Design era un mockup 
+estático (frame fijo simulando popover abierto), sin interactividad real. 
+Se implementó el onClick/estado desde cero. Lección para futuros handoffs 
+de diseño: "final" en el nombre del archivo no garantiza comportamiento.
+
+DoD verificado con evidencia:
+- tsc --noEmit limpio.
+- Diferencia=0 en 6 semanas (3 prod + 3 dev).
+- Guard ejecutor=null probado con caso simulado — excluido del desglose 
+  por persona, incluido en el total.
+- Auditoría completa de usos de ConsumoH3.ejecutor — sin regresión.
+- QA de Camilo en dev + QA de Angie completos, con foco específico en los 
+  tres puntos que Code no pudo verificar en su entorno (interactividad real 
+  del popover, efecto de reubicar "Cerrar semana", legibilidad a 375px) — 
+  todos aprobados.
+
+## Corrección de metodología — verificación de ramas antes de merge a main
+Durante el cierre de esta sesión se detectó inicialmente una alarma de 
+trabajo no verificado en `dev` (TICKET-B-GUARDIA-01, fixes de confirmarOK) 
+que resultó ser un falso positivo: la comparación se hizo contra un `main` 
+local desactualizado, sin `git fetch` previo. Al repetir con `origin/main` 
+real y `git merge-base --is-ancestor` para confirmar ancestría, se confirmó 
+que ambos ítems ya estaban en `main` vía PR #25, y que el diff real 
+`origin/main..origin/dev` contenía solo los 3 commits esperados. 
+Lección: comparar ramas para decisiones de despliegue siempre con fetch 
+previo y `merge-base --is-ancestor`, no con refs locales potencialmente 
+desactualizados.
+
+## Nota — check de Railway en PR #27
+Apareció un check "Railway (beautiful-light - flujo)" en pending durante 
+el merge de PR #27, no documentado en ningún lugar del proyecto (stack 
+documentado: solo Vercel). Confirmado por Camilo: corresponde a una 
+integración de Railway usada en otro proyecto suyo (bot de psicología), 
+probablemente una GitHub App a nivel de cuenta que se activó sobre este 
+repo sin conexión deliberada. No representa riesgo confirmado para Flujo. 
+Sin acción requerida por ahora — si el check reaparece de forma recurrente 
+en futuros PRs, ameritaría revisión de las integraciones de GitHub a nivel 
+de cuenta/organización.
+
+## DT-H5-DESVIACION-01 (deuda técnica, abierto, sin investigar)
+Discrepancia de $55.000 detectada en 2026-06 S4 entre cálculo en vivo de la 
+barra ($2.369.896) y lo registrado en H5 al cerrar la semana ($2.314.896). 
+Confirmado que se replica idéntica en el desglose por persona — origen no 
+está en esta feature, es preexistente en el mecanismo de cierre/H5. 
+Candidato a sesión DEBUGGING propia. No investigado más allá de la confirmación.
