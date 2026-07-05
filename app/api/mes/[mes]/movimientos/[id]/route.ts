@@ -91,7 +91,12 @@ export async function PATCH(
         }
       }
       patch = {
-        estado: "pospuesto",
+        // Reasignar a otra semana del mismo mes (OBS-4) vuelve a "pendiente" en la
+        // semana destino — "pospuesto" solo es terminal cuando no hay nuevaSemana
+        // (ver DT-POSPONER-ESTADO-01). Sin este condicional, BL-M4-01 (pendientes
+        // filtra estado==="pendiente" a propósito) hace que el movimiento desaparezca
+        // de toda vista de pendientes para siempre.
+        estado: body.nuevaSemana ? "pendiente" : "pospuesto",
         ...(body.nuevaSemana ? { semana: body.nuevaSemana } : {}),
         razonPostergacion: body.razonPostergacion ?? null,
       };
