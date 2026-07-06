@@ -5135,3 +5135,96 @@ edición manual.
 2026-07-03 confirmó que el riesgo de sobrescritura no está en
 `crearMovimientosMes()`/`values.append`, sino en `ensureH2Headers()`.
 Migrar a `batchUpdate` no habría cerrado el riesgo real. No se retoma.
+
+## DISEÑO — Abonos parciales / ejecución parcial anticipada (PAUSADA, sin cerrar) · 5 julio 2026
+
+Sesión [DISEÑO] abierta a raíz de un ruido detectado en S2: el pago de
+colegios se trasladó a S2 (`mover_mes_siguiente`), pero antes del
+traslado ya se había apartado $2.8M desde la cuenta de Camilo hacia ese
+concepto, sin ningún registro en el sistema. Resultado: S2 muestra el
+monto presupuestado completo como pendiente, cuando el faltante real es
+$1.2M.
+
+**Concepto de diseño confirmado:** esto es una ejecución parcial
+anticipada de un concepto `tipo: fijo` — no un bolsillo (H3B es para
+`pago_fraccionado` con techo, semántica distinta) y no una reducción de
+`monto_presupuestado` (destruye la trazabilidad del compromiso real y
+reintroduce el mismo problema de proyección con el signo invertido).
+
+**Dirección de diseño propuesta, NO aprobada para construir:**
+- `monto_presupuestado` de colegios se mantiene íntegro, sin tocar.
+- El abono se registra como ejecución parcial real usando los campos ya
+  existentes en H2: `monto_ejecutado_camilo` (o `_angie` según la
+  fuente), con su `fuente_*` y `fecha_ejecucion`.
+- Nuevo valor de `estado` en H2: `parcial` — distinto de `pendiente`
+  (nada se ejecutó) y de `ejecutado` (se cerró completo).
+- El cálculo de "pendiente" (S2, barra falta por pagar) pasaría de
+  `monto_presupuestado` a `monto_presupuestado - monto_ejecutado` cuando
+  `estado = parcial`.
+
+**Sin resolver — la sesión se pausó en estos puntos, retomar desde aquí:**
+1. Si el abono de $2.8M ya salió del disponible real de la cuenta de
+   Camilo (impacto en `getSaldosCuenta()`, H4) y por tanto infla el
+   saldo mostrado mientras no se registre — pregunta sin responder.
+2. Si el presupuestado total de colegios cuadra exacto como
+   $2.8M + $1.2M = $4.0M, o hay un tercer número (desviación, ajuste)
+   sin explicar — no verificado contra el Sheet.
+3. Si el patrón de abonos parciales es una válvula de excepción (déficit
+   puntual de este mes por menor ingreso y gasto adicional a inicio de
+   mes) o un mecanismo estructural que se repetirá — define si el diseño
+   debe ser angosto (ad-hoc) o de primera clase en el modelo de datos.
+   Camilo no lo definió explícitamente antes de pausar.
+
+**Estado:** pausada, no cerrada, no aprobada para construir. No
+retomar como si estuviera resuelta — empezar la próxima sesión desde el
+punto 1 de arriba.
+
+## DT-POSPONER-ESTADO-01 — Verificación de DoD (BLOQUEADO por QA, no mergeado) · 5 julio 2026
+
+Sesión [DEBUGGING]: verificación del estado real del fix de código en
+`fix/dt-posponer-estado-01` (commit `e354715`) antes de decidir sobre el
+merge del PR #28 hacia `dev`.
+
+**Qué hace el fix:** un solo archivo
+(`app/api/mes/[mes]/movimientos/[id]/route.ts`, +6/-1). En la rama
+"posponer" del endpoint PATCH, cambia `estado: "pospuesto"` (literal,
+incondicional) por `estado: body.nuevaSemana ? "pendiente" : "pospuesto"`
+(condicional según si viene reasignación de semana).
+
+**DoD original:** no existía como sección separada previa en
+`ESTADO.md` — nació y se definió dentro del prompt de `[DEBUGGING]` que
+originó este fix (loop de validación de 6 pasos + restricción explícita
+de "no mergear a main sin QA de Angie, igual que toda feature").
+
+**Verificación contra el DoD:**
+- Fix implementado en branch de prueba: verificado (`e354715`).
+- Simulación pendiente→posponer con reasignación de semana: verificado
+  con evidencia parcial — se probó S1→S3 y S1→S4 vía curl contra
+  servidor de dev real, no el par literal S1→S2 del ejemplo original del
+  DoD. Mecanismo idéntico (la condición no depende del valor de semana),
+  pero el caso exacto no se ejecutó.
+- Aparece correctamente en vista de pendientes tras la reasignación:
+  mismo matiz — verificado para S3/S4, no para S2 literal.
+- Preserva el camino "pospuesto sin reasignar": verificado (caso
+  Celular Camilo, sin `nuevaSemana`, quedó en `estado=pospuesto`).
+- Mínimo 2 casos adicionales: verificado (3 casos totales probados).
+- `tsc --noEmit`: limpio, exit code 0.
+
+**Bloqueante confirmado — QA de Angie ausente:** sin evidencia en ningún
+`SESSION_LOG.md`/`ESTADO.md` previo de que Angie haya revisado este
+cambio. Confirmado contra GitHub: PR #28 tiene 0 reviews, 1 solo
+comentario (bot de Vercel, deployment exitoso — no cuenta como QA
+humana). La restricción del ticket original ("no mergear sin QA de
+Angie") y el invariante I-11 (`dev → PR → Angie QA → merge`) no tienen
+excepción documentada para este caso.
+
+**Decisión:** no se mergea el PR #28. `fix/dt-posponer-estado-01`
+permanece como está — dos commits de documentación (`3d43ee9`,
+`cb98ca1`), un bloque de diseño pausado sin commitear (abonos
+parciales), y el fix de código verificado técnicamente pero bloqueado
+por ausencia de QA humana.
+
+**Pendiente para la próxima sesión:** conseguir la ventana de QA de
+Angie sobre el preview de Vercel del PR #28 antes de reconsiderar el
+merge. No reabrir la verificación técnica del fix sin nueva evidencia —
+quedó cerrada con el matiz S1→S2 vs. S1→S3/S4 documentado arriba.
