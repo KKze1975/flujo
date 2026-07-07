@@ -5065,3 +5065,127 @@ barra ($2.369.896) y lo registrado en H5 al cerrar la semana ($2.314.896).
 Confirmado que se replica idéntica en el desglose por persona — origen no 
 está en esta feature, es preexistente en el mecanismo de cierre/H5. 
 Candidato a sesión DEBUGGING propia. No investigado más allá de la confirmación.
+
+## AUDIT-ADVERSARIAL-01 — Revisión adversarial retroactiva · 7 julio 2026
+
+Alcance: lib/data/sheets.ts, app/api/** (énfasis en admin/reset-mes),
+config/credenciales. Solo lectura, sin commits ni merges.
+
+Reviewers: Gemini (2 intentos, ambos fallaron con 503 "high demand" de la
+API de Google — modelo default y gemini-2.5-flash explícito, retries
+agotados en ambos; sin hallazgos) + Claude (independiente, sin haber leído
+output de Gemini). Auditoría avanzó con un solo reviewer funcional —
+cobertura de un revisor, no el contraste cruzado de dos que era el diseño
+original.
+
+### Hallazgo 1 — Bug técnico: crearMovimientosMes sigue con values.append
+
+`lib/data/sheets.ts:270-283` sigue usando `values.append` sin
+`INSERT_ROWS` — el mismo patrón que ya sobrescribió 67 filas de
+septiembre en dev. Verificado con `git log --all -p -- lib/data/sheets.ts`
+a través de todas las ramas locales y remotas (dev, main,
+fix/dt-posponer-estado-01): un único resultado en todo el historial de
+diffs de esa función — su adición original. Ningún commit, en ninguna
+rama, la tocó después. El bug está exactamente como cuando se descubrió.
+
+**Severidad: Alta — deuda técnica, próximo ticket prioritario.**
+
+### Hallazgo 1b — Falla de proceso: ticket aprobado se extravió sin traza
+
+`FIX-CREARMOVIMIENTOSMES-01` fue aprobado y lanzado en modo "away" (sin
+supervisión directa) en sesión previa (ver SESSION_LOG.md, commit
+`6f3dcb0` — docs-only, 178 inserciones, cero cambios a `sheets.ts`). Esa
+sesión cerró con advertencia explícita: "resultado pendiente de revisión
+en la próxima sesión — no asumir éxito hasta ver SESSION_LOG.md".
+
+Esa próxima sesión de verificación nunca ocurrió, o si ocurrió, no dejó
+ningún rastro — ni commit, ni entrada de log, ni resultado documentado en
+ningún lado. El proceso "away" no produjo ni éxito ni fracaso verificable:
+se perdió en silencio. Nadie lo notó hasta esta auditoría.
+
+Esto es distinto del hallazgo 1 (bug de código): es una falla del propio
+mecanismo de cierre de sesión — la garantía de "no asumir éxito sin
+verificar" fue correcta en teoría pero falló en la práctica, porque nada
+forzó que la verificación pendiente realmente ocurriera.
+
+**Severidad: Alta — riesgo de gobernanza de proceso, no solo de código.
+Sugerencia: todo ticket lanzado en modo "away" debería requerir un
+recordatorio explícito de verificación al abrir la siguiente sesión,
+no depender de que se recuerde manualmente.**
+
+### Hallazgo 2 — POST /api/admin/reset-mes sin autenticación
+
+Endpoint destructivo/irreversible (borra H2/H3B/H4A-D/H5A/H5B de un mes
+completo) alcanzable sin credenciales por cualquiera que sepa la URL.
+**Alta — decisión de diseño de auth pendiente, escalar a Camilo.**
+
+### Hallazgo 3 — deleteRowsByMes/resetH2 no atómicos
+
+Mismo archivo, líneas 19-79. `clear()` de rango completo + `update()`
+separado; un fallo transitorio entre ambas llamadas borra todos los
+meses del rango, no solo el objetivo.
+**Alta — deuda técnica, prioridad alta por el radio de impacto.**
+
+### Hallazgo 4 — reset-mes lee/borra H4D, contradice I-05
+
+`route.ts:99`. I-05 dice que H4D es tab legacy, sin lectura ni escritura.
+Podría ser intencional (limpieza administrativa) o error.
+**Media — decisión: ¿amendar I-05 o quitar la línea? Escalar a Camilo.**
+
+### Hallazgo 5 — Clasificador Haiku puede violar I-03
+
+`app/api/consumos/[id]/clasificar/route.ts:56-60`. Puede dejar
+`clasificado=true` con `bolsilloId` vacío cuando la clasificación falla o
+no matchea — viola I-03 directamente.
+**Alta — decisión de diseño sobre semántica de "imprevisto", escalar a
+Camilo.**
+
+### Hallazgo 6 — Cierre de semana no es atómico pese a estar documentado como tal
+
+`app/api/mes/[mes]/cerrar-semana/route.ts:82-137`. ESTADO.md lo describe
+como "batchUpdate atómico, falla completa o no falla" — en código real
+son 3 fases de red independientes (H5A, H5B, N×H2) sin idempotencia ante
+reintento. La API sí soporta batchUpdate multi-rango (patrón ya usado en
+`ensureH4Headers`).
+**Alta — deuda técnica, ticket propio.**
+
+**Nota lateral, no investigada:** `DT-H5-DESVIACION-01` (discrepancia de
+$55.000 en cierre S4 junio) podría estar relacionada con esta no
+atomicidad — hipótesis, no confirmada.
+
+### Hallazgo 7 — Pre-commit hook (I-07/I-08) no versionado
+
+Vive solo en `.git/hooks/pre-commit` — no se reproduce en clon nuevo,
+otro colaborador, o CI.
+**Media — <20 min, resolver en próxima sesión de construcción (mover a
+script versionado + core.hooksPath o husky).**
+
+### Hallazgo 8 — Patrón sistémico catch { return [] } en sheets.ts
+
+~8 métodos de lectura indistinguen "sin datos" de "falló la API". Caso
+concreto: `getGastosSinClasificarPorSemana` con error transitorio
+devuelve falso-cero, anulando silenciosamente la guarda de cerrar-semana.
+**Media — deuda técnica.**
+
+### Hallazgo 9 — Mismo patrón values.append sin INSERT_ROWS, otros métodos
+
+`createConcepto`, `createIngresoCamilo/Angie`, `createCierreSemana`,
+`createPlanSemana` — mismo riesgo estructural que hallazgo 1, sin
+incidente confirmado aún.
+**Media — empaquetar con el ticket del hallazgo 1.**
+
+### Próximos pasos sugeridos (no ejecutados en esta sesión)
+
+- Ticket de construcción: migrar todos los `values.append` (H1/H2/H4A/
+  H4B/H5A/H5B) a `batchUpdate`/`values.update` con cálculo determinístico
+  de fila (hallazgos 1 y 9).
+- Ticket de construcción: reescribir `deleteRowsByMes`/`resetH2` usando
+  `deleteDimension` por fila (patrón ya usado en `deleteConsumoH3`) en
+  vez de clear+rewrite del rango completo (hallazgo 3).
+- Ticket de construcción: versionar el pre-commit hook (hallazgo 7).
+- Ajuste de proceso: mecanismo de recordatorio obligatorio para tickets
+  lanzados en modo "away", para que el hallazgo 1b no se repita.
+- Decisiones de Camilo pendientes antes de construir: mecanismo de auth
+  para `/api/admin/**` (hallazgo 2), semántica de I-03 vs. "imprevisto"
+  (hallazgo 5), alcance de I-05 respecto a limpieza administrativa de H4D
+  (hallazgo 4).
