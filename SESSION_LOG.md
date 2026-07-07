@@ -2223,3 +2223,426 @@ $ wc -l ESTADO.md
 No se hizo commit de este cambio en esta sesión — `ESTADO.md` queda
 modificado en el working tree, pendiente de que Camilo decida cuándo
 commitear (mismo patrón que los cierres anteriores de este hilo).
+
+## Sesión DEBUGGING → FIX — DT-POSPONER-ESTADO-01 · 2026-07-05
+
+Rama `fix/dt-posponer-estado-01` (creada desde `dev`). Un solo ticket
+activo, un solo PR, no mergeado a `main` (pendiente QA de Angie).
+
+### Paso 0 — Import path activo (I-12)
+
+`find app/api -iname "route.ts" | xargs grep -l "posponer"` →
+**un único resultado**: `app/api/mes/[mes]/movimientos/[id]/route.ts`.
+Por convención de Next.js App Router, este es el único handler posible
+para `PATCH /api/mes/[mes]/movimientos/[id]` — no existe versión muerta
+ni duplicada. Confirmado sin ambigüedad.
+
+### Paso 1 — Lógica exacta de "posponer" (antes del fix)
+
+```ts
+} else if (body.tipo === "posponer") {
+  ...
+  patch = {
+    estado: "pospuesto",
+    ...(body.nuevaSemana ? { semana: body.nuevaSemana } : {}),
+    razonPostergacion: body.razonPostergacion ?? null,
+  };
+}
+```
+
+Confirmado literalmente: `estado: "pospuesto"` es una clave de nivel
+superior del objeto, **no condicionada** a `nuevaSemana` — se escribe
+siempre. Solo `semana` está condicionado (spread). Campos tocados:
+`estado` (siempre), `semana` (solo si `nuevaSemana`), `razonPostergacion`
+(siempre, default `null`). Nada más. Hipótesis confirmada exactamente
+como se reportó.
+
+### Paso 2 — Preguntas abiertas
+
+**2.1 — ¿Existe un flujo de "posponer sin nuevaSemana" en la UI?**
+**Sí existe**, con evidencia — no es "no encontrado", es una llamada real
+confirmada:
+
+| Call site | Archivo | Payload | ¿Vivo? |
+|---|---|---|---|
+| `ModalAccionesPendiente` (M4, VistaSemanal) | `components/VistaSemanal.tsx:498` | `{ tipo: "posponer", nuevaSemana: destino }` — `destino` inicializado en `"S1"` (línea 468) y siempre es un `Semana` real o dispara `mover_mes_siguiente` en su lugar (línea 495-496) | **Sí**, y **nunca** omite `nuevaSemana` cuando llega a esta rama |
+| Botón "Mes siguiente" en plan mensual | `components/MesM1Mobile.tsx:398` | `{ tipo: "posponer", razonPostergacion: null }` — **sin `nuevaSemana`** | **Sí** (`MesM1Mobile` importado y renderizado en `app/mes/[mes]/MesM1ClientWrapper.tsx`) |
+| `AccionPosponer` (modo "semana"/"mes") | `components/MesM1.tsx:416` | condicional según `modo` | **No** — `MesM1.tsx` (el archivo singular, distinto de `MesM1Desktop`/`MesM1Mobile`) no está importado en ningún lugar del repo (`grep` de imports: 0 resultados). Código muerto. |
+
+**Hallazgo adyacente, fuera de alcance de este ticket:** el botón en
+`MesM1Mobile.tsx:398` está etiquetado **"Mes siguiente"** en la UI pero
+llama `tipo: "posponer"` (sin `nuevaSemana`), no `tipo:
+"mover_mes_siguiente"`. Es decir, el label promete mover el concepto al
+mes siguiente pero el código solo lo marca `pospuesto` in-place, sin
+crear la fila en el mes siguiente. Esto es un bug distinto,
+independiente del reportado por Camilo — **no se toca en este ticket**,
+se deja anotado para un ticket aparte.
+
+Conclusión 2.1: sí existe un "posponer sin nuevaSemana" real y vivo
+(`MesM1Mobile.tsx:398`) — el fix debe preservar ese comportamiento
+(`estado: "pospuesto"` cuando no hay `nuevaSemana`), no eliminarlo.
+
+**2.2 — ¿`mover_mes_siguiente` comparte código con "posponer"?**
+**No.** Es una rama `else if` completamente separada
+(`route.ts` línea 108), con su propio patch (`estado:
+"pospuesto_mes_siguiente"` — string distinto a `"pospuesto"`) y su
+propia lógica (crea una fila nueva en H2 del mes siguiente con `estado:
+"pendiente"` ahí). Cero funciones u objetos compartidos con la rama
+`posponer`. El fix (que solo toca el objeto `patch` dentro de la rama
+`posponer`) no roza esta rama. `DT-MOVER-MES-01` sigue abierto y sin
+tocar, tal como restringía el prompt.
+
+### Paso 3 — Alcance del daño en datos reales (producción)
+
+`scripts/check-todos-pospuestos-prod.mjs` (read-only) sobre H2 completo
+de producción:
+
+```
+Total movimientos con estado=pospuesto: 1
+{"id":"MOV_1782565828384","concepto":"Colegio hijos","mes":"2026-07","semana":"S2","monto_presupuestado":"3988000","razon_postergacion":""}
+
+(contraste, fuera de alcance) estado=pospuesto_mes_siguiente: 2
+```
+
+**Solo el registro ya identificado por Camilo está afectado.** No hay
+otros conceptos familiares desaparecidos silenciosamente.
+
+### Paso 4 — Loop de validación (rama de prueba + servidor dev real, no solo simulación en memoria)
+
+Fix implementado en `fix/dt-posponer-estado-01` (rama creada desde
+`dev`). `tsc --noEmit`: limpio. Validado contra el **servidor de dev
+real** (`npm run dev`, apuntando al Sheet de dev vía `.env.local`) con
+`curl` sobre el endpoint real — no una réplica de la lógica en un
+script aparte, sino el código modificado corriendo de verdad:
+
+| Caso | Movimiento (dev) | Antes | Acción | Después (respuesta real del endpoint) | Resultado |
+|---|---|---|---|---|---|
+| 1 | `MOV_1782746559444` Energía | `semana=S1, estado=pendiente` | `PATCH {tipo:"posponer", nuevaSemana:"S3"}` | `semana:"S3", estado:"pendiente"` | ✅ |
+| 2 | `MOV_1782746559446` Internet y TV | `semana=S1, estado=pendiente` | `PATCH {tipo:"posponer", nuevaSemana:"S4"}` | `semana:"S4", estado:"pendiente"` | ✅ |
+| 3 (preserva comportamiento existente) | `MOV_1782746559447` Celular Camilo | `semana=S1, estado=pendiente` | `PATCH {tipo:"posponer"}` (sin nuevaSemana) | `semana:"S1", estado:"pospuesto"` | ✅ (sin cambios respecto al comportamiento pre-fix) |
+
+Verificación adicional contra el endpoint real de semana (el mismo que
+consume `VistaSemanal`), no solo el PATCH de respuesta:
+
+```
+GET /api/mes/2026-08/semana/S3 → Energía: {estado:'pendiente', semana:'S3'} — encontrada ✅
+GET /api/mes/2026-08/semana/S4 → Internet y TV: {estado:'pendiente', semana:'S4'} — encontrada ✅
+```
+
+Como el filtro de "pendientes" en las tres vistas de la app
+(`VistaSemanal.tsx`, `MesM1Desktop.tsx`, `VistaPlanificacion.tsx`) es
+literalmente `m.estado === "pendiente"` (confirmado por lectura directa
+del código en la sesión de diagnóstico previa), que el endpoint
+devuelva `estado: "pendiente"` es prueba directa y suficiente de que
+aparecerán en esas vistas — no hace falta renderizar la UI para esta
+verificación puntual.
+
+Los 3 movimientos de prueba se **revirtieron** a su estado original
+(`semana=S1, estado=pendiente`) inmediatamente después, vía el propio
+endpoint (`reasignar_semana`/`revertir_mes_siguiente`) — dev queda
+limpio, sin residuos de esta prueba.
+
+**Gate: todas las verificaciones del Paso 4 pasaron sin excepción.**
+Se procedió al Paso 5.
+
+### Paso 5 — Fix
+
+**Código** (`app/api/mes/[mes]/movimientos/[id]/route.ts`, rama
+`posponer`):
+
+```diff
+       patch = {
+-        estado: "pospuesto",
++        // Reasignar a otra semana del mismo mes (OBS-4) vuelve a "pendiente" en la
++        // semana destino — "pospuesto" solo es terminal cuando no hay nuevaSemana
++        // (ver DT-POSPONER-ESTADO-01). Sin este condicional, BL-M4-01 (pendientes
++        // filtra estado==="pendiente" a propósito) hace que el movimiento desaparezca
++        // de toda vista de pendientes para siempre.
++        estado: body.nuevaSemana ? "pendiente" : "pospuesto",
+         ...(body.nuevaSemana ? { semana: body.nuevaSemana } : {}),
+         razonPostergacion: body.razonPostergacion ?? null,
+       };
+```
+
+`mover_mes_siguiente` no se tocó (confirmado innecesario en Paso 2.2).
+`MesM1Mobile.tsx:398` no se tocó (el mislabel "Mes siguiente" es un bug
+aparte, no reportado por Camilo en este ticket).
+
+**Dato — corrección del registro atascado en producción**
+(`scripts/fix-colegio-hijos-pospuesto-prod.mjs`):
+- Snapshot previo: `scripts/backup-colegio-hijos-pospuesto-prod-1783286312808.json`
+  (fila completa de `MOV_1782565828384` antes de escribir).
+- Verificación de guardas antes de escribir: `estado === "pospuesto"` y
+  `nombre_snapshot === "Colegio hijos"` confirmados — si algo no
+  coincidía, el script abortaba sin escribir.
+- `batchUpdate` atómico (`spreadsheets.values.batchUpdate`) sobre la
+  celda de `estado` únicamente (columna resuelta dinámicamente por
+  nombre de header, no hardcodeada).
+- Verificación post-escritura:
+  ```
+  ANTES:    {"estado":"pospuesto","semana":"S2","mes":"2026-07"}
+  DESPUÉS:  {"estado":"pendiente","semana":"S2","mes":"2026-07","nombre":"Colegio hijos"}
+  ```
+  Solo `estado` cambió — `semana` y `mes` intactos, confirmado
+  explícitamente en el script (`ok = estado==="pendiente" && semana
+  igual && mes igual`).
+
+No se verificó este registro específico contra un servidor apuntando a
+producción (para no correr una instancia local contra el Sheet de
+producción sin necesidad) — la verificación se apoya en la lectura
+directa del Sheet post-fix más la confirmación ya hecha en Paso 4 de que
+el mismo filtro (`estado === "pendiente"`) gobierna la visibilidad en
+todas las vistas.
+
+### Resultado
+
+Código y dato corregidos, ambos verificados. PR abierto contra `dev`
+(no mergeado — pendiente QA de Angie, por restricción del ticket). Un
+solo PR, sin mezclar con otros pendientes.
+
+## Sesión CONSTRUCCIÓN — Append ESTADO.md en fix/dt-posponer-estado-01 · 5 julio 2026
+
+Rama `fix/dt-posponer-estado-01` durante toda la sesión. Sin cambio de
+rama, sin tocar `dev`/`main`, sin merge, sin tocar código, sin
+`generate-kanban.mjs`.
+
+### Paso 1 — Verificación previa
+
+```
+$ git branch --show-current
+fix/dt-posponer-estado-01
+
+$ git status --porcelain ESTADO.md
+ M ESTADO.md
+
+$ git diff -- ESTADO.md
+(append puro, +42 líneas, 0 líneas de contenido eliminadas — solo la
+línea de metadata "--- a/ESTADO.md" del propio diff, no contenido real)
+```
+
+Confirmado: diff correspondía exactamente al bloque
+`DT-POSPONER-ESTADO-01`/`BUG-LABEL-MESM1-01` de la sesión anterior, sin
+nada más. Sin discrepancias — se procedió al Paso 2.
+
+### Paso 2 — Commit del append pendiente
+
+```
+$ git add ESTADO.md
+$ git commit -m "docs: cierre DT-POSPONER-ESTADO-01 / BUG-LABEL-MESM1-01"
+[fix/dt-posponer-estado-01 3d43ee9] docs: cierre DT-POSPONER-ESTADO-01 / BUG-LABEL-MESM1-01
+ 1 file changed, 42 insertions(+)
+
+$ git log -1 --stat
+commit 3d43ee987e018ce3aa40592a159c7b1c574f58ab
+Author: KKze1975 <camilovillamil@gmail.com>
+Date:   Sun Jul 5 18:29:04 2026 -0500
+
+    docs: cierre DT-POSPONER-ESTADO-01 / BUG-LABEL-MESM1-01
+
+ ESTADO.md | 42 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 42 insertions(+)
+```
+
+Hook de pre-commit (`tsc` + check de Sheet ID hardcodeado) pasó limpio.
+
+### Paso 3 — Anchor guard
+
+```
+$ grep -n "^## " ESTADO.md | tail -5
+5039:## Corrección de metodología — verificación de ramas antes de merge a main
+5051:## Nota — check de Railway en PR #27
+5062:## DT-H5-DESVIACION-01 (deuda técnica, abierto, sin investigar)
+5069:## DT-POSPONER-ESTADO-01 · 5 julio 2026 — FIX COMPLETO, PENDIENTE QA ANGIE
+5102:## BUG-LABEL-MESM1-01 (nuevo, sin priorizar)
+
+$ tail -1 ESTADO.md
+Pendiente de priorización por Camilo.
+
+$ wc -l ESTADO.md
+5109 ESTADO.md
+```
+
+Última sección coincide exactamente con el commit del Paso 2. Sin
+discrepancias — se procedió al Paso 4.
+
+### Paso 4 — Append del cierre de DT-HEADER-H2-01
+
+Bloque anexado verbatim (ver contenido completo en el prompt de esta
+sesión — no se parafraseó ni reformuló).
+
+### Paso 5 — Verificación posterior
+
+```
+$ git diff -- ESTADO.md
+(append puro, +31 líneas nuevas por encima de "Pendiente de priorización
+por Camilo." — 0 líneas de contenido eliminadas)
+
+$ tail -1 ESTADO.md
+Migrar a `batchUpdate` no habría cerrado el riesgo real. No se retoma.
+
+$ wc -l ESTADO.md
+5137 ESTADO.md
+```
+
+Confirmado: contenido idéntico carácter por carácter al bloque provisto
+en el prompt, nada editado por encima del punto de inserción.
+
+**Este segundo append (Paso 4/5) NO se commiteó** — queda en el working
+tree de `fix/dt-posponer-estado-01`, pendiente de que Camilo lo revise,
+tal como especificaba el prompt (no se recibió instrucción explícita de
+commitear este paso).
+
+### Criterios de parada activados
+
+Ninguno en esta sesión — ambos anchor guards (Paso 1 y Paso 3)
+coincidieron exactamente con lo esperado.
+
+## Sesión CONSTRUCCIÓN — Append ESTADO.md, DISEÑO abonos parciales pausada · 5 julio 2026
+
+Rama `fix/dt-posponer-estado-01` durante toda la sesión (misma rama de
+las dos sesiones anteriores, commits `3d43ee9` y `cb98ca1`). Sin cambio
+de rama, sin tocar `dev`/`main`, sin merge, sin tocar código, sin
+`generate-kanban.mjs`. Cero decisiones de diseño tomadas en esta
+sesión — solo se registró el estado pausado tal como se proveyó.
+
+### Paso 1 — Verificación previa
+
+```
+$ git branch --show-current
+fix/dt-posponer-estado-01
+
+$ git status --porcelain ESTADO.md
+(vacío — limpio, los dos commits anteriores ya estaban hechos)
+```
+
+Sin discrepancias — se procedió al Paso 2.
+
+### Paso 2 — Anchor guard
+
+```
+$ grep -n "^## " ESTADO.md | tail -5
+5051:## Nota — check de Railway en PR #27
+5062:## DT-H5-DESVIACION-01 (deuda técnica, abierto, sin investigar)
+5069:## DT-POSPONER-ESTADO-01 · 5 julio 2026 — FIX COMPLETO, PENDIENTE QA ANGIE
+5102:## BUG-LABEL-MESM1-01 (nuevo, sin priorizar)
+5111:## DT-HEADER-H2-01 — Cierre de mitigación (solo proceso) · 5 julio 2026
+
+$ tail -1 ESTADO.md
+Migrar a `batchUpdate` no habría cerrado el riesgo real. No se retoma.
+
+$ wc -l ESTADO.md
+5137 ESTADO.md
+```
+
+Última sección coincide exactamente con el commit `cb98ca1`. Sin
+discrepancias — se procedió al Paso 3.
+
+### Paso 3 — Append del bloque de DISEÑO pausado
+
+Bloque anexado verbatim (ver contenido completo en el prompt de esta
+sesión — no se parafraseó, no se resolvió ninguno de los 3 puntos
+pendientes, no se convirtió la dirección propuesta en código).
+
+### Paso 4 — Verificación posterior
+
+```
+$ git diff -- ESTADO.md
+(append puro, +43 líneas nuevas por encima de "Migrar a `batchUpdate`
+no habría cerrado el riesgo real. No se retoma." — 0 líneas de
+contenido eliminadas, solo la línea de metadata del propio diff)
+
+$ tail -1 ESTADO.md
+punto 1 de arriba.
+
+$ wc -l ESTADO.md
+5180 ESTADO.md
+```
+
+Confirmado: contenido idéntico carácter por carácter al bloque provisto
+en el prompt, nada editado por encima del punto de inserción.
+
+**No se commiteó este append** — queda en el working tree de
+`fix/dt-posponer-estado-01`, pendiente de que Camilo lo revise, mismo
+patrón que las sesiones anteriores de este hilo.
+
+### Criterios de parada activados
+
+Ninguno — ambos anchor guards (Paso 1 y Paso 2) coincidieron
+exactamente con lo esperado. No se tocó código, no se cambió de rama,
+no se tomó ninguna decisión sobre el diseño pausado.
+
+## Sesión CONSTRUCCIÓN — Append ESTADO.md, cierre verificación DoD DT-POSPONER-ESTADO-01 · 5 julio 2026
+
+Rama `fix/dt-posponer-estado-01` durante toda la sesión. Sin cambio de
+rama, sin tocar `dev`/`main`, sin merge, sin tocar código (ni siquiera
+el matiz S1→S2 del commit `e354715`).
+
+### Paso 1 — Verificación previa
+
+```
+$ git branch --show-current
+fix/dt-posponer-estado-01
+
+$ git status --porcelain ESTADO.md
+ M ESTADO.md
+```
+
+Confirmado que el diff pendiente correspondía exactamente al bloque de
+"Abonos parciales (PAUSADA)" ya anexado sin commitear en la sesión
+anterior, nada más (44 líneas `+`, verificado con `git diff -- ESTADO.md
+| grep -c '^+'`). Sin discrepancias — se procedió al Paso 2.
+
+### Paso 2 — Anchor guard
+
+```
+$ grep -n "^## " ESTADO.md | tail -5
+5062:## DT-H5-DESVIACION-01 (deuda técnica, abierto, sin investigar)
+5069:## DT-POSPONER-ESTADO-01 · 5 julio 2026 — FIX COMPLETO, PENDIENTE QA ANGIE
+5102:## BUG-LABEL-MESM1-01 (nuevo, sin priorizar)
+5111:## DT-HEADER-H2-01 — Cierre de mitigación (solo proceso) · 5 julio 2026
+5139:## DISEÑO — Abonos parciales / ejecución parcial anticipada (PAUSADA, sin cerrar) · 5 julio 2026
+
+$ tail -1 ESTADO.md
+punto 1 de arriba.
+
+$ wc -l ESTADO.md
+5180 ESTADO.md
+```
+
+Última sección coincide exactamente con el bloque de abonos parciales
+de la sesión anterior. Sin discrepancias — se procedió al Paso 3.
+
+### Paso 3 — Append del bloque de verificación de DoD
+
+Bloque anexado verbatim (contenido completo en el prompt de esta
+sesión — no se parafraseó ni se reabrió la verificación técnica).
+
+### Paso 4 — Verificación posterior
+
+```
+$ git diff -- ESTADO.md
+(append puro sobre el estado previo del working tree — ambos bloques
+pendientes, "Abonos parciales" y el nuevo "DT-POSPONER-ESTADO-01 —
+Verificación de DoD", presentes íntegros; 0 líneas de contenido
+eliminadas, solo la línea de metadata del propio diff)
+
+$ tail -1 ESTADO.md
+quedó cerrada con el matiz S1→S2 vs. S1→S3/S4 documentado arriba.
+
+$ wc -l ESTADO.md
+5230 ESTADO.md
+```
+
+Confirmado: contenido idéntico carácter por carácter al bloque provisto
+en el prompt, nada editado por encima del punto de inserción (incluido
+el bloque de abonos parciales, que se preservó intacto).
+
+**No se commiteó ninguno de los dos bloques** — ambos quedan en el
+working tree de `fix/dt-posponer-estado-01`, pendientes de que Camilo
+decida si los commitea juntos o por separado.
+
+### Criterios de parada activados
+
+Ninguno — ambos anchor guards (Paso 1 y Paso 2) coincidieron
+exactamente con lo esperado. No se mergeó el PR #28, no se tocó `dev`
+ni `main`, no se modificó ningún archivo de código.
