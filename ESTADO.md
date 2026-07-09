@@ -5189,3 +5189,65 @@ incidente confirmado aún.
   para `/api/admin/**` (hallazgo 2), semántica de I-03 vs. "imprevisto"
   (hallazgo 5), alcance de I-05 respecto a limpieza administrativa de H4D
   (hallazgo 4).
+
+---
+
+## AUDIT-FABLE-01 — Segunda revisión adversarial · 9 julio 2026
+
+Reviewer: Claude Fable 5 (Claude Code), lectura ciega sin acceso a
+ESTADO.md ni INVARIANTS.md ni al audit anterior. Alcance: lib/data/
+sheets.ts completo, 16 route handlers, lib/utils/fecha.ts, manejo de
+credenciales, scripts, pre-commit hook. Informe completo en
+audit-fable-01/findings.md (commit adceaa6e6c79356a5a9c3e7418e3afffb4fc0dd8).
+
+23 hallazgos entregados. Cruce contra AUDIT-ADVERSARIAL-01 hecho en
+Claude.ai:
+
+**Confirmados por segundo reviewer independiente** (6 de 9 hallazgos
+originales): auth ausente (H-01/H-15 ↔ Hallazgo 2), no atomicidad de
+reset (H-02/H-03 ↔ Hallazgo 3), contradicción H4D/I-05 (H-19 ↔
+Hallazgo 4), violación I-03 por Haiku (H-11 ↔ Hallazgo 5), cierre no
+atómico (H-06 ↔ Hallazgo 6), hook sin versionar (H-21 ↔ Hallazgo 7).
+
+**Reclasificación:** resetH2 no es "riesgo condicionado a fallo
+transitorio" como se describió en Hallazgo 3 original — es
+comportamiento determinístico: vacía toda H2 en cada ejecución
+exitosa, no solo ante fallo. Severidad y naturaleza del ticket
+correspondiente se ajustan en consecuencia.
+
+**Hallazgos nuevos de mayor peso:**
+- H-04: rangos de columnas del reset desalineados con esquema real
+  (H3 usa A:P, esquema real A:Q; H5 usa A:N, esquema real A:P) →
+  corrupción silenciosa de columnas en filas supervivientes tras
+  reset con datos multi-mes.
+- H-18: montoPresupuestado de conceptos semana variable se suma al
+  totalPresupuestado de CADA cierre semanal mientras no se ejecutan,
+  no solo al de la semana de ejecución final. Candidato directo a
+  explicar DT-H5-DESVIACION-01 (discrepancia $55.000 S4 junio) —
+  mecanismo alternativo a la hipótesis de no-atomicidad ya registrada.
+- H-12/H-13: cálculo de semana/fecha tiene dos implementaciones que
+  divergen entre timezone Bogotá y reloj UTC del servidor — tensiona
+  el invariante "mes activo se deriva del reloj del servidor" al
+  mostrar que hay dos relojes que no coinciden.
+
+**Gap de cobertura detectado:** Fable no reportó el Hallazgo 1 original
+(values.append sin INSERT_ROWS en crearMovimientosMes) pese a citar
+líneas adyacentes de la misma función para otro hallazgo (H-08). No se
+trata como confirmación negativa — Hallazgo 1 mantiene su prioridad
+original sin cambios, respaldada por evidencia histórica (67 filas
+perdidas en septiembre).
+
+**8 preguntas abiertas nuevas** (P-1 a P-8) en audit-fable-01/findings.md,
+sección 4. Ninguna resuelta en esta sesión.
+
+### Decisiones tomadas en esta sesión
+[Camilo completa: qué se decidió sobre P-1 a P-8 y las pendientes del
+audit anterior, si algo se decidió. Si nada se decidió, escribir
+"Ninguna — sesión fue de auditoría y cruce, no de decisión."]
+
+### Próximo ticket de construcción
+FIX-RESET-COLUMNAS-01: alinear rangos de columnas de reset-mes al
+esquema real (H-04) + reemplazar clear-then-rewrite por deleteDimension
+por fila (H-03), siguiendo el patrón ya usado en deleteConsumoH3.
+Explícitamente NO incluye: semántica de resetH2 (P-2, pendiente
+decisión), autenticación de /api/admin/** (P-1, pendiente decisión).
