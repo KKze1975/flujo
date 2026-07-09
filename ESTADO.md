@@ -5314,3 +5314,22 @@ por fila vía batchUpdate, no clear+rewrite.
 
 No abras trabajo nuevo al terminar.
 ```
+
+---
+
+## Verificación de gobernanza — FIX-CREARMOVIMIENTOSMES-01 · 9 julio 2026
+
+Ejecutado por regla de sesión-abierta (todo ticket "away" se verifica
+antes de abrir trabajo nuevo). Resultado: **(c) NUNCA CONSTRUIDO.**
+
+- Único rastro histórico: commit 6f3dcb0 (TICKET-B-GUARDIA-01), que
+  *descubre* el bug durante verificación de otro alcance y detiene la
+  sesión sin PR. No existe rama, commit de fix, ni PR abierto o cerrado
+  que lo aborde desde entonces.
+- Código actual (`lib/data/sheets.ts:270-283`) confirma el patrón
+  defectuoso vigente: `values.append` con `valueInputOption: "RAW"`,
+  sin `insertDataOption: "INSERT_ROWS"`.
+- Reclasificación de prioridad: este hallazgo pasa a ser el ticket de
+  construcción prioritario, por delante de FIX-RESET-COLUMNAS-01 —
+  tiene incidente histórico confirmado (67 filas, septiembre) y
+  ausencia de seguimiento documentada dos veces.
