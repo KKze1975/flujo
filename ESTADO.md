@@ -5245,9 +5245,72 @@ sección 4. Ninguna resuelta en esta sesión.
 audit anterior, si algo se decidió. Si nada se decidió, escribir
 "Ninguna — sesión fue de auditoría y cruce, no de decisión."]
 
-### Próximo ticket de construcción
-FIX-RESET-COLUMNAS-01: alinear rangos de columnas de reset-mes al
-esquema real (H-04) + reemplazar clear-then-rewrite por deleteDimension
-por fila (H-03), siguiendo el patrón ya usado en deleteConsumoH3.
-Explícitamente NO incluye: semántica de resetH2 (P-2, pendiente
-decisión), autenticación de /api/admin/** (P-1, pendiente decisión).
+### Próximo ticket de construcción — FIX-RESET-COLUMNAS-01
+
+Prompt de ejecución completo (listo para pegar en Claude Code sin
+reconstrucción):
+
+```markdown
+# SESIÓN: [CONSTRUCCIÓN] — FIX-RESET-COLUMNAS-01
+
+Un solo ticket activo. No abras ningún otro cambio, no toques archivos
+fuera del alcance listado, no hagas merge a main.
+
+## Alcance
+app/api/admin/reset-mes/route.ts únicamente. Referencia de patrón
+correcto: deleteConsumoH3 en lib/data/sheets.ts.
+
+## Fix 1 — Rangos de columnas desalineados (H-04)
+Los rangos de clear/rewrite de H3 y H5 usan menos columnas que el
+esquema real:
+- H3B tiene 17 columnas (A-Q, `imprevisto` es la Q — ver H3B_HEADERS
+  en lib/data/sheets.ts:702-707). El reset usa H3!A:P. Corregir a A:Q.
+- H5A tiene 16 columnas (A-P, `destino_remanente` y
+  `remanente_ejecutado` son O y P — ver H5_HEADERS en
+  lib/data/sheets.ts:851-858). El reset usa H5!A:N. Corregir a A:P.
+
+Antes de tocar código: confirma contra el Sheet de DEV real (no solo
+contra los HEADERS en código) que el número de columnas coincide. Si
+hay una tercera fuente de verdad divergente, DETENTE y repórtalo.
+
+## Fix 2 — clear-then-rewrite no atómico (H-03)
+deleteRowsByMes hoy hace values.clear del bloque completo + values.update
+de las filas supervivientes en dos llamadas separadas — un fallo entre
+ambas pierde todo el bloque, no solo el mes objetivo. Nota de
+reclasificación (ver AUDIT-FABLE-01): resetH2 en particular no es solo
+riesgo ante fallo transitorio — vacía toda H2 sin filtrar por mes en
+cada ejecución exitosa. Ese comportamiento de resetH2 queda FUERA de
+este ticket (ver más abajo); este fix es sobre el mecanismo
+clear-then-rewrite en sí.
+
+Reemplazar por deleteDimension apuntando a los índices de fila
+específicos del mes objetivo, siguiendo exactamente el patrón ya usado
+en deleteConsumoH3 (lib/data/sheets.ts). Esto es una operación atómica
+por fila vía batchUpdate, no clear+rewrite.
+
+## Explícitamente fuera de alcance de este ticket
+- resetH2 (vacía toda H2, no filtra por mes) — pendiente decisión P-2,
+  NO tocar.
+- Autenticación del endpoint — pendiente decisión P-1, NO tocar.
+- Cualquier otro hallazgo de audit-fable-01 o audit-adversarial-01.
+
+## DoD ejecutable
+- tsc --noEmit limpio.
+- Prueba manual contra Sheet DEV: crear datos de prueba en 2 meses
+  distintos en H3B y H5A, ejecutar reset-mes sobre uno de los dos,
+  verificar con lectura directa del Sheet que (a) las columnas del mes
+  superviviente no se corrieron/desalinearon, y (b) el mes no
+  reseteado permanece intacto en H3B/H5A específicamente (H2/H4/otros
+  bloques quedan fuera de este fix, no verificar ahí).
+- git diff limitado a app/api/admin/reset-mes/route.ts (y lib/data/
+  sheets.ts solo si deleteDimension requiere una función helper nueva
+  ahí — en ese caso, nombra la función explícitamente en tu reporte).
+
+## STOP conditions
+- Si el Sheet real no coincide con H3B_HEADERS/H5_HEADERS del código.
+- Si deleteDimension requiere tocar resetH2 para funcionar (acoplamiento
+  no anticipado) — reporta y espera instrucción, no lo arregles de paso.
+- Si el DoD no es verificable tal como está escrito.
+
+No abras trabajo nuevo al terminar.
+```
