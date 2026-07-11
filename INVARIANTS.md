@@ -75,3 +75,21 @@ observable en el repo o el Sheet mediante una acción de lectura.
 Si lo es, ejecutar la lectura e incorporar el dato al loop.
 Solo se escala cuando la respuesta requiere una decisión de diseño
 con trade-offs que no tienen respuesta en el código o los datos.
+
+---
+
+## Candidatos (pendientes de aprobación — no vinculantes)
+
+Registrados aquí para que no se pierdan, siguiendo la regla de que las
+ideas nuevas se registran como candidatos y nunca se promueven directo
+a método. Ver `BLOQUEANTE-0-DELTA.md` (11 julio 2026) para el contexto
+completo.
+
+### I-16 (candidato) — Escrituras nuevas a Sheets vía `batchUpdate`, nunca `values.append` sin `INSERT_ROWS`
+El patrón `values.append` sin `insertDataOption: "INSERT_ROWS"` puede
+desalinear la detección de rango de la API de Sheets y sobrescribir
+filas existentes en vez de agregar al final — causó pérdida real de 67
+filas en septiembre (`crearMovimientosMes`, aún sin corregir). Cumple
+el criterio de admisión (dato corrupto silencioso, incidente
+confirmado). Pendiente de aprobación explícita de Camilo antes de
+convertirse en I-16 real.

@@ -5333,3 +5333,43 @@ antes de abrir trabajo nuevo). Resultado: **(c) NUNCA CONSTRUIDO.**
   construcción prioritario, por delante de FIX-RESET-COLUMNAS-01 —
   tiene incidente histórico confirmado (67 filas, septiembre) y
   ausencia de seguimiento documentada dos veces.
+
+---
+
+## BLOQUEANTE-0 — Auditoría estado real vs. documentación · 11 julio 2026
+
+Sesión [CONSTRUCCIÓN/DEBUGGING — verificación], mediada por claude.ai
+(proyecto Agente HG SDD), para desbloquear migración de documentación al
+vault obsidian-mind. Sin cambios de código. Informe completo en
+`BLOQUEANTE-0-DELTA.md`.
+
+**Veredicto: desbloqueable.** El hallazgo de mayor severidad
+(`crearMovimientosMes` con `values.append` sin `INSERT_ROWS`) ya está
+correctamente documentado en la entrada de gobernanza de arriba — la doc
+acierta, el código no se movió desde `6f3dcb0`. No hay hook ni script en
+`.claude/` ni decisión de arquitectura sin registrar que no esté ya en
+`audit-fable-01/` o `audit-adversarial-01/`.
+
+Delta real encontrado (no es de código, es estructural):
+- Encabezados de ESTADO.md (línea 1-2) y SESSION_LOG.md dicen junio;
+  contenido real llega a julio 9 — ambos son logs append-only, no
+  resúmenes vivos.
+- `SPEC.md`/`BITACORA.md` no existen con esos nombres; sus funciones
+  están repartidas dentro de ESTADO.md y SESSION_LOG.md.
+- Placeholder "Decisiones tomadas en esta sesión" (línea ~5243, sección
+  AUDIT-FABLE-01) sigue vacío — P-1 a P-8 de `audit-fable-01/findings.md`
+  sin resolver.
+- No existe invariante que cubra el patrón `values.append` sin
+  `INSERT_ROWS` pese a cumplir el criterio de admisión de
+  INVARIANTS.md (candidato I-16 propuesto en el delta, no promovido).
+- El leg de Gemini en `audit-adversarial-01` falló técnicamente (503s +
+  OOM) — la "auditoría adversarial" fue en la práctica dos sesiones
+  Claude independientes, no diversidad de modelo.
+- Punto transversal: el patrón de falla (docs que se degradan
+  silenciosamente, decisiones abiertas sin cerrar) no es específico de
+  Flujo — recomendado ejecutar el mismo chequeo en School Bot antes de
+  dar Bloqueante 0 por cerrado a nivel transversal.
+
+Pendiente de Camilo (no ejecutable por el modelo): llenar P-1 a P-8,
+decidir si I-16 se promueve, decidir si ESTADO.md se separa en
+resumen vivo + histórico antes de migrar al vault.
