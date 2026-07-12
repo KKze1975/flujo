@@ -32,6 +32,22 @@ The pre-commit hook runs `tsc --noEmit` and checks that the production Sheet ID 
 
 ---
 
+## Shell & Machines
+
+- Windows Server + PowerShell. No usar bash para rutas Windows, heredocs ni comandos multi-línea empaquetados; comandos PowerShell separados.
+- El dev server corre en esta WorkSpace (localhost:3000). El navegador del usuario puede estar en otra máquina — nunca abrir localhost con `Start-Process` para mostrarle algo al usuario.
+- Dev server y procesos largos: usar tareas en background nativas de Claude Code, no `Start-Process` + `Start-Sleep` + polling manual.
+- Para leer archivos usar la herramienta Read, nunca `Get-Content | Select-Object -Index`.
+
+## Verification Honesty
+
+- Nunca reportar que un recurso vivo (Sheet, fila de DB, deploy, UI) quedó actualizado sin evidencia leída de vuelta: respuesta HTTP pegada, diff de `/admin/trazabilidad`, o el contenido real de la fila/celda.
+- Si un fix no se pudo verificar, decirlo explícitamente: "aplicado pero NO verificado".
+- No inventar timestamps (no hay reloj en tiempo real) — usar `git log --format=%ci` como fuente.
+- Si un screenshot de browser falla una vez, cambiar a verificación por API/logs y avisar.
+
+---
+
 ## Architecture
 
 ### Backend: Google Sheets as database
@@ -113,3 +129,37 @@ Read `INVARIANTS.md` before writing any code. Critical ones:
 ### Scripts
 
 `scripts/` contains one-off migration and seed scripts (`*.mjs`). They run directly with `node scripts/<name>.mjs` and use the same service account credentials. They operate on the dev Sheet unless explicitly configured otherwise.
+
+## Protocolo HG SDD (Human-Grounded SDD v6.1)
+
+**Tipos de sesión — declarar al abrir, no mezclar:**
+DISEÑO (no código, no tecnología) | CONSTRUCCIÓN (contra spec aprobada) |
+DEBUGGING (no proponer fix sin el log de error exacto) | RETROSPECTIVA (no abre tickets).
+
+**DoD = acciones verificables, no estados.**
+"El bot registra gastos" no es DoD. "Mensaje produce fila en Sheet en <5s, verificado por 
+GET /api/mes/YYYY-MM" sí lo es. Ningún ticket cierra sobre una afirmación sin evidencia 
+pegada (respuesta HTTP, diff del Sheet, output de comando).
+
+**DEBUGGING exige log exacto antes de proponer cualquier cambio.**
+Sin log de error reproducido, no hay diagnóstico — hay hipótesis. No se toca código sobre 
+una hipótesis.
+
+**Dato operativo determinista → lo calcula el servidor, nunca la IA.**
+Fecha, semana, mes, actor, sesión: el cliente/prompt no opina, no infiere, no tiene fallback 
+hardcoded. Si un SYSTEM_PROMPT tiene un valor de negocio con fallback tipo "sin referencia → 
+X", es un bug esperando manifestarse (lección de origen de este proyecto — bug S1, jun 2026).
+
+**Cierre de sesión — contrato de síntesis.**
+Al cerrar, sintetiza el delta de ESTADO.md/SESSION_LOG.md sin preguntar. No es el estado 
+canónico — es borrador para corrección de Camilo. Usa anchor-guard: verifica contra el ancla 
+conocida antes de escribir; si no coincide, halt — no sobrescribas.
+
+**Higiene de ejecución (candidato §6.5, evidencia Flujo):**
+- Nunca reportar éxito sobre un recurso vivo (Sheet, endpoint, deploy) sin evidencia adjunta.
+- Verificar merge-base antes de merge/deploy — no desplegar rama divergente del canónico.
+- Usa Read, no `Get-Content`. Usa `run_in_background` para el dev server, no `Start-Process`.
+
+**Contexto de stack (para evitar ambigüedad dev/prod):**
+Next.js + TypeScript + Tailwind + Google Sheets (MVP) + Vercel. Declarar explícitamente 
+DEV vs PROD y el tab exacto antes de tocar Sheets.
