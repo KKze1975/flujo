@@ -5373,3 +5373,98 @@ Delta real encontrado (no es de código, es estructural):
 Pendiente de Camilo (no ejecutable por el modelo): llenar P-1 a P-8,
 decidir si I-16 se promueve, decidir si ESTADO.md se separa en
 resumen vivo + histórico antes de migrar al vault.
+
+---
+
+## Sesión — Instalación paquete claude-improvements + cierre PR #29 · 11 julio 2026
+
+Tipo [CONSTRUCCIÓN — tooling]. Sin cambios de código de producto (nada en
+`app/`, `lib/`, `components/`). Fuente: `/d/Users/camilo/claude-improvements`,
+evaluado ítem por ítem contra INV-002 en `EVALUACION-DOCTRINA.md` (ver
+sección BLOQUEANTE-0 arriba).
+
+### Instalado en flujo (commit `beafa36`, PR #29 → `main` en `b924b7d`)
+
+- Commands `/estado /cierre /audit /release /dod` → `.claude/commands/`.
+- Skill `sheet-safety` → `.claude/skills/sheet-safety/`.
+- Hooks `session-context` (SessionStart), `pre-commit-tsc` (PreToolUse),
+  `guard-git` (PreToolUse) → `.claude/hooks/`, registrados en
+  `.claude/settings.json`.
+- `CLAUDE.md`: secciones nuevas "Shell & Machines" y "Verification
+  Honesty".
+
+### Guard-git — prueba real de INV-002, no supuesta
+
+Antes de instalar el hook se probó el mecanismo simple: reglas
+`permissions.deny` en `settings.json` para bloquear `reset --hard`,
+`push --force/-f`, `clean -f`, `commit --no-verify`. **Falló en la
+práctica**: el matcher de permisos es prefijo-anclado, no cubre
+`git push origin --force` (remoto de por medio) ni
+`git commit -m "..." --no-verify` (flag al final) — los dos casos de uso
+más comunes. Con esa evidencia se instaló el hook `guard-git.ps1`.
+
+Al probarlo con pipe-tests se encontró que el hook vendido en el paquete
+tenía **el mismo bug de anclaje** en su regex de `push --force`
+(`push\s+(-f\b|--force)` no matcheaba con remoto intermedio). Corregido a
+`git\s+(-C\s+\S+\s+)?push\b.*(-f\b|--force)`. Verificado: 4 casos
+destructivos bloqueados (`reset --hard`, `push --force` con remoto,
+`push -f`, `commit --no-verify` con `-m` antes), 3 casos benignos sin
+fricción (`git status`, push normal, commit normal).
+
+### school-bot (repo separado, commit `096349a` → `origin/dev`)
+
+Solo `/deploy-bot` instalado y commiteado, por instrucción explícita del
+usuario. El resto del paquete (`/audit /cierre /dod /estado /release`,
+adición a `CLAUDE.md`) quedó fuera — esos 5 commands ya existían sin
+trackear en el working tree de school-bot desde antes de esta sesión, sin
+commitear.
+
+### PR #29 (flujo, `dev` → `main`)
+
+10 commits, solo docs/config. CI verificado en verde (`gh pr checks`:
+Vercel deploy + preview comments, ambos `pass`) y `mergeStateStatus:
+CLEAN` antes de mergear. El primer intento de merge fue bloqueado por el
+clasificador de modo automático (self-merge sin aprobación humana visible
+en el transcript) — se pidió confirmación explícita al usuario antes de
+reintentar y mergear (`b924b7d`).
+
+### Decisiones tomadas
+
+- Probar deny-rules antes que el hook (INV-002 aplicado de verdad, no
+  como formalidad) — la prueba falló con evidencia concreta, lo que
+  justificó el hook en vez de asumirlo por defecto.
+- `/deploy-bot` instalado sin abrir sesión nueva en school-bot: el sandbox
+  de Bash permite rutas absolutas fuera de `flujo` aunque `cd` no
+  persiste entre comandos — se usó eso en vez de pedir al usuario abrir
+  otra sesión.
+- Commit en school-bot acotado solo a `deploy-bot.md` por instrucción
+  explícita — el resto del working tree (CLAUDE.md modificado, ~70
+  archivos de debug sueltos, 4 commands sin trackear) quedó intacto.
+
+### Deuda técnica / pendientes nuevos
+
+14. **Commands `/estado /cierre /audit` no consolidados a nivel
+    usuario** (`~/.claude/commands/`, que solo tiene `llm-council.md`).
+    Quedaron duplicados por proyecto en vez de instalados una sola vez
+    a nivel global como recomendaba el README del paquete.
+15. **`school-bot/CLAUDE.md` sin la sección "Verificación de deploy"**
+    de `CLAUDE-md-additions.md` — no aplicada.
+16. **Pilar 2 (backup nocturno probado del Sheet de producción) sigue
+    sin implementarse** — más urgente que cosmético dado el bug de
+    pérdida de datos ya documentado en `crearMovimientosMes`.
+
+### DoD verificado
+
+| Punto | Estado |
+|---|---|
+| `tsc --noEmit` limpio en cada commit | ✓ — hook pre-commit nativo confirmó |
+| `settings.json` válido tras cada edición | ✓ — `ConvertFrom-Json` sin error |
+| `guard-git.ps1` probado con pipe-tests reales antes de instalar | ✓ — 4 casos destructivos + 3 benignos |
+| PR #29: CI verde + `mergeStateStatus: CLEAN` antes de mergear | ✓ — `gh pr checks` / `gh pr view --json` |
+| Hooks recién registrados disparan de verdad en una sesión viva | ✗ — requiere que Camilo abra `/hooks` o reinicie sesión; no ejecutable desde este turno |
+
+### Próxima acción
+
+FIX-CREARMOVIMIENTOSMES-01 (ver prompt completo en la sección de
+verificación de gobernanza arriba) — sigue siendo el ticket de mayor
+severidad sin construir.
