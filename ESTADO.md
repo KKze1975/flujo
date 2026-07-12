@@ -5468,3 +5468,34 @@ reintentar y mergear (`b924b7d`).
 FIX-CREARMOVIMIENTOSMES-01 (ver prompt completo en la sección de
 verificación de gobernanza arriba) — sigue siendo el ticket de mayor
 severidad sin construir.
+
+### Retrospectiva (Fase 4 HG SDD)
+
+**Qué funcionó:** el patrón "explicar antes de implementar, uno por uno"
+hizo que INV-002 se aplicara de verdad — la prueba de deny-rules
+encontró una brecha real antes de instalar el hook `guard-git`, y ese
+mismo hábito de pipe-testing encontró un bug real *en el hook vendido*
+(regex de `push --force` mal anclado, no cubría remoto intermedio) antes
+de darlo por instalado sin más.
+
+**Qué no funcionó:** el `cd` no persiste entre comandos Bash en este
+sandbox — costó dos intercambios de confusión con Camilo antes de
+explicarlo con claridad, cuando debió decirse la primera vez que
+ocurrió, no en el segundo intento.
+
+**Qué cambia en la próxima sesión:** cuando aparezca un `cd` del
+usuario, explicar el comportamiento del sandbox en la primera
+ocurrencia. Y antes de instalar piezas de un paquete de recomendaciones,
+declarar explícitamente si el scope es global o por-proyecto antes de
+copiar archivos — no asumir proyecto por defecto sin decirlo.
+
+**Qué aprendizaje merece volverse invariante:** *"Un hook o regla de
+seguridad copiado de un paquete externo debe probarse con pipe-tests
+contra el caso de uso real (no el trivial) antes de darlo por
+instalado."* Cumple el filtro de INVARIANTS.md — su ausencia es
+exactamente un error silencioso: un guard que dice bloquear pero no
+bloquea (`git push origin --force` pasando pese a "tener" `guard-git`)
+es peor que no tener guard, porque genera falsa sensación de seguridad.
+El caso de hoy (bug real encontrado y corregido en `guard-git.ps1`) es
+evidencia fundacional concreta, no hipotética — candidato a promover en
+la próxima retrospectiva con dos ocurrencias independientes.
