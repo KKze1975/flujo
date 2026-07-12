@@ -4987,3 +4987,389 @@ y monto_ejecutado_angie como columnas nativas. Esto invalida el enfoque de dise�
 planteado en la sesión de DISEÑO abierta para la feature "ejecutado por persona 
 en barra at-a-glance" (que asumía derivar el split desde ejecutor + monto_ejecutado). 
 Sesión de DISEÑO queda pendiente de retomar con este dato como nuevo punto de partida.
+
+## FEAT-BARRA-EJECUTADO-PERSONA-01 · 5 julio 2026 — MERGEADO A MAIN
+
+PR #26 (feat/barra-ejecutado-persona-01 → dev) y PR #27 (dev → main) 
+mergeados. Deploy Vercel: success, sin errores.
+
+Contexto: originado en hallazgo colateral de la sesión DEBUGGING de 
+DT-HEADER-H2-01 — columnas monto_ejecutado_camilo/monto_ejecutado_angie 
+ya existentes en H2 llevaron a rediseñar el desglose de ejecutado por 
+persona en la barra at-a-glance de VistaSemanal.
+
+Decisión de diseño clave: la métrica usa `ejecutor` (quién ejecutó el 
+movimiento), no monto_ejecutado_camilo/angie (de dónde salió la plata) — 
+son preguntas distintas. Caso borde confirmado: ejecutor=angie con fuente 
+de cuenta de Camilo cuenta hacia Angie, por diseño.
+
+Fórmula (verificada, diferencia=0 en 6 semanas reales — 3 prod + 3 dev):
+  ejecutadoPorPersona(persona, semana) =
+    H2.filter(ejecutor=persona, estado=ejecutado, tipo_snapshot≠pago_fraccionado, semana)
+      .sum(monto_ejecutado)
+    + H3.filter(ejecutor=persona, semana).sum(monto)
+
+Construido (lib/data/types.ts, lib/data/sheets.ts, components/VistaSemanal.tsx):
+- Parte 1: métrica itemsPorPersona/ejecutadoAngie/ejecutadoCamilo.
+- Parte 2: dos chips tappables con popover (mecanismo popoverMode existente).
+- Parte 3: fix de asimetría — ConsumoH3.ejecutor ahora Actor | null, 
+  eliminado default silencioso a "camilo" (hallazgo de verificación previa 
+  a construcción). Auditoría de usos existentes: ninguno dependía del default.
+- Parte 4: botón "Cerrar semana" reubicado a topnav (variante 3a del handoff 
+  de diseño) — mitiga riesgo de toque accidental introducido por los chips 
+  nuevos. Agregado tras confirmación explícita de Camilo, fuera del prompt 
+  de construcción original.
+
+Hallazgo de proceso: el .dc.html del handoff de Claude Design era un mockup 
+estático (frame fijo simulando popover abierto), sin interactividad real. 
+Se implementó el onClick/estado desde cero. Lección para futuros handoffs 
+de diseño: "final" en el nombre del archivo no garantiza comportamiento.
+
+DoD verificado con evidencia:
+- tsc --noEmit limpio.
+- Diferencia=0 en 6 semanas (3 prod + 3 dev).
+- Guard ejecutor=null probado con caso simulado — excluido del desglose 
+  por persona, incluido en el total.
+- Auditoría completa de usos de ConsumoH3.ejecutor — sin regresión.
+- QA de Camilo en dev + QA de Angie completos, con foco específico en los 
+  tres puntos que Code no pudo verificar en su entorno (interactividad real 
+  del popover, efecto de reubicar "Cerrar semana", legibilidad a 375px) — 
+  todos aprobados.
+
+## Corrección de metodología — verificación de ramas antes de merge a main
+Durante el cierre de esta sesión se detectó inicialmente una alarma de 
+trabajo no verificado en `dev` (TICKET-B-GUARDIA-01, fixes de confirmarOK) 
+que resultó ser un falso positivo: la comparación se hizo contra un `main` 
+local desactualizado, sin `git fetch` previo. Al repetir con `origin/main` 
+real y `git merge-base --is-ancestor` para confirmar ancestría, se confirmó 
+que ambos ítems ya estaban en `main` vía PR #25, y que el diff real 
+`origin/main..origin/dev` contenía solo los 3 commits esperados. 
+Lección: comparar ramas para decisiones de despliegue siempre con fetch 
+previo y `merge-base --is-ancestor`, no con refs locales potencialmente 
+desactualizados.
+
+## Nota — check de Railway en PR #27
+Apareció un check "Railway (beautiful-light - flujo)" en pending durante 
+el merge de PR #27, no documentado en ningún lugar del proyecto (stack 
+documentado: solo Vercel). Confirmado por Camilo: corresponde a una 
+integración de Railway usada en otro proyecto suyo (bot de psicología), 
+probablemente una GitHub App a nivel de cuenta que se activó sobre este 
+repo sin conexión deliberada. No representa riesgo confirmado para Flujo. 
+Sin acción requerida por ahora — si el check reaparece de forma recurrente 
+en futuros PRs, ameritaría revisión de las integraciones de GitHub a nivel 
+de cuenta/organización.
+
+## DT-H5-DESVIACION-01 (deuda técnica, abierto, sin investigar)
+Discrepancia de $55.000 detectada en 2026-06 S4 entre cálculo en vivo de la 
+barra ($2.369.896) y lo registrado en H5 al cerrar la semana ($2.314.896). 
+Confirmado que se replica idéntica en el desglose por persona — origen no 
+está en esta feature, es preexistente en el mecanismo de cierre/H5. 
+Candidato a sesión DEBUGGING propia. No investigado más allá de la confirmación.
+
+## AUDIT-ADVERSARIAL-01 — Revisión adversarial retroactiva · 7 julio 2026
+
+Alcance: lib/data/sheets.ts, app/api/** (énfasis en admin/reset-mes),
+config/credenciales. Solo lectura, sin commits ni merges.
+
+Reviewers: Gemini (2 intentos, ambos fallaron con 503 "high demand" de la
+API de Google — modelo default y gemini-2.5-flash explícito, retries
+agotados en ambos; sin hallazgos) + Claude (independiente, sin haber leído
+output de Gemini). Auditoría avanzó con un solo reviewer funcional —
+cobertura de un revisor, no el contraste cruzado de dos que era el diseño
+original.
+
+### Hallazgo 1 — Bug técnico: crearMovimientosMes sigue con values.append
+
+`lib/data/sheets.ts:270-283` sigue usando `values.append` sin
+`INSERT_ROWS` — el mismo patrón que ya sobrescribió 67 filas de
+septiembre en dev. Verificado con `git log --all -p -- lib/data/sheets.ts`
+a través de todas las ramas locales y remotas (dev, main,
+fix/dt-posponer-estado-01): un único resultado en todo el historial de
+diffs de esa función — su adición original. Ningún commit, en ninguna
+rama, la tocó después. El bug está exactamente como cuando se descubrió.
+
+**Severidad: Alta — deuda técnica, próximo ticket prioritario.**
+
+### Hallazgo 1b — Falla de proceso: ticket aprobado se extravió sin traza
+
+`FIX-CREARMOVIMIENTOSMES-01` fue aprobado y lanzado en modo "away" (sin
+supervisión directa) en sesión previa (ver SESSION_LOG.md, commit
+`6f3dcb0` — docs-only, 178 inserciones, cero cambios a `sheets.ts`). Esa
+sesión cerró con advertencia explícita: "resultado pendiente de revisión
+en la próxima sesión — no asumir éxito hasta ver SESSION_LOG.md".
+
+Esa próxima sesión de verificación nunca ocurrió, o si ocurrió, no dejó
+ningún rastro — ni commit, ni entrada de log, ni resultado documentado en
+ningún lado. El proceso "away" no produjo ni éxito ni fracaso verificable:
+se perdió en silencio. Nadie lo notó hasta esta auditoría.
+
+Esto es distinto del hallazgo 1 (bug de código): es una falla del propio
+mecanismo de cierre de sesión — la garantía de "no asumir éxito sin
+verificar" fue correcta en teoría pero falló en la práctica, porque nada
+forzó que la verificación pendiente realmente ocurriera.
+
+**Severidad: Alta — riesgo de gobernanza de proceso, no solo de código.
+Sugerencia: todo ticket lanzado en modo "away" debería requerir un
+recordatorio explícito de verificación al abrir la siguiente sesión,
+no depender de que se recuerde manualmente.**
+
+### Hallazgo 2 — POST /api/admin/reset-mes sin autenticación
+
+Endpoint destructivo/irreversible (borra H2/H3B/H4A-D/H5A/H5B de un mes
+completo) alcanzable sin credenciales por cualquiera que sepa la URL.
+**Alta — decisión de diseño de auth pendiente, escalar a Camilo.**
+
+### Hallazgo 3 — deleteRowsByMes/resetH2 no atómicos
+
+Mismo archivo, líneas 19-79. `clear()` de rango completo + `update()`
+separado; un fallo transitorio entre ambas llamadas borra todos los
+meses del rango, no solo el objetivo.
+**Alta — deuda técnica, prioridad alta por el radio de impacto.**
+
+### Hallazgo 4 — reset-mes lee/borra H4D, contradice I-05
+
+`route.ts:99`. I-05 dice que H4D es tab legacy, sin lectura ni escritura.
+Podría ser intencional (limpieza administrativa) o error.
+**Media — decisión: ¿amendar I-05 o quitar la línea? Escalar a Camilo.**
+
+### Hallazgo 5 — Clasificador Haiku puede violar I-03
+
+`app/api/consumos/[id]/clasificar/route.ts:56-60`. Puede dejar
+`clasificado=true` con `bolsilloId` vacío cuando la clasificación falla o
+no matchea — viola I-03 directamente.
+**Alta — decisión de diseño sobre semántica de "imprevisto", escalar a
+Camilo.**
+
+### Hallazgo 6 — Cierre de semana no es atómico pese a estar documentado como tal
+
+`app/api/mes/[mes]/cerrar-semana/route.ts:82-137`. ESTADO.md lo describe
+como "batchUpdate atómico, falla completa o no falla" — en código real
+son 3 fases de red independientes (H5A, H5B, N×H2) sin idempotencia ante
+reintento. La API sí soporta batchUpdate multi-rango (patrón ya usado en
+`ensureH4Headers`).
+**Alta — deuda técnica, ticket propio.**
+
+**Nota lateral, no investigada:** `DT-H5-DESVIACION-01` (discrepancia de
+$55.000 en cierre S4 junio) podría estar relacionada con esta no
+atomicidad — hipótesis, no confirmada.
+
+### Hallazgo 7 — Pre-commit hook (I-07/I-08) no versionado
+
+Vive solo en `.git/hooks/pre-commit` — no se reproduce en clon nuevo,
+otro colaborador, o CI.
+**Media — <20 min, resolver en próxima sesión de construcción (mover a
+script versionado + core.hooksPath o husky).**
+
+### Hallazgo 8 — Patrón sistémico catch { return [] } en sheets.ts
+
+~8 métodos de lectura indistinguen "sin datos" de "falló la API". Caso
+concreto: `getGastosSinClasificarPorSemana` con error transitorio
+devuelve falso-cero, anulando silenciosamente la guarda de cerrar-semana.
+**Media — deuda técnica.**
+
+### Hallazgo 9 — Mismo patrón values.append sin INSERT_ROWS, otros métodos
+
+`createConcepto`, `createIngresoCamilo/Angie`, `createCierreSemana`,
+`createPlanSemana` — mismo riesgo estructural que hallazgo 1, sin
+incidente confirmado aún.
+**Media — empaquetar con el ticket del hallazgo 1.**
+
+### Próximos pasos sugeridos (no ejecutados en esta sesión)
+
+- Ticket de construcción: migrar todos los `values.append` (H1/H2/H4A/
+  H4B/H5A/H5B) a `batchUpdate`/`values.update` con cálculo determinístico
+  de fila (hallazgos 1 y 9).
+- Ticket de construcción: reescribir `deleteRowsByMes`/`resetH2` usando
+  `deleteDimension` por fila (patrón ya usado en `deleteConsumoH3`) en
+  vez de clear+rewrite del rango completo (hallazgo 3).
+- Ticket de construcción: versionar el pre-commit hook (hallazgo 7).
+- Ajuste de proceso: mecanismo de recordatorio obligatorio para tickets
+  lanzados en modo "away", para que el hallazgo 1b no se repita.
+- Decisiones de Camilo pendientes antes de construir: mecanismo de auth
+  para `/api/admin/**` (hallazgo 2), semántica de I-03 vs. "imprevisto"
+  (hallazgo 5), alcance de I-05 respecto a limpieza administrativa de H4D
+  (hallazgo 4).
+
+---
+
+## AUDIT-FABLE-01 — Segunda revisión adversarial · 9 julio 2026
+
+Reviewer: Claude Fable 5 (Claude Code), lectura ciega sin acceso a
+ESTADO.md ni INVARIANTS.md ni al audit anterior. Alcance: lib/data/
+sheets.ts completo, 16 route handlers, lib/utils/fecha.ts, manejo de
+credenciales, scripts, pre-commit hook. Informe completo en
+audit-fable-01/findings.md (commit adceaa6e6c79356a5a9c3e7418e3afffb4fc0dd8).
+
+23 hallazgos entregados. Cruce contra AUDIT-ADVERSARIAL-01 hecho en
+Claude.ai:
+
+**Confirmados por segundo reviewer independiente** (6 de 9 hallazgos
+originales): auth ausente (H-01/H-15 ↔ Hallazgo 2), no atomicidad de
+reset (H-02/H-03 ↔ Hallazgo 3), contradicción H4D/I-05 (H-19 ↔
+Hallazgo 4), violación I-03 por Haiku (H-11 ↔ Hallazgo 5), cierre no
+atómico (H-06 ↔ Hallazgo 6), hook sin versionar (H-21 ↔ Hallazgo 7).
+
+**Reclasificación:** resetH2 no es "riesgo condicionado a fallo
+transitorio" como se describió en Hallazgo 3 original — es
+comportamiento determinístico: vacía toda H2 en cada ejecución
+exitosa, no solo ante fallo. Severidad y naturaleza del ticket
+correspondiente se ajustan en consecuencia.
+
+**Hallazgos nuevos de mayor peso:**
+- H-04: rangos de columnas del reset desalineados con esquema real
+  (H3 usa A:P, esquema real A:Q; H5 usa A:N, esquema real A:P) →
+  corrupción silenciosa de columnas en filas supervivientes tras
+  reset con datos multi-mes.
+- H-18: montoPresupuestado de conceptos semana variable se suma al
+  totalPresupuestado de CADA cierre semanal mientras no se ejecutan,
+  no solo al de la semana de ejecución final. Candidato directo a
+  explicar DT-H5-DESVIACION-01 (discrepancia $55.000 S4 junio) —
+  mecanismo alternativo a la hipótesis de no-atomicidad ya registrada.
+- H-12/H-13: cálculo de semana/fecha tiene dos implementaciones que
+  divergen entre timezone Bogotá y reloj UTC del servidor — tensiona
+  el invariante "mes activo se deriva del reloj del servidor" al
+  mostrar que hay dos relojes que no coinciden.
+
+**Gap de cobertura detectado:** Fable no reportó el Hallazgo 1 original
+(values.append sin INSERT_ROWS en crearMovimientosMes) pese a citar
+líneas adyacentes de la misma función para otro hallazgo (H-08). No se
+trata como confirmación negativa — Hallazgo 1 mantiene su prioridad
+original sin cambios, respaldada por evidencia histórica (67 filas
+perdidas en septiembre).
+
+**8 preguntas abiertas nuevas** (P-1 a P-8) en audit-fable-01/findings.md,
+sección 4. Ninguna resuelta en esta sesión.
+
+### Decisiones tomadas en esta sesión
+[Camilo completa: qué se decidió sobre P-1 a P-8 y las pendientes del
+audit anterior, si algo se decidió. Si nada se decidió, escribir
+"Ninguna — sesión fue de auditoría y cruce, no de decisión."]
+
+### Próximo ticket de construcción — FIX-RESET-COLUMNAS-01
+
+Prompt de ejecución completo (listo para pegar en Claude Code sin
+reconstrucción):
+
+```markdown
+# SESIÓN: [CONSTRUCCIÓN] — FIX-RESET-COLUMNAS-01
+
+Un solo ticket activo. No abras ningún otro cambio, no toques archivos
+fuera del alcance listado, no hagas merge a main.
+
+## Alcance
+app/api/admin/reset-mes/route.ts únicamente. Referencia de patrón
+correcto: deleteConsumoH3 en lib/data/sheets.ts.
+
+## Fix 1 — Rangos de columnas desalineados (H-04)
+Los rangos de clear/rewrite de H3 y H5 usan menos columnas que el
+esquema real:
+- H3B tiene 17 columnas (A-Q, `imprevisto` es la Q — ver H3B_HEADERS
+  en lib/data/sheets.ts:702-707). El reset usa H3!A:P. Corregir a A:Q.
+- H5A tiene 16 columnas (A-P, `destino_remanente` y
+  `remanente_ejecutado` son O y P — ver H5_HEADERS en
+  lib/data/sheets.ts:851-858). El reset usa H5!A:N. Corregir a A:P.
+
+Antes de tocar código: confirma contra el Sheet de DEV real (no solo
+contra los HEADERS en código) que el número de columnas coincide. Si
+hay una tercera fuente de verdad divergente, DETENTE y repórtalo.
+
+## Fix 2 — clear-then-rewrite no atómico (H-03)
+deleteRowsByMes hoy hace values.clear del bloque completo + values.update
+de las filas supervivientes en dos llamadas separadas — un fallo entre
+ambas pierde todo el bloque, no solo el mes objetivo. Nota de
+reclasificación (ver AUDIT-FABLE-01): resetH2 en particular no es solo
+riesgo ante fallo transitorio — vacía toda H2 sin filtrar por mes en
+cada ejecución exitosa. Ese comportamiento de resetH2 queda FUERA de
+este ticket (ver más abajo); este fix es sobre el mecanismo
+clear-then-rewrite en sí.
+
+Reemplazar por deleteDimension apuntando a los índices de fila
+específicos del mes objetivo, siguiendo exactamente el patrón ya usado
+en deleteConsumoH3 (lib/data/sheets.ts). Esto es una operación atómica
+por fila vía batchUpdate, no clear+rewrite.
+
+## Explícitamente fuera de alcance de este ticket
+- resetH2 (vacía toda H2, no filtra por mes) — pendiente decisión P-2,
+  NO tocar.
+- Autenticación del endpoint — pendiente decisión P-1, NO tocar.
+- Cualquier otro hallazgo de audit-fable-01 o audit-adversarial-01.
+
+## DoD ejecutable
+- tsc --noEmit limpio.
+- Prueba manual contra Sheet DEV: crear datos de prueba en 2 meses
+  distintos en H3B y H5A, ejecutar reset-mes sobre uno de los dos,
+  verificar con lectura directa del Sheet que (a) las columnas del mes
+  superviviente no se corrieron/desalinearon, y (b) el mes no
+  reseteado permanece intacto en H3B/H5A específicamente (H2/H4/otros
+  bloques quedan fuera de este fix, no verificar ahí).
+- git diff limitado a app/api/admin/reset-mes/route.ts (y lib/data/
+  sheets.ts solo si deleteDimension requiere una función helper nueva
+  ahí — en ese caso, nombra la función explícitamente en tu reporte).
+
+## STOP conditions
+- Si el Sheet real no coincide con H3B_HEADERS/H5_HEADERS del código.
+- Si deleteDimension requiere tocar resetH2 para funcionar (acoplamiento
+  no anticipado) — reporta y espera instrucción, no lo arregles de paso.
+- Si el DoD no es verificable tal como está escrito.
+
+No abras trabajo nuevo al terminar.
+```
+
+---
+
+## Verificación de gobernanza — FIX-CREARMOVIMIENTOSMES-01 · 9 julio 2026
+
+Ejecutado por regla de sesión-abierta (todo ticket "away" se verifica
+antes de abrir trabajo nuevo). Resultado: **(c) NUNCA CONSTRUIDO.**
+
+- Único rastro histórico: commit 6f3dcb0 (TICKET-B-GUARDIA-01), que
+  *descubre* el bug durante verificación de otro alcance y detiene la
+  sesión sin PR. No existe rama, commit de fix, ni PR abierto o cerrado
+  que lo aborde desde entonces.
+- Código actual (`lib/data/sheets.ts:270-283`) confirma el patrón
+  defectuoso vigente: `values.append` con `valueInputOption: "RAW"`,
+  sin `insertDataOption: "INSERT_ROWS"`.
+- Reclasificación de prioridad: este hallazgo pasa a ser el ticket de
+  construcción prioritario, por delante de FIX-RESET-COLUMNAS-01 —
+  tiene incidente histórico confirmado (67 filas, septiembre) y
+  ausencia de seguimiento documentada dos veces.
+
+---
+
+## BLOQUEANTE-0 — Auditoría estado real vs. documentación · 11 julio 2026
+
+Sesión [CONSTRUCCIÓN/DEBUGGING — verificación], mediada por claude.ai
+(proyecto Agente HG SDD), para desbloquear migración de documentación al
+vault obsidian-mind. Sin cambios de código. Informe completo en
+`BLOQUEANTE-0-DELTA.md`.
+
+**Veredicto: desbloqueable.** El hallazgo de mayor severidad
+(`crearMovimientosMes` con `values.append` sin `INSERT_ROWS`) ya está
+correctamente documentado en la entrada de gobernanza de arriba — la doc
+acierta, el código no se movió desde `6f3dcb0`. No hay hook ni script en
+`.claude/` ni decisión de arquitectura sin registrar que no esté ya en
+`audit-fable-01/` o `audit-adversarial-01/`.
+
+Delta real encontrado (no es de código, es estructural):
+- Encabezados de ESTADO.md (línea 1-2) y SESSION_LOG.md dicen junio;
+  contenido real llega a julio 9 — ambos son logs append-only, no
+  resúmenes vivos.
+- `SPEC.md`/`BITACORA.md` no existen con esos nombres; sus funciones
+  están repartidas dentro de ESTADO.md y SESSION_LOG.md.
+- Placeholder "Decisiones tomadas en esta sesión" (línea ~5243, sección
+  AUDIT-FABLE-01) sigue vacío — P-1 a P-8 de `audit-fable-01/findings.md`
+  sin resolver.
+- No existe invariante que cubra el patrón `values.append` sin
+  `INSERT_ROWS` pese a cumplir el criterio de admisión de
+  INVARIANTS.md (candidato I-16 propuesto en el delta, no promovido).
+- El leg de Gemini en `audit-adversarial-01` falló técnicamente (503s +
+  OOM) — la "auditoría adversarial" fue en la práctica dos sesiones
+  Claude independientes, no diversidad de modelo.
+- Punto transversal: el patrón de falla (docs que se degradan
+  silenciosamente, decisiones abiertas sin cerrar) no es específico de
+  Flujo — recomendado ejecutar el mismo chequeo en School Bot antes de
+  dar Bloqueante 0 por cerrado a nivel transversal.
+
+Pendiente de Camilo (no ejecutable por el modelo): llenar P-1 a P-8,
+decidir si I-16 se promueve, decidir si ESTADO.md se separa en
+resumen vivo + histórico antes de migrar al vault.
