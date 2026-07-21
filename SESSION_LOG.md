@@ -2,6 +2,33 @@
 
 ---
 
+## SCAFFOLD-TICKETS-01 · Sistema de tickets + comandos /goal-a /goal-b · 2026-07-21
+
+### Piezas completadas
+
+- **P1** — `tickets/INDICE.md` creado, tabla de índice con columnas `orden | ticket_id | estado | tier | dependencias | commit | notas`, nota al pie documentando por qué Tier C no tiene comando automático (commit `b423fb3`)
+- **P2** — `tickets/_TEMPLATE.md` creado, plantilla base con frontmatter (`ticket_id`, `orden`, `estado`, `tier`, `dependencias`) y secciones Goal/DoD/Contexto/Commit de cierre/Notas de ejecución (commit `b423fb3`)
+- **P3** — `.claude/commands/goal-a.md` creado — ciclo Tier A: valida `estado: aprobado`, valida `GOOGLE_SHEET_ID` apunta a DEV antes de tocar Sheet, marca `activo`, implementa, `tsc --noEmit` sin `--no-verify`, lee-antes/lee-después si escribe Sheet, cierra con `estado: completado` (commit `cbcca47`)
+- **P4** — `.claude/commands/goal-b.md` creado — ciclo Tier B: solo diagnóstico, nunca escribe fix, distingue hecho/inferencia/especulación, exige caso de falla (no solo camino feliz), termina en `estado: diagnostico_listo` y espera aprobación explícita de Camilo antes de `/goal-a` (commit `cbcca47`)
+- **P5** — sin comando para Tier C (deliberado, no olvido) — documentado en la nota al pie de `tickets/INDICE.md`
+- **P6** — `tickets/BACKUP-NOCTURNO-01.md` creado, primer ticket real, Tier A, `estado: aprobado`, listo para ejecutarse con `/goal-a BACKUP-NOCTURNO-01` en sesión separada (commit `8bd8fbe`)
+- **P7** — `CLAUDE.md` actualizado con sección "Ticket management" documentando `tickets/`, `INDICE.md`, tiers, y los comandos `/goal-a` / `/goal-b`, con referencia a `SCAFFOLD-TICKETS-01` como origen (commit `2724ee0`)
+
+### Decisiones tomadas
+
+- **Tooling puro, sin ejecución**: este ticket construye la infraestructura pero no invoca `/goal-a` sobre `BACKUP-NOCTURNO-01` — esa ejecución queda deliberadamente para la siguiente sesión, según instrucción explícita del prompt de origen.
+- **`ESTADO.md` no se toca**: sigue siendo territorio exclusivo de Camilo desde Claude.ai; la migración del backlog narrado a `tickets/*.md` es una sesión separada.
+- **Tier C sin automatización por diseño**: cualquier ticket que toque escritura destructiva o rangos de Sheet sensibles se ejecuta 100% manual hasta que exista un backup de producción verificado — de ahí que `BACKUP-NOCTURNO-01` sea el primer ticket Tier A del sistema.
+
+### DoD verificado
+
+- [✓] `tsc --noEmit` limpio antes de cada commit (verificado por el pre-commit hook en los 4 commits de esta sesión)
+- [✓] Todos los archivos nuevos creados según las piezas P1–P7 del prompt de origen
+- [✓] Ningún comando `/goal-a` o `/goal-b` fue invocado en esta sesión
+- [ ] PR contra `main` — pendiente, se crea al cierre de esta sesión
+
+---
+
 ## BL-12 · Modal de confirmación cierre de semana · 2026-06-24
 
 ### Cambios
