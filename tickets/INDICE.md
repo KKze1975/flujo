@@ -2,7 +2,7 @@
 
 | orden | ticket_id | estado | tier | dependencias | commit | notas |
 |---|---|---|---|---|---|---|
-| 1 | BACKUP-NOCTURNO-01 | aprobado | A | ninguna | | Backup nocturno de solo lectura sobre prod, prerrequisito de cualquier `/goal` con autonomía sobre prod |
+| 1 | BACKUP-NOCTURNO-01 | bloqueado | A | ninguna | | Bloqueado: Google Drive API deshabilitada en el proyecto GCP de la service account — requiere habilitarla en Cloud Console (acción humana) |
 
 **Estados posibles:** `propuesto` \| `aprobado` \| `activo` \| `completado` \| `bloqueado` \| `descartado`
 
