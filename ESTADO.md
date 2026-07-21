@@ -5499,3 +5499,69 @@ es peor que no tener guard, porque genera falsa sensación de seguridad.
 El caso de hoy (bug real encontrado y corregido en `guard-git.ps1`) es
 evidencia fundacional concreta, no hipotética — candidato a promover en
 la próxima retrospectiva con dos ocurrencias independientes.
+
+---
+
+## Sesión — SCAFFOLD-TICKETS-01 / arranque BACKUP-NOCTURNO-01 · 21 jul 2026
+
+**Tipo de sesión:** GOBERNANZA/CONSTRUCCIÓN — migración de backlog a
+`tickets/*.md` + arranque del primer ticket real.
+
+### Completado
+
+- Scaffolding de `tickets/` + `tickets/INDICE.md` + `tickets/_TEMPLATE.md`
+  + comandos `.claude/commands/goal-a.md` / `goal-b.md`, ejecutado por
+  Claude Code vía `PROMPT-SCAFFOLD-TICKETS-01.md`. Verificado por lectura
+  directa desde Claude.ai contra el repo real (commits `b423fb3`,
+  `cbcca47`, `8bd8fbe`, `2724ee0`, `24b6e1d`) — sin discrepancias.
+- `BACKUP-NOCTURNO-01` (Tier A) ejecutado vía `/goal-a`. HALT correcto
+  ante `403 PERMISSION_DENIED` — Google Drive API deshabilitada en el
+  proyecto GCP `psibot-495119`. Ningún dato de producción tocado. Ningún
+  punto del DoD marcado como cumplido sin evidencia — Claude Code
+  documentó explícitamente `✓`/`✗` por punto.
+
+### Decisión — ESTADO.md deja de ser escritura exclusiva de Camilo
+
+Claude Code queda autorizado a anexar entradas de cierre de sesión a
+este archivo, bajo anchor-guard obligatorio (verificar estado real antes
+de escribir) y nunca editando contenido previo. Reemplaza la restricción
+#7 de `CLAUDE.md` vigente hasta esta fecha. Decidido por Camilo, 21 jul
+2026, en sesión mediada por Claude.ai.
+
+### Decisión abierta — scope de credencial para BACKUP-NOCTURNO-01
+
+`drive.files.copy` requiere ampliar el scope de
+`psibot@psibot-495119.iam.gserviceaccount.com` más allá de Sheets API.
+Pendiente decidir entre `https://www.googleapis.com/auth/drive` (general)
+vs. `https://www.googleapis.com/auth/drive.file` (acotado a archivos
+creados por la propia app — menor blast radius si la credencial se
+compromete). No resuelto en esta sesión — bloquea la reinvocación de
+`/goal-a BACKUP-NOCTURNO-01`.
+
+### Deuda técnica nueva
+
+- `.claude/commands/goal-a.md`, paso 7: no verifica automáticamente si
+  el ticket tiene una sección "Excepción al cierre estándar" antes de
+  marcar `estado: completado`. Depende de que quien ejecute la lea
+  manualmente en el archivo del ticket. No bloqueante, no corregido.
+
+### Candidato a INVARIANTS.md
+
+**Cualquier ticket que amplíe el scope de una credencial ya existente
+(no solo que cree una nueva) debe declararlo como punto explícito del
+Goal o del DoD, antes de aprobarse — no puede emerger implícitamente
+durante la implementación.** Motivo: `BACKUP-NOCTURNO-01` requirió
+ampliar el scope de la service account de producción sin que el ticket
+original lo anticipara; se detectó porque Claude Code lo documentó por
+iniciativa propia, no porque el proceso lo exigiera. Cumple el criterio
+de admisión de `INVARIANTS.md` (superficie de ataque ampliada
+silenciosamente es un caso de "comportamiento incorrecto que el sistema
+no detecta automáticamente"). Pendiente de aprobación explícita de
+Camilo antes de convertirse en invariante numerado — se registra aquí
+como candidato, siguiendo la misma regla que ya aplica a I-16.
+
+### Próximo paso
+
+1. Camilo decide scope de credencial (`drive` vs `drive.file`).
+2. Habilitar Google Drive API en `psibot-495119`.
+3. Reinvocar `/goal-a BACKUP-NOCTURNO-01`.
