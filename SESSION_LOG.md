@@ -13,6 +13,7 @@
 - **P5** — sin comando para Tier C (deliberado, no olvido) — documentado en la nota al pie de `tickets/INDICE.md`
 - **P6** — `tickets/BACKUP-NOCTURNO-01.md` creado, primer ticket real, Tier A, `estado: aprobado`, listo para ejecutarse con `/goal-a BACKUP-NOCTURNO-01` en sesión separada (commit `8bd8fbe`)
 - **P7** — `CLAUDE.md` actualizado con sección "Ticket management" documentando `tickets/`, `INDICE.md`, tiers, y los comandos `/goal-a` / `/goal-b`, con referencia a `SCAFFOLD-TICKETS-01` como origen (commit `2724ee0`)
+- **P6 (revisión)** — Camilo repastó el prompt con el mecanismo de `BACKUP-NOCTURNO-01` cerrado (antes quedaba "decidir el mecanismo más simple"). Se actualizó `tickets/BACKUP-NOCTURNO-01.md`: Vercel Cron + endpoint propio + `vercel.json`, naming `flujo-backup-{YYYY-MM-DD}`, limpieza de backups >14 días en el mismo job, DoD en dos capas (verificable en loop vs. pendiente de confirmación humana al día siguiente), y excepción explícita al cierre estándar de `/goal-a`: este ticket cierra en `pendiente_confirmacion_humana`, no `completado` (commit `24b6e1d`)
 
 ### Decisiones tomadas
 
