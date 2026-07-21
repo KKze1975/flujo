@@ -1,7 +1,7 @@
 ---
 ticket_id: BACKUP-NOCTURNO-01
 orden: 1
-estado: aprobado
+estado: activo
 tier: A
 dependencias: ninguna
 ---
