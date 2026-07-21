@@ -130,6 +130,10 @@ Read `INVARIANTS.md` before writing any code. Critical ones:
 
 `scripts/` contains one-off migration and seed scripts (`*.mjs`). They run directly with `node scripts/<name>.mjs` and use the same service account credentials. They operate on the dev Sheet unless explicitly configured otherwise.
 
+### Ticket management
+
+Backlog work lives in `tickets/*.md` (one file per ticket, see `tickets/_TEMPLATE.md`) with an index at `tickets/INDICE.md`. Each ticket has a `tier`: `A` (autonomous, run via `/goal-a {ticket_id}`), `B` (diagnosis-only with a mandatory HALT before any fix, run via `/goal-b {ticket_id}`, then `/goal-a` once Camilo approves the plan), or `C` (fully manual, no automated command — reserved for destructive writes or production Sheet ranges until a verified prod backup exists). `ESTADO.md` remains Camilo's territory from Claude.ai and is not replaced by this system. Origin: `SCAFFOLD-TICKETS-01`.
+
 ## Protocolo HG SDD (Human-Grounded SDD v6.1)
 
 **Tipos de sesión — declarar al abrir, no mezclar:**
