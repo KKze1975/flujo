@@ -130,6 +130,12 @@ Read `INVARIANTS.md` before writing any code. Critical ones:
 
 `scripts/` contains one-off migration and seed scripts (`*.mjs`). They run directly with `node scripts/<name>.mjs` and use the same service account credentials. They operate on the dev Sheet unless explicitly configured otherwise.
 
+### Ticket management
+
+Backlog work lives in `tickets/*.md` (one file per ticket, see `tickets/_TEMPLATE.md`) with an index at `tickets/INDICE.md`. Each ticket has a `tier`: `A` (autonomous, run via `/goal-a {ticket_id}`), `B` (diagnosis-only with a mandatory HALT before any fix, run via `/goal-b {ticket_id}`, then `/goal-a` once Camilo approves the plan), or `C` (fully manual, no automated command — reserved for destructive writes or production Sheet ranges until a verified prod backup exists). `tickets/` is not a replacement for `ESTADO.md`. Origin: `SCAFFOLD-TICKETS-01`.
+
+**`ESTADO.md`:** Claude Code puede anexar entradas de cierre de sesión al final del archivo, bajo anchor-guard obligatorio (verificar por lectura el estado real antes de escribir — último commit que tocó el archivo, `git diff` limpio, últimas ~100 líneas leídas). Nunca editar ni borrar contenido previo — es append-only. Cambio de regla aprobado por Camilo, 21 jul 2026 — reemplaza la restricción anterior ("no modificar bajo ninguna circunstancia"). Origin: `ESTADO-UPDATE-01`.
+
 ## Protocolo HG SDD (Human-Grounded SDD v6.1)
 
 **Tipos de sesión — declarar al abrir, no mezclar:**

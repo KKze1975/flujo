@@ -1,5 +1,20 @@
 # FLUJO — Estado del Proyecto
-Actualizado: 26 junio 2026 | Fase: Go-live — S3 cerrado — T51 abierto (bug planificación monto H2)
+
+> **Naturaleza:** proyecto de construcción de software. Su producto es
+> una aplicación funcional de finanzas familiares para la familia
+> Villamil.
+> **Hogar canónico:** repositorio Git + réplica sincronizada en Google
+> Drive, legible por Claude.ai vía Drive API. La memoria de conversación
+> de Claude.ai NO es fuente de verdad — cada sesión verifica por lectura
+> directa contra el repo/Drive antes de actuar.
+> **Protocolo de sesión:** leer este documento al abrir. Claude Code
+> puede anexar entradas de cierre de sesión bajo anchor-guard (ver
+> `CLAUDE.md`, sección "Ticket management" → `ESTADO.md`); ninguna otra
+> escritura está autorizada.
+> **Convención:** este archivo es append-only. No lleva fecha de
+> "última actualización" en el encabezado — el historial real vive en
+> los commits de Git (`git log -- ESTADO.md`). Para el estado más
+> reciente, lee la última entrada del archivo, no este encabezado.
 
 ---
 
@@ -5373,3 +5388,294 @@ Delta real encontrado (no es de código, es estructural):
 Pendiente de Camilo (no ejecutable por el modelo): llenar P-1 a P-8,
 decidir si I-16 se promueve, decidir si ESTADO.md se separa en
 resumen vivo + histórico antes de migrar al vault.
+
+---
+
+## Sesión — Instalación paquete claude-improvements + cierre PR #29 · 11 julio 2026
+
+Tipo [CONSTRUCCIÓN — tooling]. Sin cambios de código de producto (nada en
+`app/`, `lib/`, `components/`). Fuente: `/d/Users/camilo/claude-improvements`,
+evaluado ítem por ítem contra INV-002 en `EVALUACION-DOCTRINA.md` (ver
+sección BLOQUEANTE-0 arriba).
+
+### Instalado en flujo (commit `beafa36`, PR #29 → `main` en `b924b7d`)
+
+- Commands `/estado /cierre /audit /release /dod` → `.claude/commands/`.
+- Skill `sheet-safety` → `.claude/skills/sheet-safety/`.
+- Hooks `session-context` (SessionStart), `pre-commit-tsc` (PreToolUse),
+  `guard-git` (PreToolUse) → `.claude/hooks/`, registrados en
+  `.claude/settings.json`.
+- `CLAUDE.md`: secciones nuevas "Shell & Machines" y "Verification
+  Honesty".
+
+### Guard-git — prueba real de INV-002, no supuesta
+
+Antes de instalar el hook se probó el mecanismo simple: reglas
+`permissions.deny` en `settings.json` para bloquear `reset --hard`,
+`push --force/-f`, `clean -f`, `commit --no-verify`. **Falló en la
+práctica**: el matcher de permisos es prefijo-anclado, no cubre
+`git push origin --force` (remoto de por medio) ni
+`git commit -m "..." --no-verify` (flag al final) — los dos casos de uso
+más comunes. Con esa evidencia se instaló el hook `guard-git.ps1`.
+
+Al probarlo con pipe-tests se encontró que el hook vendido en el paquete
+tenía **el mismo bug de anclaje** en su regex de `push --force`
+(`push\s+(-f\b|--force)` no matcheaba con remoto intermedio). Corregido a
+`git\s+(-C\s+\S+\s+)?push\b.*(-f\b|--force)`. Verificado: 4 casos
+destructivos bloqueados (`reset --hard`, `push --force` con remoto,
+`push -f`, `commit --no-verify` con `-m` antes), 3 casos benignos sin
+fricción (`git status`, push normal, commit normal).
+
+### school-bot (repo separado, commit `096349a` → `origin/dev`)
+
+Solo `/deploy-bot` instalado y commiteado, por instrucción explícita del
+usuario. El resto del paquete (`/audit /cierre /dod /estado /release`,
+adición a `CLAUDE.md`) quedó fuera — esos 5 commands ya existían sin
+trackear en el working tree de school-bot desde antes de esta sesión, sin
+commitear.
+
+### PR #29 (flujo, `dev` → `main`)
+
+10 commits, solo docs/config. CI verificado en verde (`gh pr checks`:
+Vercel deploy + preview comments, ambos `pass`) y `mergeStateStatus:
+CLEAN` antes de mergear. El primer intento de merge fue bloqueado por el
+clasificador de modo automático (self-merge sin aprobación humana visible
+en el transcript) — se pidió confirmación explícita al usuario antes de
+reintentar y mergear (`b924b7d`).
+
+### Decisiones tomadas
+
+- Probar deny-rules antes que el hook (INV-002 aplicado de verdad, no
+  como formalidad) — la prueba falló con evidencia concreta, lo que
+  justificó el hook en vez de asumirlo por defecto.
+- `/deploy-bot` instalado sin abrir sesión nueva en school-bot: el sandbox
+  de Bash permite rutas absolutas fuera de `flujo` aunque `cd` no
+  persiste entre comandos — se usó eso en vez de pedir al usuario abrir
+  otra sesión.
+- Commit en school-bot acotado solo a `deploy-bot.md` por instrucción
+  explícita — el resto del working tree (CLAUDE.md modificado, ~70
+  archivos de debug sueltos, 4 commands sin trackear) quedó intacto.
+
+### Deuda técnica / pendientes nuevos
+
+14. **Commands `/estado /cierre /audit` no consolidados a nivel
+    usuario** (`~/.claude/commands/`, que solo tiene `llm-council.md`).
+    Quedaron duplicados por proyecto en vez de instalados una sola vez
+    a nivel global como recomendaba el README del paquete.
+15. **`school-bot/CLAUDE.md` sin la sección "Verificación de deploy"**
+    de `CLAUDE-md-additions.md` — no aplicada.
+16. **Pilar 2 (backup nocturno probado del Sheet de producción) sigue
+    sin implementarse** — más urgente que cosmético dado el bug de
+    pérdida de datos ya documentado en `crearMovimientosMes`.
+
+### DoD verificado
+
+| Punto | Estado |
+|---|---|
+| `tsc --noEmit` limpio en cada commit | ✓ — hook pre-commit nativo confirmó |
+| `settings.json` válido tras cada edición | ✓ — `ConvertFrom-Json` sin error |
+| `guard-git.ps1` probado con pipe-tests reales antes de instalar | ✓ — 4 casos destructivos + 3 benignos |
+| PR #29: CI verde + `mergeStateStatus: CLEAN` antes de mergear | ✓ — `gh pr checks` / `gh pr view --json` |
+| Hooks recién registrados disparan de verdad en una sesión viva | ✗ — requiere que Camilo abra `/hooks` o reinicie sesión; no ejecutable desde este turno |
+
+### Próxima acción
+
+FIX-CREARMOVIMIENTOSMES-01 (ver prompt completo en la sección de
+verificación de gobernanza arriba) — sigue siendo el ticket de mayor
+severidad sin construir.
+
+### Retrospectiva (Fase 4 HG SDD)
+
+**Qué funcionó:** el patrón "explicar antes de implementar, uno por uno"
+hizo que INV-002 se aplicara de verdad — la prueba de deny-rules
+encontró una brecha real antes de instalar el hook `guard-git`, y ese
+mismo hábito de pipe-testing encontró un bug real *en el hook vendido*
+(regex de `push --force` mal anclado, no cubría remoto intermedio) antes
+de darlo por instalado sin más.
+
+**Qué no funcionó:** el `cd` no persiste entre comandos Bash en este
+sandbox — costó dos intercambios de confusión con Camilo antes de
+explicarlo con claridad, cuando debió decirse la primera vez que
+ocurrió, no en el segundo intento.
+
+**Qué cambia en la próxima sesión:** cuando aparezca un `cd` del
+usuario, explicar el comportamiento del sandbox en la primera
+ocurrencia. Y antes de instalar piezas de un paquete de recomendaciones,
+declarar explícitamente si el scope es global o por-proyecto antes de
+copiar archivos — no asumir proyecto por defecto sin decirlo.
+
+**Qué aprendizaje merece volverse invariante:** *"Un hook o regla de
+seguridad copiado de un paquete externo debe probarse con pipe-tests
+contra el caso de uso real (no el trivial) antes de darlo por
+instalado."* Cumple el filtro de INVARIANTS.md — su ausencia es
+exactamente un error silencioso: un guard que dice bloquear pero no
+bloquea (`git push origin --force` pasando pese a "tener" `guard-git`)
+es peor que no tener guard, porque genera falsa sensación de seguridad.
+El caso de hoy (bug real encontrado y corregido en `guard-git.ps1`) es
+evidencia fundacional concreta, no hipotética — candidato a promover en
+la próxima retrospectiva con dos ocurrencias independientes.
+
+---
+
+## Sesión — SCAFFOLD-TICKETS-01 / arranque BACKUP-NOCTURNO-01 · 21 jul 2026
+
+**Tipo de sesión:** GOBERNANZA/CONSTRUCCIÓN — migración de backlog a
+`tickets/*.md` + arranque del primer ticket real.
+
+### Completado
+
+- Scaffolding de `tickets/` + `tickets/INDICE.md` + `tickets/_TEMPLATE.md`
+  + comandos `.claude/commands/goal-a.md` / `goal-b.md`, ejecutado por
+  Claude Code vía `PROMPT-SCAFFOLD-TICKETS-01.md`. Verificado por lectura
+  directa desde Claude.ai contra el repo real (commits `b423fb3`,
+  `cbcca47`, `8bd8fbe`, `2724ee0`, `24b6e1d`) — sin discrepancias.
+- `BACKUP-NOCTURNO-01` (Tier A) ejecutado vía `/goal-a`. HALT correcto
+  ante `403 PERMISSION_DENIED` — Google Drive API deshabilitada en el
+  proyecto GCP `psibot-495119`. Ningún dato de producción tocado. Ningún
+  punto del DoD marcado como cumplido sin evidencia — Claude Code
+  documentó explícitamente `✓`/`✗` por punto.
+
+### Decisión — ESTADO.md deja de ser escritura exclusiva de Camilo
+
+Claude Code queda autorizado a anexar entradas de cierre de sesión a
+este archivo, bajo anchor-guard obligatorio (verificar estado real antes
+de escribir) y nunca editando contenido previo. Reemplaza la restricción
+#7 de `CLAUDE.md` vigente hasta esta fecha. Decidido por Camilo, 21 jul
+2026, en sesión mediada por Claude.ai.
+
+### Decisión abierta — scope de credencial para BACKUP-NOCTURNO-01
+
+`drive.files.copy` requiere ampliar el scope de
+`psibot@psibot-495119.iam.gserviceaccount.com` más allá de Sheets API.
+Pendiente decidir entre `https://www.googleapis.com/auth/drive` (general)
+vs. `https://www.googleapis.com/auth/drive.file` (acotado a archivos
+creados por la propia app — menor blast radius si la credencial se
+compromete). No resuelto en esta sesión — bloquea la reinvocación de
+`/goal-a BACKUP-NOCTURNO-01`.
+
+### Deuda técnica nueva
+
+- `.claude/commands/goal-a.md`, paso 7: no verifica automáticamente si
+  el ticket tiene una sección "Excepción al cierre estándar" antes de
+  marcar `estado: completado`. Depende de que quien ejecute la lea
+  manualmente en el archivo del ticket. No bloqueante, no corregido.
+
+### Candidato a INVARIANTS.md
+
+**Cualquier ticket que amplíe el scope de una credencial ya existente
+(no solo que cree una nueva) debe declararlo como punto explícito del
+Goal o del DoD, antes de aprobarse — no puede emerger implícitamente
+durante la implementación.** Motivo: `BACKUP-NOCTURNO-01` requirió
+ampliar el scope de la service account de producción sin que el ticket
+original lo anticipara; se detectó porque Claude Code lo documentó por
+iniciativa propia, no porque el proceso lo exigiera. Cumple el criterio
+de admisión de `INVARIANTS.md` (superficie de ataque ampliada
+silenciosamente es un caso de "comportamiento incorrecto que el sistema
+no detecta automáticamente"). Pendiente de aprobación explícita de
+Camilo antes de convertirse en invariante numerado — se registra aquí
+como candidato, siguiendo la misma regla que ya aplica a I-16.
+
+### Próximo paso
+
+1. Camilo decide scope de credencial (`drive` vs `drive.file`).
+2. Habilitar Google Drive API en `psibot-495119`.
+3. Reinvocar `/goal-a BACKUP-NOCTURNO-01`.
+
+---
+
+## Sesión — BACKUP-NOCTURNO-01: tres intentos hasta arquitectura de contenedor · 21-22 jul 2026
+
+**Tipo de sesión:** CONSTRUCCIÓN/GOBERNANZA — cierre del ticket
+prerrequisito para autonomía de `/goal` sobre el Sheet de producción.
+
+### Secuencia de intentos (los tres commiteados, cada bloqueo real, no hipotético)
+
+1. **`320aafa`** — `drive.files.copy`. Bloqueado: Google Drive API
+   deshabilitada en el proyecto GCP `psibot-495119`.
+2. **`439beec`** — rediseño a Sheets API exclusivamente
+   (`spreadsheets.create` por día). Bloqueado por una causa distinta e
+   independiente: desde el 1 jun 2023 Google asigna 0 GB de cuota de
+   Drive a service accounts sin Workspace asociado — bloquea la
+   creación de cualquier archivo respaldado por Drive (Sheets incluido),
+   sin importar qué API se use para pedirlo. Verificado contra
+   documentación pública y reportes independientes de otros
+   desarrolladores con el mismo error exacto, no solo el mensaje de la
+   propia llamada.
+3. **`0ec9684`** — arquitectura de Sheet contenedor: Camilo crea y
+   comparte manualmente un Sheet (`Flujo-Backups`, `BACKUP_SHEET_ID`)
+   como Editor con la service account; el endpoint crea un tab nuevo
+   por día dentro de ese contenedor (`batchUpdate`/`addSheet`) en vez de
+   un archivo nuevo — evita el problema de cuota porque el archivo ya
+   existe y no le pertenece a la service account. Limpieza vía
+   `batchUpdate`/`deleteSheet` sobre tabs viejos, también 100% Sheets
+   API. **DoD verificado por dos vías independientes**: reporte de
+   Claude Code + lectura directa del Sheet contenedor desde Claude.ai
+   (contenido de `H5B_2026-07-21` coincidiendo byte a byte con
+   producción, tab sintético de prueba eliminado correctamente).
+
+### Hallazgo — tabs físicos reales vs. nombres lógicos de CLAUDE.md
+
+Verificado por lectura de metadata (`spreadsheets.get`, no `values.get`)
+contra el Sheet de producción real: los tabs físicos son exactamente
+`H1, H2, H3, H4, H5, H5B` (6 tabs). `H3B`, `H4A/B/C/D`, `H5A`, `H6` —
+usados en `CLAUDE.md` y en el ticket original — son nombres de tipo de
+dato o rangos de columnas dentro de tabs físicos compartidos (ej.
+`H4A`/`H4B`/`H4C` son columnas `A:G`/`I:N`/`P:V` del único tab `H4`), no
+tabs independientes. Usar la lista lógica literal habría creado tabs de
+backup vacíos y perdido silenciosamente el ~90% del contenido real del
+Sheet (`H3`, `H4`, `H5`). Corregido antes de escribir código, no
+después.
+
+### Retención final
+
+14 días × 6 tabs = 84 tabs en régimen estable. Verificado contra
+límites documentados de Sheets API (10M celdas por archivo) — sin
+riesgo de techo con datos operativos de este tamaño.
+
+### `estado` del ticket
+
+`pendiente_confirmacion_humana` — el DoD verificable dentro del loop
+está completo; falta que Camilo confirme la ejecución real del cron de
+Vercel (4:00 a.m. hora Bogotá) antes de pasar a `completado`.
+
+### Deuda técnica / hallazgos de proceso nuevos
+
+- **Fechas mal etiquetadas en esta misma sesión**: varios documentos
+  generados durante la sesión (incluidos prompts y el propio ticket)
+  usaron "22 jul 2026" cuando la fecha real era 21 jul 2026. Sin impacto
+  funcional — el código calculó la fecha real correctamente
+  (`Intl.DateTimeFormat` server-side, `America/Bogota`) — pero es una
+  deriva de la misma naturaleza que motivó `ESTADO-HEADER-01`: la
+  narrativa de una sesión puede desalinearse de la fecha real sin que
+  nadie lo note hasta que alguien la verifica contra una fuente
+  objetiva.
+- **Verificación de Claude.ai vía Google Drive puede quedar
+  desactualizada frente al estado real del repo por tiempos superiores
+  a lo esperado** (observado dos veces esta sesión: un permiso de
+  compartir que la UI de Sheets mostraba correctamente pero la API de
+  Drive no reflejaba tras varios reintentos; un commit confirmado por
+  `git log` que no se reflejó en la lectura de Drive incluso 20+ minutos
+  después). Cuando hay discrepancia persistente entre `git log` (fuente
+  primaria) y la lectura de Drive vía Claude.ai, `git log` gana — no
+  reintentar la misma lectura indefinidamente esperando que se
+  actualice sola.
+
+### Candidato a INVARIANTS.md (segunda ocurrencia del patrón de "no asumir sin verificar")
+
+**Antes de listar tabs/rangos de un Sheet por nombre lógico documentado,
+verificar la lista real de tabs físicos por lectura de metadata
+(`spreadsheets.get`) — nunca asumir que los nombres en `CLAUDE.md` o
+`INVARIANTS.md` corresponden 1:1 a tabs físicos.** Motivo: el hallazgo
+de esta sesión (`H3B`/`H4A/B/C/D`/`H5A`/`H6` como nombres lógicos, no
+tabs) habría causado pérdida silenciosa de ~90% de los datos de un
+backup si no se hubiera verificado antes de escribir código. Cumple el
+criterio de admisión de `INVARIANTS.md`. Candidato, no promovido — igual
+que I-16.
+
+### Próximo paso
+
+1. Camilo confirma ejecución real del cron (mañana o esta noche según
+   corresponda) → `BACKUP-NOCTURNO-01` pasa a `completado`.
+2. Migrar el resto del backlog clasificado por tier a `tickets/*.md` —
+   `FIX-CREARMOVIMIENTOSMES-01` primero (Tier A, diagnóstico ya
+   completo, ya no bloqueado por falta de backup).
