@@ -1,5 +1,20 @@
 # FLUJO — Estado del Proyecto
-Actualizado: 26 junio 2026 | Fase: Go-live — S3 cerrado — T51 abierto (bug planificación monto H2)
+
+> **Naturaleza:** proyecto de construcción de software. Su producto es
+> una aplicación funcional de finanzas familiares para la familia
+> Villamil.
+> **Hogar canónico:** repositorio Git + réplica sincronizada en Google
+> Drive, legible por Claude.ai vía Drive API. La memoria de conversación
+> de Claude.ai NO es fuente de verdad — cada sesión verifica por lectura
+> directa contra el repo/Drive antes de actuar.
+> **Protocolo de sesión:** leer este documento al abrir. Claude Code
+> puede anexar entradas de cierre de sesión bajo anchor-guard (ver
+> `CLAUDE.md`, sección "Ticket management" → `ESTADO.md`); ninguna otra
+> escritura está autorizada.
+> **Convención:** este archivo es append-only. No lleva fecha de
+> "última actualización" en el encabezado — el historial real vive en
+> los commits de Git (`git log -- ESTADO.md`). Para el estado más
+> reciente, lee la última entrada del archivo, no este encabezado.
 
 ---
 
