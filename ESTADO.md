@@ -5580,3 +5580,102 @@ como candidato, siguiendo la misma regla que ya aplica a I-16.
 1. Camilo decide scope de credencial (`drive` vs `drive.file`).
 2. Habilitar Google Drive API en `psibot-495119`.
 3. Reinvocar `/goal-a BACKUP-NOCTURNO-01`.
+
+---
+
+## Sesión — BACKUP-NOCTURNO-01: tres intentos hasta arquitectura de contenedor · 21-22 jul 2026
+
+**Tipo de sesión:** CONSTRUCCIÓN/GOBERNANZA — cierre del ticket
+prerrequisito para autonomía de `/goal` sobre el Sheet de producción.
+
+### Secuencia de intentos (los tres commiteados, cada bloqueo real, no hipotético)
+
+1. **`320aafa`** — `drive.files.copy`. Bloqueado: Google Drive API
+   deshabilitada en el proyecto GCP `psibot-495119`.
+2. **`439beec`** — rediseño a Sheets API exclusivamente
+   (`spreadsheets.create` por día). Bloqueado por una causa distinta e
+   independiente: desde el 1 jun 2023 Google asigna 0 GB de cuota de
+   Drive a service accounts sin Workspace asociado — bloquea la
+   creación de cualquier archivo respaldado por Drive (Sheets incluido),
+   sin importar qué API se use para pedirlo. Verificado contra
+   documentación pública y reportes independientes de otros
+   desarrolladores con el mismo error exacto, no solo el mensaje de la
+   propia llamada.
+3. **`0ec9684`** — arquitectura de Sheet contenedor: Camilo crea y
+   comparte manualmente un Sheet (`Flujo-Backups`, `BACKUP_SHEET_ID`)
+   como Editor con la service account; el endpoint crea un tab nuevo
+   por día dentro de ese contenedor (`batchUpdate`/`addSheet`) en vez de
+   un archivo nuevo — evita el problema de cuota porque el archivo ya
+   existe y no le pertenece a la service account. Limpieza vía
+   `batchUpdate`/`deleteSheet` sobre tabs viejos, también 100% Sheets
+   API. **DoD verificado por dos vías independientes**: reporte de
+   Claude Code + lectura directa del Sheet contenedor desde Claude.ai
+   (contenido de `H5B_2026-07-21` coincidiendo byte a byte con
+   producción, tab sintético de prueba eliminado correctamente).
+
+### Hallazgo — tabs físicos reales vs. nombres lógicos de CLAUDE.md
+
+Verificado por lectura de metadata (`spreadsheets.get`, no `values.get`)
+contra el Sheet de producción real: los tabs físicos son exactamente
+`H1, H2, H3, H4, H5, H5B` (6 tabs). `H3B`, `H4A/B/C/D`, `H5A`, `H6` —
+usados en `CLAUDE.md` y en el ticket original — son nombres de tipo de
+dato o rangos de columnas dentro de tabs físicos compartidos (ej.
+`H4A`/`H4B`/`H4C` son columnas `A:G`/`I:N`/`P:V` del único tab `H4`), no
+tabs independientes. Usar la lista lógica literal habría creado tabs de
+backup vacíos y perdido silenciosamente el ~90% del contenido real del
+Sheet (`H3`, `H4`, `H5`). Corregido antes de escribir código, no
+después.
+
+### Retención final
+
+14 días × 6 tabs = 84 tabs en régimen estable. Verificado contra
+límites documentados de Sheets API (10M celdas por archivo) — sin
+riesgo de techo con datos operativos de este tamaño.
+
+### `estado` del ticket
+
+`pendiente_confirmacion_humana` — el DoD verificable dentro del loop
+está completo; falta que Camilo confirme la ejecución real del cron de
+Vercel (4:00 a.m. hora Bogotá) antes de pasar a `completado`.
+
+### Deuda técnica / hallazgos de proceso nuevos
+
+- **Fechas mal etiquetadas en esta misma sesión**: varios documentos
+  generados durante la sesión (incluidos prompts y el propio ticket)
+  usaron "22 jul 2026" cuando la fecha real era 21 jul 2026. Sin impacto
+  funcional — el código calculó la fecha real correctamente
+  (`Intl.DateTimeFormat` server-side, `America/Bogota`) — pero es una
+  deriva de la misma naturaleza que motivó `ESTADO-HEADER-01`: la
+  narrativa de una sesión puede desalinearse de la fecha real sin que
+  nadie lo note hasta que alguien la verifica contra una fuente
+  objetiva.
+- **Verificación de Claude.ai vía Google Drive puede quedar
+  desactualizada frente al estado real del repo por tiempos superiores
+  a lo esperado** (observado dos veces esta sesión: un permiso de
+  compartir que la UI de Sheets mostraba correctamente pero la API de
+  Drive no reflejaba tras varios reintentos; un commit confirmado por
+  `git log` que no se reflejó en la lectura de Drive incluso 20+ minutos
+  después). Cuando hay discrepancia persistente entre `git log` (fuente
+  primaria) y la lectura de Drive vía Claude.ai, `git log` gana — no
+  reintentar la misma lectura indefinidamente esperando que se
+  actualice sola.
+
+### Candidato a INVARIANTS.md (segunda ocurrencia del patrón de "no asumir sin verificar")
+
+**Antes de listar tabs/rangos de un Sheet por nombre lógico documentado,
+verificar la lista real de tabs físicos por lectura de metadata
+(`spreadsheets.get`) — nunca asumir que los nombres en `CLAUDE.md` o
+`INVARIANTS.md` corresponden 1:1 a tabs físicos.** Motivo: el hallazgo
+de esta sesión (`H3B`/`H4A/B/C/D`/`H5A`/`H6` como nombres lógicos, no
+tabs) habría causado pérdida silenciosa de ~90% de los datos de un
+backup si no se hubiera verificado antes de escribir código. Cumple el
+criterio de admisión de `INVARIANTS.md`. Candidato, no promovido — igual
+que I-16.
+
+### Próximo paso
+
+1. Camilo confirma ejecución real del cron (mañana o esta noche según
+   corresponda) → `BACKUP-NOCTURNO-01` pasa a `completado`.
+2. Migrar el resto del backlog clasificado por tier a `tickets/*.md` —
+   `FIX-CREARMOVIMIENTOSMES-01` primero (Tier A, diagnóstico ya
+   completo, ya no bloqueado por falta de backup).
