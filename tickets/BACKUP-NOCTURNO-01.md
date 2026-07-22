@@ -1,7 +1,7 @@
 ---
 ticket_id: BACKUP-NOCTURNO-01
 orden: 1
-estado: bloqueado
+estado: pendiente_confirmacion_humana
 tier: A
 dependencias: ninguna
 ---
@@ -21,71 +21,66 @@ recibe una escritura en ningún punto del proceso.
 otro recurso del proyecto (código, env vars, etc.) — solo el Sheet de
 producción.
 
-**Mecanismo (rediseñado 22 jul 2026 — cerrado, no queda a criterio de
-quien ejecute el ticket):**
+**Mecanismo (arquitectura de contenedor, 22 jul 2026 — tercer intento,
+cerrado, no queda a criterio de quien ejecute el ticket):**
 
-- Vercel Cron invocando un endpoint propio (`/api/admin/backup-sheet`).
-- El endpoint usa EXCLUSIVAMENTE Sheets API — nunca Drive API:
-  1. `spreadsheets.create` — crea un Sheet nuevo, título
-     `flujo-backup-{YYYY-MM-DD}`.
-  2. `spreadsheets.values.get` sobre cada tab del Sheet de producción.
-  3. `spreadsheets.values.update` sobre el Sheet nuevo, un rango por tab,
-     con los valores leídos.
-  4. El Sheet de producción nunca recibe ninguna llamada de escritura
-     en ningún punto — solo `values.get`.
-- Tabs a respaldar: **`H1, H2, H3, H4, H5, H5B`** — verificado por
-  lectura directa de metadata (`spreadsheets.get`) contra el Sheet de
-  producción real el 22 jul 2026, no por la lista de nombres lógicos de
-  `CLAUDE.md`/`sheet-safety` (`H3B`, `H4A/B/C`, `H5A`, `H6`). Esos son
-  nombres de *tipo de dato* o de rango de columnas dentro de un tab
-  físico compartido (p.ej. `H4A`/`H4B`/`H4C` son bloques de columnas
-  `A:G`/`I:N`/`P:V` dentro del único tab físico `H4`), no tabs
-  independientes — copiar por el nombre lógico literal habría fallado
-  en crear tabs vacíos/incorrectos y silenciosamente perdido datos
-  reales de `H4`. `H4D` no existe como tab físico (no hay riesgo I-05
-  de lectura accidental). `H5A` y `H6` tampoco existen como tabs (el
-  cierre semanal vive físicamente en el tab `H5`, y H6 aún no está
-  implementado en `lib/data/sheets.ts` — `throw new Error("Not
-  implemented yet")`).
+- Sheet contenedor único (`BACKUP_SHEET_ID`, creado manualmente por
+  Camilo, compartido como Editor con la service account — nunca creado
+  por la app, evita el límite de cuota de Drive de service accounts).
+- Vercel Cron invoca `/api/admin/backup-sheet` diariamente.
+- El endpoint, por cada uno de los 6 tabs físicos de producción
+  (H1, H2, H3, H4, H5, H5B):
+  1. `spreadsheets.values.get` sobre el tab de producción (lectura).
+  2. `spreadsheets.batchUpdate` con `addSheet` sobre el contenedor,
+     título `{tab}_{YYYY-MM-DD}` (ej. `H1_2026-07-22`).
+  3. `spreadsheets.values.update` sobre el tab recién creado dentro del
+     contenedor, con los valores leídos de producción.
+- Limpieza: `batchUpdate` con `deleteSheet` sobre todos los tabs del
+  contenedor cuya fecha (parseada del propio nombre `{tab}_{fecha}`)
+  supere 14 días. 100% Sheets API — sin Drive API en ningún punto.
+- Retención: 14 días × 6 tabs = 84 tabs en régimen estable. Verificado
+  contra límites de Sheets API (10M celdas por archivo) — sin riesgo de
+  techo con datos operativos de este tamaño.
+- El Sheet de producción NUNCA recibe una llamada de escritura — solo
+  `values.get`.
+- Orden de operaciones dentro del job: crear los tabs nuevos del día
+  ANTES de correr la limpieza — evita que, si el job falla a mitad de
+  camino, un día quede sin backup y sin los tabs viejos que lo hubieran
+  cubierto.
+- Tabs de producción a respaldar: `H1, H2, H3, H4, H5, H5B` (verificado
+  22 jul 2026, ver nota de corrección de tabs más abajo — sin cambios
+  respecto al segundo intento).
 - No se copian fórmulas ni formato — solo valores. Aceptable: H1-H6 son
   tablas de datos operativos, no hojas con fórmulas de negocio.
-- **Limpieza de backups >14 días: BLOQUEADA por diseño, no implementada
-  en este rediseño.** La API de Sheets (`sheets_v4`) no tiene ningún
-  método para borrar un archivo de spreadsheet completo — `spreadsheets.
-  delete` no existe; borrar un archivo (sea Sheet o cualquier otro tipo)
-  es exclusivamente una operación de Drive API (`drive_v3.files.delete`).
-  Ningún índice propio mantenido por la app cambia este hecho — un
-  índice permite *saber cuáles* backups son viejos, pero no permite
-  *borrarlos* sin Drive API. Ver "Notas de ejecución" para la disyuntiva
-  completa presentada a Camilo, pendiente de decisión antes de
-  implementar cualquier mecanismo de limpieza.
 
 ## Definition of Done
 
 **Verificable dentro del mismo loop (`/goal-a`):**
 
-- [ ] El endpoint existe, compila (`tsc --noEmit` limpio).
-- [ ] Invocado manualmente una vez durante la sesión, crea
+- [x] El endpoint existe, compila (`tsc --noEmit` limpio).
+- [x] Invocado manualmente una vez durante la sesión, crea
       `flujo-backup-{fecha de hoy}` con contenido que, leído de vuelta,
       coincide con el Sheet de producción al momento de la invocación
       (verificación por lectura, no por código de respuesta HTTP).
-- [ ] `vercel.json` declara el cron con el horario correcto — verificado
+- [x] `vercel.json` declara el cron con el horario correcto — verificado
       leyendo el archivo, no asumido.
-- [ ] El código del endpoint no contiene ninguna llamada de escritura
+- [x] El código del endpoint no contiene ninguna llamada de escritura
       (`batchUpdate`, `values.append`, `values.update`, etc.) contra el
       Sheet ID de producción — verificable por lectura del código, mismo
       patrón que I-04/I-08.
-- [ ] El código no importa ni llama a ningún método de la Drive API
+- [x] El código no importa ni llama a ningún método de la Drive API
       (googleapis `drive_v3`, `drive.files.*`) — solo `sheets_v4`.
       Verificable por lectura del código y de los imports.
-- [ ] El scope de la credencial usado por el endpoint sigue siendo
+- [x] El scope de la credencial usado por el endpoint sigue siendo
       exclusivamente `https://www.googleapis.com/auth/spreadsheets` (el
       mismo que ya usa el resto de la app) — sin ampliación.
-- [ ] Backup de prueba de hace más de 14 días (creado sintéticamente
-      para la prueba) se elimina correctamente al correr la limpieza.
-      **BLOQUEADO — ver "Mecanismo" arriba: sin Drive API no existe
-      ningún método de Sheets API para borrar un archivo de spreadsheet.
-      No verificable ni implementable hasta decisión de Camilo.**
+- [x] Backup de prueba de hace más de 14 días (creado sintéticamente
+      para la prueba, un tab `{tab}_{fecha vieja}` en el contenedor) se
+      elimina correctamente al correr la limpieza (`batchUpdate` con
+      `deleteSheet`) — verificable de nuevo, arquitectura de contenedor
+      resuelve el bloqueo anterior (borrar un *tab* dentro de un archivo
+      existente es Sheets API puro, a diferencia de borrar un *archivo*
+      completo).
 
 **NO verificable dentro del loop — pendiente de confirmación humana al
 día siguiente, documentada como tal, no fingida como parte del DoD
@@ -368,3 +363,53 @@ de Camilo antes de tocar código otra vez.
 en esta sesión (el DoD punto 2, invocación manual, no pasó). El
 `estado: activo` de la aprobación inicial de esta sesión no se sostiene
 frente a este hallazgo.
+
+---
+
+## Desbloqueo y verificación — 21 jul 2026 (continuación de sesión)
+
+Camilo creó manualmente el Sheet contenedor y seteó `BACKUP_SHEET_ID` en
+`.env.local` (paso de setup pendiente identificado en el rediseño
+anterior). Con eso, se retomó la verificación del DoD sobre el código ya
+reescrito para la arquitectura de contenedor (sin cambios de código
+adicionales en esta continuación).
+
+**Invocación real:** `GET http://localhost:3001/api/admin/backup-sheet`
+contra un dev server ya corriendo (PID 9876, puerto 3001 — 3000 y 3002
+ocupados). Respuesta `200`:
+
+```json
+{"ok":true,"backup":{"contenedor":"1ugOP9VYdgIkIPD3WOSmlBgPd9yNLDZrqD2CYv1A1DDg","tabs":["H1_2026-07-21","H2_2026-07-21","H3_2026-07-21","H4_2026-07-21","H5_2026-07-21","H5B_2026-07-21"]},"verificacion":{"H5_2026-07-21":{"coincide":true,"filasProd":1,"filasBackup":1},"H4_2026-07-21":{"coincide":true,"filasProd":1,"filasBackup":1},"H3_2026-07-21":{"coincide":true,"filasProd":1,"filasBackup":1},"H2_2026-07-21":{"coincide":true,"filasProd":1,"filasBackup":1},"H5B_2026-07-21":{"coincide":true,"filasProd":6,"filasBackup":6},"H1_2026-07-21":{"coincide":true,"filasProd":1,"filasBackup":1}},"limpieza":{"revisados":2,"borrados":1,"nombres":["H1_2026-07-01"]}}
+```
+
+**Verificación independiente** (no solo confiando en el JSON de la misma
+llamada que escribió — script standalone, lectura directa vía
+`spreadsheets.values.get` sobre el contenedor y sobre prod por separado):
+el tab `H5B_2026-07-21` del contenedor y el tab `H5B` de producción
+devolvieron el **mismo array de valores byte a byte** (5 filas de datos +
+header, comparado explícitamente). Metadata del contenedor
+post-invocación (`spreadsheets.get`) confirma que `H1_2026-07-01` (tab
+sintético de prueba, creado por `scripts/_tmp-seed-old-tab.mjs` con fecha
+>14 días respecto a hoy) ya no aparece en la lista de tabs — la limpieza
+lo borró correctamente vía `batchUpdate`/`deleteSheet`.
+
+**Verificación de código (lectura completa de `route.ts`):**
+- Único `grep` de "drive"/"Drive" en el archivo es un comentario
+  (línea 30) confirmando la exclusión — cero llamadas reales a Drive API.
+- Único `values.get` contra `prodSheetId` es en `leerTabsProd` — ninguna
+  otra función del archivo recibe ni usa `prodSheetId`; todas las
+  escrituras (`batchUpdate`, `values.update`, `deleteSheet`) operan
+  exclusivamente sobre `containerId`.
+- `getSheetsClient` declara scope único:
+  `https://www.googleapis.com/auth/spreadsheets`.
+
+**Los 6 puntos de DoD verificables dentro del loop están marcados como
+cumplidos arriba, con evidencia leída de vuelta (no solo código de
+respuesta HTTP), en línea con el protocolo `sheet-safety` y la sección
+"Verification Honesty" de `CLAUDE.md`.**
+
+**`estado` → `pendiente_confirmacion_humana`** (no `completado`, tal
+como especifica este ticket en su excepción de cierre): el sexto punto
+del DoD — que la ejecución nocturna real, disparada por Vercel Cron y no
+por invocación manual, ocurra a la hora esperada — queda abierto hasta
+que Camilo lo confirme revisando el Sheet contenedor al día siguiente.

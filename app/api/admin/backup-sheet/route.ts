@@ -4,13 +4,15 @@ import { google } from "googleapis";
 export const maxDuration = 60;
 
 const TZ = "America/Bogota";
-const PREFIJO = "flujo-backup-";
+const RETENCION_DIAS = 14;
 
 // Tabs físicos reales del Sheet de producción — verificado por lectura directa
 // de metadata (spreadsheets.get) el 22 jul 2026, NO los nombres lógicos de
 // CLAUDE.md/sheet-safety (H3B, H4A/B/C, H5A, H6 son tipos de dato o rangos de
 // columnas dentro de estos tabs físicos, no tabs independientes).
 const TABS = ["H1", "H2", "H3", "H4", "H5", "H5B"] as const;
+
+const TAB_BACKUP_REGEX = new RegExp(`^(${TABS.join("|")})_(\\d{4}-\\d{2}-\\d{2})$`);
 
 function hoyBogota(): string {
   return new Intl.DateTimeFormat("en-CA", {
@@ -33,6 +35,7 @@ function getSheetsClient() {
 }
 
 type Sheets = ReturnType<typeof getSheetsClient>;
+type ContainerSheet = { title: string; sheetId: number };
 
 async function leerTabsProd(sheets: Sheets, prodSheetId: string) {
   const resultados = await Promise.all(
@@ -45,22 +48,38 @@ async function leerTabsProd(sheets: Sheets, prodSheetId: string) {
   ) as Record<(typeof TABS)[number], string[][]>;
 }
 
-async function crearBackup(sheets: Sheets, nombreBackup: string) {
-  const res = await sheets.spreadsheets.create({
-    requestBody: {
-      properties: { title: nombreBackup },
-      sheets: TABS.map((title) => ({ properties: { title } })),
-    },
-    fields: "spreadsheetId",
-  });
-  const backupId = res.data.spreadsheetId;
-  if (!backupId) throw new Error("spreadsheets.create no devolvió spreadsheetId");
-  return backupId;
+async function getContainerSheets(sheets: Sheets, containerId: string): Promise<ContainerSheet[]> {
+  const meta = await sheets.spreadsheets.get({ spreadsheetId: containerId });
+  return (meta.data.sheets ?? []).map((s) => ({
+    title: s.properties?.title ?? "",
+    sheetId: s.properties?.sheetId ?? -1,
+  }));
 }
 
-async function escribirBackup(
+async function crearTabsFaltantes(
   sheets: Sheets,
-  backupId: string,
+  containerId: string,
+  existentes: ContainerSheet[],
+  tabsHoy: Record<(typeof TABS)[number], string>
+) {
+  const titulosExistentes = new Set(existentes.map((s) => s.title));
+  const faltantes = TABS.filter((tab) => !titulosExistentes.has(tabsHoy[tab]));
+  if (faltantes.length === 0) return;
+
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: containerId,
+    requestBody: {
+      requests: faltantes.map((tab) => ({
+        addSheet: { properties: { title: tabsHoy[tab] } },
+      })),
+    },
+  });
+}
+
+async function escribirValores(
+  sheets: Sheets,
+  containerId: string,
+  tabsHoy: Record<(typeof TABS)[number], string>,
   datosPorTab: Record<(typeof TABS)[number], string[][]>
 ) {
   await Promise.all(
@@ -68,8 +87,8 @@ async function escribirBackup(
       const values = datosPorTab[tab];
       if (values.length === 0) return Promise.resolve();
       return sheets.spreadsheets.values.update({
-        spreadsheetId: backupId,
-        range: tab,
+        spreadsheetId: containerId,
+        range: tabsHoy[tab],
         valueInputOption: "RAW",
         requestBody: { values },
       });
@@ -77,26 +96,60 @@ async function escribirBackup(
   );
 }
 
-async function verificarContraProd(
+async function verificarBackup(
   sheets: Sheets,
-  prodSheetId: string,
-  backupId: string
+  containerId: string,
+  tabsHoy: Record<(typeof TABS)[number], string>,
+  datosPorTab: Record<(typeof TABS)[number], string[][]>
 ) {
   const resultado: Record<string, { coincide: boolean; filasProd: number; filasBackup: number }> = {};
-  for (const tab of TABS) {
-    const [prod, backup] = await Promise.all([
-      sheets.spreadsheets.values.get({ spreadsheetId: prodSheetId, range: tab }),
-      sheets.spreadsheets.values.get({ spreadsheetId: backupId, range: tab }),
-    ]);
-    const prodValues = prod.data.values ?? [];
-    const backupValues = backup.data.values ?? [];
-    resultado[tab] = {
-      coincide: JSON.stringify(prodValues) === JSON.stringify(backupValues),
-      filasProd: prodValues.length,
-      filasBackup: backupValues.length,
-    };
-  }
+  await Promise.all(
+    TABS.map(async (tab) => {
+      const res = await sheets.spreadsheets.values.get({
+        spreadsheetId: containerId,
+        range: tabsHoy[tab],
+      });
+      const backupValues = res.data.values ?? [];
+      const prodValues = datosPorTab[tab];
+      resultado[tabsHoy[tab]] = {
+        coincide: JSON.stringify(prodValues) === JSON.stringify(backupValues),
+        filasProd: prodValues.length,
+        filasBackup: backupValues.length,
+      };
+    })
+  );
   return resultado;
+}
+
+async function limpiarBackupsAntiguos(
+  sheets: Sheets,
+  containerId: string,
+  existentesAntesDeHoy: ContainerSheet[],
+  hoy: string
+) {
+  const hoyMs = Date.parse(hoy);
+
+  const aBorrar = existentesAntesDeHoy.filter((s) => {
+    const m = s.title.match(TAB_BACKUP_REGEX);
+    if (!m) return false;
+    const edadDias = (hoyMs - Date.parse(m[2])) / 86_400_000;
+    return edadDias > RETENCION_DIAS;
+  });
+
+  if (aBorrar.length > 0) {
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId: containerId,
+      requestBody: {
+        requests: aBorrar.map((s) => ({ deleteSheet: { sheetId: s.sheetId } })),
+      },
+    });
+  }
+
+  return {
+    revisados: existentesAntesDeHoy.length,
+    borrados: aBorrar.length,
+    nombres: aBorrar.map((s) => s.title),
+  };
 }
 
 export async function GET(req: NextRequest) {
@@ -112,29 +165,35 @@ export async function GET(req: NextRequest) {
   if (!prodSheetId) {
     return NextResponse.json({ error: "PROD_GOOGLE_SHEET_ID no configurado" }, { status: 500 });
   }
+  const containerId = process.env.BACKUP_SHEET_ID;
+  if (!containerId) {
+    return NextResponse.json({ error: "BACKUP_SHEET_ID no configurado" }, { status: 500 });
+  }
 
   const sheets = getSheetsClient();
   const hoy = hoyBogota();
-  const nombreBackup = `${PREFIJO}${hoy}`;
+  const tabsHoy = Object.fromEntries(TABS.map((tab) => [tab, `${tab}_${hoy}`])) as Record<
+    (typeof TABS)[number],
+    string
+  >;
 
   // Solo lectura sobre prod — nunca values.update/append/batchUpdate contra prodSheetId.
   const datosPorTab = await leerTabsProd(sheets, prodSheetId);
 
-  const backupId = await crearBackup(sheets, nombreBackup);
-  await escribirBackup(sheets, backupId, datosPorTab);
+  // Estado del contenedor ANTES de crear los tabs de hoy — se reutiliza para
+  // decidir qué tabs viejos limpiar, orden: crear primero, limpiar después.
+  const existentesAntes = await getContainerSheets(sheets, containerId);
 
-  const verificacion = await verificarContraProd(sheets, prodSheetId, backupId);
+  await crearTabsFaltantes(sheets, containerId, existentesAntes, tabsHoy);
+  await escribirValores(sheets, containerId, tabsHoy, datosPorTab);
+
+  const verificacion = await verificarBackup(sheets, containerId, tabsHoy, datosPorTab);
+  const limpieza = await limpiarBackupsAntiguos(sheets, containerId, existentesAntes, hoy);
 
   return NextResponse.json({
     ok: true,
-    backup: { id: backupId, nombre: nombreBackup },
+    backup: { contenedor: containerId, tabs: Object.values(tabsHoy) },
     verificacion,
-    limpieza: {
-      ejecutada: false,
-      motivo:
-        "Bloqueado por diseño: Sheets API no tiene método para borrar un spreadsheet " +
-        "completo (requiere Drive API, fuera de alcance de este ticket). Ver " +
-        "tickets/BACKUP-NOCTURNO-01.md, sección 'Disyuntiva bloqueante — P3'.",
-    },
+    limpieza,
   });
 }
