@@ -5679,3 +5679,137 @@ que I-16.
 2. Migrar el resto del backlog clasificado por tier a `tickets/*.md` —
    `FIX-CREARMOVIMIENTOSMES-01` primero (Tier A, diagnóstico ya
    completo, ya no bloqueado por falta de backup).
+
+---
+
+## Sesión — PR #30 mergeado, backlog migrado completo a tickets/*.md, FIX-CREARMOVIMIENTOSMES-01 cerrado · 22 jul 2026
+
+**Tipo de sesión:** GOBERNANZA (migración de backlog) + CONSTRUCCIÓN
+(un ticket, vía `/wark` → `/goal-a`). Continuación directa del anclaje de
+arriba, mismo día.
+
+### PR #30 → `main` (`bb3b64b`)
+
+Mergeado tras verificar `mergeStateStatus: CLEAN` y checks de Vercel en
+verde. Lleva a producción el código de `BACKUP-NOCTURNO-01` (endpoint +
+`vercel.json` con el cron) y `SCAFFOLD-TICKETS-01`. Antes del merge no
+existía ningún deployment de producción con ese código — todos los
+commits previos solo habían corrido en preview de `dev`.
+
+**Hallazgo al pedir confirmación del cron ese mismo día:** el usuario
+confirmó "el cron corrió anoche", pero verificación independiente (lectura
+directa del Sheet contenedor + `list_deployments` de Vercel) mostró que el
+Sheet contenedor solo tenía tabs `*_2026-07-21` (de la invocación manual),
+ningún `*_2026-07-22` — y que el último deployment `target: production`
+era anterior a todo el trabajo de `BACKUP-NOCTURNO-01`. Conclusión: el
+cron **no pudo haber corrido**, porque el código nunca había estado en
+producción hasta el merge de PR #30 (10:59 UTC, después de la hora del
+cron de ese mismo día). No se marcó como confirmado pese a la afirmación
+del usuario — se reportó la discrepancia con evidencia antes de escribir
+nada.
+
+**Rutina de verificación creada** (`RemoteTrigger`, cloud agent,
+`trig_01XdAbz8WFWgsZZbqZARj23c`): ejecución única programada para
+2026-07-23 09:15 UTC (04:15 Bogotá, 15 min después del cron), usa el
+conector Google Drive conectado a la cuenta personal de Camilo (no
+credenciales de service account) para leer el Sheet contenedor
+(`1ugOP9VYdgIkIPD3WOSmlBgPd9yNLDZrqD2CYv1A1DDg`) y confirmar si aparecen
+los 6 tabs `*_2026-07-23`. Resultado pendiente al cierre de esta sesión.
+
+### SCAFFOLD-TICKETS-02 — 9 tickets migrados, PR #31
+
+Migrados de la narrativa de `ESTADO.md` a `tickets/*.md`:
+`FIX-RESET-COLUMNAS-01`, `DT-CIERRE-01`, `DT-M1M4-NULL-01`, `DT-MES-01`,
+`DT-SOBRE-TECHO-01`, `BUG-LABEL-MESM1-01`, `SEC-AUTH-ADMIN-RESET-01`,
+`INVARIANTS-GAP-01`, `TICKET-B-GUARDIA-01` (este último migrado con su
+estado real `activo`, no reiniciado — ya tenía `ee0b9e1`/`291e8bd`
+commiteados de sesiones previas).
+
+**Revisión del PR #31 antes de mergear** (pedida explícitamente por
+Camilo) encontró 2 imprecisiones fácticas reales, verificadas contra
+código y `ESTADO.md`, no solo contra el diff:
+- `DT-MES-01` referenciaba `POST /api/h3b/...` — path inexistente. El
+  endpoint real es `POST /api/registro/sin-concepto` (`route.ts:82`).
+- `DT-M1M4-NULL-01` presentaba la asimetría M1/M4 como "origen
+  confirmado" del incidente Uber One (2 jul 2026) — pero esa hipótesis
+  fue descartada explícitamente para ese caso puntual en su momento
+  (Uber One tenía `semana=S1`, no `null`; la causa real fue otra,
+  conceptos duplicados en H1). La asimetría M1/M4 sí es real y está
+  confirmada por auditoría de código separada (3 jul 2026) — se corrigió
+  la redacción para no conflar ambos hallazgos.
+
+Ambas correcciones commiteadas (`a38fb8d`) antes de mergear. PR #31
+mergeado a `main` (`f3735b6`).
+
+**Bug preexistente detectado, no corregido por decisión explícita:**
+`scripts/generate-kanban.mjs` busca una línea `Actualizado: ... | Fase:
+...` en `ESTADO.md` para el banner del header del kanban — ese formato
+se reemplazó en `ESTADO-HEADER-01` (`5d4304a`) y el script nunca se
+actualizó. El banner del kanban quedó silenciosamente vacío (`"📍 "`)
+desde entonces; visible por primera vez al regenerar el kanban en esta
+sesión. Camilo decidió ignorarlo por ahora — no se abrió ticket.
+
+### `/wark` → `FIX-CREARMOVIMIENTOSMES-01` completado
+
+Primera ejecución real de `/wark`. El candidato por `orden` ascendente
+era `BACKUP-NOCTURNO-01` (`pendiente_confirmacion_humana`, un estado
+fuera del árbol de decisión del comando — ni `propuesto` ni `aprobado` ni
+`tier: C`). Se HALTeó y se preguntó a Camilo, quien indicó saltar al
+siguiente candidato válido.
+
+`FIX-CREARMOVIMIENTOSMES-01` (orden 2, `aprobado`, Tier A) ejecutado vía
+`/goal-a`:
+- Verificado `GOOGLE_SHEET_ID` → dev antes de tocar nada.
+- Esquema real de H2 dev leído antes de escribir: 262 filas, 25 columnas,
+  sin drift contra `H2_HEADERS`.
+- Fix: `values.append` → `values.get` (cuenta filas reales) +
+  `values.update` (rango explícito `H2!A{nextRow}`), mismo patrón que
+  `ensureH2Headers`.
+- Verificado con **dos invocaciones HTTP reales consecutivas** de
+  `POST /api/mes/[mes]/iniciar` contra meses sintéticos (`2027-01`,
+  `2027-02`, confirmados vacíos antes de usar): 262→331→399 filas,
+  fronteras entre llamadas verificadas intactas byte a byte, 398 IDs
+  únicos para 398 filas — cero sobrescritura en ningún punto.
+  Datos sintéticos borrados al terminar (`batchUpdate`/`deleteDimension`),
+  H2 dev restaurado a 262 filas idénticas a la baseline.
+- `git log --all -p` sobre las 3 ramas locales: cero rastro de
+  `INSERT_ROWS` en cualquier intento previo — confirma que el bug nunca
+  se migró parcialmente en ningún lado antes de este fix.
+- `tsc --noEmit` limpio. Commits: `fd23c2c` (`-inicio: marca activo`) →
+  `aab7bc5` (`-cierre: DoD verificado`). Sin PR — por instrucción de
+  `/goal-a`, queda en `dev` sin mergear a `main` en esta sesión.
+
+### Estado del backlog (`tickets/INDICE.md`) al cierre de esta sesión
+
+| orden | ticket_id | estado |
+|---|---|---|
+| 1 | BACKUP-NOCTURNO-01 | `pendiente_confirmacion_humana` — resultado de la rutina de verificación pendiente (mañana 04:15 Bogotá) |
+| 2 | FIX-CREARMOVIMIENTOSMES-01 | `completado` |
+| 3 | FIX-RESET-COLUMNAS-01 | `aprobado` — próximo candidato Tier A |
+| 4 | DT-CIERRE-01 | `propuesto` |
+| 5 | DT-M1M4-NULL-01 | `propuesto` (Tier B) |
+| 6 | DT-MES-01 | `aprobado` |
+| 7 | DT-SOBRE-TECHO-01 | `propuesto` (Tier B) |
+| 8 | BUG-LABEL-MESM1-01 | `propuesto` |
+| 9 | SEC-AUTH-ADMIN-RESET-01 | `propuesto` (Tier B) |
+| 10 | INVARIANTS-GAP-01 | `aprobado` |
+| 11 | TICKET-B-GUARDIA-01 | `activo` — DoD bullet 2 pendiente, ya no bloqueado por `FIX-CREARMOVIMIENTOSMES-01` |
+
+### Deuda técnica / pendientes nuevos
+
+- Housekeeping sin resolver, arrastrado de sesiones previas:
+  `.claude/settings.local.json` modificado sin commitear;
+  `.tmp.driveupload/`, `_local-scratch/`, `audit-adversarial-01/`,
+  `scripts/_tmp-seed-old-tab.mjs` sin trackear. No tocados — no está
+  claro si son trabajo en curso de Camilo.
+- Banner vacío de `public/kanban.html` (ver arriba) — sin ticket, decisión
+  explícita de ignorar por ahora.
+
+### Próximo paso
+
+1. Revisar resultado de la rutina `trig_01XdAbz8WFWgsZZbqZARj23c` (mañana
+   2026-07-23, después de las 04:15 Bogotá) → si los tabs `*_2026-07-23`
+   existen, `BACKUP-NOCTURNO-01` pasa a `completado`; si no, investigar
+   como alerta real, no como cuestión de tiempo.
+2. Correr `/wark` de nuevo cuando Camilo lo indique — próximo candidato
+   natural: `FIX-RESET-COLUMNAS-01` (orden 3, `aprobado`, Tier A).
