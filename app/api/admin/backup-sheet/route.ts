@@ -4,9 +4,13 @@ import { google } from "googleapis";
 export const maxDuration = 60;
 
 const TZ = "America/Bogota";
-const RETENCION_DIAS = 14;
 const PREFIJO = "flujo-backup-";
-const NOMBRE_REGEX = /^flujo-backup-(\d{4}-\d{2}-\d{2})$/;
+
+// Tabs físicos reales del Sheet de producción — verificado por lectura directa
+// de metadata (spreadsheets.get) el 22 jul 2026, NO los nombres lógicos de
+// CLAUDE.md/sheet-safety (H3B, H4A/B/C, H5A, H6 son tipos de dato o rangos de
+// columnas dentro de estos tabs físicos, no tabs independientes).
+const TABS = ["H1", "H2", "H3", "H4", "H5", "H5B"] as const;
 
 function hoyBogota(): string {
   return new Intl.DateTimeFormat("en-CA", {
@@ -17,64 +21,82 @@ function hoyBogota(): string {
   }).format(new Date());
 }
 
-function getAuthClients() {
+function getSheetsClient() {
   const auth = new google.auth.JWT({
     email: process.env.GOOGLE_CLIENT_EMAIL,
     key: (process.env.GOOGLE_PRIVATE_KEY ?? "").replace(/\\n/g, "\n"),
-    // Scope 'drive' (no solo 'spreadsheets'): files.copy y permissions.create son
-    // operaciones de Drive, no de Sheets. La restricción de "solo lectura sobre prod"
-    // vive en el código (nunca se llama values.update/append/batchUpdate contra
-    // PROD_GOOGLE_SHEET_ID), no en el scope de la credencial.
-    scopes: ["https://www.googleapis.com/auth/drive"],
+    // Exclusivamente Sheets API — sin Drive API. Mismo scope que ya usa el
+    // resto de la app, sin ampliación.
+    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
   });
-  return {
-    drive: google.drive({ version: "v3", auth }),
-    sheets: google.sheets({ version: "v4", auth }),
-  };
+  return google.sheets({ version: "v4", auth });
 }
 
-type Drive = ReturnType<typeof getAuthClients>["drive"];
-type Sheets = ReturnType<typeof getAuthClients>["sheets"];
+type Sheets = ReturnType<typeof getSheetsClient>;
 
-async function limpiarBackupsAntiguos(drive: Drive, hoy: string) {
-  const res = await drive.files.list({
-    q: `name contains '${PREFIJO}' and trashed = false`,
-    fields: "files(id, name)",
-    pageSize: 100,
+async function leerTabsProd(sheets: Sheets, prodSheetId: string) {
+  const resultados = await Promise.all(
+    TABS.map((tab) =>
+      sheets.spreadsheets.values.get({ spreadsheetId: prodSheetId, range: tab })
+    )
+  );
+  return Object.fromEntries(
+    TABS.map((tab, i) => [tab, (resultados[i].data.values ?? []) as string[][]])
+  ) as Record<(typeof TABS)[number], string[][]>;
+}
+
+async function crearBackup(sheets: Sheets, nombreBackup: string) {
+  const res = await sheets.spreadsheets.create({
+    requestBody: {
+      properties: { title: nombreBackup },
+      sheets: TABS.map((title) => ({ properties: { title } })),
+    },
+    fields: "spreadsheetId",
   });
+  const backupId = res.data.spreadsheetId;
+  if (!backupId) throw new Error("spreadsheets.create no devolvió spreadsheetId");
+  return backupId;
+}
 
-  const files = res.data.files ?? [];
-  const hoyMs = Date.parse(hoy);
+async function escribirBackup(
+  sheets: Sheets,
+  backupId: string,
+  datosPorTab: Record<(typeof TABS)[number], string[][]>
+) {
+  await Promise.all(
+    TABS.map((tab) => {
+      const values = datosPorTab[tab];
+      if (values.length === 0) return Promise.resolve();
+      return sheets.spreadsheets.values.update({
+        spreadsheetId: backupId,
+        range: tab,
+        valueInputOption: "RAW",
+        requestBody: { values },
+      });
+    })
+  );
+}
 
-  const aBorrar = files.filter((f) => {
-    const m = f.name?.match(NOMBRE_REGEX);
-    if (!m) return false;
-    const edadDias = (hoyMs - Date.parse(m[1])) / 86_400_000;
-    return edadDias > RETENCION_DIAS;
-  });
-
-  for (const f of aBorrar) {
-    if (f.id) await drive.files.delete({ fileId: f.id });
+async function verificarContraProd(
+  sheets: Sheets,
+  prodSheetId: string,
+  backupId: string
+) {
+  const resultado: Record<string, { coincide: boolean; filasProd: number; filasBackup: number }> = {};
+  for (const tab of TABS) {
+    const [prod, backup] = await Promise.all([
+      sheets.spreadsheets.values.get({ spreadsheetId: prodSheetId, range: tab }),
+      sheets.spreadsheets.values.get({ spreadsheetId: backupId, range: tab }),
+    ]);
+    const prodValues = prod.data.values ?? [];
+    const backupValues = backup.data.values ?? [];
+    resultado[tab] = {
+      coincide: JSON.stringify(prodValues) === JSON.stringify(backupValues),
+      filasProd: prodValues.length,
+      filasBackup: backupValues.length,
+    };
   }
-
-  return {
-    revisados: files.length,
-    borrados: aBorrar.length,
-    nombres: aBorrar.map((f) => f.name),
-  };
-}
-
-async function verificarContraProd(sheets: Sheets, prodSheetId: string, backupId: string) {
-  const [prod, backup] = await Promise.all([
-    sheets.spreadsheets.values.get({ spreadsheetId: prodSheetId, range: "H1!A:L" }),
-    sheets.spreadsheets.values.get({ spreadsheetId: backupId, range: "H1!A:L" }),
-  ]);
-
-  const prodValues = prod.data.values ?? [];
-  const backupValues = backup.data.values ?? [];
-  const coincide = JSON.stringify(prodValues) === JSON.stringify(backupValues);
-
-  return { coincide, filasProd: prodValues.length, filasBackup: backupValues.length };
+  return resultado;
 }
 
 export async function GET(req: NextRequest) {
@@ -91,39 +113,28 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "PROD_GOOGLE_SHEET_ID no configurado" }, { status: 500 });
   }
 
-  const { drive, sheets } = getAuthClients();
+  const sheets = getSheetsClient();
   const hoy = hoyBogota();
   const nombreBackup = `${PREFIJO}${hoy}`;
 
-  // Copia del Sheet de producción a nivel Drive — no modifica el archivo origen.
-  const copia = await drive.files.copy({
-    fileId: prodSheetId,
-    requestBody: { name: nombreBackup },
-    fields: "id, name",
-  });
-  const backupId = copia.data.id;
-  if (!backupId) {
-    return NextResponse.json({ error: "La copia no devolvió un ID de archivo" }, { status: 500 });
-  }
+  // Solo lectura sobre prod — nunca values.update/append/batchUpdate contra prodSheetId.
+  const datosPorTab = await leerTabsProd(sheets, prodSheetId);
 
-  const ownerEmail = process.env.BACKUP_OWNER_EMAIL;
-  let compartidoCon: string | null = null;
-  if (ownerEmail) {
-    await drive.permissions.create({
-      fileId: backupId,
-      sendNotificationEmail: false,
-      requestBody: { role: "reader", type: "user", emailAddress: ownerEmail },
-    });
-    compartidoCon = ownerEmail;
-  }
+  const backupId = await crearBackup(sheets, nombreBackup);
+  await escribirBackup(sheets, backupId, datosPorTab);
 
   const verificacion = await verificarContraProd(sheets, prodSheetId, backupId);
-  const limpieza = await limpiarBackupsAntiguos(drive, hoy);
 
   return NextResponse.json({
     ok: true,
-    backup: { id: backupId, nombre: nombreBackup, compartidoCon },
+    backup: { id: backupId, nombre: nombreBackup },
     verificacion,
-    limpieza,
+    limpieza: {
+      ejecutada: false,
+      motivo:
+        "Bloqueado por diseño: Sheets API no tiene método para borrar un spreadsheet " +
+        "completo (requiere Drive API, fuera de alcance de este ticket). Ver " +
+        "tickets/BACKUP-NOCTURNO-01.md, sección 'Disyuntiva bloqueante — P3'.",
+    },
   });
 }

@@ -21,14 +21,44 @@ recibe una escritura en ningún punto del proceso.
 otro recurso del proyecto (código, env vars, etc.) — solo el Sheet de
 producción.
 
-**Mecanismo (cerrado, no queda a criterio de quien ejecute el ticket):**
+**Mecanismo (rediseñado 22 jul 2026 — cerrado, no queda a criterio de
+quien ejecute el ticket):**
 
-- Vercel Cron invocando un endpoint propio (`/api/admin/backup-sheet` o
-  equivalente) — sin dependencia nueva, ya estás en ese stack.
-- Configuración del cron en `vercel.json`, horario nocturno (definir hora
-  exacta contra baja actividad de la app — de madrugada, hora Colombia).
-- Limpieza de backups >14 días como parte del mismo job, no un ticket
-  aparte.
+- Vercel Cron invocando un endpoint propio (`/api/admin/backup-sheet`).
+- El endpoint usa EXCLUSIVAMENTE Sheets API — nunca Drive API:
+  1. `spreadsheets.create` — crea un Sheet nuevo, título
+     `flujo-backup-{YYYY-MM-DD}`.
+  2. `spreadsheets.values.get` sobre cada tab del Sheet de producción.
+  3. `spreadsheets.values.update` sobre el Sheet nuevo, un rango por tab,
+     con los valores leídos.
+  4. El Sheet de producción nunca recibe ninguna llamada de escritura
+     en ningún punto — solo `values.get`.
+- Tabs a respaldar: **`H1, H2, H3, H4, H5, H5B`** — verificado por
+  lectura directa de metadata (`spreadsheets.get`) contra el Sheet de
+  producción real el 22 jul 2026, no por la lista de nombres lógicos de
+  `CLAUDE.md`/`sheet-safety` (`H3B`, `H4A/B/C`, `H5A`, `H6`). Esos son
+  nombres de *tipo de dato* o de rango de columnas dentro de un tab
+  físico compartido (p.ej. `H4A`/`H4B`/`H4C` son bloques de columnas
+  `A:G`/`I:N`/`P:V` dentro del único tab físico `H4`), no tabs
+  independientes — copiar por el nombre lógico literal habría fallado
+  en crear tabs vacíos/incorrectos y silenciosamente perdido datos
+  reales de `H4`. `H4D` no existe como tab físico (no hay riesgo I-05
+  de lectura accidental). `H5A` y `H6` tampoco existen como tabs (el
+  cierre semanal vive físicamente en el tab `H5`, y H6 aún no está
+  implementado en `lib/data/sheets.ts` — `throw new Error("Not
+  implemented yet")`).
+- No se copian fórmulas ni formato — solo valores. Aceptable: H1-H6 son
+  tablas de datos operativos, no hojas con fórmulas de negocio.
+- **Limpieza de backups >14 días: BLOQUEADA por diseño, no implementada
+  en este rediseño.** La API de Sheets (`sheets_v4`) no tiene ningún
+  método para borrar un archivo de spreadsheet completo — `spreadsheets.
+  delete` no existe; borrar un archivo (sea Sheet o cualquier otro tipo)
+  es exclusivamente una operación de Drive API (`drive_v3.files.delete`).
+  Ningún índice propio mantenido por la app cambia este hecho — un
+  índice permite *saber cuáles* backups son viejos, pero no permite
+  *borrarlos* sin Drive API. Ver "Notas de ejecución" para la disyuntiva
+  completa presentada a Camilo, pendiente de decisión antes de
+  implementar cualquier mecanismo de limpieza.
 
 ## Definition of Done
 
@@ -44,13 +74,18 @@ producción.
 - [ ] El código del endpoint no contiene ninguna llamada de escritura
       (`batchUpdate`, `values.append`, `values.update`, etc.) contra el
       Sheet ID de producción — verificable por lectura del código, mismo
-      patrón que I-04/I-08. Esta es la restricción real de "solo lectura
-      sobre prod": vive en el código, no en el scope de la credencial
-      (la service account ya tiene permisos de escritura sobre prod para
-      la operación normal de la app; no se modifica ese scope en este
-      ticket).
+      patrón que I-04/I-08.
+- [ ] El código no importa ni llama a ningún método de la Drive API
+      (googleapis `drive_v3`, `drive.files.*`) — solo `sheets_v4`.
+      Verificable por lectura del código y de los imports.
+- [ ] El scope de la credencial usado por el endpoint sigue siendo
+      exclusivamente `https://www.googleapis.com/auth/spreadsheets` (el
+      mismo que ya usa el resto de la app) — sin ampliación.
 - [ ] Backup de prueba de hace más de 14 días (creado sintéticamente
       para la prueba) se elimina correctamente al correr la limpieza.
+      **BLOQUEADO — ver "Mecanismo" arriba: sin Drive API no existe
+      ningún método de Sheets API para borrar un archivo de spreadsheet.
+      No verificable ni implementable hasta decisión de Camilo.**
 
 **NO verificable dentro del loop — pendiente de confirmación humana al
 día siguiente, documentada como tal, no fingida como parte del DoD
@@ -180,3 +215,156 @@ esto revisando el Sheet ... al día siguiente") implica que Camilo necesita
 poder abrir el archivo, y los backups quedan en el Drive propio de la
 service account por defecto. Es opcional (`if (ownerEmail)`), no bloquea el
 resto del DoD si se deja sin configurar.
+
+---
+
+## Rediseño — 22 jul 2026 (Sheets API only, sin Drive API)
+
+**Anchor-guard de esta sesión:** el prompt de rediseño asumía `estado:
+aprobado` vigente; el estado real leído era `estado: bloqueado`
+(inalterado desde el commit `320aafa`). Mismatch reportado a Camilo antes
+de tocar el archivo — Camilo confirmó por elección explícita: "tratar
+este prompt como la aprobación". `estado` se actualiza a `activo` como
+parte de este cambio.
+
+### Corrección — lista de tabs
+
+El prompt de rediseño listaba `H1, H2, H3B, H4A/B/C/D, H5A, H5B, H6` como
+los tabs a respaldar (nombres lógicos de `CLAUDE.md`/`sheet-safety`).
+Verificado por lectura directa de metadata (`spreadsheets.get`, sin
+`values.get`, target PRODUCCIÓN) contra el Sheet real antes de escribir
+ningún código — los tabs físicos son exactamente:
+`H1, H2, H3, H4, H5, H5B` (6 tabs, confirmado por `properties.title` de
+cada uno). `H3B`, `H4A`, `H4B`, `H4C`, `H4D`, `H5A`, `H6` no existen como
+tabs independientes: son nombres de tipo de dato o rangos de columnas
+dentro de tabs físicos compartidos (p.ej. `H4A`/`H4B`/`H4C` son las
+columnas `A:G`/`I:N`/`P:V` del único tab `H4`, ver `lib/data/sheets.ts`).
+Usar la lista literal del prompt habría creado tabs de backup vacíos con
+esos nombres y silenciosamente perdido los datos reales de `H3`, `H4` y
+`H5` (el 90%+ del contenido del Sheet). El endpoint reimplementado usa la
+lista verificada, no la del prompt.
+
+### Disyuntiva bloqueante — P3, limpieza de backups >14 días
+
+**No hay ninguna forma de borrar un archivo de spreadsheet completo
+usando exclusivamente Sheets API (`sheets_v4`).** `spreadsheets.delete`
+no existe como método — eliminar un archivo (de cualquier tipo, Sheet
+incluido) es exclusivamente una operación de Drive API
+(`drive_v3.files.delete`). Esto es independiente de cómo se resuelva el
+*listado* de backups viejos: mantener un índice propio (tab "meta",
+convención de nombre, lo que sea) resuelve "saber cuáles son viejos"
+pero no resuelve "borrarlos" — ese segundo paso siempre requiere Drive
+API, sin excepción, con cualquier diseño de índice.
+
+**No implementado. Opciones para que Camilo decida** (ninguna elegida
+por iniciativa propia, tal como pide el ticket):
+
+1. **Sin limpieza automática.** Los backups se acumulan indefinidamente
+   (uno por día, ~365/año). Costo: nada — Sheets es gratis dentro de
+   cuota de Drive normal, y datos H1-H6 son pequeños (no hay costo real
+   de almacenamiento en la práctica). Camilo borra manualmente desde
+   Drive cuando quiera. Cero superficie de ataque nueva.
+2. **Vaciar contenido en vez de borrar el archivo** (`spreadsheets.
+   values.clear` sobre backups >14 días, dejando el archivo vacío pero
+   existente). Mismo problema de acumulación de archivos en Drive
+   (clutter en la lista de archivos), solo evita que tengan datos
+   dentro. No parece resolver realmente el problema original.
+3. **Ampliar scope a `drive.file`** (no `drive` completo) exclusivamente
+   para `files.delete` sobre los backups que la propia app creó.
+   Advertencia: **no verificado** si `drive.file` efectivamente cubre
+   archivos creados vía Sheets API (`spreadsheets.create`) con la misma
+   service account — la documentación de Google describe `drive.file`
+   en términos de "archivos creados o abiertos por la app" sin
+   confirmar si eso aplica cuando la creación ocurrió por el endpoint de
+   Sheets API en vez del de Drive API. Habría que probarlo empíricamente
+   antes de confiar en él. Además, reintroduce exactamente el tipo de
+   dependencia (scope de Drive) que este rediseño buscaba eliminar —
+   aunque acotado, no es el mismo "cero Drive API" que pedía la decisión
+   de Camilo del 22 jul.
+4. **Cron separado, tier C, 100% manual** que Camilo ejecuta o aprueba
+   caso por caso para borrar backups viejos vía Drive UI o un script
+   `node scripts/*.mjs` con scope Drive ejecutado bajo su propia sesión
+   — nunca vía endpoint automático ni credencial de producción de la
+   app.
+
+**Recomendación no vinculante:** opción 1 (sin limpieza automática) es
+la que más se alinea con la decisión original de Camilo de eliminar
+Drive API por completo — el volumen real (~365 archivos/año, datos
+pequeños) no parece justificar reabrir la superficie de ataque para
+resolver un problema de "orden" más que de costo o seguridad. Pero es
+decisión de Camilo, no implementada por iniciativa propia.
+
+### Bloqueo nuevo, más severo — descubierto en P4 (invocación manual real)
+
+Con el código reimplementado (`route.ts`, solo Sheets API, scope
+`spreadsheets` sin ampliar) corriendo contra el dev server local,
+`GET /api/admin/backup-sheet` devolvió **500**. Log exacto del server
+(`next dev`):
+
+```
+⨯ Error: The caller does not have permission
+    at async crearBackup (app\api\admin\backup-sheet\route.ts:49:15)
+    at async GET (app\api\admin\backup-sheet\route.ts:123:20)
+...
+    status: 403,
+    [cause]: {
+      message: 'The caller does not have permission',
+      code: 403,
+      status: 'PERMISSION_DENIED',
+    }
+```
+
+Falla en `sheets.spreadsheets.create` — el primer paso del mecanismo
+rediseñado, no la limpieza. Diagnóstico aislado con script standalone
+(mismo error, cuerpo completo):
+
+```json
+{"error":{"code":403,"message":"The caller does not have permission","status":"PERMISSION_DENIED"}}
+```
+
+**Causa raíz (verificada contra documentación pública, no asumida):**
+desde el 1 jun 2023 Google asigna **0 GB de cuota de almacenamiento de
+Drive** a service accounts sin Google Workspace asociado — y esto
+bloquea la creación de *cualquier* archivo respaldado por Drive
+(Sheets, Docs, Slides) sin importar si la llamada se hace vía Sheets
+API o Drive API, salvo que el archivo se cree dentro de una Shared
+Drive (requiere Workspace de pago) o el service account impersone a un
+usuario real con cuota vía domain-wide delegation (también requiere
+Workspace — no disponible con una cuenta Gmail personal como
+`camilovillamil@gmail.com`). `psibot@psibot-495119.iam.gserviceaccount.com`
+es un service account de proyecto GCP estándar sin Workspace asociado
+— exactamente el caso que produce este bloqueo.
+
+**Esto invalida `spreadsheets.create` como mecanismo, no solo la
+limpieza.** El rediseño "Sheets API only" resuelve la restricción de
+scope (I-05 y la decisión de eliminar Drive API), pero choca con una
+restricción distinta e independiente: crear un archivo nuevo, sin
+importar la API usada, requiere que *alguien* con cuota lo posea.
+
+**Opción de rediseño candidata, NO implementada — decisión de Camilo:**
+en vez de "un Sheet nuevo por día", usar **un único Sheet contenedor,
+creado una sola vez manualmente por Camilo** (vía Drive UI, igual que
+el Sheet de producción) y compartido con el service account como
+Editor. El endpoint entonces:
+- Crea un **tab nuevo** dentro de ese archivo por cada
+  `{tabProd}_{fecha}` (ej. `H1_2026-07-22`) vía `batchUpdate`
+  (`addSheet`) — esto SÍ es 100% Sheets API y NO requiere cuota de
+  Drive del service account, porque el archivo contenedor ya existe y
+  no le pertenece a él.
+- La limpieza >14 días se vuelve `batchUpdate` (`deleteSheet`) sobre
+  los tabs viejos — también 100% Sheets API, sin Drive API. **Esto
+  resolvería el bloqueo de P3 de paso**, como efecto colateral de
+  resolver este bloqueo nuevo.
+- Costo: un paso manual único de setup (Camilo crea+comparte un Sheet,
+  nueva env var `BACKUP_SHEET_ID`), y hasta 6 tabs/día × 14 días = 84
+  tabs en el peor caso — dentro del límite práctico de Sheets API.
+
+No implementado por iniciativa propia — es un cambio de arquitectura
+respecto al Goal original ("un Sheet nuevo, separado... uno por día"),
+no una corrección de detalle como la lista de tabs. Pendiente decisión
+de Camilo antes de tocar código otra vez.
+
+**`estado` revertido a `bloqueado`** — ningún backup real se pudo crear
+en esta sesión (el DoD punto 2, invocación manual, no pasó). El
+`estado: activo` de la aprobación inicial de esta sesión no se sostiene
+frente a este hallazgo.

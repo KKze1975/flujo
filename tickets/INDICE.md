@@ -2,7 +2,7 @@
 
 | orden | ticket_id | estado | tier | dependencias | commit | notas |
 |---|---|---|---|---|---|---|
-| 1 | BACKUP-NOCTURNO-01 | bloqueado | A | ninguna | | Bloqueado: Google Drive API deshabilitada en el proyecto GCP de la service account — requiere habilitarla en Cloud Console (acción humana) |
+| 1 | BACKUP-NOCTURNO-01 | bloqueado | A | ninguna | | Rediseñado sin Drive API (22 jul 2026), pero `spreadsheets.create` falla igual — service accounts sin Workspace tienen 0 GB de cuota Drive desde jun 2023. Requiere decisión de Camilo sobre arquitectura (ver ticket, sección "Bloqueo nuevo — P4") |
 
 **Estados posibles:** `propuesto` \| `aprobado` \| `activo` \| `completado` \| `bloqueado` \| `descartado`
 
