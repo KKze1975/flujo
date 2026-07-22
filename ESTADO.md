@@ -5813,3 +5813,6 @@ siguiente candidato válido.
    como alerta real, no como cuestión de tiempo.
 2. Correr `/wark` de nuevo cuando Camilo lo indique — próximo candidato
    natural: `FIX-RESET-COLUMNAS-01` (orden 3, `aprobado`, Tier A).
+
+**Nota operativa:** `dev` local y `origin/dev` sincronizados en `16f07ef`
+(push confirmado tras el cierre de esta sesión).
