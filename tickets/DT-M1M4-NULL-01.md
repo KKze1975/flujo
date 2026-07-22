@@ -16,9 +16,23 @@ escribe `semana: null`) se trata de forma **opuesta** en las dos vistas que lo
 consumen: M1 lo filtra por igualdad exacta (`m.semana === s`), por lo que un
 movimiento con `semana: null` es invisible en cualquier filtro de semana
 específica; M4 (`getMovimientosByMesYSemana`) lo trata de forma inclusiva
-(aparece en todas las semanas simultáneamente) — origen confirmado del bug
-"Uber One aparece en S1, S2, S3, S4 simultáneamente" (Ticket B, 2-3 jul 2026,
-quedó en STOP esperando esta decisión de diseño).
+(aparece en todas las semanas simultáneamente). Esta asimetría está
+**confirmada por auditoría de código** en la sesión "Ticket B — 3 julio
+2026" (`ESTADO.md` línea ~4850).
+
+**Precisión importante, verificada 22 jul 2026 al migrar este ticket:** el
+incidente original que motivó la investigación ("Uber One aparece en S1,
+S2, S3, S4 simultáneamente", sesión 2 jul 2026) **no fue explicado por esta
+hipótesis** — en ese caso puntual Uber One tenía `semana=S1`, no `null`
+(hipótesis HB-1 descartada explícitamente con datos reales, `ESTADO.md`
+línea ~4759). La causa real de aquel incidente resultó ser otra (conceptos
+duplicados en H1, hallazgo de una sesión posterior, ya sin deuda técnica
+abierta). La asimetría M1/M4 es un riesgo estructural real y confirmado por
+código — capaz de producir el mismo síntoma visible bajo el escenario que sí
+describe (concepto trasladado con `semana: null` real vía
+`mover_mes_siguiente`) — pero no se debe cerrar este ticket asumiendo que
+"la causa" del incidente de Uber One ya está probada; son dos hallazgos
+relacionados pero distintos.
 
 **Este es tier B**: requiere decisión de diseño antes de escribir código —
 no es un fix mecánico. Opciones ya identificadas en la sesión de diagnóstico
@@ -49,9 +63,12 @@ no es un fix mecánico. Opciones ya identificadas en la sesión de diagnóstico
 - [ ] `tsc --noEmit` limpio.
 - [ ] M1 y M4 tratan `semana: null` de forma consistente entre sí, según la
       opción aprobada.
-- [ ] Caso de prueba: reproducir el escenario original (Uber One con
-      `semana: null` en un mes trasladado) y confirmar que ya no aparece en
-      las 4 semanas simultáneamente.
+- [ ] Caso de prueba: crear un concepto de prueba en dev, trasladarlo vía
+      `mover_mes_siguiente` (queda con `semana: null` real), y confirmar que
+      ya no aparece en las 4 semanas simultáneamente en M4 tras el fix —
+      no es una reproducción del incidente histórico de Uber One (causa
+      distinta, ya resuelta), sino del escenario estructural que sí describe
+      esta asimetría.
 - [ ] Verificado contra Sheet dev, cero llamadas a producción.
 
 ## Contexto / diagnóstico previo

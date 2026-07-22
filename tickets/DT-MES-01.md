@@ -10,12 +10,15 @@ dependencias: ninguna
 
 ## Goal completo
 
-`POST /api/h3b/...` declara `mes?: string` como campo opcional en el body
-pero nunca lo lee — llama `mesActual()` directamente sin importar qué mes
-esté activo en la UI del cliente. Si el usuario está viendo un mes futuro
-activado manualmente (como ocurrió con julio 2026), cualquier gasto libre
-registrado se escribe en H3B con el mes del servidor, no el mes de la UI —
-dato corrupto silencioso, sin error visible.
+`POST /api/registro/sin-concepto` (`route.ts:82`, verificado contra código
+real 22 jul 2026 — el ticket original de diagnóstico lo referenciaba como
+"`/api/h3b/...`", path que no existe en el código) declara `mes?: string`
+como campo opcional en el body (`type Body`, línea 52) pero nunca lo lee —
+llama `mesActual()` directamente sin importar qué mes esté activo en la UI
+del cliente. Si el usuario está viendo un mes futuro activado manualmente
+(como ocurrió con julio 2026), cualquier gasto libre registrado se escribe
+en H3B con el mes del servidor, no el mes de la UI — dato corrupto
+silencioso, sin error visible.
 
 Fix de una línea, ya especificado y verificado como seguro en la sesión de
 diagnóstico original:
@@ -32,7 +35,7 @@ const mes = body.mes ?? mesActual()
 - Consolidar `mesActual()`/`semanaActual()` duplicados en otros archivos —
   eso ya se resolvió en `DT-FECHA-01` (`lib/utils/fecha.ts`, PR #21,
   mergeado). Este ticket solo corrige el punto donde `body.mes` se ignora.
-- Ningún otro endpoint — alcance limitado a `POST /api/h3b/...`.
+- Ningún otro endpoint — alcance limitado a `POST /api/registro/sin-concepto`.
 
 ## Definition of Done
 
