@@ -1,7 +1,7 @@
 ---
 ticket_id: FIX-CREARMOVIMIENTOSMES-01
 orden: 2
-estado: aprobado
+estado: activo
 tier: A
 dependencias: ninguna
 ---
