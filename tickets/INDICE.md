@@ -2,7 +2,8 @@
 
 | orden | ticket_id | estado | tier | dependencias | commit | notas |
 |---|---|---|---|---|---|---|
-| 1 | BACKUP-NOCTURNO-01 | bloqueado | A | ninguna | | Rediseñado sin Drive API (22 jul 2026), pero `spreadsheets.create` falla igual — service accounts sin Workspace tienen 0 GB de cuota Drive desde jun 2023. Requiere decisión de Camilo sobre arquitectura (ver ticket, sección "Bloqueo nuevo — P4") |
+| 1 | BACKUP-NOCTURNO-01 | pendiente_confirmacion_humana | A | ninguna | `0ec9684` | Arquitectura de contenedor (tercer intento) verificada por lectura directa, DoD del loop cumplido. PR #30 mergeado a `main` 2026-07-22 (`bb3b64b`). Falta confirmar que el cron corrió en producción — rutina de verificación programada para 2026-07-23 04:15 Bogotá. |
+| 2 | FIX-CREARMOVIMIENTOSMES-01 | aprobado | A | ninguna | | Bug de pérdida de filas (`values.append` sin `INSERT_ROWS`) confirmado en dev, nunca construido pese a aprobación previa (verificado 9 jul 2026). Migrado de la narrativa de `ESTADO.md` a ticket formal 22 jul 2026. |
 
 **Estados posibles:** `propuesto` \| `aprobado` \| `activo` \| `completado` \| `bloqueado` \| `descartado`
 
