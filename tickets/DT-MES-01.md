@@ -1,7 +1,7 @@
 ---
 ticket_id: DT-MES-01
 orden: 6
-estado: activo
+estado: completado
 tier: A
 dependencias: ninguna
 ---
@@ -39,15 +39,15 @@ const mes = body.mes ?? mesActual()
 
 ## Definition of Done
 
-- [ ] `tsc --noEmit` limpio.
-- [ ] `body.mes` se usa cuando viene presente; `mesActual()` (de
+- [x] `tsc --noEmit` limpio.
+- [x] `body.mes` se usa cuando viene presente; `mesActual()` (de
       `lib/utils/fecha.ts`) solo como fallback.
-- [ ] Prueba en dev: simular un POST con `body.mes` distinto al mes real del
+- [x] Prueba en dev: simular un POST con `body.mes` distinto al mes real del
       servidor, verificar por lectura directa del Sheet dev que el consumo
       se escribió con el mes del body, no el del servidor.
-- [ ] Prueba complementaria: POST sin `body.mes`, verificar que sigue usando
+- [x] Prueba complementaria: POST sin `body.mes`, verificar que sigue usando
       `mesActual()` correctamente (sin regresión).
-- [ ] Cero llamadas contra producción.
+- [x] Cero llamadas contra producción.
 
 ## Contexto / diagnóstico previo
 
@@ -58,9 +58,31 @@ const mes = body.mes ?? mesActual()
 
 ## Commit de cierre
 
-(vacío hasta completar)
+`DT-MES-01-cierre: DoD verificado` (ver historial de `dev`).
 
 ## Notas de ejecución
 
-(vacío — lo llena Claude Code al cerrar: decisiones tomadas, deuda técnica
-encontrada, criterios de parada activados)
+Fix de una línea confirmado contra código real antes de tocar nada
+(`app/api/registro/sin-concepto/route.ts:82`, no el path incorrecto
+`/api/h3b/...` que tenía el ticket original — ya corregido en `PR #31`):
+
+```ts
+// Antes
+const mes = mesActual();
+// Después
+const mes = body.mes ?? mesActual();
+```
+
+`tsc --noEmit` limpio. Probado contra el dev server real (`localhost:3000`,
+proceso preexistente PID 9576, no levantado por esta sesión):
+- `POST /api/registro/sin-concepto` con `{"mes":"2027-08", ...}` → leído de
+  vuelta en H3 dev: fila con `mes=2027-08` (correcto, usó `body.mes`).
+- `POST /api/registro/sin-concepto` sin `mes` en el body → leído de vuelta:
+  fila con `mes=2026-07` (`mesActual()` real del servidor al momento de la
+  prueba — sin regresión).
+- Ambas filas de prueba (`TEST_DT-MES-01_con_mes`,
+  `TEST_DT-MES-01_sin_mes`) eliminadas después vía `deleteDimension`
+  (no solo `clear`), verificado con una segunda lectura que ya no existen.
+
+Cero llamadas contra producción — `GOOGLE_SHEET_ID` verificado apuntando a
+dev antes de empezar.

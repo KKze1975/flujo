@@ -7,7 +7,7 @@
 | 3 | FIX-RESET-COLUMNAS-01 | completado | A | ninguna | `FIX-RESET-COLUMNAS-01-cierre` | Bugs reales confirmados y corregidos: H3 (faltaba col. `imprevisto`) y H5 (faltaban `destino_remanente`/`remanente_ejecutado`) en `reset-mes/route.ts` y varios scripts. Probado en dev con marcadores cruzados — corrupción reproducida sin el fix, ausente con el fix. |
 | 4 | DT-CIERRE-01 | propuesto | A | ninguna | | Reversión atómica de cierre de semana (H5+H2). Origen: incidente 24 jun 2026. |
 | 5 | DT-M1M4-NULL-01 | diagnostico_listo | B | ninguna | `DT-M1M4-NULL-01-diagnostico` | Causa raíz confirmada por código (M1 excluye null, M4 lo incluye en toda semana no ejecutada; mover_mes_siguiente siempre escribe null). 3 opciones (B1/B2/B3) documentadas con archivos exactos — pendiente que Camilo elija una. |
-| 6 | DT-MES-01 | aprobado | A | ninguna | | Endpoint H3B ignora body.mes — fix de una línea ya especificado. |
+| 6 | DT-MES-01 | completado | A | ninguna | `DT-MES-01-cierre` | Endpoint H3B ignoraba body.mes — fix de una línea aplicado y verificado en dev con 2 pruebas reales (con/sin body.mes), filas de prueba eliminadas después. |
 | 7 | DT-SOBRE-TECHO-01 | propuesto | B | ninguna | | sobre_techo no persiste en H2 — requiere confirmar alcance antes de fix. |
 | 8 | BUG-LABEL-MESM1-01 | propuesto | A | ninguna | | Sin diagnóstico de causa raíz confirmado — requiere reproducción antes de construir. |
 | 9 | SEC-AUTH-ADMIN-RESET-01 | propuesto | B | ninguna | | /api/admin/reset-mes sin autenticación. Hallazgo AUDIT-FABLE-01. |
