@@ -6,7 +6,7 @@
 | 2 | FIX-CREARMOVIMIENTOSMES-01 | completado | A | ninguna | `FIX-CREARMOVIMIENTOSMES-01-cierre` | Migrado a `values.get`+`values.update` determinístico. DoD verificado en dev vía 2 invocaciones reales consecutivas de `iniciar` (262→331→399 filas), cero sobrescritura, restaurado a 262. |
 | 3 | FIX-RESET-COLUMNAS-01 | completado | A | ninguna | `FIX-RESET-COLUMNAS-01-cierre` | Bugs reales confirmados y corregidos: H3 (faltaba col. `imprevisto`) y H5 (faltaban `destino_remanente`/`remanente_ejecutado`) en `reset-mes/route.ts` y varios scripts. Probado en dev con marcadores cruzados — corrupción reproducida sin el fix, ausente con el fix. |
 | 4 | DT-CIERRE-01 | propuesto | A | ninguna | | Reversión atómica de cierre de semana (H5+H2). Origen: incidente 24 jun 2026. |
-| 5 | DT-M1M4-NULL-01 | propuesto | B | ninguna | | semana=null tratado opuesto en M1 vs M4. Requiere decisión de diseño (B1/B2/B3) antes de construir. |
+| 5 | DT-M1M4-NULL-01 | diagnostico_listo | B | ninguna | `DT-M1M4-NULL-01-diagnostico` | Causa raíz confirmada por código (M1 excluye null, M4 lo incluye en toda semana no ejecutada; mover_mes_siguiente siempre escribe null). 3 opciones (B1/B2/B3) documentadas con archivos exactos — pendiente que Camilo elija una. |
 | 6 | DT-MES-01 | aprobado | A | ninguna | | Endpoint H3B ignora body.mes — fix de una línea ya especificado. |
 | 7 | DT-SOBRE-TECHO-01 | propuesto | B | ninguna | | sobre_techo no persiste en H2 — requiere confirmar alcance antes de fix. |
 | 8 | BUG-LABEL-MESM1-01 | propuesto | A | ninguna | | Sin diagnóstico de causa raíz confirmado — requiere reproducción antes de construir. |
