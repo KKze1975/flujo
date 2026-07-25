@@ -1,7 +1,7 @@
 ---
 ticket_id: DT-MES-01
 orden: 6
-estado: aprobado
+estado: activo
 tier: A
 dependencias: ninguna
 ---
