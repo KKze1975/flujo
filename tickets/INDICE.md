@@ -4,7 +4,7 @@
 |---|---|---|---|---|---|---|
 | 1 | BACKUP-NOCTURNO-01 | pendiente_confirmacion_humana | A | ninguna | `0ec9684` | Arquitectura de contenedor (tercer intento) verificada por lectura directa, DoD del loop cumplido. PR #30 mergeado a `main` 2026-07-22 (`bb3b64b`). Falta confirmar que el cron corrió en producción — rutina de verificación programada para 2026-07-23 04:15 Bogotá. |
 | 2 | FIX-CREARMOVIMIENTOSMES-01 | completado | A | ninguna | `FIX-CREARMOVIMIENTOSMES-01-cierre` | Migrado a `values.get`+`values.update` determinístico. DoD verificado en dev vía 2 invocaciones reales consecutivas de `iniciar` (262→331→399 filas), cero sobrescritura, restaurado a 262. |
-| 3 | FIX-RESET-COLUMNAS-01 | aprobado | A | ninguna | | Rangos de reset desalineados tras T39/T40 y DT-HEADER-H2-01. Migrado de narrativa ESTADO.md 22 jul 2026. |
+| 3 | FIX-RESET-COLUMNAS-01 | completado | A | ninguna | `FIX-RESET-COLUMNAS-01-cierre` | Bugs reales confirmados y corregidos: H3 (faltaba col. `imprevisto`) y H5 (faltaban `destino_remanente`/`remanente_ejecutado`) en `reset-mes/route.ts` y varios scripts. Probado en dev con marcadores cruzados — corrupción reproducida sin el fix, ausente con el fix. |
 | 4 | DT-CIERRE-01 | propuesto | A | ninguna | | Reversión atómica de cierre de semana (H5+H2). Origen: incidente 24 jun 2026. |
 | 5 | DT-M1M4-NULL-01 | propuesto | B | ninguna | | semana=null tratado opuesto en M1 vs M4. Requiere decisión de diseño (B1/B2/B3) antes de construir. |
 | 6 | DT-MES-01 | aprobado | A | ninguna | | Endpoint H3B ignora body.mes — fix de una línea ya especificado. |

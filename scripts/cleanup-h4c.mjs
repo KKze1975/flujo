@@ -24,7 +24,7 @@ const sheets = google.sheets({ version: "v4", auth });
 const spreadsheetId = env.GOOGLE_SHEET_ID;
 
 async function main() {
-  const res = await sheets.spreadsheets.values.get({ spreadsheetId, range: "H4!P:T" });
+  const res = await sheets.spreadsheets.values.get({ spreadsheetId, range: "H4!P:V" });
   const rows = (res.data.values ?? []);
   if (rows.length < 2) { console.log("H4C vacío — nada que limpiar."); return; }
 
@@ -58,7 +58,7 @@ async function main() {
   }
 
   // Limpiar datos y reescribir solo las filas a conservar
-  await sheets.spreadsheets.values.clear({ spreadsheetId, range: "H4!P2:T10000" });
+  await sheets.spreadsheets.values.clear({ spreadsheetId, range: "H4!P2:V10000" });
   if (kept.length > 0) {
     await sheets.spreadsheets.values.update({
       spreadsheetId,

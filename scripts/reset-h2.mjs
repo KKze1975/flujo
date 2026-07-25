@@ -27,7 +27,7 @@ async function main() {
   console.log("Limpiando filas de datos de H2 (headers en fila 1 intactos)...");
   await sheets.spreadsheets.values.clear({
     spreadsheetId,
-    range: "H2!A2:Z1000",
+    range: "H2!A2:Y1000",
   });
   console.log("✓ H2 vacía — listo para reinicializar.");
 }
