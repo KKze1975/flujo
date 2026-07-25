@@ -1,7 +1,7 @@
 ---
 ticket_id: FIX-RESET-COLUMNAS-01
 orden: 3
-estado: aprobado
+estado: activo
 tier: A
 dependencias: ninguna
 ---
