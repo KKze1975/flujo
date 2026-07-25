@@ -13,6 +13,10 @@
 | 9 | SEC-AUTH-ADMIN-RESET-01 | propuesto | B | ninguna | | /api/admin/reset-mes sin autenticación. Hallazgo AUDIT-FABLE-01. |
 | 10 | INVARIANTS-GAP-01 | aprobado | A | ninguna | | Cerrar numeración I-13/I-14/I-16 en INVARIANTS.md real. Puramente documental. |
 | 11 | TICKET-B-GUARDIA-01 | activo | A | ninguna | | P1/P2 ya commiteados (ee0b9e1, 291e8bd). Falta DoD bullet 2 + PR. Prerrequisito de facto: FIX-CREARMOVIMIENTOSMES-01. |
+| 12 | UBER-01 | propuesto | A | ninguna | | Verificación de supuestos de parseo ([Business]/[Personal], origen/destino) antes de diseñar UBER-02 y construir UBER-04. |
+| 13 | UBER-02 | bloqueado | B | UBER-01 | | Decisión de esquema H3B para monto "trabajo" — requiere aprobación explícita de Camilo antes de construir. |
+| 14 | UBER-03 | propuesto | A | ninguna | | Migración de Fondo transporte (TRANSPORTE_1748100037) a pago_fraccionado — construible en paralelo a UBER-01. |
+| 15 | UBER-04 | bloqueado | A | UBER-01, UBER-02, UBER-03 | | Ingesta/parser Gmail de correos Uber → H3B, clasificación [Personal]/[Business]. Zoho Expense fuera de alcance. |
 
 **Estados posibles:** `propuesto` \| `aprobado` \| `activo` \| `completado` \| `bloqueado` \| `descartado`
 
