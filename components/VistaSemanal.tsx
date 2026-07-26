@@ -1228,7 +1228,10 @@ export default function VistaSemanal({
     : [...bolsillosEjecutados, ...ejecutados];
   const consumosPendientes = consumos.filter(c => !c.clasificado);
   const totalFaltaPendientes = pendientes.reduce((s, m) => s + m.montoPresupuestado, 0);
+  // FIX-FALTAPAGAR-MENSUAL-01: un bolsillo mensual vive en las 4 semanas (FIX-BOLSILLO-MENSUAL-01),
+  // pero solo debe contar una vez hacia "falta por pagar" — en su semana ancla, no en las otras 3.
   const totalFaltaBolsillos  = bolsillosPendientes.reduce((s, b) => {
+    if (idsBolsillosMensuales.has(b.conceptoId) && b.semana !== semanaVisible) return s;
     const gastado = gastadoBolsillo(b.conceptoId);
     return s + Math.max(0, b.montoPresupuestado - gastado);
   }, 0);
@@ -1454,10 +1457,12 @@ export default function VistaSemanal({
                       {(() => {
                         const items = [
                           ...pendientes.map(m => ({ key: m.id, nombre: m.nombreSnapshot, monto: m.montoPresupuestado })),
-                          ...bolsillosPendientes.map(b => {
-                            const gastado = gastadoBolsillo(b.conceptoId);
-                            return { key: b.id, nombre: b.nombreSnapshot, monto: Math.max(0, b.montoPresupuestado - gastado) };
-                          }),
+                          ...bolsillosPendientes
+                            .filter(b => !idsBolsillosMensuales.has(b.conceptoId) || b.semana === semanaVisible)
+                            .map(b => {
+                              const gastado = gastadoBolsillo(b.conceptoId);
+                              return { key: b.id, nombre: b.nombreSnapshot, monto: Math.max(0, b.montoPresupuestado - gastado) };
+                            }),
                         ].filter(i => i.monto > 0).sort((a, b) => b.monto - a.monto);
                         return items.length === 0
                           ? <p style={{ padding: "5px 14px", fontSize: 13, color: "var(--muted)" }}>¡Todo pagado esta semana!</p>
