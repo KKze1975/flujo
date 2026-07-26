@@ -1,7 +1,7 @@
 ---
 ticket_id: FIX-BOLSILLO-MENSUAL-01
 orden: 16
-estado: diagnostico_listo
+estado: aprobado_para_fix
 tier: B
 dependencias: ninguna
 ---
@@ -133,6 +133,17 @@ no trae `frecuencia` hoy, solo `Concepto` (H1) la tiene. 2 opciones:
 **Sin recomendación vinculante** — ambas opciones son razonables. La
 Opción 1 sigue el patrón arquitectónico ya establecido en H2 (snapshots);
 la Opción 2 evita tocar el esquema del Sheet.
+
+**Decisión de Camilo (sesión de chat): Opción 2.** Razón, con evidencia
+propia de este proyecto: cada vez que se ha migrado el esquema de H2 en
+este proyecto, algo se rompió después sin ser notado de inmediato —
+`DT-HEADER-H2-01` (header desplazado de fila) y `FIX-RESET-COLUMNAS-01`
+(las funciones de reset nunca se actualizaron tras `T39`/la migración que
+agregó `imprevisto`, corrompiendo datos en silencio durante meses). La
+Opción 1 repite ese mismo patrón de riesgo (rangos de lectura que hay que
+recordar actualizar en cada punto de uso). La Opción 2 es aditiva —no
+reinterpreta ningún rango existente— y no puede romper silenciosamente
+algo que ya funciona.
 
 ### Caso de falla a inyectar en la prueba (construcción, no esta fase)
 
