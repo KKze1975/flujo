@@ -1,7 +1,7 @@
 ---
 ticket_id: FIX-BOLSILLO-MENSUAL-01
 orden: 16
-estado: completado_parcial
+estado: completado
 tier: B
 dependencias: ninguna
 ---
@@ -39,20 +39,21 @@ sección "Diagnóstico" abajo.
       Entretenimiento, Imprevistos) **no cambian de comportamiento** —
       prueba de regresión explícita. **Verificado**: Entretenimiento sí
       quedó `ejecutado` normalmente al cerrar S1, sin cambios.
-- [ ] El "gastado" mostrado para un bolsillo mensual en `VistaSemanal` es
-      la suma de **todo el mes** — código implementado (`gastadoBolsillo`/
-      `consumosDeBolsillo` en `VistaSemanal.tsx`), **no verificado
-      visualmente en esta sesión**: el navegador de Claude en Chrome estaba
-      apuntando al Chromebook de Camilo, no al Workspace donde corre el dev
-      server — la UI nunca cargó. El payload RSC confirmado por `curl` sí
-      trae los datos correctos (`conceptosCatalogo`, `movimientosMesInit`,
-      `consumosMesInit`) llegando al componente.
-- [ ] El bolsillo mensual es visible/seleccionable en las 4 semanas —
-      mismo motivo, no verificado visualmente en esta sesión.
-- [ ] Prueba en dev: registrar 2 consumos de prueba contra el mismo
-      bolsillo mensual en 2 semanas distintas — **parcialmente hecho**: se
-      verificó el efecto en `cerrar-semana` (arriba), falta la verificación
-      visual del acumulado en pantalla.
+- [x] El "gastado" mostrado para un bolsillo mensual en `VistaSemanal` es
+      la suma de **todo el mes**. **Verificado visualmente contra el
+      preview de Vercel** (`flujo-git-dev-camilo-s-projects10.vercel.app`,
+      commit `7494d4a`): Fondo transporte muestra `$80.000 / $350.000`
+      (23%) de forma idéntica en S1, S2, S3 y S4 — la suma exacta de
+      $50.000 (S1) + $30.000 (S2), sin importar la semana visible.
+- [x] El bolsillo mensual es visible/seleccionable en las 4 semanas.
+      **Verificado**: aparece en la lista "Pendientes" en las 4 vistas
+      (S1-S4), incluyendo S3 y S4 donde no hay ningún consumo directo de
+      esa semana.
+- [x] Prueba en dev: registrar 2 consumos de prueba contra el mismo
+      bolsillo mensual en 2 semanas distintas, verificar que el "gastado"
+      mostrado sea la suma de ambos en cualquier semana visible, y que
+      cerrar una semana no lo marque ejecutado ni congele el monto.
+      **Verificado completo** — ver Notas de ejecución.
 - [x] Cero llamadas contra producción durante la construcción.
 
 ## Diagnóstico (Tier B — pendiente de aprobación del plan)
@@ -169,8 +170,8 @@ algo que ya funciona.
 
 ## Commit de cierre
 
-`FIX-BOLSILLO-MENSUAL-01-parcial: Parte A verificada, Parte B pendiente
-de verificación visual` (ver historial de `dev`).
+`FIX-BOLSILLO-MENSUAL-01-cierre: DoD verificado (dev + preview Vercel)`
+(ver historial de `dev`).
 
 ## Notas de ejecución
 
@@ -227,19 +228,35 @@ perdiendo una) — corregido escribiendo ambas filas en una sola llamada
 `append` con array de 2 filas. Documentado por si se reutiliza el patrón
 de seed en pruebas futuras de otros tickets.
 
-**No verificado en esta sesión (Parte B, UI):** el navegador de Claude en
-Chrome estaba conectado al Chromebook de Camilo, no al Workspace donde
-corre el dev server — la página nunca cargó para inspección visual
-(`get_page_text`/`screenshot` fallaban con "Frame with ID 0 is showing
-error page" repetidamente, incluso tras recrear el tab varias veces). Se
-confirmó indirectamente que el servidor sí renderiza correctamente:
-`curl` contra la misma URL devolvió 200 con el payload RSC completo,
-incluyendo `conceptosCatalogo` con los conceptos reales de H1 — prueba de
-que los nuevos props llegan al componente. Camilo verificará visualmente
-contra el preview de Vercel tras el push a `dev`.
+**Verificado visualmente contra el preview de Vercel (Parte B, UI):** el
+navegador de Claude en Chrome estaba inicialmente conectado al Chromebook
+de Camilo, no al Workspace — Camilo lo corrigió activando Claude en
+Chrome en el Workspace correcto durante la sesión. Con eso resuelto, se
+hizo push a `origin/dev` (commit `7494d4a`) y se probó directamente
+contra el deployment de preview real
+(`flujo-git-dev-camilo-s-projects10.vercel.app`, deployment
+`dpl_8zdi3st7aiYhuTB2xNNMhGBdKxT6`, `state: READY`), reseedando el mismo
+mes de prueba `2027-10` sobre el mismo Sheet dev:
 
-Datos de prueba (`2027-10` en H2/H3) eliminados después vía
-`deleteDimension`, dev Sheet restaurado a baseline — verificado con
-lectura posterior (0 filas de `2027-10` en H2).
+- **S4** (semana real actual, sin ningún consumo directo de Transporte
+  en esa semana): "Fondo transporte" aparece en "Pendientes" con
+  `$80.000 / $350.000` (23%, `$270.000 libre`) — la suma de S1+S2.
+- **S3**: idéntico — `$80.000 / $350.000`, 23%.
+- **S2**: idéntico — `$80.000 / $350.000`, 23% (con el desglose por
+  persona mostrando correctamente los `$30.000` de Camilo específicos de
+  esa semana, dato que sí es semana-scoped por diseño).
+- **S1** (cerrada): ambos bolsillos visibles simultáneamente —
+  "Entretenimiento" (semanal) con `$100.000 / $250.000` (su propio gasto
+  de S1 únicamente, **no acumulado, sin regresión**) y "Fondo transporte"
+  con el mismo `$80.000 / $350.000` de siempre. Entretenimiento **no
+  aparece en absoluto** en las vistas de S2/S3/S4 — confirma que los
+  bolsillos semanales siguen scoped a su propia semana, sin filtrarse a
+  las demás.
+
+Capturas de pantalla y texto de página confirmaron los montos exactos en
+cada semana — no solo inferencia del código. Datos de prueba
+(`2027-10` en H2/H3/H5/H5B, incluyendo un registro de cierre de semana
+generado durante las pruebas) eliminados después vía `deleteDimension`,
+dev Sheet restaurado a baseline.
 
 Cero llamadas contra producción en toda la sesión de construcción.
