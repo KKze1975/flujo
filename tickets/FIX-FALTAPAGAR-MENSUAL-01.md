@@ -1,7 +1,7 @@
 ---
 ticket_id: FIX-FALTAPAGAR-MENSUAL-01
 orden: 18
-estado: activo
+estado: completado
 tier: B
 dependencias: [FIX-BOLSILLO-MENSUAL-01]
 ---
@@ -37,7 +37,7 @@ otros, Entretenimiento, Imprevistos) — sin cambios de comportamiento.
 - [x] Prueba de regresión de bolsillos semanales: sin cambios.
 - [x] `tsc --noEmit` limpio.
 - [x] `tickets/INDICE.md` regenerado.
-- [ ] PR creado contra `main` — sin mergear.
+- [x] PR creado contra `main` — sin mergear.
 
 ## Contexto / diagnóstico previo
 
@@ -98,7 +98,7 @@ misma decisión de diseño ya aprobada).
 
 ## Commit de cierre
 
-(pendiente — ver historial de `dev`)
+`5db954c` — `FIX-FALTAPAGAR-MENSUAL-01: falta por pagar ya no duplica bolsillos mensuales por semana`
 
 ## Notas de ejecución
 
