@@ -1,7 +1,7 @@
 ---
 ticket_id: UBER-01
 orden: 12
-estado: propuesto
+estado: activo
 tier: A
 dependencias: ninguna
 ---
