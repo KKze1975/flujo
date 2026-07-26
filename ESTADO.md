@@ -5816,3 +5816,211 @@ siguiente candidato válido.
 
 **Nota operativa:** `dev` local y `origin/dev` sincronizados en `16f07ef`
 (push confirmado tras el cierre de esta sesión).
+
+---
+
+## Sesión — 8 tickets vía `/wark`, luego `SEMANA5-01` en construcción (activo, no cerrado) · 25-26 jul 2026
+
+**Tipo de sesión:** CONSTRUCCIÓN (loop `/wark` continuo, 25 jul 16:31 a
+22:58, seguido de `SEMANA5-01` por prompt directo de Camilo la noche del
+25/madrugada del 26). La sesión se rompió una vez entre medio — esta
+entrada reconstruye el delta completo desde el ancla anterior (`16f07ef`,
+22 jul) leyendo commits, `tickets/*.md` e `INDICE.md`, no memoria de chat.
+
+### Tickets cerrados (`/wark`, Tier A y B)
+
+- **`FIX-RESET-COLUMNAS-01`** (`completado`) — auditoría de rangos
+  hardcodeados en funciones de reset (`resetH2`, 5 scripts) contra el
+  ancho real de columnas. 3 bugs reales de corrupción silenciosa
+  encontrados y corregidos: H3B le faltaba `imprevisto` en el rango de
+  borrado, H5A le faltaban `destino_remanente`/`remanente_ejecutado`,
+  mismo patrón en `cleanup-h4c.mjs`/`clear-h2.mjs`. Reproducido el bug
+  exacto en dev antes y después del fix. `scripts/reset-julio.mjs`
+  auditado sin tocar (hardcodea `PROD_SHEET_ID`, fuera de alcance).
+- **`DT-MES-01`** (`completado`) — fix de una línea (`body.mes ??
+  mesActual()`) en `POST /api/registro/sin-concepto`, verificado con 2
+  pruebas reales en dev.
+- **`UBER-01`** (`completado`) — verificación pura en Gmail real: el
+  supuesto `[Business]` está **refutado** (0 de ~201 correos desde
+  2020, todo `[Personal]`). Origen/destino confirmado en Uber Black y
+  Flash Moto. El tipo de servicio no está en el asunto, solo en el
+  cuerpo.
+- **`UBER-02`** (`descartado`) — decisión de Camilo tras ver la
+  evidencia de `UBER-01`: no separar viajes de trabajo/personal dentro
+  de Flujo, lo hace manualmente fuera de la app. Diagnóstico de 3
+  opciones de esquema H3B queda documentado como referencia.
+- **`UBER-03`** (`completado_parcial`) — `TRANSPORTE_1748100037`
+  migrado a `tipo: pago_fraccionado`/`semana_default: S1` en H1 **dev
+  únicamente** (prod diferido, instrucción explícita). Verificación
+  visual no se pudo hacer en su momento — dev server preexistente
+  (PID 9576) estaba crasheado (Turbopack, no relacionado).
+- **`FIX-BOLSILLO-MENSUAL-01`** (`completado`) — el más grande del
+  loop. `cerrar-semana` ya no cierra bolsillos `pago_fraccionado`
+  mensuales prematuramente; `VistaSemanal` acumula su gasto en las 4
+  semanas. Opción 2 (lookup runtime de `conceptos`, no migración de
+  H2) elegida por Camilo — razón: cada migración de esquema H2 en este
+  proyecto rompió algo silenciosamente después (`DT-HEADER-H2-01`,
+  `FIX-RESET-COLUMNAS-01` el mismo día). Verificado en dev y
+  visualmente contra preview de Vercel, con prueba de regresión sobre
+  un bolsillo semanal.
+
+### Diagnóstico sin construir
+
+- **`DT-M1M4-NULL-01`** (`diagnostico_listo`) — causa raíz confirmada
+  por código: M1 excluye `semana: null` de cualquier filtro de semana
+  específica, M4 lo incluye en todas mientras esté pendiente. 3
+  opciones (B1/B2/B3) documentadas con archivos/líneas exactos. HALT —
+  esperando que Camilo elija una.
+
+### `SEMANA5-01` — en construcción, `estado: activo` (no cerrado)
+
+Prompt completo de Camilo, "aprobado para construir" ya declarado.
+Especifica soporte de una quinta semana (S5) en meses de 29-31 días:
+Julio→3 días, meses de 30 días→2 días, febrero no bisiesto→sin S5.
+
+**Excepción de WIP limit (I-09) autorizada explícitamente por Camilo**
+antes de abrir: `TICKET-B-GUARDIA-01` seguía `activo` con DoD sin
+verificar (bullet 2 pendiente, PR sin crear) — se dejó abierto en
+paralelo, sin tocar, por decisión suya.
+
+**Discrepancia de modelo encontrada y resuelta antes de construir:** la
+especificación original describía el cálculo de semanas como partición
+día1-7/8-14/etc del propio mes — pero `lib/utils/fecha.ts`
+(`mesActual()`/`semanaActual()`) implementa un ciclo distinto, anclado
+el día 29 del mes *anterior*, documentado como intencional en
+"Iniciativa E" (27 jun 2026). Verificado con contraejemplo: bajo ese
+ciclo, el 29 de julio de 2026 ya pertenece al mes operativo `"2026-08"`,
+no a `"2026-07"` — contradice el DoD original tal cual estaba escrito.
+Camilo, consultado directamente: no tocar `mesActual()`/`semanaActual()`
+("no vamos a desfasar todo por esto") — esas funciones siguen sirviendo
+solo de *default* de navegación en 4-5 puntos de entrada (home, lista
+de meses, default de `/mes/[mes]/semana`, fallback de
+`registro/sin-concepto`, `RegistroRapido.tsx`). La regla de S5 para
+este ticket queda **independiente**: S5 = días 29 en adelante del mismo
+mes calendario que nombra el string `mes`, sin relación con el ciclo de
+`mesActual()`.
+
+**Construido (commit `SEMANA5-01-P1`, `632a966`):**
+- `lib/data/types.ts`: `Semana` extendido con `"S5"` (no `SemanaDefault`
+  — S5 es condicional al mes, no una asignación fija de H1).
+- `lib/utils/fecha.ts`: nuevas `diasEnMes`/`mesTieneSemana5`/
+  `duracionSemana5`/`semanasDeMes`/`semanaSiguienteDe` como fuente única
+  de la regla.
+- `iniciar/route.ts`: genera fila S5 (monto completo, igual que S1-S4)
+  para conceptos `frecuencia: semanal` cuando el mes tiene 29+ días.
+- `cerrar-semana/route.ts` + `ModalCerrarSemana.tsx`: encadenan S4→S5
+  dinámicamente (antes `SEMANA_SIGUIENTE` era un `Record` estático
+  duplicado en ambos archivos).
+- `semana/[semana]/route.ts`, `consumos/[semana]/route.ts`,
+  `movimientos/[id]/route.ts`, `ingresos/angie/[mes]/route.ts`: validan
+  S5 contra `semanasDeMes(mes)`.
+- UI (`MesM1`/`Desktop`/`Mobile`, `VistaSemanal`, `VistaPlanificacion`,
+  `ConceptoBoard`, `ModalAporteAngie`, `ModalRegistroIngresoAngie`): 4
+  copias duplicadas de "semana activa por día del mes" y las etiquetas
+  de fecha por semana, extendidas a S5. `ConceptoBoard` requirió
+  enhebrar un prop `semanas` 4 niveles de componentes para los chips de
+  reasignar semana.
+- `page.tsx` (M1 server): `gastoH3PorSemana`/`gastoH3AngiePorSemana`
+  agregan S5 real desde H3B (antes solo S1-S4, dato faltante
+  silencioso).
+- Fuera de alcance, documentado: `registro/interpretar/route.ts` (AI
+  parser) y `PropuestaCard.tsx` siguen en S1-S4 — no están en el
+  alcance del ticket, el usuario siempre confirma/edita antes de
+  guardar.
+
+**Verificado contra Sheet dev real (no solo código), 3 meses sintéticos:**
+- `2027-08` (agosto, 31 días): `iniciar` generó Entretenimiento con 5
+  filas S1-S5, $250.000 cada una (monto completo, sin prorrateo).
+- `2027-09` (30 días): igual, 5 filas.
+- `2027-02` (no bisiesto, 28 días): **4 filas únicamente** — `GET
+  /api/mes/2027-02/semana/S5` responde 400 correctamente.
+- Cierre `2027-08`: cerrar S4 generó plan H5B para `semana:"S5"`
+  (encadenamiento correcto); cerrar S5 generó cierre H5 con la misma
+  estructura que S1-S4 y `plan: null` (sin semana siguiente). Sin
+  regresión — S1-S3 de Entretenimiento siguieron `pendiente`.
+- `tsc --noEmit` limpio en todo momento. Cero llamadas a producción.
+
+**Pendiente al cierre de esta entrada:**
+1. Verificación visual de Camilo contra el preview de Vercel
+   (`flujo-git-dev-camilo-s-projects10.vercel.app`, deployment
+   `dpl_8JCeX4z453hwyxh5yC7Q9TL3jMjV`, `READY`, commit `632a966`) — la
+   sesión de Claude en Chrome estaba conectada al Chromebook, no al
+   Workspace (mismo problema que ya ocurrió en `FIX-BOLSILLO-MENSUAL-01`),
+   así que la verificación visual quedó delegada a Camilo directamente
+   en vez de corregirse en la sesión.
+2. Limpieza de los 3 meses sintéticos (`2027-08`, `2027-09`, `2027-02`)
+   del Sheet dev — **no borrados todavía**, a propósito, para que
+   Camilo los pueda inspeccionar primero.
+3. DoD restante: `SESSION_LOG.md` (pedido explícito del prompt de
+   Camilo, aunque el resto del backlog ya no usa ese archivo — ver
+   deuda técnica abajo), PR contra `main` sin mergear, cierre formal del
+   ticket (`estado: completado` en `tickets/SEMANA5-01.md` e
+   `INDICE.md`).
+
+### Estado del backlog (`tickets/INDICE.md`) al cierre de esta entrada
+
+| orden | ticket_id | estado |
+|---|---|---|
+| 1 | BACKUP-NOCTURNO-01 | `pendiente_confirmacion_humana` (sin cambios desde la sesión anterior) |
+| 3 | FIX-RESET-COLUMNAS-01 | `completado` |
+| 4 | DT-CIERRE-01 | `propuesto` |
+| 5 | DT-M1M4-NULL-01 | `diagnostico_listo` — esperando que Camilo elija B1/B2/B3 |
+| 6 | DT-MES-01 | `completado` |
+| 7 | DT-SOBRE-TECHO-01 | `propuesto` (Tier B) |
+| 8 | BUG-LABEL-MESM1-01 | `propuesto` |
+| 9 | SEC-AUTH-ADMIN-RESET-01 | `propuesto` (Tier B) |
+| 10 | INVARIANTS-GAP-01 | `aprobado` |
+| 11 | TICKET-B-GUARDIA-01 | `activo` — DoD bullet 2 + PR pendientes, dejado abierto por excepción de WIP explícita de Camilo |
+| 12 | UBER-01 | `completado` |
+| 13 | UBER-02 | `descartado` |
+| 14 | UBER-03 | `completado_parcial` — prod y verificación visual diferidas |
+| 15 | UBER-04 | `bloqueado` — ya no bloqueado en la práctica (`UBER-01`/`UBER-03` resueltos), pero no se construyó esta sesión |
+| 16 | FIX-BOLSILLO-MENSUAL-01 | `completado` |
+| 17 | SEMANA5-01 | `activo` — construcción hecha y verificada por API contra dev, verificación visual y cierre formal pendientes |
+
+### Deuda técnica / hallazgos nuevos
+
+- **Housekeeping arrastrado, sin resolver:** `.claude/settings.local.json`
+  modificado sin commitear; `.tmp.driveupload/`, `.tmp.drivedownload/`,
+  `_local-scratch/`, `audit-adversarial-01/`,
+  `scripts/_tmp-seed-old-tab.mjs` sin trackear desde hace varias
+  sesiones. No tocados — no está claro si son trabajo en curso de
+  Camilo.
+- **`scripts/reset-julio.mjs`** tiene los mismos bugs de rango que se
+  corrigieron en otros scripts durante `FIX-RESET-COLUMNAS-01`, pero
+  hardcodea `PROD_SHEET_ID` — candidato a ticket de higiene/seguridad
+  separado, no abierto.
+- **Desalineación documental en `DT-M1M4-NULL-01.md`:** su referencia a
+  "I-16 (candidato)" no coincide con el I-16 candidato real que existe
+  hoy en `INVARIANTS.md` (que es sobre `batchUpdate` vs
+  `values.append`). No bloqueante, cae dentro del alcance de
+  `INVARIANTS-GAP-01`.
+- **Candidato a invariante nuevo, propuesto, no escrito aún en
+  `INVARIANTS.md`** (sigue la regla de "candidatos antes de método"):
+  toda función que borra/limpia un rango fijo de columnas debe
+  re-verificarse contra el ancho real del esquema en cada migración de
+  H1-H6, no solo al momento de escribirse — verificar por
+  `spreadsheets.get`, no por memoria del rango anterior. Origen:
+  `FIX-RESET-COLUMNAS-01` (corrupción silenciosa real de 3 columnas
+  durante meses, sin detectarse).
+- **`SEMANA5-01` usa `SESSION_LOG.md`** (pedido explícito del prompt de
+  Camilo) mientras que el resto del backlog desde `SCAFFOLD-TICKETS-01`
+  documenta todo en la sección "Notas de ejecución" del propio ticket —
+  dos convenciones activas en paralelo. No es un error, pero vale la
+  pena que Camilo confirme cuál prefiere hacia adelante.
+- **`SEMANA5-01` no toca `registro/interpretar/route.ts`** (parser IA
+  de texto libre) ni `PropuestaCard.tsx` — su tipo `semana` sigue
+  limitado a S1-S4. Aceptado como límite de alcance, no un bug: el
+  usuario siempre confirma/edita la semana antes de guardar.
+
+### Próximo paso
+
+1. Camilo revisa visualmente `SEMANA5-01` en
+   `flujo-git-dev-camilo-s-projects10.vercel.app/mes/2027-08/semana?semana=S5`
+   (y `/mes/2027-08` para la vista M1).
+2. Con su confirmación: limpiar los 3 meses sintéticos del Sheet dev,
+   completar `SESSION_LOG.md`, crear PR contra `main` (sin mergear), y
+   cerrar `SEMANA5-01` (`estado: completado`).
+3. Retomar `TICKET-B-GUARDIA-01` (WIP abierto por excepción) o
+   `DT-M1M4-NULL-01` (esperando elección de opción) según indique
+   Camilo.
