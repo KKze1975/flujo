@@ -33,6 +33,19 @@ por Camilo al momento de registrar, o alguna otra señal dentro del cuerpo
 del correo (no confirmada). Este ticket necesita reformularse, no solo
 desbloquearse, antes de aprobar su fase de diagnóstico.
 
+**Decisión explícita de Camilo (sesión de chat, tras revisar la evidencia
+de `UBER-01`):** clasificación **manual** — Camilo confirma que hace mucho
+que no pide un viaje bajo el perfil "negocio", pero al ver que la búsqueda
+cubrió *todo* el historial de esa cuenta (enero 2026 en adelante revisado
+explícitamente, y 2020-2026 completo) sin un solo `[Business]`, opta por
+volver al plan de clasificación manual en vez de depender del prefijo de
+asunto. **Esto no es todavía la fase de diagnóstico formal de `/goal-b`**
+— es la decisión de rumbo que la habilita. Falta, cuando se apruebe correr
+`/goal-b UBER-02`: definir el mecanismo concreto de "clasificación manual"
+(¿un campo en el modal de registro? ¿un botón en `VistaSemanal`?) y, con
+eso resuelto, la pregunta original del ticket (dónde vive en H3B el monto
+de un viaje "trabajo") sigue siendo la que falta decidir.
+
 ## Definition of Done
 
 **Fase diagnóstico/diseño (tier B — HALT obligatorio antes de aprobar):**
