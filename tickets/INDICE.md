@@ -17,6 +17,7 @@
 | 13 | UBER-02 | descartado | B | UBER-01 | `UBER-02-descartado` | Camilo decide no separar Uber trabajo/familiar dentro de Flujo — lo hace manualmente. Diagnóstico (3 opciones) queda documentado como referencia. Invalida clasificación e indicador de dos colores en UBER-04. |
 | 14 | UBER-03 | completado_parcial | A | ninguna | `UBER-03-parcial` | Sheet dev aplicado y verificado (tipo→pago_fraccionado, semana_default→S1, precedente Mercado mensual/Frida). Prod diferido (instrucción explícita). Verificación visual pendiente — dev server preexistente quedó roto (Turbopack, no relacionado). |
 | 15 | UBER-04 | bloqueado | A | UBER-01, UBER-03 | | Ingesta/parser Gmail de correos Uber → H3B, bolsillo Transporte estándar (sin clasificación trabajo/personal, tras descarte de UBER-02). Zoho Expense fuera de alcance. |
+| 16 | FIX-BOLSILLO-MENSUAL-01 | diagnostico_listo | B | ninguna | `FIX-BOLSILLO-MENSUAL-01-diagnostico` | Bolsillos pago_fraccionado mensuales (Mercado mensual, Frida, Transporte) se cierran prematuramente en cerrar-semana con solo el gasto de la primera semana cerrada. Causa raíz + 2 opciones de implementación documentadas. Pendiente que Camilo elija. |
 
 **Estados posibles:** `propuesto` \| `aprobado` \| `activo` \| `completado` \| `completado_parcial` \| `bloqueado` \| `descartado` \| `diagnostico_listo` (Tier B, fase de diagnóstico cerrada, esperando elección de opción)
 
