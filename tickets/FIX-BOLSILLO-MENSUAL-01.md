@@ -1,7 +1,7 @@
 ---
 ticket_id: FIX-BOLSILLO-MENSUAL-01
 orden: 16
-estado: aprobado_para_fix
+estado: activo
 tier: B
 dependencias: ninguna
 ---
