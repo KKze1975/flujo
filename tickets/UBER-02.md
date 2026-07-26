@@ -1,7 +1,7 @@
 ---
 ticket_id: UBER-02
 orden: 13
-estado: aprobado
+estado: diagnostico_listo
 tier: B
 dependencias: UBER-01
 ---
@@ -60,11 +60,76 @@ de un viaje "trabajo") sigue siendo la que falta decidir.
 Depende de la evidencia recogida en `UBER-01`. Alimenta directamente el
 esquema de escritura que usará `UBER-04`.
 
+## Diagnóstico (Tier B — pendiente de aprobación del plan)
+
+### Hecho clave que cambia el análisis de las 2 opciones originales
+
+Verificado contra código real: **ningún cálculo de totales/balance familiar
+excluye nada hoy** — todo lo que está en H3B se suma sin filtro:
+- `components/m1/VistaPlanificacion.tsx:993` — `totalEjecutadoH3 =
+  consumos.reduce((s, c) => s + c.monto, 0)`, sin filtro de categoría/flag.
+- `components/VistaSemanal.tsx:987-994` — mismo patrón, `totalEjecutado =
+  totalEjecutadoH2 + totalEjecutadoH3`.
+- El flag `imprevisto` existente (`app/api/consumos/[id]/imprevisto`,
+  `VistaSemanal.tsx:143-153`) es puramente informativo/visual (badge
+  naranja) — **no excluye el monto de ningún total**. No es precedente de
+  un mecanismo de exclusión, contra lo que podría asumirse.
+
+Esto significa que **cualquier opción que escriba el monto de un viaje de
+trabajo en H3B con un `bolsilloId` real inflará el balance familiar**, a
+menos que se agregue lógica de exclusión nueva en cada uno de esos cálculos
+(riesgo de "whack-a-mole": fácil olvidar un lugar donde se suma).
+
+### 3 opciones (las 2 originales del ticket + una encontrada al investigar)
+
+- **Opción 1 — Bolsillo especial no-familiar** (concepto ficticio nuevo en
+  H1, ej. "Uber Trabajo"). Reutiliza 100% el flujo de bolsillos existente,
+  cero tablas nuevas. **Pero** requiere modificar todos los cálculos de
+  totales de arriba para excluir ese `id_concepto` específicamente — mismo
+  riesgo de "whack-a-mole" que motivó parte de este diagnóstico.
+
+- **Opción 2 — Campo separado en H3B** (columna nueva booleana, ej.
+  `es_trabajo`, mismo patrón que `imprevisto`). Mismo problema que Opción 1:
+  los cálculos de totales tendrían que empezar a filtrar por este flag en
+  cada lugar. Además, ambigüedad sin resolver: I-03 exige `bolsilloId` =
+  `id_concepto` real de H1 para `clasificado: true` — un consumo de trabajo
+  necesitaría igual un concepto "ancla" en H1, circular con la Opción 1.
+
+- **Opción 3 — Tab completamente separado, fuera de H3B** (no estaba en el
+  ticket original — surge de la investigación). Los registros de viajes de
+  trabajo NUNCA entran a H3B, así que ningún cálculo existente los ve —
+  cero riesgo de tocar código de totales familiares. I-03 no aplica (no es
+  H3B). Encaja con la nota ya existente en `UBER-04` ("reporte a Zoho
+  Expense fuera de alcance — no construir"): sugiere que el registro de
+  trabajo puede ser deliberadamente simple y aislado, no integrado a la UI
+  de bolsillos. Costo: nuevo tab + esquema mínimo, sin UI reutilizable
+  (probablemente alcance con una vista de solo lectura o ninguna).
+
+**Sin recomendación vinculante** — la Opción 3 es la que menos riesgo trae
+a código ya funcionando, pero es la que más se aleja del planteamiento
+original del ticket. Decisión tuya.
+
+### Mecanismo de clasificación manual — hallazgo relevante para UBER-04
+
+La nota de la sesión anterior dejó abierto "¿cómo se clasifica manualmente
+un viaje de trabajo?". Encontré una opción concreta que no requiere UI
+nueva en Flujo: los mensajes de Gmail ya traen `labelIds` (confirmado en
+la búsqueda de `UBER-01`, ej. `["UNREAD","INBOX"]`) — Camilo podría aplicar
+una **etiqueta de Gmail** (ej. "Uber Trabajo") a los correos de viajes de
+trabajo, y el parser de `UBER-04` la leería en vez de un prefijo de asunto.
+Reutiliza la misma arquitectura basada en Gmail que `UBER-04` ya asume, sin
+tocar la UI de Flujo. No implementado ni decidido — solo lo señalo porque
+resuelve directamente la pregunta abierta, y no estaba entre los candidatos
+que había listado antes ("campo en modal" / "botón en VistaSemanal").
+
 ## Commit de cierre
 
-(vacío hasta completar)
+`UBER-02-diagnostico: diagnostico_listo` (ver historial de `dev`).
 
 ## Notas de ejecución
 
-(vacío — lo llena Claude Code al cerrar: decisiones tomadas, deuda técnica
-encontrada, criterios de parada activados)
+Fase de diagnóstico cerrada — HALT obligatorio por diseño de Tier B. No se
+escribió código de fix ni se tocó ningún dato en Sheet. Falta: que Camilo
+elija Opción 1/2/3 (o el mecanismo de etiqueta Gmail, o proponga otra) y
+cambie `estado` a `aprobado_para_fix` para que `/goal-a UBER-02` ejecute
+el fix ya diagnosticado.
