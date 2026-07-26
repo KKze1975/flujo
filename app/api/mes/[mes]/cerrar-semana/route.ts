@@ -39,12 +39,14 @@ export async function POST(
   const provider = getProvider();
 
   try {
-    const [gastosPorSemana, movsSemana, ingresosAngie, consumosSemana] = await Promise.all([
+    const [gastosPorSemana, movsSemana, ingresosAngie, consumosSemana, conceptos] = await Promise.all([
       provider.getGastosSinClasificarPorSemana(mes),
       provider.getMovimientosByMesYSemana(mes, semana),
       provider.getIngresosAngie(mes).catch(() => []),
       provider.getConsumosByMesYSemana(mes, semana).catch(() => []),
+      provider.getConceptos().catch(() => []),
     ]);
+    const frecuenciaPorConcepto = new Map(conceptos.map((c) => [c.id, c.frecuencia]));
 
     const gastosSinClasificar = gastosPorSemana[semana] ?? 0;
     if (gastosSinClasificar > 0) {
@@ -119,7 +121,13 @@ export async function POST(
     }
 
     // Consolidate pago_fraccionado H2 rows: mark ejecutado with sum of H3B consumos for each bolsillo.
-    const bolsilloMovs = movsSemana.filter(m => m.tipoSnapshot === "pago_fraccionado" && m.estado !== "ejecutado");
+    // Bolsillos mensuales (frecuencia: "mensual") quedan excluidos -- acumulan gasto todo el
+    // mes en vez de cerrarse en la primera semana que se cierra (FIX-BOLSILLO-MENSUAL-01).
+    const bolsilloMovs = movsSemana.filter(m =>
+      m.tipoSnapshot === "pago_fraccionado" &&
+      m.estado !== "ejecutado" &&
+      frecuenciaPorConcepto.get(m.conceptoId) !== "mensual"
+    );
     if (bolsilloMovs.length > 0) {
       await Promise.all(
         bolsilloMovs.map(m => {

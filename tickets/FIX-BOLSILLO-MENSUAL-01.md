@@ -1,7 +1,7 @@
 ---
 ticket_id: FIX-BOLSILLO-MENSUAL-01
 orden: 16
-estado: activo
+estado: completado_parcial
 tier: B
 dependencias: ninguna
 ---
@@ -30,22 +30,30 @@ necesarios ahí (ver Diagnóstico).
 sección "Diagnóstico" abajo.
 
 **Fase construcción (una vez aprobada la opción, vía `/goal-a` posterior):**
-- [ ] `tsc --noEmit` limpio.
-- [ ] `cerrar-semana` ya no marca `ejecutado` a bolsillos mensuales — quedan
-      `pendiente` indefinidamente dentro del mes.
-- [ ] El "gastado" mostrado para un bolsillo mensual en `VistaSemanal` es
-      la suma de **todo el mes**, igual sin importar qué semana esté
-      visible.
-- [ ] El bolsillo mensual es visible/seleccionable en las 4 semanas, no
-      solo en su `semana_default`.
-- [ ] Los bolsillos semanales (Frutas y verduras, Víveres y otros,
+- [x] `tsc --noEmit` limpio.
+- [x] `cerrar-semana` ya no marca `ejecutado` a bolsillos mensuales — quedan
+      `pendiente` indefinidamente dentro del mes. **Verificado con prueba
+      real en dev** (ver Notas de ejecución): Transporte siguió `pendiente`
+      tras cerrar S1 con un consumo real registrado.
+- [x] Los bolsillos semanales (Frutas y verduras, Víveres y otros,
       Entretenimiento, Imprevistos) **no cambian de comportamiento** —
-      prueba de regresión explícita.
+      prueba de regresión explícita. **Verificado**: Entretenimiento sí
+      quedó `ejecutado` normalmente al cerrar S1, sin cambios.
+- [ ] El "gastado" mostrado para un bolsillo mensual en `VistaSemanal` es
+      la suma de **todo el mes** — código implementado (`gastadoBolsillo`/
+      `consumosDeBolsillo` en `VistaSemanal.tsx`), **no verificado
+      visualmente en esta sesión**: el navegador de Claude en Chrome estaba
+      apuntando al Chromebook de Camilo, no al Workspace donde corre el dev
+      server — la UI nunca cargó. El payload RSC confirmado por `curl` sí
+      trae los datos correctos (`conceptosCatalogo`, `movimientosMesInit`,
+      `consumosMesInit`) llegando al componente.
+- [ ] El bolsillo mensual es visible/seleccionable en las 4 semanas —
+      mismo motivo, no verificado visualmente en esta sesión.
 - [ ] Prueba en dev: registrar 2 consumos de prueba contra el mismo
-      bolsillo mensual en 2 semanas distintas, verificar que el "gastado"
-      mostrado sea la suma de ambos en cualquier semana visible, y que
-      cerrar una semana no lo marque ejecutado ni congele el monto.
-- [ ] Cero llamadas contra producción durante la construcción.
+      bolsillo mensual en 2 semanas distintas — **parcialmente hecho**: se
+      verificó el efecto en `cerrar-semana` (arriba), falta la verificación
+      visual del acumulado en pantalla.
+- [x] Cero llamadas contra producción durante la construcción.
 
 ## Diagnóstico (Tier B — pendiente de aprobación del plan)
 
@@ -161,9 +169,77 @@ algo que ya funciona.
 
 ## Commit de cierre
 
-(vacío hasta completar)
+`FIX-BOLSILLO-MENSUAL-01-parcial: Parte A verificada, Parte B pendiente
+de verificación visual` (ver historial de `dev`).
 
 ## Notas de ejecución
 
-(vacío — lo llena Claude Code al cerrar: decisiones tomadas, deuda técnica
-encontrada, criterios de parada activados)
+**Implementado (Opción 2 aprobada — lookup en tiempo de ejecución, sin
+migrar esquema de H2):**
+
+- `app/api/mes/[mes]/cerrar-semana/route.ts`: agregado fetch de
+  `provider.getConceptos()` en paralelo con el resto de datos ya
+  fetcheados; el loop que marca bolsillos `pago_fraccionado` como
+  `ejecutado` ahora excluye los que tienen `frecuencia: "mensual"` en su
+  concepto de H1.
+- `app/mes/[mes]/semana/page.tsx`: `movimientosMes`/`consumosMes` (ya se
+  fetchaban para el cálculo de saldo de Angie, sin usar para esto) y
+  `conceptos` (fetch nuevo) ahora se pasan como props nuevos a
+  `VistaSemanal`.
+- `components/VistaSemanal.tsx`: helper `gastadoBolsillo`/
+  `consumosDeBolsillo` que elige la fuente de datos (mes completo vs.
+  semana visible) según si el concepto del bolsillo es mensual — usado en
+  los 6+ puntos que antes calculaban "gastado" solo con la semana visible
+  (líneas originales 179, 365, 1187, 1413, 1659, 2114-2130, 2171 antes de
+  los cambios). La lista de `bolsillos` mostrada ahora mezcla los
+  semanales scoped-a-semana con los mensuales tomados de todo el mes, para
+  que estos últimos aparezcan en las 4 semanas. `ModalCorreccion` (la
+  M5, submodal de corrección) recibió los mismos datos como props nuevos
+  para no quedar con el defecto original en ese flujo específico.
+
+**Decisión de simplicidad documentada, no un descuido:**
+`movimientosMesInit`/`consumosMesInit` son snapshot de la carga de página
+— no se mantienen sincronizados con mutaciones locales dentro de la misma
+sesión de navegación (hay 9 puntos donde `consumos`/`movimientos` se
+actualizan localmente vía `setConsumos`/`setMovimientos`; replicar cada
+uno también en las versiones "mes" habría multiplicado el riesgo de
+inconsistencia que este ticket busca evitar). Efecto práctico: si
+registras un consumo nuevo contra un bolsillo mensual y NO recargas la
+página, el acumulado mostrado puede quedar desactualizado por ese ítem
+hasta el siguiente refresh. Aceptable para el alcance de este ticket —
+señalado aquí como deuda conocida, no oculto.
+
+**Verificado con prueba real en dev (Parte A, `cerrar-semana`):** mes de
+prueba `2027-10`, sembrado con 1 movimiento de Transporte (mensual, S1,
+$350.000 presupuestado) y 1 de Entretenimiento (semanal, S1, $250.000),
+más consumos reales: $50.000 contra Transporte en S1, $30.000 contra
+Transporte en S2, $100.000 contra Entretenimiento en S1.
+`POST /api/mes/2027-10/cerrar-semana {semana:"S1"}` invocado contra el
+dev server real. Leído de vuelta directamente de H2:
+- Transporte: `estado: pendiente` (sin cambios) — **correcto, no se
+  cerró prematuramente**.
+- Entretenimiento: `estado: ejecutado`, `montoEjecutado: 100000`,
+  `desviacion: -150000` — **comportamiento normal sin regresión**.
+
+Primer intento de seed tuvo una condición de carrera (2 llamadas
+`values.append` consecutivas a H2 colisionaron en la misma fila,
+perdiendo una) — corregido escribiendo ambas filas en una sola llamada
+`append` con array de 2 filas. Documentado por si se reutiliza el patrón
+de seed en pruebas futuras de otros tickets.
+
+**No verificado en esta sesión (Parte B, UI):** el navegador de Claude en
+Chrome estaba conectado al Chromebook de Camilo, no al Workspace donde
+corre el dev server — la página nunca cargó para inspección visual
+(`get_page_text`/`screenshot` fallaban con "Frame with ID 0 is showing
+error page" repetidamente, incluso tras recrear el tab varias veces). Se
+confirmó indirectamente que el servidor sí renderiza correctamente:
+`curl` contra la misma URL devolvió 200 con el payload RSC completo,
+incluyendo `conceptosCatalogo` con los conceptos reales de H1 — prueba de
+que los nuevos props llegan al componente. Camilo verificará visualmente
+contra el preview de Vercel tras el push a `dev`.
+
+Datos de prueba (`2027-10` en H2/H3) eliminados después vía
+`deleteDimension`, dev Sheet restaurado a baseline — verificado con
+lectura posterior (0 filas de `2027-10` en H2).
+
+Cero llamadas contra producción en toda la sesión de construcción.

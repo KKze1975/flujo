@@ -28,7 +28,7 @@ export default async function SemanaPage({
   const semana = semanaActual();
   const provider = getProvider();
 
-  const [movimientos, cierres, consumos, ingresosAngie, saldosCuenta, movimientosMes, consumosMes] = await Promise.all([
+  const [movimientos, cierres, consumos, ingresosAngie, saldosCuenta, movimientosMes, consumosMes, conceptos] = await Promise.all([
     provider.getMovimientosByMesYSemana(mes, semana).catch(() => []),
     provider.getCierresSemana(mes).catch(() => []),
     provider.getConsumosByMesYSemana(mes, semana).catch(() => []),
@@ -36,6 +36,7 @@ export default async function SemanaPage({
     provider.getSaldosCuenta(mes).catch(() => []),
     provider.getMovimientos(mes).catch(() => []),
     provider.getConsumosByMes(mes).catch(() => []),
+    provider.getConceptos().catch(() => []),
   ]);
 
   const cierreSemana = cierres.find((c) => c.semana === semana) ?? null;
@@ -62,6 +63,9 @@ export default async function SemanaPage({
       ingresosAngie={ingresosAngie}
       actor={actor}
       disponibleNuAngie={disponibleNuAngie}
+      movimientosMesInit={movimientosMes}
+      consumosMesInit={consumosMes}
+      conceptosCatalogo={conceptos}
     />
   );
 }
