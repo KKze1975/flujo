@@ -5,13 +5,15 @@ import { createPortal } from "react-dom";
 import React from "react";
 import type { Concepto, Movimiento, Semana, SemanaDefault, Categoria, IngresoCamilo, IngresoAngie } from "@/lib/data/types";
 import ModalAgregarConcepto from "./ModalAgregarConcepto";
+import { semanasDeMes } from "@/lib/utils/fecha";
 
 const COP = (n: number) =>
   new Intl.NumberFormat("es-CO", {
     style: "currency", currency: "COP", maximumFractionDigits: 0,
   }).format(n);
 
-const SEMANAS: Semana[] = ["S1", "S2", "S3", "S4"];
+// SEMANA5-01: S5 no es un semanaDefault valido para un concepto nuevo
+// (S5 es condicional al mes, no una asignacion fija de H1) -- sin cambios.
 const SEMANAS_DEFAULT: SemanaDefault[] = ["S1", "S2", "S3", "S4", "variable"];
 
 const CATEGORIAS_ORDER: Categoria[] = [
@@ -49,6 +51,8 @@ export default function VistaPlanificacion({
   onUpdateConceptos,
   onCerrar,
 }: Props) {
+  const SEMANAS = useMemo(() => semanasDeMes(mes), [mes]);
+
   // Un solo estado de conceptos — se actualiza directamente al cambiar semana/notas.
   // dirtyIds rastrea cuáles deben persistirse al guardar borrador.
   const [conceptos, setConceptos] = useState(initConceptos);
@@ -60,7 +64,7 @@ export default function VistaPlanificacion({
 
   // Aportes Angie — editables por semana
   const [aportes, setAportes] = useState<Record<Semana, string>>(() => {
-    const init: Record<Semana, string> = { S1: "", S2: "", S3: "", S4: "" };
+    const init: Record<Semana, string> = { S1: "", S2: "", S3: "", S4: "", S5: "" };
     for (const a of ingresosAngie) init[a.semana] = String(a.monto);
     return init;
   });

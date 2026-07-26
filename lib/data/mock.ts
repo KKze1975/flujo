@@ -78,7 +78,7 @@ export class MockDataProvider implements IDataProvider {
     return Promise.resolve([]);
   }
   getGastosSinClasificarPorSemana(_mes: string): Promise<Record<Semana, number>> {
-    return Promise.resolve({ S1: 0, S2: 0, S3: 0, S4: 0 });
+    return Promise.resolve({ S1: 0, S2: 0, S3: 0, S4: 0, S5: 0 });
   }
   getConsumosByMes(_mes: string): Promise<ConsumoH3[]> {
     return Promise.resolve([]);

@@ -3,10 +3,9 @@
 import { useState, useMemo, useEffect } from "react";
 import type { Movimiento, Semana, Actor, Categoria } from "@/lib/data/types";
 import Icon from "@/components/ui/Icon";
+import { semanasDeMes } from "@/lib/utils/fecha";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-const SEMANAS: Semana[] = ["S1", "S2", "S3", "S4"];
 
 const MESES_ES = ["","ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
 
@@ -45,7 +44,10 @@ function semanaDates(mes: string): Record<Semana, string> {
   const month = Number(monthStr);
   const last = new Date(Number(year), month, 0).getDate();
   const m = MESES_ES[month];
-  return { S1: `1–7 ${m}`, S2: `8–14 ${m}`, S3: `15–21 ${m}`, S4: `22–${last} ${m}` };
+  return {
+    S1: `1–7 ${m}`, S2: `8–14 ${m}`, S3: `15–21 ${m}`, S4: `22–28 ${m}`,
+    S5: `29–${last} ${m}`,
+  };
 }
 
 function getActiveSemana(mes: string): Semana {
@@ -56,7 +58,8 @@ function getActiveSemana(mes: string): Semana {
   if (d <= 7) return "S1";
   if (d <= 14) return "S2";
   if (d <= 21) return "S3";
-  return "S4";
+  if (d <= 28) return "S4";
+  return "S5";
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -78,13 +81,14 @@ type EjecucionAction =
 // ── DkExecForm ────────────────────────────────────────────────────────────────
 
 function DkExecForm({
-  mov, busy, onConfirm, onCancel, onEjecucionAction,
+  mov, busy, onConfirm, onCancel, onEjecucionAction, semanas,
 }: {
   mov: Movimiento;
   busy: boolean;
   onConfirm: (s: ExecState) => void;
   onCancel: () => void;
   onEjecucionAction?: (action: EjecucionAction) => void;
+  semanas: Semana[];
 }) {
   const [state, setState] = useState<ExecState>({
     movId: mov.id,
@@ -204,7 +208,7 @@ function DkExecForm({
             <span className="tx">Mover al mes siguiente</span>
           </button>
           <div style={{ display: "flex", gap: 4, marginTop: 4, flexWrap: "wrap" }}>
-            {SEMANAS.map(s => (
+            {semanas.map(s => (
               <button key={s} type="button" className="dk-fchip"
                 style={{ fontSize: 11, padding: "3px 8px" }}
                 onClick={() => onEjecucionAction({ tipo: "mover_semana", semana: s })}>
@@ -221,13 +225,14 @@ function DkExecForm({
 // ── DkPlanForm ────────────────────────────────────────────────────────────────
 
 function DkPlanForm({
-  mov, busy, onSave, onCancel, onSemanaChange,
+  mov, busy, onSave, onCancel, onSemanaChange, semanas,
 }: {
   mov: Movimiento;
   busy: boolean;
   onSave: (exc: null | "no" | "next", editedMonto: number) => void;
   onCancel: () => void;
   onSemanaChange?: (s: Semana) => void;
+  semanas: Semana[];
 }) {
   const initialExc: null | "no" | "next" =
     mov.estado === "no_aplica" ? "no" :
@@ -266,7 +271,7 @@ function DkPlanForm({
         <div className="dk-exp-opts">
           <p className="dk-exp-lbl" style={{ marginBottom: 4 }}>Mover a semana</p>
           <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-            {SEMANAS.map(s => (
+            {semanas.map(s => (
               <button key={s} type="button" className="dk-fchip"
                 style={{ fontSize: 11, padding: "3px 8px" }}
                 disabled={busy || mov.semana === s}
@@ -311,7 +316,7 @@ function DkPlanForm({
 function ConceptCard({
   mov, mode, isOpen, busy,
   onToggle, onConfirmExec, onSavePlan, onEjecucionAction, onSemanaChange,
-  dragId, onDragStart, onDragEnd,
+  dragId, onDragStart, onDragEnd, semanas,
 }: {
   mov: Movimiento;
   mode: BoardMode;
@@ -324,6 +329,7 @@ function ConceptCard({
   onSemanaChange?: (s: Semana) => void;
   dragId: string | null;
   onDragStart: (id: string, sem: Semana) => void;
+  semanas: Semana[];
   onDragEnd: () => void;
 }) {
   const isExec = mov.estado === "ejecutado";
@@ -386,8 +392,8 @@ function ConceptCard({
 
       {isOpen ? (
         mode === "ejecucion"
-          ? <DkExecForm mov={mov} busy={busy} onConfirm={onConfirmExec} onCancel={onToggle} onEjecucionAction={onEjecucionAction} />
-          : <DkPlanForm mov={mov} busy={busy} onSave={onSavePlan}    onCancel={onToggle} onSemanaChange={onSemanaChange} />
+          ? <DkExecForm mov={mov} busy={busy} onConfirm={onConfirmExec} onCancel={onToggle} onEjecucionAction={onEjecucionAction} semanas={semanas} />
+          : <DkPlanForm mov={mov} busy={busy} onSave={onSavePlan}    onCancel={onToggle} onSemanaChange={onSemanaChange} semanas={semanas} />
       ) : (
         <div className="dk-cc-foot">
           <span className="dk-cc-who">
@@ -448,7 +454,7 @@ const ALL_CATS: Categoria[] = [
 function CatGroup({
   cat, items, mode, defaultOpen, empty,
   openCard, onToggle, onConfirmExec, onSavePlan, onEjecucionAction, onSemanaChange, busy,
-  dragId, onDragStart, onDragEnd,
+  dragId, onDragStart, onDragEnd, semanas,
 }: {
   cat: Categoria; items: Movimiento[]; mode: BoardMode;
   defaultOpen: boolean; empty: boolean;
@@ -459,6 +465,7 @@ function CatGroup({
   onSemanaChange?: (id: string, s: Semana) => void;
   busy: boolean; dragId: string | null;
   onDragStart: (id: string, sem: Semana) => void; onDragEnd: () => void;
+  semanas: Semana[];
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const tot = items.reduce((s, m) => s + m.montoPresupuestado, 0);
@@ -503,6 +510,7 @@ function CatGroup({
               dragId={dragId}
               onDragStart={onDragStart}
               onDragEnd={onDragEnd}
+              semanas={semanas}
             />
           ))}
         </div>
@@ -517,7 +525,7 @@ function WeekColumn({
   semana, items, dates, mode, focus, activeSemana,
   openCard, onToggle, onConfirmExec, onSavePlan, onEjecucionAction, onSemanaChange, busy,
   dragId, onDragStart, onDragEnd, onDrop, dropHover, setDropHover,
-  remanenteAngie,
+  remanenteAngie, semanas,
 }: {
   semana: Semana; items: Movimiento[]; dates: Record<Semana, string>;
   mode: BoardMode; focus: "todas" | Semana; activeSemana: Semana;
@@ -535,6 +543,7 @@ function WeekColumn({
   dropHover: Semana | null;
   setDropHover: (s: Semana | null) => void;
   remanenteAngie?: number;
+  semanas: Semana[];
 }) {
   const tot = items.reduce((s, m) => s + m.montoPresupuestado, 0);
   const ejecutados = items.filter(m => m.estado === "ejecutado");
@@ -636,6 +645,7 @@ function WeekColumn({
             onSemanaChange={onSemanaChange}
             busy={busy} dragId={dragId}
             onDragStart={onDragStart} onDragEnd={onDragEnd}
+            semanas={semanas}
           />
         ))}
         {/* T27 · Categorías sin conceptos en semana activa — al final, atenuadas */}
@@ -649,6 +659,7 @@ function WeekColumn({
             onSemanaChange={onSemanaChange}
             busy={busy} dragId={dragId}
             onDragStart={onDragStart} onDragEnd={onDragEnd}
+            semanas={semanas}
           />
         ))}
       </div>
@@ -694,11 +705,12 @@ export default function ConceptoBoard({
   const [dropHover, setDropHover] = useState<Semana | null>(null);
   const [localSemanas, setLocalSemanas] = useState<Record<string, Semana>>({});
 
+  const SEMANAS = useMemo(() => semanasDeMes(mes), [mes]);
   const dates = useMemo(() => semanaDates(mes), [mes]);
   const activeSemana = useMemo(() => getActiveSemana(mes), [mes]);
 
   const byWeek = useMemo(() => {
-    const map: Record<Semana, Movimiento[]> = { S1: [], S2: [], S3: [], S4: [] };
+    const map: Record<Semana, Movimiento[]> = { S1: [], S2: [], S3: [], S4: [], S5: [] };
     for (const mov of movs) {
       // B1: en planificación ocultar no_aplica y pospuesto_mes_siguiente
       if (mode === "planeacion" && (mov.estado === "no_aplica" || mov.estado === "pospuesto_mes_siguiente")) continue;
@@ -853,6 +865,7 @@ export default function ConceptoBoard({
             dropHover={dropHover}
             setDropHover={setDropHover}
             remanenteAngie={remanenteAngiePerSemana?.[s]}
+            semanas={SEMANAS}
           />
         ))}
       </div>

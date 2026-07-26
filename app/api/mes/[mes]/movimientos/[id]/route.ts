@@ -1,9 +1,9 @@
 import type { NextRequest } from "next/server";
 import { getProvider } from "@/lib/data/provider";
 import type { Semana } from "@/lib/data/types";
+import { semanasDeMes } from "@/lib/utils/fecha";
 
 const MES_REGEX = /^\d{4}-\d{2}$/;
-const SEMANAS_VALIDAS: Semana[] = ["S1", "S2", "S3", "S4"];
 
 type PatchBody =
   | {
@@ -78,7 +78,7 @@ export async function PATCH(
         ...(body.semana && mov.semana === null ? { semana: body.semana } : {}),
       };
     } else if (body.tipo === "posponer") {
-      if (body.nuevaSemana && !SEMANAS_VALIDAS.includes(body.nuevaSemana)) {
+      if (body.nuevaSemana && !semanasDeMes(mes).includes(body.nuevaSemana)) {
         return Response.json({ error: "nuevaSemana inválida." }, { status: 400 });
       }
       if (body.nuevaSemana) {
@@ -96,7 +96,7 @@ export async function PATCH(
         razonPostergacion: body.razonPostergacion ?? null,
       };
     } else if (body.tipo === "reasignar_semana") {
-      if (!SEMANAS_VALIDAS.includes(body.semana)) {
+      if (!semanasDeMes(mes).includes(body.semana)) {
         return Response.json({ error: "semana inválida." }, { status: 400 });
       }
       patch = { semana: body.semana };

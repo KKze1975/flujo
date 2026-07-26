@@ -2,18 +2,18 @@
 
 import { useState } from "react";
 import type { IngresoAngie, Semana } from "@/lib/data/types";
-
-const SEMANAS: Semana[] = ["S1", "S2", "S3", "S4"];
+import { semanasDeMes } from "@/lib/utils/fecha";
 
 const SEMANA_FECHAS: Record<Semana, (mes: string) => string> = {
   S1: (mes) => `1–7 ${mes.split("-")[1] === "05" ? "may" : mes}`,
   S2: (mes) => `8–14 ${mes.split("-")[1] === "05" ? "may" : mes}`,
   S3: (mes) => `15–21 ${mes.split("-")[1] === "05" ? "may" : mes}`,
-  S4: (mes) => {
+  S4: (mes) => `22–28 ${mes.split("-")[1] === "05" ? "may" : mes}`,
+  S5: (mes) => {
     const [year, month] = mes.split("-").map(Number);
     const last = new Date(year, month, 0).getDate();
     const mLabel = ["", "ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"][month];
-    return `22–${last} ${mLabel}`;
+    return `29–${last} ${mLabel}`;
   },
 };
 
@@ -30,6 +30,7 @@ interface Props {
 }
 
 export default function ModalAporteAngie({ mes, existing, onClose, onSave }: Props) {
+  const SEMANAS = semanasDeMes(mes);
   const init = Object.fromEntries(
     SEMANAS.map((s) => [s, String(existing.find((i) => i.semana === s)?.monto ?? "")])
   ) as Record<Semana, string>;

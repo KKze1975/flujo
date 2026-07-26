@@ -10,6 +10,7 @@ import type {
 import Icon from "@/components/ui/Icon";
 import BottomNav from "@/components/ui/BottomNav";
 import ModalConfirmarSaldos from "@/components/m1/ModalConfirmarSaldos";
+import { semanasDeMes } from "@/lib/utils/fecha";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -26,7 +27,6 @@ const COP = (n: number, opts?: { compact?: boolean }): string => {
   }).format(n);
 };
 
-const SEMANAS: Semana[] = ["S1", "S2", "S3", "S4"];
 const MESES_ES = ["","ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
 const MESES_FULL = ["","Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
@@ -35,7 +35,10 @@ function semanaDates(mes: string): Record<Semana, string> {
   const month = Number(monthStr);
   const last = new Date(Number(year), month, 0).getDate();
   const m = MESES_ES[month];
-  return { S1: `1–7 ${m}`, S2: `8–14 ${m}`, S3: `15–21 ${m}`, S4: `22–${last} ${m}` };
+  return {
+    S1: `1–7 ${m}`, S2: `8–14 ${m}`, S3: `15–21 ${m}`, S4: `22–28 ${m}`,
+    S5: `29–${last} ${m}`,
+  };
 }
 
 function mesLabel(mes: string): string {
@@ -51,14 +54,15 @@ function getActiveSemana(mes: string): Semana {
   if (d <= 7) return "S1";
   if (d <= 14) return "S2";
   if (d <= 21) return "S3";
-  return "S4";
+  if (d <= 28) return "S4";
+  return "S5";
 }
 
 function diasParaCerrar(mes: string, semana: Semana): number {
   const [year, monthStr] = mes.split("-");
   const month = Number(monthStr);
   const lastDay = new Date(Number(year), month, 0).getDate();
-  const endDay = semana === "S1" ? 7 : semana === "S2" ? 14 : semana === "S3" ? 21 : lastDay;
+  const endDay = semana === "S1" ? 7 : semana === "S2" ? 14 : semana === "S3" ? 21 : semana === "S4" ? 28 : lastDay;
   const endDate = new Date(Number(year), month - 1, endDay);
   const diff = Math.ceil((endDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
   return Math.max(0, diff);
@@ -136,6 +140,7 @@ export default function MesM1Mobile({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const SEMANAS = useMemo(() => semanasDeMes(mes), [mes]);
   const dates = useMemo(() => semanaDates(mes), [mes]);
   const label = mesLabel(mes);
   const activeSemana = getActiveSemana(mes);

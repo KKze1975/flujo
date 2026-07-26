@@ -42,3 +42,39 @@ export function semanaActual(fecha: Date = new Date()): Semana {
   if (offset < 21) return "S3";
   return "S4";
 }
+
+// ── SEMANA5-01 ───────────────────────────────────────────────────────────
+// Regla independiente del ciclo dia-29 de mesActual()/semanaActual() (ver
+// tickets/SEMANA5-01.md, seccion "Discrepancia de modelo"): S5 son los dias
+// 29 en adelante del propio mes calendario que nombra el string `mes`
+// ("YYYY-MM"), no el ciclo operativo anclado en el mes anterior.
+
+// Dias reales del mes calendario "YYYY-MM" (28-31, o 29 en febrero bisiesto).
+export function diasEnMes(mes: string): number {
+  const [year, month] = mes.split("-").map(Number);
+  return new Date(year, month, 0).getDate();
+}
+
+// Existe S5 si y solo si el mes tiene 29+ dias -- excluye febrero no bisiesto.
+export function mesTieneSemana5(mes: string): boolean {
+  return diasEnMes(mes) >= 29;
+}
+
+// Duracion de S5 en dias (1-3), solo valida si mesTieneSemana5(mes) === true.
+export function duracionSemana5(mes: string): number {
+  return diasEnMes(mes) - 28;
+}
+
+// Lista de semanas validas para el mes, incluyendo S5 condicionalmente.
+export function semanasDeMes(mes: string): Semana[] {
+  const base: Semana[] = ["S1", "S2", "S3", "S4"];
+  return mesTieneSemana5(mes) ? [...base, "S5"] : base;
+}
+
+// Semana siguiente a `semana` dentro del mismo mes, o null si es la ultima
+// (S4 sin S5, o S5). Usado por cerrar-semana para encadenar el plan H5B.
+export function semanaSiguienteDe(semana: Semana, mes: string): Semana | null {
+  const orden = semanasDeMes(mes);
+  const idx = orden.indexOf(semana);
+  return idx >= 0 && idx < orden.length - 1 ? orden[idx + 1] : null;
+}

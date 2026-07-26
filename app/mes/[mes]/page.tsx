@@ -17,7 +17,7 @@ export default async function MesPage({
     provider.getIngresoCamilo(mes).catch(() => []),
     provider.getIngresosAngie(mes).catch(() => []),
     provider.getCierresSemana(mes).catch(() => []),
-    provider.getGastosSinClasificarPorSemana(mes).catch(() => ({ S1: 0, S2: 0, S3: 0, S4: 0 })),
+    provider.getGastosSinClasificarPorSemana(mes).catch(() => ({ S1: 0, S2: 0, S3: 0, S4: 0, S5: 0 })),
     provider.getSaldosCuenta(mes).catch(() => []),
     provider.getConsumosByMes(mes).catch(() => []),
   ]);
@@ -34,6 +34,7 @@ export default async function MesPage({
     S2: consumosH3.filter(c => c.semana === "S2").reduce((s, c) => s + c.monto, 0),
     S3: consumosH3.filter(c => c.semana === "S3").reduce((s, c) => s + c.monto, 0),
     S4: consumosH3.filter(c => c.semana === "S4").reduce((s, c) => s + c.monto, 0),
+    S5: consumosH3.filter(c => c.semana === "S5").reduce((s, c) => s + c.monto, 0),
   };
 
   const gastoH3AngiePorSemana = {
@@ -41,6 +42,7 @@ export default async function MesPage({
     S2: consumosH3.filter(c => c.fuenteAngie && c.semana === "S2").reduce((s, c) => s + c.monto, 0),
     S3: consumosH3.filter(c => c.fuenteAngie && c.semana === "S3").reduce((s, c) => s + c.monto, 0),
     S4: consumosH3.filter(c => c.fuenteAngie && c.semana === "S4").reduce((s, c) => s + c.monto, 0),
+    S5: consumosH3.filter(c => c.fuenteAngie && c.semana === "S5").reduce((s, c) => s + c.monto, 0),
   };
 
   const cuentaToFuente = {

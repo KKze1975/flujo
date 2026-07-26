@@ -7,6 +7,7 @@ import Ring from "@/components/ui/Ring";
 import BottomNav from "@/components/ui/BottomNav";
 import RegistroRapido from "@/components/m4/RegistroRapido";
 import type { Movimiento, CierreSemana, Semana, Actor, ConsumoH3, IngresoAngie, Concepto } from "@/lib/data/types";
+import { semanasDeMes } from "@/lib/utils/fecha";
 
 type Fuente = "en_mano" | "nequi" | "camilo" | "angie";
 type ModoSemana = "activa" | "lectura" | "edicion";
@@ -928,8 +929,6 @@ function formatMes(mes: string): string {
   return `${MESES_FULL[Number(m)]} ${year}`;
 }
 
-const SEMANAS: Semana[] = ["S1", "S2", "S3", "S4"];
-
 export default function VistaSemanal({
   mes,
   mesLabel,
@@ -993,6 +992,7 @@ export default function VistaSemanal({
   const h3bPopoverRef = useRef<HTMLDivElement>(null);
   const [showConfirmCierre, setShowConfirmCierre] = useState(false);
 
+  const SEMANAS = semanasDeMes(mes);
   const idxVisible = SEMANAS.indexOf(semanaVisible);
   const puedeIzq = idxVisible > 0;
   const puedeDer = idxVisible < SEMANAS.length - 1;

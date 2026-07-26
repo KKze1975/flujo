@@ -1,12 +1,12 @@
 import type { NextRequest } from "next/server";
 import { getProvider } from "@/lib/data/provider";
 import type { Semana } from "@/lib/data/types";
+import { semanasDeMes } from "@/lib/utils/fecha";
 
 const MES_REGEX = /^\d{4}-\d{2}$/;
-const SEMANAS: Semana[] = ["S1", "S2", "S3", "S4"];
 
 function fechaDefaultSemana(mes: string, semana: Semana): string {
-  const dias: Record<Semana, number> = { S1: 1, S2: 8, S3: 15, S4: 22 };
+  const dias: Record<Semana, number> = { S1: 1, S2: 8, S3: 15, S4: 22, S5: 29 };
   return `${mes}-${String(dias[semana]).padStart(2, "0")}`;
 }
 
@@ -54,8 +54,10 @@ export async function PUT(
     const existing = await provider.getIngresosAngie(mes);
     const results = [];
 
+    // SEMANA5-01: S5 solo es valida si el mes la tiene (29+ dias).
+    const semanasValidas = semanasDeMes(mes);
     for (const aporte of body.aportes) {
-      if (!SEMANAS.includes(aporte.semana)) continue;
+      if (!semanasValidas.includes(aporte.semana)) continue;
       if (typeof aporte.monto !== "number" || aporte.monto < 0) continue;
 
       const prev = existing.find((i) => i.semana === aporte.semana);

@@ -1,12 +1,9 @@
 import type { NextRequest } from "next/server";
 import { getProvider } from "@/lib/data/provider";
 import type { Semana } from "@/lib/data/types";
+import { semanasDeMes, semanaSiguienteDe } from "@/lib/utils/fecha";
 
 const MES_REGEX = /^\d{4}-\d{2}$/;
-const SEMANAS: Semana[] = ["S1", "S2", "S3", "S4"];
-const SEMANA_SIGUIENTE: Record<Semana, Semana | null> = {
-  S1: "S2", S2: "S3", S3: "S4", S4: null,
-};
 
 type Body = {
   semana: Semana;
@@ -32,7 +29,8 @@ export async function POST(
 
   const { semana, notas } = body;
 
-  if (!SEMANAS.includes(semana)) {
+  // SEMANA5-01: S5 solo es valida si el mes tiene 29+ dias.
+  if (!semanasDeMes(mes).includes(semana)) {
     return Response.json({ error: "Semana inválida." }, { status: 400 });
   }
 
@@ -75,7 +73,8 @@ export async function POST(
     const remanenteAngie = aportePlaneadoSemana - gastosAngie;
 
     // aporteAngiePlaneado para H5B = H4B de la semana siguiente
-    const semanaSiguiente = SEMANA_SIGUIENTE[semana];
+    // SEMANA5-01: S4 encadena a S5 si el mes lo tiene; S5 no tiene siguiente.
+    const semanaSiguiente = semanaSiguienteDe(semana, mes);
     const aporteAngiePlaneado = semanaSiguiente
       ? (ingresosAngie.find((a) => a.semana === semanaSiguiente)?.monto ?? 0)
       : 0;

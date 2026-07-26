@@ -660,7 +660,7 @@ export class SheetsDataProvider implements IDataProvider {
   // ── H3 ───────────────────────────────────────────────────────────────────
 
   async getGastosSinClasificarPorSemana(mes: string): Promise<Record<Semana, number>> {
-    const result: Record<Semana, number> = { S1: 0, S2: 0, S3: 0, S4: 0 };
+    const result: Record<Semana, number> = { S1: 0, S2: 0, S3: 0, S4: 0, S5: 0 };
     try {
       const res = await this.sheets.spreadsheets.values.get({
         spreadsheetId: process.env.GOOGLE_SHEET_ID,

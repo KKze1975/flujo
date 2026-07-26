@@ -11,7 +11,7 @@ const COP = (n: number) =>
     maximumFractionDigits: 0,
   }).format(n);
 
-const SEMANA_NUM: Record<Semana, number> = { S1: 1, S2: 2, S3: 3, S4: 4 };
+const SEMANA_NUM: Record<Semana, number> = { S1: 1, S2: 2, S3: 3, S4: 4, S5: 5 };
 
 const MESES_FULL = [
   "", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
