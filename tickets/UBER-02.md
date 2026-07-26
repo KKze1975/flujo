@@ -1,7 +1,7 @@
 ---
 ticket_id: UBER-02
 orden: 13
-estado: bloqueado
+estado: aprobado
 tier: B
 dependencias: UBER-01
 ---
