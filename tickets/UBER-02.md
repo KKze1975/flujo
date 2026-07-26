@@ -1,7 +1,7 @@
 ---
 ticket_id: UBER-02
 orden: 13
-estado: diagnostico_listo
+estado: descartado
 tier: B
 dependencias: UBER-01
 ---
@@ -122,14 +122,32 @@ tocar la UI de Flujo. No implementado ni decidido — solo lo señalo porque
 resuelve directamente la pregunta abierta, y no estaba entre los candidatos
 que había listado antes ("campo en modal" / "botón en VistaSemanal").
 
+## Descartado — decisión explícita de Camilo (sesión de chat)
+
+Camilo decidió **no separar** los viajes de Uber de trabajo de los
+familiares dentro de Flujo — la separación la hace él manualmente, fuera
+de la app (presumiblemente en su herramienta de gastos de trabajo, ej.
+Zoho Expense, ya excluido de alcance en `UBER-04`). Esto vuelve
+innecesarias las 3 opciones de esquema H3B diagnosticadas arriba — no hay
+ningún monto "de trabajo" que necesite un lugar especial en H3B, porque
+todos los viajes de Uber se tratan como gasto familiar normal del bolsillo
+Transporte.
+
+El diagnóstico completo queda documentado arriba por si se reconsidera en
+el futuro, pero este ticket no avanza a construcción.
+
+**Consecuencia directa en `UBER-04`:** pierde el requisito de clasificación
+`[Personal]`/`[Business]` y el indicador de dos colores — todo monto de
+Uber va al bolsillo Transporte estándar. Nota agregada a `UBER-04.md`.
+
 ## Commit de cierre
 
-`UBER-02-diagnostico: diagnostico_listo` (ver historial de `dev`).
+`UBER-02-descartado: decisión de Camilo, sin separación trabajo/familiar`
+(ver historial de `dev`).
 
 ## Notas de ejecución
 
-Fase de diagnóstico cerrada — HALT obligatorio por diseño de Tier B. No se
-escribió código de fix ni se tocó ningún dato en Sheet. Falta: que Camilo
-elija Opción 1/2/3 (o el mecanismo de etiqueta Gmail, o proponga otra) y
-cambie `estado` a `aprobado_para_fix` para que `/goal-a UBER-02` ejecute
-el fix ya diagnosticado.
+Diagnóstico Tier B completado y luego descartado por decisión explícita de
+Camilo, no por hallazgo técnico que lo invalide — el diagnóstico en sí
+(opciones 1/2/3, hallazgo de que ningún total excluye nada hoy) sigue
+siendo válido como referencia si se reabre esta pregunta más adelante.

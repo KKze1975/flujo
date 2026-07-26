@@ -3,41 +3,49 @@ ticket_id: UBER-04
 orden: 15
 estado: bloqueado
 tier: A
-dependencias: UBER-01, UBER-02, UBER-03
+dependencias: UBER-01, UBER-03
 ---
 
-# UBER-04 — Ingesta, parser, clasificación y escritura a H3B
+# UBER-04 — Ingesta, parser y escritura a H3B
 
 ## Goal completo
 
 Gmail API (OAuth2) detecta correos de Uber casi en tiempo real, extrae
-monto/fecha/origen/destino, clasifica vía prefijo `[Personal]`/`[Business]`
-del asunto, y escribe a H3B según el esquema decidido en `UBER-02`.
-Indicador de bolsillo Transporte muestra desglose de dos colores
-(trabajo/casa).
+monto/fecha/origen/destino, y escribe el consumo al bolsillo Transporte
+estándar en H3B (`TRANSPORTE_1748100037`, migrado a `pago_fraccionado` por
+`UBER-03`) — **sin distinguir** viajes de trabajo vs. personales. Camilo
+hace esa separación manualmente, fuera de Flujo (decisión explícita,
+`UBER-02` descartado por este motivo).
+
+**Cambio de alcance tras `UBER-02` (descartado):** el Goal original incluía
+clasificación `[Personal]`/`[Business]` y un indicador de dos colores
+(trabajo/casa) en el bolsillo Transporte — ambos ya no aplican. Todo monto
+de Uber detectado se trata igual, como cualquier otro consumo del bolsillo
+Transporte.
 
 Tipo de trabajo: construcción, loop autónomo una vez desbloqueado por
-`UBER-01`, `UBER-02` y `UBER-03`.
+`UBER-01` y `UBER-03`.
 
 **No cubre:** reporte a Zoho Expense — fuera de alcance, no construir.
+Clasificación trabajo/personal — descartada, ver arriba.
 
 ## Definition of Done
 
 - [ ] Correo real de Uber dispara el parseo sin intervención manual.
-- [ ] Clasificación correcta verificada con al menos 1 caso `[Personal]` y
-      1 caso `[Business]` reales.
-- [ ] Monto aparece en H3B según el esquema de `UBER-02`, sin afectar otros
-      bolsillos.
-- [ ] Indicador de dos colores refleja correctamente ambos montos en
-      preview URL.
+- [ ] Monto, fecha y origen/destino extraídos correctamente de al menos 2
+      tipos de servicio Uber reales (ver evidencia de `UBER-01`: Black y
+      Flash Moto tienen estructura de cuerpo distinta).
+- [ ] Consumo escrito en H3B con `bolsilloId = TRANSPORTE_1748100037`, sin
+      afectar otros bolsillos.
 - [ ] Deduplicación por `threadId` de Gmail (mismo patrón que School Bot
       T8-hotfix).
 
 ## Contexto / diagnóstico previo
 
-Bloqueado por `UBER-01` (supuestos de parseo), `UBER-02` (esquema H3B) y
-`UBER-03` (migración de Fondo transporte) — los tres deben cerrar antes de
-abrir construcción, por WIP limit (I-09).
+Bloqueado por `UBER-01` (supuestos de parseo) y `UBER-03` (migración de
+Fondo transporte a `pago_fraccionado`) — ambos deben cerrar antes de abrir
+construcción, por WIP limit (I-09). `UBER-02` ya no es dependencia —
+descartado, ver `UBER-02.md`.
 
 ## Commit de cierre
 

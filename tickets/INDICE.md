@@ -14,9 +14,9 @@
 | 10 | INVARIANTS-GAP-01 | aprobado | A | ninguna | | Cerrar numeración I-13/I-14/I-16 en INVARIANTS.md real. Puramente documental. |
 | 11 | TICKET-B-GUARDIA-01 | activo | A | ninguna | | P1/P2 ya commiteados (ee0b9e1, 291e8bd). Falta DoD bullet 2 + PR. Prerrequisito de facto: FIX-CREARMOVIMIENTOSMES-01. |
 | 12 | UBER-01 | completado | A | ninguna | `UBER-01-cierre` | Verificado en Gmail real: [Business] NUNCA aparece (0 de ~201 correos, todo el historial 2020-2026) — supuesto refutado. Origen/destino confirmado en 2 tipos de servicio (Black, Flash Moto). Invalida el diseño de UBER-02. |
-| 13 | UBER-02 | diagnostico_listo | B | UBER-01 | `UBER-02-diagnostico` | 3 opciones de esquema H3B documentadas (bolsillo especial / campo separado / tab aislado) — hallazgo clave: ningún total familiar excluye nada hoy, así que 1 y 2 requieren tocar cálculos existentes. Pendiente que Camilo elija. |
+| 13 | UBER-02 | descartado | B | UBER-01 | `UBER-02-descartado` | Camilo decide no separar Uber trabajo/familiar dentro de Flujo — lo hace manualmente. Diagnóstico (3 opciones) queda documentado como referencia. Invalida clasificación e indicador de dos colores en UBER-04. |
 | 14 | UBER-03 | propuesto | A | ninguna | | Migración de Fondo transporte (TRANSPORTE_1748100037) a pago_fraccionado — construible en paralelo a UBER-01. |
-| 15 | UBER-04 | bloqueado | A | UBER-01, UBER-02, UBER-03 | | Ingesta/parser Gmail de correos Uber → H3B, clasificación [Personal]/[Business]. Zoho Expense fuera de alcance. |
+| 15 | UBER-04 | bloqueado | A | UBER-01, UBER-03 | | Ingesta/parser Gmail de correos Uber → H3B, bolsillo Transporte estándar (sin clasificación trabajo/personal, tras descarte de UBER-02). Zoho Expense fuera de alcance. |
 
 **Estados posibles:** `propuesto` \| `aprobado` \| `activo` \| `completado` \| `bloqueado` \| `descartado`
 
