@@ -19,6 +19,20 @@ campo separado fuera del modelo de bolsillos.
 mecánico. Bloqueado por `UBER-01`: sin confirmar que el correo distingue
 `[Business]`/`[Personal]`, no hay base real para diseñar el esquema.
 
+**Actualización tras cierre de `UBER-01` (verificación real en Gmail,
+completada):** el supuesto base de este ticket **no se sostiene**.
+`UBER-01` buscó exhaustivamente (`in:anywhere`, todo el historial desde
+2020) y **no encontró ningún correo con prefijo `[Business]`** — todos los
+recibos de Uber de esta cuenta traen `[Personal]`. No hay señal de asunto
+que distinga un viaje de trabajo de uno personal. Antes de que `/goal-b`
+pueda diagnosticar este ticket como está planteado, la pregunta de fondo
+cambia de "¿dónde vive en H3B el monto de un viaje clasificado como
+trabajo?" a "¿cómo se clasifica un viaje como trabajo, si no es por el
+asunto del correo?" — candidatos no evaluados aún: clasificación manual
+por Camilo al momento de registrar, o alguna otra señal dentro del cuerpo
+del correo (no confirmada). Este ticket necesita reformularse, no solo
+desbloquearse, antes de aprobar su fase de diagnóstico.
+
 ## Definition of Done
 
 **Fase diagnóstico/diseño (tier B — HALT obligatorio antes de aprobar):**
