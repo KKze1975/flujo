@@ -6119,5 +6119,26 @@ mes calendario que nombra el string `mes`, sin relación con el ciclo de
 ### 2. Estado del Backlog (`tickets/INDICE.md`)
 - `UBER-05`: `completado` (commit `19e34fb` en rama `dev`).
 
+### 3. Cierre y Merge a Producción (`main`)
+- PR #34 (`feat(DESGLOSE-BOLSILLOS-01 & UBER-05): popover flotante inline de consumos y fechas reales de Uber`) mergeado exitosamente a `main` tras sign-off de Angie y Camilo (`I-17`).
+- Despliegue automático de Vercel en Producción activo.
+
+### Estado del repo al cierre de esta entrada
+- Ramas `dev` y `main` sincronizadas con `origin`. `npx tsc --noEmit` limpio (0 errores).
+
+---
+
+## Sesión — Construcción de ticket POSPONER-S5-01 (Visibilidad de conceptos pospuestos PS Plus y Uber One en S5) · 27 jul 2026
+
+**Tipo de sesión:** DISEÑO & CONSTRUCCIÓN (Corrección del filtro de `pendientes` en `VistaSemanal.tsx` para incluir movimientos en estado `"pospuesto"` de la semana visible y reasignación de filas H2 en Dev Sheet).
+
+### 1. Diagnóstico y Corrección de Causa Raíz
+- **Diagnóstico:** Los movimientos de `PS Plus` y `Uber One` estaban anclados a `S1` por su `semana_default` tras la re-inicialización del mes `2026-07`. Además, en `VistaSemanal.tsx`, la lista de `pendientes` filtraba estrictamente `m.estado === "pendiente"`, ocultando cualquier registro postergado con `estado === "pospuesto"`.
+- **Fix:** Modificado `components/VistaSemanal.tsx` para incluir `m.estado === "pospuesto"` en `pendientes` y en `movimientosPresupuestados`, renderizando el badge visual `Pospuesto`.
+- **Sincronización de Datos:** Ejecutado `scratch/update-psplus-s5.ts` reasignando las filas H2 de `PS Plus` y `Uber One` a `semana: "S5"`, `estado: "pospuesto"`.
+
+### 2. Estado del Backlog (`tickets/INDICE.md`)
+- `POSPONER-S5-01`: `completado` (commit `1d5b3c2` en rama `dev`).
+
 ### Estado del repo al cierre de esta entrada
 - Rama `dev` sincronizada con `origin/dev`. `npx tsc --noEmit` limpio (0 errores).

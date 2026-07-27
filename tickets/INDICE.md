@@ -23,6 +23,7 @@
 | 19 | SEMANAS-LUNES-01 | completado | A | ninguna | `dev` | Refactor del modelo de semanas a ciclos Lunes-Domingo (S1-S5). Evalúa 27-Julio-2026 como S5. |
 | 20 | DESGLOSE-BOLSILLOS-01 | completado | A | ninguna | `4da7382`+`a4d008f` | Modal/popover de desglose de consumos H3B al tocar tarjetas de bolsillos (pendientes y ejecutados). |
 | 21 | UBER-05 | completado | A | UBER-04 | `19e34fb` | Corregir fecha de consumo Uber en H3 (usar fecha del correo en lugar de fecha de ejecución del cron). |
+| 22 | POSPONER-S5-01 | completado | A | ninguna | `1d5b3c2` | Visibilidad de conceptos pospuestos (PS Plus, Uber One) en semanas destino (S5). |
 
 **Estados posibles:** `propuesto` \| `aprobado` \| `activo` \| `completado` \| `completado_parcial` \| `bloqueado` \| `descartado` \| `diagnostico_listo` (Tier B, fase de diagnóstico cerrada, esperando elección de opción)
 
