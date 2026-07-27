@@ -6,7 +6,8 @@ import Icon from "@/components/ui/Icon";
 import Ring from "@/components/ui/Ring";
 import BottomNav from "@/components/ui/BottomNav";
 import RegistroRapido from "@/components/m4/RegistroRapido";
-import type { Movimiento, CierreSemana, Semana, Actor, ConsumoH3, IngresoAngie } from "@/lib/data/types";
+import type { Movimiento, CierreSemana, Semana, Actor, ConsumoH3, IngresoAngie, Concepto } from "@/lib/data/types";
+import { semanasDeMes } from "@/lib/utils/fecha";
 
 type Fuente = "en_mano" | "nequi" | "camilo" | "angie";
 type ModoSemana = "activa" | "lectura" | "edicion";
@@ -108,6 +109,9 @@ function ModalCorreccion({
   consumo,
   bolsillos,
   consumos,
+  consumosMes = [],
+  idsBolsillosMensuales = new Set(),
+  mes,
   onClose,
   onSaved,
   onRevertido,
@@ -115,10 +119,19 @@ function ModalCorreccion({
   consumo: ConsumoH3;
   bolsillos: Movimiento[];
   consumos: ConsumoH3[];
+  // FIX-BOLSILLO-MENSUAL-01: para que "gastado"/"sobre techo" de un bolsillo
+  // mensual se calcule contra todo el mes, no solo la semana visible.
+  consumosMes?: ConsumoH3[];
+  idsBolsillosMensuales?: Set<string>;
+  mes: string;
   onClose: () => void;
   onSaved: (updated: ConsumoH3) => void;
   onRevertido: (id: string) => void;
 }) {
+  const gastadoDeBolsillo = (conceptoId: string) =>
+    (idsBolsillosMensuales.has(conceptoId) ? consumosMes : consumos)
+      .filter((c) => c.bolsilloId === conceptoId)
+      .reduce((sum, c) => sum + c.monto, 0);
   const defaultScenario: M5Scenario = !consumo.clasificado ? "clasif" : "monto";
   const [scenario, setScenario] = useState<M5Scenario>(defaultScenario);
   const [descripcion, setDescripcion] = useState(consumo.descripcion);
@@ -176,7 +189,7 @@ function ModalCorreccion({
         ? bolsillos.find((b) => b.conceptoId === bolsilloId)
         : bolsillos.find((b) => b.id === consumo.bolsilloId || b.conceptoId === consumo.bolsilloId);
       const selectedId = selectedBolsillo?.conceptoId ?? consumo.bolsilloId;
-      const gastado = consumos.filter(c => c.bolsilloId === selectedId).reduce((sum, c) => sum + c.monto, 0);
+      const gastado = gastadoDeBolsillo(selectedId);
       const techo = selectedBolsillo?.montoPresupuestado ?? 0;
       patch = { bolsilloId: selectedId, clasificado: true, sobreTecho: techo > 0 && gastado >= techo };
     }
@@ -222,7 +235,8 @@ function ModalCorreccion({
     setFuentes(prev => ({ ...prev, [key]: !prev[key] }));
   }
 
-  const semanas: Semana[] = ["S1", "S2", "S3", "S4"];
+  // SEMANA5-01: fuente única de verdad — incluye S5 cuando el mes lo tiene.
+  const semanas: Semana[] = semanasDeMes(mes);
 
   return (
     <div className="dk-modal-backdrop" onClick={onClose}>
@@ -362,7 +376,7 @@ function ModalCorreccion({
                 <p className="dk-exp-lbl">Bolsillo activo</p>
                 <div className="dk-h2pick">
                   {bolsillos.map(b => {
-                    const gastado = consumos.filter(c => c.bolsilloId === b.conceptoId).reduce((sum, c) => sum + c.monto, 0);
+                    const gastado = gastadoDeBolsillo(b.conceptoId);
                     const techo = b.montoPresupuestado ?? 0;
                     const over = techo > 0 && gastado >= techo;
                     const icon = CAT_ICON[b.categoriaSnapshot] ?? "bag";
@@ -384,7 +398,7 @@ function ModalCorreccion({
             {scenario === "semana" && (
               <>
                 <p className="dk-exp-lbl">Semana del registro</p>
-                <div className="dk-seg2" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
+                <div className="dk-seg2" style={{ gridTemplateColumns: `repeat(${semanas.length}, 1fr)` }}>
                   {semanas.map(s => (
                     <button key={s} type="button"
                       className={semana === s ? "on" : ""}
@@ -471,7 +485,8 @@ function ModalAccionesPendiente({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const semanas: Semana[] = ["S1", "S2", "S3", "S4"];
+  // SEMANA5-01: fuente única de verdad — incluye S5 cuando el mes lo tiene.
+  const semanas: Semana[] = semanasDeMes(mes);
 
   async function confirmar() {
     setBusy(true);
@@ -582,7 +597,7 @@ function ModalAccionesPendiente({
           {accion === "posponer" && (
             <div style={{ marginTop: 16 }}>
               <p className="dk-exp-lbl">Semana destino</p>
-              <div className="dk-seg2" style={{ gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
+              <div className="dk-seg2" style={{ gridTemplateColumns: `repeat(${semanas.length}, 1fr)`, gap: 6 }}>
                 {semanas.map(s => {
                   const cerrada = semanasCerradas.includes(s);
                   return (
@@ -707,7 +722,8 @@ function ModalCorreccionH2({
   const [error, setError] = useState<string | null>(null);
 
   const scn = SCN_H2_LABEL[scenario];
-  const semanas: Semana[] = ["S1", "S2", "S3", "S4"];
+  // SEMANA5-01: fuente única de verdad — incluye S5 cuando el mes lo tiene.
+  const semanas: Semana[] = semanasDeMes(mes);
 
   async function guardar() {
     setBusy(true);
@@ -858,7 +874,7 @@ function ModalCorreccionH2({
             {scenario === "semana" && (
               <>
                 <p className="dk-exp-lbl">Semana del movimiento</p>
-                <div className="dk-seg2" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
+                <div className="dk-seg2" style={{ gridTemplateColumns: `repeat(${semanas.length}, 1fr)` }}>
                   {semanas.map(s => (
                     <button key={s} type="button" className={semana === s ? "on" : ""} onClick={() => setSemana(s)}>
                       {s}
@@ -918,8 +934,6 @@ function formatMes(mes: string): string {
   return `${MESES_FULL[Number(m)]} ${year}`;
 }
 
-const SEMANAS: Semana[] = ["S1", "S2", "S3", "S4"];
-
 export default function VistaSemanal({
   mes,
   mesLabel,
@@ -931,6 +945,9 @@ export default function VistaSemanal({
   ingresosAngie = [],
   actor = "camilo",
   disponibleNuAngie = 0,
+  movimientosMesInit = [],
+  consumosMesInit = [],
+  conceptosCatalogo = [],
 }: {
   mes: string;
   mesLabel: string;
@@ -942,6 +959,14 @@ export default function VistaSemanal({
   ingresosAngie?: IngresoAngie[];
   actor?: Actor;
   disponibleNuAngie?: number;
+  // FIX-BOLSILLO-MENSUAL-01: datos de TODO el mes (no scoped a semana) para
+  // que los bolsillos pago_fraccionado con frecuencia "mensual" acumulen
+  // gasto en vez de resetearse al cambiar de semana. Snapshot de carga de
+  // página — no se mantienen sincronizados con mutaciones locales dentro
+  // de la misma sesión (ver Notas de ejecución del ticket).
+  movimientosMesInit?: Movimiento[];
+  consumosMesInit?: ConsumoH3[];
+  conceptosCatalogo?: Concepto[];
 }) {
   const router = useRouter();
   const [semanaVisible, setSemanaVisible] = useState<Semana>(semanaActiva);
@@ -972,11 +997,36 @@ export default function VistaSemanal({
   const h3bPopoverRef = useRef<HTMLDivElement>(null);
   const [showConfirmCierre, setShowConfirmCierre] = useState(false);
 
+  const SEMANAS = semanasDeMes(mes);
   const idxVisible = SEMANAS.indexOf(semanaVisible);
   const puedeIzq = idxVisible > 0;
   const puedeDer = idxVisible < SEMANAS.length - 1;
 
-  const bolsillos = movimientos.filter((m) => m.tipoSnapshot === "pago_fraccionado");
+  // FIX-BOLSILLO-MENSUAL-01: bolsillos pago_fraccionado con frecuencia "mensual"
+  // (Mercado mensual, Frida, Fondo transporte) deben verse y acumular gasto en
+  // las 4 semanas, no solo en la semana de su movimiento H2 ancla. Se calculan
+  // aparte, a partir de movimientosMesInit (todo el mes), y se mezclan con los
+  // bolsillos semanales normales (que sí siguen scoped a la semana visible).
+  const idsBolsillosMensuales = new Set(
+    conceptosCatalogo
+      .filter((c) => c.tipo === "pago_fraccionado" && c.frecuencia === "mensual")
+      .map((c) => c.id)
+  );
+  function consumosDeBolsillo(conceptoId: string): ConsumoH3[] {
+    const fuente = idsBolsillosMensuales.has(conceptoId) ? consumosMesInit : consumos;
+    return fuente.filter((c) => c.bolsilloId === conceptoId);
+  }
+  function gastadoBolsillo(conceptoId: string): number {
+    return consumosDeBolsillo(conceptoId).reduce((sum, c) => sum + c.monto, 0);
+  }
+
+  const bolsillosSemanaScoped = movimientos.filter(
+    (m) => m.tipoSnapshot === "pago_fraccionado" && !idsBolsillosMensuales.has(m.conceptoId)
+  );
+  const bolsillosMensualesDelMes = movimientosMesInit.filter(
+    (m) => m.tipoSnapshot === "pago_fraccionado" && idsBolsillosMensuales.has(m.conceptoId)
+  );
+  const bolsillos = [...bolsillosSemanaScoped, ...bolsillosMensualesDelMes];
   const conceptos  = movimientos.filter((m) => m.tipoSnapshot !== "pago_fraccionado");
   const pendientes = conceptos.filter((m) => m.estado === "pendiente");
   const ejecutados = conceptos.filter((m) => m.estado === "ejecutado");
@@ -1183,8 +1233,11 @@ export default function VistaSemanal({
     : [...bolsillosEjecutados, ...ejecutados];
   const consumosPendientes = consumos.filter(c => !c.clasificado);
   const totalFaltaPendientes = pendientes.reduce((s, m) => s + m.montoPresupuestado, 0);
+  // FIX-FALTAPAGAR-MENSUAL-01: un bolsillo mensual vive en las 4 semanas (FIX-BOLSILLO-MENSUAL-01),
+  // pero solo debe contar una vez hacia "falta por pagar" — en su semana ancla, no en las otras 3.
   const totalFaltaBolsillos  = bolsillosPendientes.reduce((s, b) => {
-    const gastado = consumos.filter(c => c.bolsilloId === b.conceptoId).reduce((sum, c) => sum + c.monto, 0);
+    if (idsBolsillosMensuales.has(b.conceptoId) && b.semana !== semanaVisible) return s;
+    const gastado = gastadoBolsillo(b.conceptoId);
     return s + Math.max(0, b.montoPresupuestado - gastado);
   }, 0);
   const totalFaltaPagar = totalFaltaPendientes + totalFaltaBolsillos;
@@ -1409,10 +1462,12 @@ export default function VistaSemanal({
                       {(() => {
                         const items = [
                           ...pendientes.map(m => ({ key: m.id, nombre: m.nombreSnapshot, monto: m.montoPresupuestado })),
-                          ...bolsillosPendientes.map(b => {
-                            const gastado = consumos.filter(c => c.bolsilloId === b.conceptoId).reduce((sum, c) => sum + c.monto, 0);
-                            return { key: b.id, nombre: b.nombreSnapshot, monto: Math.max(0, b.montoPresupuestado - gastado) };
-                          }),
+                          ...bolsillosPendientes
+                            .filter(b => !idsBolsillosMensuales.has(b.conceptoId) || b.semana === semanaVisible)
+                            .map(b => {
+                              const gastado = gastadoBolsillo(b.conceptoId);
+                              return { key: b.id, nombre: b.nombreSnapshot, monto: Math.max(0, b.montoPresupuestado - gastado) };
+                            }),
                         ].filter(i => i.monto > 0).sort((a, b) => b.monto - a.monto);
                         return items.length === 0
                           ? <p style={{ padding: "5px 14px", fontSize: 13, color: "var(--muted)" }}>¡Todo pagado esta semana!</p>
@@ -1611,7 +1666,7 @@ export default function VistaSemanal({
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {lista.map((mov) => {
               if (mov.tipoSnapshot === "pago_fraccionado") {
-                const consumosBolsillo = consumos.filter(c => c.bolsilloId === mov.conceptoId);
+                const consumosBolsillo = consumosDeBolsillo(mov.conceptoId);
                 const gastado = consumosBolsillo.reduce((sum, c) => sum + c.monto, 0);
                 const techo = mov.montoPresupuestado;
                 const pctB = techo > 0 ? Math.round((gastado / techo) * 100) : 0;
@@ -2008,6 +2063,9 @@ export default function VistaSemanal({
           consumo={corrigiendoConsumo}
           bolsillos={bolsillosDedup}
           consumos={consumos}
+          consumosMes={consumosMesInit}
+          idsBolsillosMensuales={idsBolsillosMensuales}
+          mes={mes}
           onClose={() => setCorrigiendoConsumo(null)}
           onSaved={updated => {
             setConsumos(prev => prev.map(c => c.id === updated.id ? updated : c));
@@ -2064,23 +2122,25 @@ export default function VistaSemanal({
               </button>
             </div>
             <div style={{ overflowY: "auto", flex: 1 }}>
-              {consumos.filter(c => c.bolsilloId === desgloseModal.conceptoId).length === 0
-                ? <p style={{ fontSize: 13, color: "var(--ink-faint)" }}>Sin consumos registrados</p>
-                : consumos.filter(c => c.bolsilloId === desgloseModal.conceptoId).map(c => (
-                    <div key={c.id} style={{ padding: "8px 0", borderBottom: "1px solid var(--hair)" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                        <span style={{ flex: 1, fontSize: 13, color: "var(--ink)" }}>{c.descripcion || "Sin descripción"}</span>
-                        <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600, fontSize: 13, flexShrink: 0 }}>{COP(c.monto)}</span>
+              {(() => {
+                const consumosDesglose = consumosDeBolsillo(desgloseModal.conceptoId);
+                return consumosDesglose.length === 0
+                  ? <p style={{ fontSize: 13, color: "var(--ink-faint)" }}>Sin consumos registrados</p>
+                  : consumosDesglose.map(c => (
+                      <div key={c.id} style={{ padding: "8px 0", borderBottom: "1px solid var(--hair)" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                          <span style={{ flex: 1, fontSize: 13, color: "var(--ink)" }}>{c.descripcion || "Sin descripción"}</span>
+                          <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600, fontSize: 13, flexShrink: 0 }}>{COP(c.monto)}</span>
+                        </div>
+                        <p style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 2 }}>{c.fecha}</p>
                       </div>
-                      <p style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 2 }}>{c.fecha}</p>
-                    </div>
-                  ))
-              }
+                    ));
+              })()}
             </div>
-            {consumos.filter(c => c.bolsilloId === desgloseModal.conceptoId).length > 0 && (
+            {consumosDeBolsillo(desgloseModal.conceptoId).length > 0 && (
               <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 12, borderTop: "1px solid var(--hair)", fontSize: 13, fontWeight: 700, marginTop: 8, color: "var(--ink)" }}>
                 <span>Total</span>
-                <span>{COP(consumos.filter(c => c.bolsilloId === desgloseModal.conceptoId).reduce((s, c) => s + c.monto, 0))}</span>
+                <span>{COP(gastadoBolsillo(desgloseModal.conceptoId))}</span>
               </div>
             )}
           </div>
@@ -2121,7 +2181,7 @@ export default function VistaSemanal({
       )}
 
       {h3bPopover && (() => {
-        const items = consumos.filter(c => c.bolsilloId === h3bPopover.bolsilloId);
+        const items = consumosDeBolsillo(h3bPopover.bolsilloId);
         const total = items.reduce((s, c) => s + c.monto, 0);
         return (
           <div

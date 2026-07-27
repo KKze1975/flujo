@@ -13,6 +13,7 @@ import ModalAgregarConcepto from "@/components/m1/ModalAgregarConcepto";
 import ModalConfirmarSaldos from "@/components/m1/ModalConfirmarSaldos";
 import ModalCerrarSemana from "@/components/m1/ModalCerrarSemana";
 import ModalAporteAngie from "@/components/m1/ModalAporteAngie";
+import { semanasDeMes } from "@/lib/utils/fecha";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -29,15 +30,14 @@ const COP = (n: number, opts?: { compact?: boolean }): string => {
   }).format(n);
 };
 
-const SEMANAS: Semana[] = ["S1", "S2", "S3", "S4"];
-
 function semanaFromFecha(fecha: string | null, mes: string): Semana | null {
   if (!fecha || !fecha.startsWith(mes)) return null;
   const day = new Date(fecha + "T12:00:00").getDate();
   if (day <= 7) return "S1";
   if (day <= 14) return "S2";
   if (day <= 21) return "S3";
-  return "S4";
+  if (day <= 28) return "S4";
+  return "S5";
 }
 
 const MESES_ES = ["","ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
@@ -52,7 +52,11 @@ function semanaDates(mes: string): Record<Semana, string> {
   const month = Number(monthStr);
   const last = new Date(Number(year), month, 0).getDate();
   const m = MESES_ES[month];
-  return { S1: `1–7 ${m}`, S2: `8–14 ${m}`, S3: `15–21 ${m}`, S4: `22–${last} ${m}` };
+  return {
+    S1: `1–7 ${m}`, S2: `8–14 ${m}`, S3: `15–21 ${m}`, S4: `22–28 ${m}`,
+    // SEMANA5-01: solo se muestra cuando el mes tiene 29+ dias.
+    S5: `29–${last} ${m}`,
+  };
 }
 
 function mesLabel(mes: string): string {
@@ -68,7 +72,8 @@ function getActiveSemana(mes: string): Semana {
   if (d <= 7) return "S1";
   if (d <= 14) return "S2";
   if (d <= 21) return "S3";
-  return "S4";
+  if (d <= 28) return "S4";
+  return "S5";
 }
 
 const CATEGORIAS_ORDER: Categoria[] = [
@@ -259,6 +264,9 @@ function PlanRow({
 }) {
   const movsC = movs.filter(m => m.conceptoId === concepto.id && m.estado === "pendiente");
   const currentSemana = movsC[0]?.semana as Semana | undefined;
+  // PlanRow no esta montado en ningun lugar del arbol (dead code) -- sin
+  // acceso a `mes` para calcular semanasDeMes(). Lista fija como placeholder.
+  const SEMANAS: Semana[] = ["S1", "S2", "S3", "S4", "S5"];
 
   return (
     <tr>
@@ -308,10 +316,10 @@ export default function MesM1Desktop({
   ingresoCamilo: ingresoCamiloProp = null,
   ingresosAngie: ingresosAngieProp = [],
   cierresSemana: cierresSemanaProps = [],
-  gastosSinClasificar = { S1: 0, S2: 0, S3: 0, S4: 0 },
+  gastosSinClasificar = { S1: 0, S2: 0, S3: 0, S4: 0, S5: 0 },
   gastoH3PorCuenta = {},
-  gastoH3PorSemana = { S1: 0, S2: 0, S3: 0, S4: 0 },
-  gastoH3AngiePorSemana = { S1: 0, S2: 0, S3: 0, S4: 0 },
+  gastoH3PorSemana = { S1: 0, S2: 0, S3: 0, S4: 0, S5: 0 },
+  gastoH3AngiePorSemana = { S1: 0, S2: 0, S3: 0, S4: 0, S5: 0 },
   consumosH3 = [],
   onSwitchToMobile,
 }: {
@@ -362,7 +370,7 @@ export default function MesM1Desktop({
   // Planificación state
   const [wkPlan, setWkPlan] = useState<"todas" | Semana>(() => getActiveSemana(mes));
   const [aportes, setAportes] = useState<Record<Semana, string>>(() => {
-    const init: Record<Semana, string> = { S1: "", S2: "", S3: "", S4: "" };
+    const init: Record<Semana, string> = { S1: "", S2: "", S3: "", S4: "", S5: "" };
     for (const a of ingresosAngieProp) {
       init[a.semana] = String((Number(init[a.semana]) || 0) + a.monto);
     }
@@ -371,6 +379,7 @@ export default function MesM1Desktop({
   const [savingAportes, setSavingAportes] = useState(false);
   const [savingSemanaConcept, setSavingSemanaConcept] = useState<string | null>(null);
 
+  const SEMANAS = useMemo(() => semanasDeMes(mes), [mes]);
   const dates = useMemo(() => semanaDates(mes), [mes]);
   const label = mesLabel(mes);
   const mesNombre = MESES_ES_MAP[mes.split("-")[1]] ?? "";
@@ -411,7 +420,7 @@ export default function MesM1Desktop({
   // T27 · Remanente Angie por semana — movido antes de balanceSemanas (dep)
   // B5: depende de `aportes` (reactivo) en lugar de ingresosAngieProp (SSR congelado)
   const remanenteAngiePerSemana = useMemo(() => {
-    const result: Record<import("@/lib/data/types").Semana, number> = { S1: 0, S2: 0, S3: 0, S4: 0 };
+    const result: Record<import("@/lib/data/types").Semana, number> = { S1: 0, S2: 0, S3: 0, S4: 0, S5: 0 };
     for (const s of SEMANAS) {
       const cierre = cierresSemanaProps.find(c => c.semana === s);
       if (cierre) {
@@ -421,7 +430,7 @@ export default function MesM1Desktop({
       }
     }
     return result;
-  }, [cierresSemanaProps]);
+  }, [cierresSemanaProps, SEMANAS]);
 
   const balanceSemanas = useMemo(() => {
     let remanente = ingresoCamiloLocal?.montoCop ?? 0;
@@ -582,7 +591,7 @@ export default function MesM1Desktop({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Error al guardar");
-      const newAportes: Record<Semana, string> = { S1: "", S2: "", S3: "", S4: "" };
+      const newAportes: Record<Semana, string> = { S1: "", S2: "", S3: "", S4: "", S5: "" };
       for (const a of data as IngresoAngie[]) newAportes[a.semana] = String(a.monto);
       setAportes(newAportes);
     } catch (e: unknown) {
@@ -1102,7 +1111,7 @@ export default function MesM1Desktop({
           existing={ingresosAngieProp}
           onClose={() => setShowAporteAngie(false)}
           onSave={(ingresos) => {
-            const newAportes: Record<Semana, string> = { S1: "", S2: "", S3: "", S4: "" };
+            const newAportes: Record<Semana, string> = { S1: "", S2: "", S3: "", S4: "", S5: "" };
             for (const a of ingresos) newAportes[a.semana] = String(a.monto);
             setAportes(newAportes);
             setShowAporteAngie(false);

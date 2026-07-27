@@ -18,8 +18,8 @@ export default function MesM1ClientWrapper({
   saldosInit,
   saldosBrutos,
   gastoH3PorCuenta = { nu_camilo: 0, nu_angie: 0, arq: 0, en_mano: 0 },
-  gastoH3PorSemana = { S1: 0, S2: 0, S3: 0, S4: 0 },
-  gastoH3AngiePorSemana = { S1: 0, S2: 0, S3: 0, S4: 0 },
+  gastoH3PorSemana = { S1: 0, S2: 0, S3: 0, S4: 0, S5: 0 },
+  gastoH3AngiePorSemana = { S1: 0, S2: 0, S3: 0, S4: 0, S5: 0 },
   consumosH3 = [],
 }: {
   mes: string;

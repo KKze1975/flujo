@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { getProvider } from "@/lib/data/provider";
 import type { Movimiento, Semana } from "@/lib/data/types";
+import { semanasDeMes } from "@/lib/utils/fecha";
 
 const MES_REGEX = /^\d{4}-\d{2}$/;
 
@@ -82,7 +83,8 @@ export async function POST(
 
   const conceptoIdsExistentes = new Set(existentes.map((m) => m.conceptoId));
 
-  const SEMANAS: Semana[] = ["S1", "S2", "S3", "S4"];
+  // SEMANA5-01: incluye S5 condicionalmente (meses de 29-31 dias).
+  const SEMANAS: Semana[] = semanasDeMes(mes);
 
   const baseFields = {
     montoEjecutado: null,

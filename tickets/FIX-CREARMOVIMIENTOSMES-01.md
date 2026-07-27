@@ -1,7 +1,7 @@
 ---
 ticket_id: FIX-CREARMOVIMIENTOSMES-01
 orden: 2
-estado: aprobado
+estado: completado
 tier: A
 dependencias: ninguna
 ---
@@ -84,9 +84,62 @@ demostró no ser confiable en este código base).
 
 ## Commit de cierre
 
-(vacío hasta completar)
+Este mismo commit — mensaje `FIX-CREARMOVIMIENTOSMES-01-cierre: DoD verificado`.
 
 ## Notas de ejecución
 
-(vacío — lo llena Claude Code al cerrar: decisiones tomadas, deuda
-técnica encontrada, criterios de parada activados)
+**Fix aplicado** (`lib/data/sheets.ts`, `crearMovimientosMes`): reemplaza
+`spreadsheets.values.append` (sin `INSERT_ROWS`, comportamiento no
+determinístico) por `values.get` sobre `H2!A:A` para calcular la próxima
+fila libre (`existing.data.values.length + 1`) seguido de `values.update`
+con rango explícito `H2!A{nextRow}` — mismo patrón ya usado por
+`ensureH2Headers` (cell top-left, la API expande según el shape del
+array de valores).
+
+**Verificación previa (anchor-guard, antes de escribir):**
+- `GOOGLE_SHEET_ID` de `.env.local` confirmado apuntando a dev
+  (`1p5hvKINy...`), nunca a producción, en toda la sesión.
+- Esquema real de H2 dev leído antes de tocar código: 262 filas totales
+  (1 header + 261 datos), header de 25 columnas (`A:Y`) coincide
+  exactamente con `H2_HEADERS` del código — sin drift de esquema.
+- `git log --all -p -- lib/data/sheets.ts`: cero apariciones de
+  `INSERT_ROWS` en todo el historial de todas las ramas (`dev`, `main`,
+  `fix/dt-posponer-estado-01`) — confirma que el bug nunca se migró
+  parcialmente en ningún intento anterior. El commit de descubrimiento
+  original (`6f3dcb0`) es solo documentación de sesión, no código.
+
+**Caso de prueba (reproduce el escenario original — dos invocaciones
+consecutivas de `crearMovimientosMes`, vía el endpoint real
+`POST /api/mes/[mes]/iniciar` contra dev, sin mocks):**
+
+| Paso | Filas H2 antes | Filas H2 después | Δ | Verificado por |
+|---|---:|---:|---:|---|
+| Baseline | — | 262 | — | lectura directa `values.get H2!A:Y` |
+| `iniciar 2027-01` (mes de prueba, sin datos previos) | 262 | 331 | +69 | lectura directa — fila 262 (última previa) byte-a-byte intacta; fila 263 primera fila nueva, `mes=2027-01` |
+| `iniciar 2027-02` (segunda invocación inmediata) | 331 | 399 | +68 | lectura directa — fila 262 y fila 331 (frontera de la primera llamada) siguen intactas; 398 IDs únicos para 398 filas de datos, cero duplicados |
+
+Ninguna fila previa se sobrescribió en ninguna de las dos invocaciones —
+la asignación de fila es determinística (lectura fresca del conteo real
+antes de cada escritura), a diferencia de `append` que decidía la
+posición internamente.
+
+**Limpieza post-prueba:** las 137 filas sintéticas de `2027-01`/`2027-02`
+se borraron con `batchUpdate`/`deleteDimension` (mismo mecanismo ya
+usado y verificado en `BACKUP-NOCTURNO-01` para limpiar tabs de prueba).
+H2 dev quedó restaurado a 262 filas, última fila verificada
+byte-a-byte idéntica a la baseline original.
+
+**Cero llamadas contra producción** en toda la sesión — confirmado por
+uso exclusivo de `GOOGLE_SHEET_ID` (dev) en el servidor de desarrollo y
+en los scripts de verificación puntual (borrados al terminar, no
+commiteados).
+
+**Deuda técnica NO tocada, documentada como fuera de alcance (ya
+declarada en el Goal):** `createConcepto`, `createIngresoCamilo/Angie`,
+`createCierreSemana`, `createPlanSemana` siguen usando `values.append`
+sin `INSERT_ROWS` (Hallazgo 9, `audit-adversarial-01`) — mismo riesgo
+estructural, ticket separado si se decide abordarlo.
+
+**Candidato a invariante I-16** (`INVARIANTS.md`, ya registrado como
+candidato): este fix es evidencia adicional a favor de promoverlo —
+tema del ticket `INVARIANTS-GAP-01`, no de este.

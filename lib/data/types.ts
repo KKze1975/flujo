@@ -1,6 +1,9 @@
 // ── Enums ──────────────────────────────────────────────────────────────────
 
-export type Semana = "S1" | "S2" | "S3" | "S4";
+// S5 existe solo condicionalmente (meses de 29-31 dias) -- ver
+// lib/utils/fecha.ts mesTieneSemana5(). No es un SemanaDefault valido:
+// ningun concepto se configura con semana_default "S5" en H1.
+export type Semana = "S1" | "S2" | "S3" | "S4" | "S5";
 export type Actor = "camilo" | "angie";
 export type TipoConcepto = "fijo" | "pago_fraccionado" | "discrecional";
 export type Frecuencia = "mensual" | "bimestral" | "semanal";

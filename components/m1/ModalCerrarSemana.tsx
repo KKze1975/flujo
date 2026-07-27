@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import type { Semana, IngresoAngie } from "@/lib/data/types";
+import { semanaSiguienteDe } from "@/lib/utils/fecha";
 
 const COP = (n: number) =>
   new Intl.NumberFormat("es-CO", {
@@ -17,10 +18,6 @@ const UBICACION_LABEL: Record<Ubicacion, string> = {
   nequi: "Nequi",
 };
 
-const SEMANA_SIGUIENTE: Record<Semana, Semana | null> = {
-  S1: "S2", S2: "S3", S3: "S4", S4: null,
-};
-
 interface Props {
   mes: string;
   semana: Semana;
@@ -31,7 +28,7 @@ interface Props {
 }
 
 export default function ModalCerrarSemana({ mes, semana, ingresosAngie = [], gastoH3AngiePorSemana, onClose, onSuccess }: Props) {
-  const semanaSiguiente = SEMANA_SIGUIENTE[semana];
+  const semanaSiguiente = semanaSiguienteDe(semana, mes);
 
   const remanenteCalc = useMemo(() => {
     const aporte = ingresosAngie.find(a => a.semana === semana)?.monto ?? 0;

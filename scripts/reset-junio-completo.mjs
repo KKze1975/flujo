@@ -119,7 +119,7 @@ async function resetH2() {
     return 0;
   }
 
-  await sheets.spreadsheets.values.clear({ spreadsheetId, range: "H2!A2:Z1000" });
+  await sheets.spreadsheets.values.clear({ spreadsheetId, range: "H2!A2:Y1000" });
 
   let despues = 0;
   try {
@@ -143,12 +143,12 @@ async function resetH2() {
 async function resetH3() {
   console.log(`\n── 2. H3 — Consumos ────────────────────────────────────────`);
   const borradas = await deleteJunioRows({
-    rangeRead:  "H3!A:P",
-    rangeClear: "H3!A2:P10000",
+    rangeRead:  "H3!A:Q",
+    rangeClear: "H3!A2:Q10000",
     rangeWrite: "H3!A2",
     label: "H3 consumos",
   });
-  if (borradas > 0) await verifyZeroJunio({ rangeRead: "H3!A:P", label: "H3" });
+  if (borradas > 0) await verifyZeroJunio({ rangeRead: "H3!A:Q", label: "H3" });
   return borradas;
 }
 
@@ -213,12 +213,12 @@ async function resetH4D() {
 async function resetH5A() {
   console.log(`\n── 6. H5A — Cierres de semana ──────────────────────────────`);
   const borradas = await deleteJunioRows({
-    rangeRead:  "H5!A:N",
-    rangeClear: "H5!A2:N10000",
+    rangeRead:  "H5!A:P",
+    rangeClear: "H5!A2:P10000",
     rangeWrite: "H5!A2",
     label: "H5A (cierres semana)",
   });
-  if (borradas > 0) await verifyZeroJunio({ rangeRead: "H5!A:N", label: "H5A" });
+  if (borradas > 0) await verifyZeroJunio({ rangeRead: "H5!A:P", label: "H5A" });
   return borradas;
 }
 

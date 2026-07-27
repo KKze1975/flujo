@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
 
   const id = `CONSUMO_${Date.now()}`;
   const hoy = new Date().toISOString().split("T")[0];
-  const mes = mesActual();
+  const mes = body.mes ?? mesActual();
   const semana = semanaActual();
   const clasificado = body.bolsilloId ? "TRUE" : "FALSE";
   const row = [

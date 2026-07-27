@@ -1,12 +1,9 @@
 import type { NextRequest } from "next/server";
 import { getProvider } from "@/lib/data/provider";
 import type { Semana } from "@/lib/data/types";
+import { semanasDeMes, semanaSiguienteDe } from "@/lib/utils/fecha";
 
 const MES_REGEX = /^\d{4}-\d{2}$/;
-const SEMANAS: Semana[] = ["S1", "S2", "S3", "S4"];
-const SEMANA_SIGUIENTE: Record<Semana, Semana | null> = {
-  S1: "S2", S2: "S3", S3: "S4", S4: null,
-};
 
 type Body = {
   semana: Semana;
@@ -32,19 +29,22 @@ export async function POST(
 
   const { semana, notas } = body;
 
-  if (!SEMANAS.includes(semana)) {
+  // SEMANA5-01: S5 solo es valida si el mes tiene 29+ dias.
+  if (!semanasDeMes(mes).includes(semana)) {
     return Response.json({ error: "Semana inválida." }, { status: 400 });
   }
 
   const provider = getProvider();
 
   try {
-    const [gastosPorSemana, movsSemana, ingresosAngie, consumosSemana] = await Promise.all([
+    const [gastosPorSemana, movsSemana, ingresosAngie, consumosSemana, conceptos] = await Promise.all([
       provider.getGastosSinClasificarPorSemana(mes),
       provider.getMovimientosByMesYSemana(mes, semana),
       provider.getIngresosAngie(mes).catch(() => []),
       provider.getConsumosByMesYSemana(mes, semana).catch(() => []),
+      provider.getConceptos().catch(() => []),
     ]);
+    const frecuenciaPorConcepto = new Map(conceptos.map((c) => [c.id, c.frecuencia]));
 
     const gastosSinClasificar = gastosPorSemana[semana] ?? 0;
     if (gastosSinClasificar > 0) {
@@ -73,7 +73,8 @@ export async function POST(
     const remanenteAngie = aportePlaneadoSemana - gastosAngie;
 
     // aporteAngiePlaneado para H5B = H4B de la semana siguiente
-    const semanaSiguiente = SEMANA_SIGUIENTE[semana];
+    // SEMANA5-01: S4 encadena a S5 si el mes lo tiene; S5 no tiene siguiente.
+    const semanaSiguiente = semanaSiguienteDe(semana, mes);
     const aporteAngiePlaneado = semanaSiguiente
       ? (ingresosAngie.find((a) => a.semana === semanaSiguiente)?.monto ?? 0)
       : 0;
@@ -119,7 +120,13 @@ export async function POST(
     }
 
     // Consolidate pago_fraccionado H2 rows: mark ejecutado with sum of H3B consumos for each bolsillo.
-    const bolsilloMovs = movsSemana.filter(m => m.tipoSnapshot === "pago_fraccionado" && m.estado !== "ejecutado");
+    // Bolsillos mensuales (frecuencia: "mensual") quedan excluidos -- acumulan gasto todo el
+    // mes en vez de cerrarse en la primera semana que se cierra (FIX-BOLSILLO-MENSUAL-01).
+    const bolsilloMovs = movsSemana.filter(m =>
+      m.tipoSnapshot === "pago_fraccionado" &&
+      m.estado !== "ejecutado" &&
+      frecuenciaPorConcepto.get(m.conceptoId) !== "mensual"
+    );
     if (bolsilloMovs.length > 0) {
       await Promise.all(
         bolsilloMovs.map(m => {

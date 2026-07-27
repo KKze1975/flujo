@@ -74,7 +74,7 @@ async function resetH2(
 
   if (antes === 0) return { label: "H2", borradas: 0 };
 
-  await sheets.spreadsheets.values.clear({ spreadsheetId, range: "H2!A2:Z1000" });
+  await sheets.spreadsheets.values.clear({ spreadsheetId, range: "H2!A2:Y1000" });
   return { label: "H2", borradas: antes };
 }
 
@@ -92,12 +92,12 @@ export async function POST(req: NextRequest) {
 
   const [h2, h3b, h4a, h4b, h4c, h4d, h5a, h5b] = await Promise.all([
     resetH2(sheets, spreadsheetId, mes),
-    deleteRowsByMes(sheets, spreadsheetId, mes, "H3!A:P",   "H3!A2:P10000",   "H3!A2",   "H3B"),
+    deleteRowsByMes(sheets, spreadsheetId, mes, "H3!A:Q",   "H3!A2:Q10000",   "H3!A2",   "H3B"),
     deleteRowsByMes(sheets, spreadsheetId, mes, "H4!A:G",   "H4!A2:G10000",   "H4!A2",   "H4A"),
     deleteRowsByMes(sheets, spreadsheetId, mes, "H4!I:N",   "H4!I2:N10000",   "H4!I2",   "H4B"),
     deleteRowsByMes(sheets, spreadsheetId, mes, "H4!P:V",   "H4!P2:V10000",   "H4!P2",   "H4C"),
     deleteRowsByMes(sheets, spreadsheetId, mes, "H4!X:AE",  "H4!X2:AE10000",  "H4!X2",   "H4D"),
-    deleteRowsByMes(sheets, spreadsheetId, mes, "H5!A:N",   "H5!A2:N10000",   "H5!A2",   "H5A"),
+    deleteRowsByMes(sheets, spreadsheetId, mes, "H5!A:P",   "H5!A2:P10000",   "H5!A2",   "H5A"),
     deleteRowsByMes(sheets, spreadsheetId, mes, "H5B!A:I",  "H5B!A2:I10000",  "H5B!A2",  "H5B"),
   ]);
 

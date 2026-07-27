@@ -269,13 +269,18 @@ export class SheetsDataProvider implements IDataProvider {
 
   async crearMovimientosMes(movimientos: Omit<Movimiento, "id">[]): Promise<Movimiento[]> {
     await this.ensureH2Headers();
+    const existing = await this.sheets.spreadsheets.values.get({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: "H2!A:A",
+    });
+    const nextRow = (existing.data.values?.length ?? 1) + 1;
     const base = Date.now();
     const rows = movimientos.map((m, i) =>
       this.movimientoToRow(`MOV_${base + i}`, m)
     );
-    await this.sheets.spreadsheets.values.append({
+    await this.sheets.spreadsheets.values.update({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: "H2!A:Y",
+      range: `H2!A${nextRow}`,
       valueInputOption: "RAW",
       requestBody: { values: rows },
     });
@@ -655,7 +660,7 @@ export class SheetsDataProvider implements IDataProvider {
   // ── H3 ───────────────────────────────────────────────────────────────────
 
   async getGastosSinClasificarPorSemana(mes: string): Promise<Record<Semana, number>> {
-    const result: Record<Semana, number> = { S1: 0, S2: 0, S3: 0, S4: 0 };
+    const result: Record<Semana, number> = { S1: 0, S2: 0, S3: 0, S4: 0, S5: 0 };
     try {
       const res = await this.sheets.spreadsheets.values.get({
         spreadsheetId: process.env.GOOGLE_SHEET_ID,

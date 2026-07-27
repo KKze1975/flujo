@@ -3,7 +3,9 @@ import { getProvider } from "@/lib/data/provider";
 import type { Concepto, Movimiento, Semana, Categoria, TipoConcepto } from "@/lib/data/types";
 
 const MES_REGEX = /^\d{4}-\d{2}$/;
-const SEMANAS_VALIDAS: Semana[] = ["S1", "S2", "S3", "S4"];
+// S5 no es un semanaDefault valido para un concepto nuevo (SEMANA5-01: S5
+// es condicional al mes, no una asignacion fija de H1) -- sin cambios aqui.
+const SEMANAS_VALIDAS: Exclude<Semana, "S5">[] = ["S1", "S2", "S3", "S4"];
 const CATEGORIAS_VALIDAS: Categoria[] = [
   "Casa", "Servicios Públicos", "Membresías y Suscripciones", "Educación",
   "Salud", "Mercado y Alimentación", "Compromisos Financieros",
@@ -28,7 +30,7 @@ export async function POST(
     categoria: Categoria;
     tipo: TipoConcepto;
     monto: number;
-    semana: Semana;
+    semana: Exclude<Semana, "S5">;
     cicloVida: CicloVida;
     notas?: string | null;
   };

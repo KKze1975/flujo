@@ -11,6 +11,7 @@ import ModalCerrarSemana from "./m1/ModalCerrarSemana";
 import ModalConfirmarSaldos from "./m1/ModalConfirmarSaldos";
 import VistaPlanificacion from "./m1/VistaPlanificacion";
 import Icon from "@/components/ui/Icon";
+import { semanasDeMes } from "@/lib/utils/fecha";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -18,8 +19,6 @@ const COP = (n: number) =>
   new Intl.NumberFormat("es-CO", {
     style: "currency", currency: "COP", maximumFractionDigits: 0,
   }).format(n);
-
-const SEMANAS: Semana[] = ["S1", "S2", "S3", "S4"];
 
 const CATEGORIAS_ORDER: Categoria[] = [
   "Casa", "Servicios Públicos", "Membresías y Suscripciones", "Educación",
@@ -35,7 +34,10 @@ function semanaDates(mes: string): Record<Semana, string> {
   const month = Number(monthStr);
   const last = new Date(Number(year), month, 0).getDate();
   const m = MESES_ES[month];
-  return { S1: `1–7 ${m}`, S2: `8–14 ${m}`, S3: `15–21 ${m}`, S4: `22–${last} ${m}` };
+  return {
+    S1: `1–7 ${m}`, S2: `8–14 ${m}`, S3: `15–21 ${m}`, S4: `22–28 ${m}`,
+    S5: `29–${last} ${m}`,
+  };
 }
 
 function formatMesLabel(mes: string): string {
@@ -99,6 +101,8 @@ export default function MesM1({
 }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+
+  const SEMANAS = useMemo(() => semanasDeMes(mes), [mes]);
 
   const [view, setView] = useState<"planificacion" | "ejecucion">("ejecucion");
   const [movs, setMovs] = useState(init);

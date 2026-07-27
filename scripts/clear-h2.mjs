@@ -36,7 +36,7 @@ async function main() {
   // Limpiar filas de datos — mantiene fila 1 (headers)
   await sheets.spreadsheets.values.clear({
     spreadsheetId,
-    range: "H2!A2:V10000",
+    range: "H2!A2:Y10000",
   });
 
   // Verificar que solo queda el header

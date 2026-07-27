@@ -1,9 +1,9 @@
 import type { NextRequest } from "next/server";
 import { getProvider } from "@/lib/data/provider";
 import type { Semana } from "@/lib/data/types";
+import { semanasDeMes } from "@/lib/utils/fecha";
 
 const MES_REGEX = /^\d{4}-\d{2}$/;
-const SEMANAS_VALIDAS: Semana[] = ["S1", "S2", "S3", "S4"];
 
 export async function GET(
   _req: NextRequest,
@@ -14,7 +14,7 @@ export async function GET(
   if (!MES_REGEX.test(mes)) {
     return Response.json({ error: "Formato de mes inválido." }, { status: 400 });
   }
-  if (!SEMANAS_VALIDAS.includes(semana as Semana)) {
+  if (!semanasDeMes(mes).includes(semana as Semana)) {
     return Response.json({ error: "Semana inválida." }, { status: 400 });
   }
 
