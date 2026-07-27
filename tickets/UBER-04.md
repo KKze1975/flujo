@@ -71,7 +71,7 @@ excepción ya usada en `FIX-FALTAPAGAR-MENSUAL-01` y `SEMANA5-01`).
 
 ## Commit de cierre
 
-(pendiente — ver `git log` de `dev` tras el commit de este cierre)
+`458692f` (construcción) + `37a2035` (verificación end-to-end y cierre).
 
 ## Notas de ejecución
 
