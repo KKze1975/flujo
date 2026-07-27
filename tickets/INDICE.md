@@ -24,6 +24,7 @@
 | 20 | DESGLOSE-BOLSILLOS-01 | completado | A | ninguna | `4da7382`+`a4d008f` | Modal/popover de desglose de consumos H3B al tocar tarjetas de bolsillos (pendientes y ejecutados). |
 | 21 | UBER-05 | completado | A | UBER-04 | `19e34fb` | Corregir fecha de consumo Uber en H3 (usar fecha del correo en lugar de fecha de ejecución del cron). |
 | 22 | POSPONER-S5-01 | completado | A | ninguna | `1d5b3c2` | Visibilidad de conceptos pospuestos (PS Plus, Uber One) en semanas destino (S5). |
+| 23 | BOTONES-POSPUESTOS-01 | completado | A | POSPONER-S5-01 | `9c00b91` | Habilitar botones OK y Lápiz en conceptos pospuestos dentro de la pestaña pendientes. |
 
 **Estados posibles:** `propuesto` \| `aprobado` \| `activo` \| `completado` \| `completado_parcial` \| `bloqueado` \| `descartado` \| `diagnostico_listo` (Tier B, fase de diagnóstico cerrada, esperando elección de opción)
 

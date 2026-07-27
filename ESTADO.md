@@ -6142,3 +6142,19 @@ mes calendario que nombra el string `mes`, sin relación con el ciclo de
 
 ### Estado del repo al cierre de esta entrada
 - Rama `dev` sincronizada con `origin/dev`. `npx tsc --noEmit` limpio (0 errores).
+
+---
+
+## Sesión — Construcción de ticket BOTONES-POSPUESTOS-01 (Habilitación de botones OK y Lápiz en conceptos pospuestos) · 27 jul 2026
+
+**Tipo de sesión:** DISEÑO & CONSTRUCCIÓN (Corrección del renderizado de botones de acción en `components/VistaSemanal.tsx` para admitir ítems con `estado === "pospuesto"` en la pestaña de `pendientes`).
+
+### 1. Diagnóstico y Corrección de Causa Raíz
+- **Diagnóstico:** La línea 1787 de `VistaSemanal.tsx` condicionaba los botones de acción únicamente a `mov.estado === "pendiente"`, excluyendo a los conceptos con `estado === "pospuesto"`.
+- **Fix:** Cambiada la condición a `(mov.estado === "pendiente" || mov.estado === "pospuesto")`. Ahora la tarjeta renderiza los botones **OK** (ejecución) y **Lápiz** (edición) permitiendo ejecutarlos o editarlos normalmente.
+
+### 2. Estado del Backlog (`tickets/INDICE.md`)
+- `BOTONES-POSPUESTOS-01`: `completado` (commit `9c00b91` en rama `dev`).
+
+### Estado del repo al cierre de esta entrada
+- Rama `dev` sincronizada con `origin/dev`. `npx tsc --noEmit` limpio (0 errores).
