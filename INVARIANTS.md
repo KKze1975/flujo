@@ -128,3 +128,23 @@ verificar la lista real de tabs físicos por lectura de metadata (`spreadsheets.
 Toda función que borra/limpia un rango fijo de columnas debe re-verificarse
 contra el ancho real del esquema en cada migración de H1-H6.
 (Origen: `FIX-RESET-COLUMNAS-01`, 22 julio 2026). Pendiente de aprobación explícita.
+
+### Candidato (I-17) — Sign-off humano de Angie antes de merge a main
+Un PR con protección de rama satisfecha técnicamente (I-11, GH006) no
+implica autorización para mergear. Ningún merge a `main` procede sin
+aprobación explícita de Angie como QA approver — este es un gate humano
+adicional, independiente del gate técnico de GitHub. Un agente de
+ejecución (Claude Code, Antigravity, Aider) que detecte un PR listo para
+mergear debe escalar a Camilo/Angie, nunca mergear de forma autónoma.
+(Origen: Memory de Project claude.ai, formalizado 27 jul 2026).
+Pendiente de aprobación explícita de Camilo antes de convertirse en invariante real.
+
+### Candidato (I-18) — Verificación de tickets ejecutados de forma autónoma
+Todo ticket lanzado autónomamente por un agente de ejecución debe
+verificarse en la siguiente sesión antes de iniciar trabajo nuevo. Un
+ticket que desaparece de `tickets/INDICE.md` (o cambia de estado) sin un
+hash de commit de éxito documentado, o sin una nota explícita de fracaso,
+se considera no construido — no se asume completitud por ausencia de
+evidencia en contrario.
+(Origen: Memory de Project claude.ai, formalizado 27 jul 2026).
+Pendiente de aprobación explícita de Camilo antes de convertirse en invariante real.
