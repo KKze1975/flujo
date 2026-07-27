@@ -1784,7 +1784,7 @@ export default function VistaSemanal({
                   </div>
 
                   {/* Acciones para pendientes */}
-                  {tab === "pendientes" && mov.estado === "pendiente" && !panelActivo && modoSemana !== "lectura" && (
+                  {tab === "pendientes" && (mov.estado === "pendiente" || mov.estado === "pospuesto") && !panelActivo && modoSemana !== "lectura" && (
                     <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
                       <button
                         className="fl-btn pos sm"
