@@ -78,3 +78,29 @@ export function semanaSiguienteDe(semana: Semana, mes: string): Semana | null {
   const idx = orden.indexOf(semana);
   return idx >= 0 && idx < orden.length - 1 ? orden[idx + 1] : null;
 }
+
+// ── UBER-04 ──────────────────────────────────────────────────────────────
+// Mes calendario ("YYYY-MM") de una fecha ya ocurrida, sin el ciclo de
+// corrimiento dia>=29 de mesActual() -- un consumo de un correo ya recibido
+// pertenece al mes calendario real en que ocurrio, no al ciclo operativo de
+// navegacion por defecto.
+export function mesDeFecha(fecha: Date): string {
+  const { year, month } = getColombiaDate(fecha);
+  return `${year}-${String(month).padStart(2, "0")}`;
+}
+
+// Semana de una fecha ya ocurrida (ej. la fecha de un correo/recibo) dentro
+// de su propio mes calendario -- misma particion dia<=7/14/21/28/29+ que
+// semanaActivaMes() (app/api/mes/[mes]/semana/[semana]/route.ts), pero
+// parametrizada: ni semanaActual(fecha) (ciclo dia-29-mes-anterior, sin S5)
+// ni semanaActivaMes() (hardcodea new Date(), sin parametro) sirven para
+// derivar la semana de una fecha pasada arbitraria. I-01: determinístico,
+// sin inferencia de IA.
+export function semanaDeFechaEnMes(fecha: Date): Semana {
+  const { day } = getColombiaDate(fecha);
+  if (day <= 7)  return "S1";
+  if (day <= 14) return "S2";
+  if (day <= 21) return "S3";
+  if (day <= 28) return "S4";
+  return "S5";
+}
