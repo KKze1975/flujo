@@ -6024,3 +6024,38 @@ mes calendario que nombra el string `mes`, sin relación con el ciclo de
 3. Retomar `TICKET-B-GUARDIA-01` (WIP abierto por excepción) o
    `DT-M1M4-NULL-01` (esperando elección de opción) según indique
    Camilo.
+
+---
+
+## Sesión — Resolución de entorno Antigravity, instalación de workspace, harness INVARIANTS-GAP-01 (PR #33 abierto) y actualización de gobernanza · 27 jul 2026
+
+**Tipo de sesión:** CONSTRUCCIÓN & GOBERNANZA (configuración e instalación de entorno de desarrollo, resolución de autenticación Antigravity, ejecución de harness sobre repo real con PR #33 abierto y formalización de gobernanza multi-agente).
+
+### 1. Configuración de entorno y workspace Linux
+- **Instalación de herramientas base:** Instalación de Node 22 y npm administrados vía `nvm`, `git`, y configuración de llaves SSH para autenticación e interacción segura con GitHub.
+- **Recuperación de secretos:** Descarga y restauración del archivo `.env.local` desde Google Drive para habilitar la conectividad con las APIs de Google Sheets y servicios auxiliares.
+
+### 2. Resolución de entorno Antigravity (Enterprise GCP vs Google One Consumer)
+- **Intento inicial (Enterprise GCP):** Se configuró y vinculó un proyecto GCP con billing activo (`flujo-agy`), pero la ruta falló por incompatibilidad de modelos y ubicación geográfica (los modelos Claude y GPT-OSS no estaban soportados en esa ruta de proyecto Enterprise GCP).
+- **Solución final (Google One Consumer):** Se pivotó al flujo de autenticación de consumidor vía Google One (`agy login`), logrando la activación real y el acceso a los modelos Claude Sonnet y Opus dentro del harness de Antigravity CLI.
+
+### 3. Validación de harness sobre repo real con `INVARIANTS-GAP-01` (PR #33 abierto)
+- Ejecución y validación del harness autónomo sobre el repositorio real de Flujo resolviendo el ticket `INVARIANTS-GAP-01`.
+- Formalización del invariante **I-16** (*Estados derivados por ausencia de valor*) en `INVARIANTS.md`, estableciendo la prohibición de inferir estados traslativos/reasignados mediante sentinels `null` en múltiples puntos de consumo sin fuente única declarativa.
+- Consolidación y reordenamiento de candidatos a invariantes en `INVARIANTS.md`.
+- **Estado del PR #33:** El Pull Request #33 (`INVARIANTS-GAP-01: formalizar I-16 y consolidar candidatos en INVARIANTS.md`) fue creado, pero **NO está aprobado ni mergeado** — permanece abierto, pendiente de revisión y sign-off.
+
+### 4. Actualización de Gobernanza (`CLAUDE.md` & `INVARIANTS.md`)
+- **Candidato I-17** (*Sign-off de Angie antes de merge a main*): Formalizado en `INVARIANTS.md` como gate humano obligatorio. Ningún merge a `main` proceeds sin la aprobación explícita de Angie como QA approver, independiente de que la protección técnica de rama (`I-11`, GH006) esté satisfecha.
+- **Candidato I-18** (*Verificación de tickets ejecutados autónomamente*): Formalizado en `INVARIANTS.md`. Todo ticket ejecutado de forma autónoma debe verificarse en la siguiente sesión antes de iniciar trabajo nuevo; sin hash de commit o evidencia documentada, el ticket no se asume completado.
+- **`CLAUDE.md` — Sección "Gobernanza y arquitectura de agentes (actualizado 27 jul 2026)"**:
+  - Generalización de la arquitectura de dos capas (Diseño/Project vs Ejecución intercambiable entre Claude Code, Antigravity, Aider, etc.).
+  - Definición de Git (`git log`/`git show`) como fuente de verdad autoritativa sobre la metadata diferida de Google Drive (hasta 60+ min de retraso).
+  - Integración de los gates humanos `I-17` e `I-18` en la guía de agentes (commit `5d62634`).
+
+### Estado del repo al cierre de esta entrada
+- Verificado mediante ejecución directa de `git status` (27 jul 2026, 13:49:14):
+  ```
+  On branch dev
+  nothing to commit, working tree clean
+  ```
