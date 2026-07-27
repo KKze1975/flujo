@@ -54,10 +54,18 @@ export interface ViajeDetectado {
   idsMensajes: string[];
 }
 
+// Ventana de búsqueda: "newer_than:7d" evita que la primera corrida (o una
+// corrida tras una falla del cron de varios días) intente un backfill
+// masivo de todo el historial de correos Uber sin leer -- verificado en
+// dev que sin este filtro, "is:unread" solo puede traer años de historial
+// no relacionado con viajes recientes. 7 días da margen sobre la cadencia
+// diaria del cron por si una corrida falla.
+const VENTANA_BUSQUEDA = "newer_than:7d";
+
 export async function buscarViajesNuevos(gmail: gmail_v1.Gmail): Promise<ViajeDetectado[]> {
   const list = await gmail.users.messages.list({
     userId: "me",
-    q: `from:${UBER_SENDER} is:unread`,
+    q: `from:${UBER_SENDER} is:unread ${VENTANA_BUSQUEDA}`,
     maxResults: 50,
   });
   const refs = list.data.messages ?? [];

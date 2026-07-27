@@ -1,7 +1,7 @@
 ---
 ticket_id: UBER-04
 orden: 15
-estado: activo
+estado: completado
 tier: A
 dependencias: UBER-01, UBER-03
 ---
@@ -40,11 +40,12 @@ Clasificación trabajo/personal — descartada, ver arriba.
       `app/api/registro/sin-concepto/route.ts`.
 - [x] **Deduplicación — cambiada de `threadId` a llave compuesta de viaje**,
       con evidencia real que threadId no sirve (ver Notas de ejecución).
-- [ ] Correo real de Uber dispara el parseo sin intervención manual —
-      **código construido y probado con datos reales, pero NO verificado
-      end-to-end todavía**: requiere que Camilo complete el prerrequisito
-      manual de OAuth2 (ver Notas de ejecución) antes de poder correr el
-      cron contra Gmail real y confirmar la escritura real a H3.
+- [x] Correo real de Uber dispara el parseo sin intervención manual —
+      **verificado end-to-end**: Camilo completó el prerrequisito manual de
+      OAuth2, se corrió el cron 3 veces contra Gmail real y el Sheet dev
+      real (ver Notas de ejecución) — parseo, escritura a H3 y
+      deduplicación confirmados por lectura directa, no solo por código de
+      respuesta.
 
 ## Contexto / diagnóstico previo
 
@@ -70,7 +71,7 @@ excepción ya usada en `FIX-FALTAPAGAR-MENSUAL-01` y `SEMANA5-01`).
 
 ## Commit de cierre
 
-(vacío — pendiente de la verificación end-to-end con credenciales reales)
+(pendiente — ver `git log` de `dev` tras el commit de este cierre)
 
 ## Notas de ejecución
 
@@ -149,18 +150,53 @@ una sola vez para obtener el `refresh_token`, (4) poner
 `GMAIL_CLIENT_ID`/`GMAIL_CLIENT_SECRET`/`GMAIL_REFRESH_TOKEN` en
 `.env.local` y en Vercel.
 
-**Por qué no se verificó tsc/build con las credenciales reales:** sin ese
-prerrequisito no hay forma de correr el cron contra Gmail real ni escribir
-un consumo real a H3 — `tsc --noEmit` y el parser sí están verificados con
-datos reales (los 5 correos), pero la integración end-to-end (Gmail →
-Sheet) queda pendiente de que Camilo complete el prerrequisito. **No se
-marca `completado`** hasta esa verificación.
+**Verificación end-to-end real (Camilo completó el prerrequisito manual,
+OAuth2 con `scripts/gmail-auth-setup.mjs`), 3 corridas contra Gmail real y
+el Sheet dev real:**
+
+1. **1ra corrida:** escribió 36 consumos únicos (viajes deduplicados
+   correctamente — 0 duplicados incluso entre mensajes de reintento de
+   pago). Confirmado por lectura directa de H3: `dedupe:e3ca75d4` y
+   `dedupe:75007197` coinciden exactamente con los 2 viajes reales
+   verificados manualmente en la fase de diseño (EYDER JANIER $19.657,
+   WILSON GERARDO $11.485) — mismo monto, mismas direcciones, mismo
+   conductor, `mes`/`semana` calculados correctamente (`2026-07`/S3-S4).
+2. **2da corrida — hallazgo real no anticipado:** escribió **40 consumos
+   más**, sin superposición con los 36 anteriores. Causa: la query
+   `is:unread` sin ventana de fecha capturaba **años de historial de Uber
+   nunca marcado como leído** (76+ viajes reales en solo 2 corridas de 50
+   mensajes cada una) — no solo viajes nuevos. Esto habría significado que
+   la primera corrida en producción intentaría un backfill masivo de todo
+   el historial no leído, no solo detección de viajes nuevos. **Camilo
+   decidió explícitamente limitar el alcance**: se agregó
+   `newer_than:7d` a la query de Gmail (`lib/uber/gmail.ts`,
+   `VENTANA_BUSQUEDA`) — 7 días da margen sobre la cadencia diaria del cron
+   por si una corrida falla, sin arrastrar años de historial.
+3. **3ra corrida (con el filtro de 7 días ya aplicado):** `0 escritos, 2
+   saltados` — confirma que (a) el filtro de fecha funciona sin romper
+   nada, y (b) la deduplicación por `descripcion`/`[dedupe:xxxxxxxx]`
+   correctamente evita reescribir consumos ya existentes en corridas
+   posteriores.
+
+**Dato relevante para Camilo, no un problema de este ticket:** quedaron
+~76 consumos reales de Uber (meses `2026-06` y `2026-07`) escritos en H3 del
+Sheet **dev** por las 2 primeras corridas, antes del ajuste de ventana de
+fecha. Es dato real (montos/direcciones/fechas correctos), no de prueba —
+se deja tal como quedó, sin limpiar, porque es información real del usuario
+y no fue pedido explícitamente borrarla; si Camilo prefiere limpiar el
+Sheet dev de este backfill histórico, es una acción aparte a pedir
+explícitamente.
 
 **Deuda técnica / decisión de scope, no oscurecida:** el cron corre 1
 vez/día (limitación del plan de Vercel actual, aceptada por Camilo) — no es
 literalmente "casi en tiempo real" como decía el Goal original. Si más
 adelante se necesita menor latencia, las opciones son upgrade a Vercel Pro
 (cron por minuto) o migrar a Gmail push notifications (Pub/Sub + webhook),
-ninguna construida aquí.
+ninguna construida aquí. Tampoco se agregó paginación a
+`gmail.users.messages.list` (límite `maxResults: 50` por corrida) — con la
+ventana de 7 días esto no debería ser un problema en uso normal, pero si
+algún día hay más de 50 viajes de Uber en 7 días, algunos quedarían para la
+corrida siguiente (no se pierden, solo se retrasan un día).
 
-Cero llamadas contra producción durante esta construcción.
+Cero llamadas contra producción durante esta construcción. El Sheet
+afectado en todas las pruebas fue el de **dev** (`GOOGLE_SHEET_ID`).
