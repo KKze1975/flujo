@@ -112,8 +112,8 @@ completar/cerrar julio.
 
 ## Commit de cierre
 
-(pendiente de completar en el siguiente paso de esta misma sesión — ver
-`git log` de `dev` tras el commit de este cierre)
+`632a966` (SEMANA5-01-P1, implementación principal) + `9330ba3`
+(SEMANA5-01-cierre, fix de los 3 pickers + verificación + cierre).
 
 ## Notas de ejecución
 
