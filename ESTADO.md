@@ -6098,7 +6098,9 @@ mes calendario que nombra el string `mes`, sin relación con el ciclo de
 - **Solución:** Reutilizado el componente de modal de desglose `desgloseModal` en `components/VistaSemanal.tsx` permitiendo su apertura al tocar la tarjeta de cualquier bolsillo `pago_fraccionado` (Mercado semanal, Entretenimiento, Frutas y verduras, Víveres y otros, Imprevistos, Mercado mensual, Fondo de transporte, Frida), mostrando la lista de ítems (descripción, fecha `c.fecha`, monto `COP(c.monto)` y autor `c.ejecutor`).
 
 ### 2. Estado del Backlog (`tickets/INDICE.md`)
-- `DESGLOSE-BOLSILLOS-01`: `completado` (commit `4da7382` en rama `dev`).
+- `DESGLOSE-BOLSILLOS-01`: `completado` (commits `4da7382`, `a93878d`, `a4d008f` en rama `dev`).
+  - Refactored `h3bPopover` en `components/VistaSemanal.tsx` para usar popover flotante inline blanco (sin backdrop gris).
+  - Re-anclado `anchor` a los elementos de texto (`name` / `cat`) con affordance `underline dotted` exactamente igual a "Falta por Pagar".
 
 ### Estado del repo al cierre de esta entrada
 - Rama `dev` sincronizada con `origin/dev`. `npx tsc --noEmit` limpio (0 errores).
