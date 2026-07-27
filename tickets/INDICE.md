@@ -22,6 +22,7 @@
 | 18 | FIX-FALTAPAGAR-MENSUAL-01 | completado | B | FIX-BOLSILLO-MENSUAL-01 | `5db954c` | "Falta por pagar" sumaba el monto completo de bolsillos mensuales (Mercado mensual, Frida, Fondo transporte) en cada semana en vez de una vez al mes. Fix en `VistaSemanal.tsx` (mismo patrón `idsBolsillosMensuales` de `FIX-BOLSILLO-MENSUAL-01`, aplicado al total agregado) — verificado contra datos reales del Sheet dev, sin regresión en bolsillos semanales. **Excepción de WIP limit (I-09) autorizada explícitamente por Camilo** — abierto pese a `TICKET-B-GUARDIA-01` seguir `activo`. Deuda técnica encontrada de paso (no corregida): `resetH2` en `reset-mes` borra H2 completo sin filtrar por mes. |
 | 19 | SEMANAS-LUNES-01 | completado | A | ninguna | `dev` | Refactor del modelo de semanas a ciclos Lunes-Domingo (S1-S5). Evalúa 27-Julio-2026 como S5. |
 | 20 | DESGLOSE-BOLSILLOS-01 | completado | A | ninguna | `4da7382`+`a4d008f` | Modal/popover de desglose de consumos H3B al tocar tarjetas de bolsillos (pendientes y ejecutados). |
+| 21 | UBER-05 | completado | A | UBER-04 | `19e34fb` | Corregir fecha de consumo Uber en H3 (usar fecha del correo en lugar de fecha de ejecución del cron). |
 
 **Estados posibles:** `propuesto` \| `aprobado` \| `activo` \| `completado` \| `completado_parcial` \| `bloqueado` \| `descartado` \| `diagnostico_listo` (Tier B, fase de diagnóstico cerrada, esperando elección de opción)
 

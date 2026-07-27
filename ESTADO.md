@@ -6104,3 +6104,20 @@ mes calendario que nombra el string `mes`, sin relación con el ciclo de
 
 ### Estado del repo al cierre de esta entrada
 - Rama `dev` sincronizada con `origin/dev`. `npx tsc --noEmit` limpio (0 errores).
+
+---
+
+## Sesión — Construcción de ticket UBER-05 (Asignación de fecha real de correo en ingesta Uber H3) · 27 jul 2026
+
+**Tipo de sesión:** DISEÑO & CONSTRUCCIÓN (Corrección del worker cron de ingesta de correos Uber para asignar la fecha del correo `fechaCorreo` en H3 y sincronización de fechas reales en Dev Sheet).
+
+### 1. Diagnóstico y Corrección de Causa Raíz
+- **Diagnóstico:** `app/api/cron/uber-parser/route.ts` asignaba `const hoy = new Date().toISOString().split("T")[0]` a la columna `fecha` de H3, sobreescribiendo la fecha real del correo por la fecha de ejecución del servidor.
+- **Fix:** Modificada la construcción de la fila H3 para asignar `fechaCorreo.toISOString().split("T")[0]`.
+- **Sincronización de Datos:** Ejecutado `scratch/fix-uber-dates.ts` actualizando las 18 filas de Uber existentes en H3 de Dev Sheet a sus fechas reales de recibo de Gmail (`2026-07-26`, `2026-07-20`, `2026-07-19`, etc.).
+
+### 2. Estado del Backlog (`tickets/INDICE.md`)
+- `UBER-05`: `completado` (commit `19e34fb` en rama `dev`).
+
+### Estado del repo al cierre de esta entrada
+- Rama `dev` sincronizada con `origin/dev`. `npx tsc --noEmit` limpio (0 errores).
