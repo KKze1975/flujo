@@ -156,6 +156,9 @@ Fecha, semana, mes, actor, sesión: el cliente/prompt no opina, no infiere, no t
 hardcoded. Si un SYSTEM_PROMPT tiene un valor de negocio con fallback tipo "sin referencia → 
 X", es un bug esperando manifestarse (lección de origen de este proyecto — bug S1, jun 2026).
 
+**Freno Informativo ante Preguntas — Prohibida la ejecución autónoma no solicitada.**
+Ante cualquier pregunta o consulta del usuario, el agente debe limitar su respuesta a explicar, diagnosticar o sugerir cursos de acción/opciones. Queda ESTRICTAMENTE PROHIBIDO ejecutar modificaciones de código, commits, escrituras de datos o comandos autónomos de forma reactiva a una pregunta, salvo que exista una orden explícita del usuario o se esté ejecutando un Loop autónomo previamente autorizado (/goal).
+
 **Cierre de sesión — contrato de síntesis.**
 Al cerrar, sintetiza el delta de ESTADO.md/SESSION_LOG.md sin preguntar. No es el estado 
 canónico — es borrador para corrección de Camilo. Usa anchor-guard: verifica contra el ancla 

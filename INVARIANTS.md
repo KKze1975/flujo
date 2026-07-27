@@ -81,7 +81,8 @@ Estados derivados de una acción de traslado o reasignación no deben
 inferirse por ausencia de valor (`null` como sentinel) en más de un
 punto de consumo sin una fuente única que los declare explícitamente.
 Segunda ocurrencia detectada: activa evaluación de migración a estado
-explícito. (Origen: `ESTADO.md` 4 jul 2026 / TICKET-B-GUARDIA-01, aprobado por Camilo).
+## I-19 — Freno Informativo ante Preguntas
+Ante una pregunta o consulta del usuario, la respuesta del agente debe limitarse exclusivamente a informar, explicar, diagnosticar o proponer opciones. Queda prohibido ejecutar modificaciones en el código, commits, escrituras en base de datos o acciones reactivas sin una instrucción u orden explícita del usuario, a menos que se esté ejecutando un Loop autónomo autorizante (`/goal`). (Origen: Aprobado por Camilo en sesión del 27 jul 2026).
 
 ---
 
