@@ -119,7 +119,7 @@ export async function GET(req: NextRequest) {
     }
 
     const id = `CONSUMO_${Date.now()}_${dedupeKey}`;
-    const hoy = new Date().toISOString().split("T")[0];
+    const fechaConsumo = fechaCorreo.toISOString().split("T")[0];
     const descripcion = `Uber ${viaje.tipoServicio} — ${viaje.direccionRecogida} → ${viaje.direccionDestino} [dedupe:${dedupeKey}]`;
     const row = [
       id,
@@ -130,7 +130,7 @@ export async function GET(req: NextRequest) {
       String(viaje.montoTotal),
       "camilo",
       "FALSE", "FALSE", "TRUE", "FALSE",
-      hoy,
+      fechaConsumo,
       "",
       "TRUE",
       "FALSE",

@@ -1676,18 +1676,28 @@ export default function VistaSemanal({
                   <div
                     key={mov.id}
                     className="fl-concepto"
-                    style={ejecutado ? { cursor: "pointer" } : undefined}
-                    onClick={ejecutado ? () => setDesgloseModal(mov) : undefined}
                   >
                     <div className="top">
                       <div style={{ display: "flex", gap: 11, alignItems: "center", minWidth: 0 }}>
                         <Ring pct={pctB} over={over} />
                         <div style={{ minWidth: 0 }}>
-                          <p className="name" onClick={(e) => e.stopPropagation()}>{mov.nombreSnapshot}</p>
+                          <p
+                            className="name"
+                            style={{ cursor: "pointer" }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setH3bPopover({
+                                anchor: (e.currentTarget as HTMLElement).getBoundingClientRect(),
+                                bolsilloId: mov.conceptoId,
+                              });
+                            }}
+                          >
+                            {mov.nombreSnapshot}
+                          </p>
                           <p
                             className="cat"
                             data-h3b-trigger
-                            style={{ cursor: "pointer" }}
+                            style={{ cursor: "pointer", textDecoration: "underline dotted" }}
                             onClick={(e) => {
                               e.stopPropagation();
                               setH3bPopover({
@@ -2132,7 +2142,7 @@ export default function VistaSemanal({
                           <span style={{ flex: 1, fontSize: 13, color: "var(--ink)" }}>{c.descripcion || "Sin descripción"}</span>
                           <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600, fontSize: 13, flexShrink: 0 }}>{COP(c.monto)}</span>
                         </div>
-                        <p style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 2 }}>{c.fecha}</p>
+                        <p style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 2 }}>{c.fecha}{c.ejecutor ? ` · ${c.ejecutor}` : ""}</p>
                       </div>
                     ));
               })()}
@@ -2183,13 +2193,15 @@ export default function VistaSemanal({
       {h3bPopover && (() => {
         const items = consumosDeBolsillo(h3bPopover.bolsilloId);
         const total = items.reduce((s, c) => s + c.monto, 0);
+        const bolsilloObj = bolsillos.find(b => b.conceptoId === h3bPopover.bolsilloId);
+        const tituloHeader = bolsilloObj ? `Consumos ${bolsilloObj.nombreSnapshot}` : "Consumos del bolsillo";
         return (
           <div
             ref={h3bPopoverRef}
             style={{
               position: "fixed",
               top: h3bPopover.anchor.bottom + 4,
-              left: h3bPopover.anchor.left,
+              left: Math.min(h3bPopover.anchor.left, window.innerWidth - 278),
               zIndex: 9999,
               background: "white",
               color: "#111111",
@@ -2201,7 +2213,7 @@ export default function VistaSemanal({
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 14px 8px" }}>
-              <p style={{ fontWeight: 600, fontSize: 13, margin: 0 }}>Consumos H3B</p>
+              <p style={{ fontWeight: 600, fontSize: 13, margin: 0 }}>{tituloHeader}</p>
               <button
                 type="button"
                 onClick={() => setH3bPopover(null)}
@@ -2217,9 +2229,12 @@ export default function VistaSemanal({
                 </p>
               ) : (
                 items.map(c => (
-                  <div key={c.id} style={{ display: "flex", justifyContent: "space-between", padding: "5px 14px", fontSize: 13 }}>
-                    <span style={{ flex: 1, marginRight: 12 }}>{c.descripcion}</span>
-                    <span style={{ fontVariantNumeric: "tabular-nums" }}>{COP(c.monto)}</span>
+                  <div key={c.id} style={{ padding: "6px 14px", borderBottom: "1px solid var(--hair)", fontSize: 13 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                      <span style={{ flex: 1, fontWeight: 500 }}>{c.descripcion || "Sin descripción"}</span>
+                      <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600 }}>{COP(c.monto)}</span>
+                    </div>
+                    <p style={{ fontSize: 11, color: "var(--muted)", margin: "2px 0 0" }}>{c.fecha}{c.ejecutor ? ` · ${c.ejecutor}` : ""}</p>
                   </div>
                 ))
               )}
