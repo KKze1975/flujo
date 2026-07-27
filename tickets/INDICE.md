@@ -11,7 +11,7 @@
 | 7 | DT-SOBRE-TECHO-01 | propuesto | B | ninguna | | sobre_techo no persiste en H2 — requiere confirmar alcance antes de fix. |
 | 8 | BUG-LABEL-MESM1-01 | propuesto | A | ninguna | | Sin diagnóstico de causa raíz confirmado — requiere reproducción antes de construir. |
 | 9 | SEC-AUTH-ADMIN-RESET-01 | propuesto | B | ninguna | | /api/admin/reset-mes sin autenticación. Hallazgo AUDIT-FABLE-01. |
-| 10 | INVARIANTS-GAP-01 | aprobado | A | ninguna | | Cerrar numeración I-13/I-14/I-16 en INVARIANTS.md real. Puramente documental. |
+| 10 | INVARIANTS-GAP-01 | completado | A | ninguna | `INVARIANTS-GAP-01-cierre` | Cerrar numeración I-13/I-14/I-16 en INVARIANTS.md real. Puramente documental. |
 | 11 | TICKET-B-GUARDIA-01 | activo | A | ninguna | | P1/P2 ya commiteados (ee0b9e1, 291e8bd). Falta DoD bullet 2 + PR. Prerrequisito de facto: FIX-CREARMOVIMIENTOSMES-01. |
 | 12 | UBER-01 | completado | A | ninguna | `UBER-01-cierre` | Verificado en Gmail real: [Business] NUNCA aparece (0 de ~201 correos, todo el historial 2020-2026) — supuesto refutado. Origen/destino confirmado en 2 tipos de servicio (Black, Flash Moto). Invalida el diseño de UBER-02. |
 | 13 | UBER-02 | descartado | B | UBER-01 | `UBER-02-descartado` | Camilo decide no separar Uber trabajo/familiar dentro de Flujo — lo hace manualmente. Diagnóstico (3 opciones) queda documentado como referencia. Invalida clasificación e indicador de dos colores en UBER-04. |
