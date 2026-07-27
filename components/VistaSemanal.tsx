@@ -1676,24 +1676,28 @@ export default function VistaSemanal({
                   <div
                     key={mov.id}
                     className="fl-concepto"
-                    style={{ cursor: "pointer" }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setH3bPopover({
-                        anchor: (e.currentTarget as HTMLElement).getBoundingClientRect(),
-                        bolsilloId: mov.conceptoId,
-                      });
-                    }}
                   >
                     <div className="top">
                       <div style={{ display: "flex", gap: 11, alignItems: "center", minWidth: 0 }}>
                         <Ring pct={pctB} over={over} />
                         <div style={{ minWidth: 0 }}>
-                          <p className="name">{mov.nombreSnapshot}</p>
+                          <p
+                            className="name"
+                            style={{ cursor: "pointer" }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setH3bPopover({
+                                anchor: (e.currentTarget as HTMLElement).getBoundingClientRect(),
+                                bolsilloId: mov.conceptoId,
+                              });
+                            }}
+                          >
+                            {mov.nombreSnapshot}
+                          </p>
                           <p
                             className="cat"
                             data-h3b-trigger
-                            style={{ cursor: "pointer" }}
+                            style={{ cursor: "pointer", textDecoration: "underline dotted" }}
                             onClick={(e) => {
                               e.stopPropagation();
                               setH3bPopover({
