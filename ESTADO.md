@@ -6086,3 +6086,19 @@ mes calendario que nombra el string `mes`, sin relación con el ciclo de
 
 ### Estado del repo al cierre de esta entrada
 - Rama `dev` sincronizada con `origin/dev`. `npx tsc --noEmit` limpio (0 errores).
+
+---
+
+## Sesión — Construcción de ticket DESGLOSE-BOLSILLOS-01 (Modal de desglose de consumos H3B en tarjetas de bolsillo) · 27 jul 2026
+
+**Tipo de sesión:** DISEÑO & CONSTRUCCIÓN (Habilitación del modal de desglose de consumos `desgloseModal` al tocar cualquier tarjeta de bolsillo tanto pendiente como ejecutada).
+
+### 1. Hallazgo y Solución de UX/UI
+- **Fricción identificada:** Los consumos clasificados por IA (FAB/Haiku) o ingesta de correos (Uber) se acumulaban en H3B, pero sólo podían inspeccionarse al mover el bolsillo a estado `ejecutado`.
+- **Solución:** Reutilizado el componente de modal de desglose `desgloseModal` en `components/VistaSemanal.tsx` permitiendo su apertura al tocar la tarjeta de cualquier bolsillo `pago_fraccionado` (Mercado semanal, Entretenimiento, Frutas y verduras, Víveres y otros, Imprevistos, Mercado mensual, Fondo de transporte, Frida), mostrando la lista de ítems (descripción, fecha `c.fecha`, monto `COP(c.monto)` y autor `c.ejecutor`).
+
+### 2. Estado del Backlog (`tickets/INDICE.md`)
+- `DESGLOSE-BOLSILLOS-01`: `completado` (commit `4da7382` en rama `dev`).
+
+### Estado del repo al cierre de esta entrada
+- Rama `dev` sincronizada con `origin/dev`. `npx tsc --noEmit` limpio (0 errores).

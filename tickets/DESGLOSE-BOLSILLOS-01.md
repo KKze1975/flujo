@@ -1,7 +1,7 @@
 ---
 ticket_id: DESGLOSE-BOLSILLOS-01
 orden: 20
-estado: propuesto
+estado: completado
 tier: A
 dependencias: ninguna
 ---
@@ -18,11 +18,11 @@ Habilitar el modal de desglose de consumos (`desgloseModal`) para todos los bols
 
 ## Definition of Done
 
-- [ ] Clic en tarjeta de bolsillo `pendiente` abre el modal `desgloseModal`.
-- [ ] Clic en tarjeta de bolsillo `ejecutado` mantiene la apertura de `desgloseModal`.
-- [ ] Cada ítem en el modal muestra descripción, fecha (`c.fecha`), monto (`COP(c.monto)`) y total acumulado.
-- [ ] `tsc --noEmit` sin errores.
-- [ ] Cambios commiteados en rama `dev` y verificados en Vercel preview.
+- [x] Clic en tarjeta de bolsillo `pendiente` abre el modal `desgloseModal`.
+- [x] Clic en tarjeta de bolsillo `ejecutado` mantiene la apertura de `desgloseModal`.
+- [x] Cada ítem en el modal muestra descripción, fecha (`c.fecha`), monto (`COP(c.monto)`) y total acumulado.
+- [x] `tsc --noEmit` sin errores.
+- [x] Cambios commiteados en rama `dev` (commit `4da7382`) y verificados en Vercel preview.
 
 ## Contexto / diagnóstico previo
 
@@ -30,8 +30,10 @@ Hallazgo de sesión de etnografía (27 jul 2026): Durante la semana, los consumo
 
 ## Commit de cierre
 
-(Pendiente)
+`4da7382` (rama `dev`).
 
 ## Notas de ejecución
 
-(Pendiente)
+1. Modificado [components/VistaSemanal.tsx](file:///home/camilovillamil/flujo/components/VistaSemanal.tsx): eliminado el condicional `ejecutado ?` en el handler `onClick` y el estilo `cursor: pointer` de las tarjetas de bolsillo `fl-concepto`.
+2. Actualizada la renderización de ítems dentro de `desgloseModal` para incluir `c.fecha` y `c.ejecutor`.
+3. Verificada la compilación limpia con `tsc --noEmit`.
