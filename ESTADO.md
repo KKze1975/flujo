@@ -6059,3 +6059,30 @@ mes calendario que nombra el string `mes`, sin relación con el ciclo de
   On branch dev
   nothing to commit, working tree clean
   ```
+
+---
+
+## Sesión — Construcción de ticket SEMANAS-LUNES-01 (Modelo de semanas Lunes-Domingo y activación S5 27-Jul-2026) · 27 jul 2026
+
+**Tipo de sesión:** DISEÑO & CONSTRUCCIÓN (Refactor del modelo de cálculo de semanas a ciclos Lunes-Domingo, especificación alineada al flujo semanal de Angie y cierres dominicales, ejecución autónoma en rama `dev` con verificación por script y API contra Dev Sheet).
+
+### 1. Alineación y Especificación de Diseño (Spec)
+- **Definición:** Las semanas operativas se alinean al ciclo laboral/familiar de Lunes a Domingo (7 días continuos), asignándose al mes del Lunes de inicio.
+- **Estructura:** S1 (día 1 al 1er domingo), S2-S4 (bloques Lunes-Domingo) y S5 (iniciando el 4º o 5º Lunes del mes según la distribución de días).
+- **Evaluación de Fecha (27 de Julio de 2026):** Al ser Lunes 27 de Julio, el sistema evalúa automáticamente la fecha como **`S5`** (`Julio S5`).
+
+### 2. Construcción y Refactor (`dev`)
+- `lib/utils/fecha.ts`: Implementadas `obtenerLunesDelMes`, `semanaDeFechaEnMes`, `semanaActual`, `semanasDeMes` y `duracionSemana5`.
+- `app/api/mes/[mes]/semana/[semana]/route.ts` & `components/MesM1Desktop.tsx`: Migradas para consumir `semanaDeFechaEnMes`.
+- Commit `1ebbcdb` generado y subido a la rama `dev` (`git push origin dev`).
+- Despliegue automático de preview en Vercel activo en `https://flujo-git-dev-camilo-s-projects10.vercel.app`.
+
+### 3. Diagnóstico e Inicialización de Dev Sheet
+- Identificada causa de $0 presupuestados en dev (H2 estaba limpio tras el cierre del ticket anterior).
+- Re-inicializado `2026-07` en H2 de Dev Sheet con los 76 movimientos presupuestados reales de H1 (incluyendo los $250.000 para Entretenimiento, $200.000 Frutas y verduras, $250.000 Imprevistos, etc. en S5).
+
+### 4. Estado del Backlog (`tickets/INDICE.md`)
+- `SEMANAS-LUNES-01`: `completado` (commit `1ebbcdb` en rama `dev`).
+
+### Estado del repo al cierre de esta entrada
+- Rama `dev` sincronizada con `origin/dev`. `npx tsc --noEmit` limpio (0 errores).
