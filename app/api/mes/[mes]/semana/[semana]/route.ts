@@ -1,20 +1,12 @@
 import type { NextRequest } from "next/server";
 import { getProvider } from "@/lib/data/provider";
 import type { Semana } from "@/lib/data/types";
-import { semanasDeMes } from "@/lib/utils/fecha";
+import { semanasDeMes, semanaDeFechaEnMes } from "@/lib/utils/fecha";
 
 const MES_REGEX = /^\d{4}-\d{2}$/;
 
-// SEMANA5-01: dia>=29 solo ocurre en meses reales de 29+ dias
-// (Date.getDate() nunca devuelve 29 en un febrero no bisiesto), asi que
-// alcanzar esta rama ya prueba que el mes real de "hoy" tiene S5.
 function semanaActivaMes(): Semana {
-  const dia = new Date().getDate();
-  if (dia <= 7)  return "S1";
-  if (dia <= 14) return "S2";
-  if (dia <= 21) return "S3";
-  if (dia <= 28) return "S4";
-  return "S5";
+  return semanaDeFechaEnMes(new Date());
 }
 
 export async function GET(

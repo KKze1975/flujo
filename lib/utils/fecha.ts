@@ -22,32 +22,24 @@ export function mesActual(fecha: Date = new Date()): string {
   return `${year}-${String(month).padStart(2, "0")}`;
 }
 
-// Semana operativa S1-S4, calculada como offset desde el inicio del ciclo (día 29 del mes anterior).
-// S5 fuera de alcance: offsetDias >= 28 se absorbe en S4 (workaround documentado, Iniciativa E pendiente).
-export function semanaActual(fecha: Date = new Date()): Semana {
-  const { year, month, day } = getColombiaDate(fecha);
-  let cicloYear = year;
-  let cicloMonth = month; // 1-indexed
-  if (day < 29) {
-    cicloMonth -= 1;
-    if (cicloMonth === 0) { cicloMonth = 12; cicloYear -= 1; }
+function obtenerLunesDelMes(year: number, month: number): number[] {
+  const mondays: number[] = [];
+  const totalDias = new Date(year, month, 0).getDate();
+  for (let d = 1; d <= totalDias; d++) {
+    const date = new Date(Date.UTC(year, month - 1, d, 12, 0, 0));
+    if (date.getUTCDay() === 1) { // 1 = Lunes
+      mondays.push(d);
+    }
   }
-  // Aritmética pura de días calendarios Colombia (sin componente de hora)
-  // Si cicloMonth=febrero y año no-bisiesto: new Date(year,1,29) hace rollover a marzo 1 — ver ESTADO.md
-  const ini = new Date(cicloYear, cicloMonth - 1, 29).getTime();
-  const hoy = new Date(year, month - 1, day).getTime();
-  const offset = Math.floor((hoy - ini) / 86_400_000);
-  if (offset < 7)  return "S1";
-  if (offset < 14) return "S2";
-  if (offset < 21) return "S3";
-  return "S4";
+  return mondays;
 }
 
-// ── SEMANA5-01 ───────────────────────────────────────────────────────────
-// Regla independiente del ciclo dia-29 de mesActual()/semanaActual() (ver
-// tickets/SEMANA5-01.md, seccion "Discrepancia de modelo"): S5 son los dias
-// 29 en adelante del propio mes calendario que nombra el string `mes`
-// ("YYYY-MM"), no el ciclo operativo anclado en el mes anterior.
+// Semana operativa S1-S5, calculada como ciclo Lunes-Domingo dentro del mes.
+export function semanaActual(fecha: Date = new Date()): Semana {
+  return semanaDeFechaEnMes(fecha);
+}
+
+// ── SEMANA5-01 / SEMANAS-LUNES-01 ─────────────────────────────────────────
 
 // Dias reales del mes calendario "YYYY-MM" (28-31, o 29 en febrero bisiesto).
 export function diasEnMes(mes: string): number {
@@ -55,24 +47,32 @@ export function diasEnMes(mes: string): number {
   return new Date(year, month, 0).getDate();
 }
 
-// Existe S5 si y solo si el mes tiene 29+ dias -- excluye febrero no bisiesto.
+// Existe S5 si el mes abarca 5 semanas según la distribución de Lunes.
 export function mesTieneSemana5(mes: string): boolean {
-  return diasEnMes(mes) >= 29;
+  return semanasDeMes(mes).includes("S5");
 }
 
-// Duracion de S5 en dias (1-3), solo valida si mesTieneSemana5(mes) === true.
+// Duracion de S5 en dias (1-7), solo valida si mesTieneSemana5(mes) === true.
 export function duracionSemana5(mes: string): number {
-  return diasEnMes(mes) - 28;
+  const [year, month] = mes.split("-").map(Number);
+  const mondays = obtenerLunesDelMes(year, month);
+  const totalDias = diasEnMes(mes);
+  const ultimoLunes = mondays[mondays.length - 1];
+  return (totalDias - ultimoLunes + 1);
 }
 
 // Lista de semanas validas para el mes, incluyendo S5 condicionalmente.
 export function semanasDeMes(mes: string): Semana[] {
-  const base: Semana[] = ["S1", "S2", "S3", "S4"];
-  return mesTieneSemana5(mes) ? [...base, "S5"] : base;
+  const [year, month] = mes.split("-").map(Number);
+  const mondays = obtenerLunesDelMes(year, month);
+  if (mondays[0] > 1) {
+    return mondays.length >= 4 ? ["S1", "S2", "S3", "S4", "S5"] : ["S1", "S2", "S3", "S4"];
+  } else {
+    return mondays.length >= 5 ? ["S1", "S2", "S3", "S4", "S5"] : ["S1", "S2", "S3", "S4"];
+  }
 }
 
-// Semana siguiente a `semana` dentro del mismo mes, o null si es la ultima
-// (S4 sin S5, o S5). Usado por cerrar-semana para encadenar el plan H5B.
+// Semana siguiente a `semana` dentro del mismo mes, o null si es la ultima.
 export function semanaSiguienteDe(semana: Semana, mes: string): Semana | null {
   const orden = semanasDeMes(mes);
   const idx = orden.indexOf(semana);
@@ -80,27 +80,28 @@ export function semanaSiguienteDe(semana: Semana, mes: string): Semana | null {
 }
 
 // ── UBER-04 ──────────────────────────────────────────────────────────────
-// Mes calendario ("YYYY-MM") de una fecha ya ocurrida, sin el ciclo de
-// corrimiento dia>=29 de mesActual() -- un consumo de un correo ya recibido
-// pertenece al mes calendario real en que ocurrio, no al ciclo operativo de
-// navegacion por defecto.
 export function mesDeFecha(fecha: Date): string {
   const { year, month } = getColombiaDate(fecha);
   return `${year}-${String(month).padStart(2, "0")}`;
 }
 
-// Semana de una fecha ya ocurrida (ej. la fecha de un correo/recibo) dentro
-// de su propio mes calendario -- misma particion dia<=7/14/21/28/29+ que
-// semanaActivaMes() (app/api/mes/[mes]/semana/[semana]/route.ts), pero
-// parametrizada: ni semanaActual(fecha) (ciclo dia-29-mes-anterior, sin S5)
-// ni semanaActivaMes() (hardcodea new Date(), sin parametro) sirven para
-// derivar la semana de una fecha pasada arbitraria. I-01: determinístico,
-// sin inferencia de IA.
+// Semana de una fecha dentro de su propio mes calendario (Lunes a Domingo).
 export function semanaDeFechaEnMes(fecha: Date): Semana {
-  const { day } = getColombiaDate(fecha);
-  if (day <= 7)  return "S1";
-  if (day <= 14) return "S2";
-  if (day <= 21) return "S3";
-  if (day <= 28) return "S4";
-  return "S5";
+  const { year, month, day } = getColombiaDate(fecha);
+  const mondays = obtenerLunesDelMes(year, month);
+
+  if (mondays[0] > 1) {
+    if (day < mondays[0]) return "S1";
+    if (day < mondays[1]) return "S2";
+    if (day < mondays[2]) return "S3";
+    if (mondays[3] && day < mondays[3]) return "S4";
+    return "S5";
+  } else {
+    if (day < mondays[1]) return "S1";
+    if (day < mondays[2]) return "S2";
+    if (day < mondays[3]) return "S3";
+    if (mondays[4] && day < mondays[4]) return "S4";
+    if (mondays[4] && day >= mondays[4]) return "S5";
+    return "S4";
+  }
 }

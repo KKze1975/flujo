@@ -13,7 +13,7 @@ import ModalAgregarConcepto from "@/components/m1/ModalAgregarConcepto";
 import ModalConfirmarSaldos from "@/components/m1/ModalConfirmarSaldos";
 import ModalCerrarSemana from "@/components/m1/ModalCerrarSemana";
 import ModalAporteAngie from "@/components/m1/ModalAporteAngie";
-import { semanasDeMes } from "@/lib/utils/fecha";
+import { semanasDeMes, semanaDeFechaEnMes } from "@/lib/utils/fecha";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -32,12 +32,7 @@ const COP = (n: number, opts?: { compact?: boolean }): string => {
 
 function semanaFromFecha(fecha: string | null, mes: string): Semana | null {
   if (!fecha || !fecha.startsWith(mes)) return null;
-  const day = new Date(fecha + "T12:00:00").getDate();
-  if (day <= 7) return "S1";
-  if (day <= 14) return "S2";
-  if (day <= 21) return "S3";
-  if (day <= 28) return "S4";
-  return "S5";
+  return semanaDeFechaEnMes(new Date(fecha + "T12:00:00"));
 }
 
 const MESES_ES = ["","ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
