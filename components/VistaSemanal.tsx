@@ -1028,11 +1028,11 @@ export default function VistaSemanal({
   );
   const bolsillos = [...bolsillosSemanaScoped, ...bolsillosMensualesDelMes];
   const conceptos  = movimientos.filter((m) => m.tipoSnapshot !== "pago_fraccionado");
-  const pendientes = conceptos.filter((m) => m.estado === "pendiente");
+  const pendientes = conceptos.filter((m) => m.estado === "pendiente" || m.estado === "pospuesto");
   const ejecutados = conceptos.filter((m) => m.estado === "ejecutado");
 
   const movimientosPresupuestados = movimientos.filter(
-    m => m.estado !== "no_aplica" && m.estado !== "pospuesto" && m.estado !== "pospuesto_mes_siguiente"
+    m => m.estado !== "no_aplica" && m.estado !== "pospuesto_mes_siguiente"
   );
   const totalPresupuestado = movimientosPresupuestados.reduce((s, m) => s + m.montoPresupuestado, 0);
   // Exclude pago_fraccionado from H2 sum — their spending is always counted via H3B consumos.
@@ -1775,7 +1775,7 @@ export default function VistaSemanal({
                         </span>
                       ) : tab === "pendientes" ? (
                         <span className="fl-badge warn" style={{ marginTop: 4 }}>
-                          <span className="dot" />Pendiente
+                          <span className="dot" />{mov.estado === "pospuesto" ? "Pospuesto" : "Pendiente"}
                         </span>
                       ) : (
                         <span className="fl-badge" style={{ marginTop: 4 }}>{mov.estado}</span>
