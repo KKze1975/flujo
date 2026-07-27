@@ -111,6 +111,7 @@ function ModalCorreccion({
   consumos,
   consumosMes = [],
   idsBolsillosMensuales = new Set(),
+  mes,
   onClose,
   onSaved,
   onRevertido,
@@ -122,6 +123,7 @@ function ModalCorreccion({
   // mensual se calcule contra todo el mes, no solo la semana visible.
   consumosMes?: ConsumoH3[];
   idsBolsillosMensuales?: Set<string>;
+  mes: string;
   onClose: () => void;
   onSaved: (updated: ConsumoH3) => void;
   onRevertido: (id: string) => void;
@@ -233,7 +235,8 @@ function ModalCorreccion({
     setFuentes(prev => ({ ...prev, [key]: !prev[key] }));
   }
 
-  const semanas: Semana[] = ["S1", "S2", "S3", "S4"];
+  // SEMANA5-01: fuente única de verdad — incluye S5 cuando el mes lo tiene.
+  const semanas: Semana[] = semanasDeMes(mes);
 
   return (
     <div className="dk-modal-backdrop" onClick={onClose}>
@@ -395,7 +398,7 @@ function ModalCorreccion({
             {scenario === "semana" && (
               <>
                 <p className="dk-exp-lbl">Semana del registro</p>
-                <div className="dk-seg2" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
+                <div className="dk-seg2" style={{ gridTemplateColumns: `repeat(${semanas.length}, 1fr)` }}>
                   {semanas.map(s => (
                     <button key={s} type="button"
                       className={semana === s ? "on" : ""}
@@ -482,7 +485,8 @@ function ModalAccionesPendiente({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const semanas: Semana[] = ["S1", "S2", "S3", "S4"];
+  // SEMANA5-01: fuente única de verdad — incluye S5 cuando el mes lo tiene.
+  const semanas: Semana[] = semanasDeMes(mes);
 
   async function confirmar() {
     setBusy(true);
@@ -593,7 +597,7 @@ function ModalAccionesPendiente({
           {accion === "posponer" && (
             <div style={{ marginTop: 16 }}>
               <p className="dk-exp-lbl">Semana destino</p>
-              <div className="dk-seg2" style={{ gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
+              <div className="dk-seg2" style={{ gridTemplateColumns: `repeat(${semanas.length}, 1fr)`, gap: 6 }}>
                 {semanas.map(s => {
                   const cerrada = semanasCerradas.includes(s);
                   return (
@@ -718,7 +722,8 @@ function ModalCorreccionH2({
   const [error, setError] = useState<string | null>(null);
 
   const scn = SCN_H2_LABEL[scenario];
-  const semanas: Semana[] = ["S1", "S2", "S3", "S4"];
+  // SEMANA5-01: fuente única de verdad — incluye S5 cuando el mes lo tiene.
+  const semanas: Semana[] = semanasDeMes(mes);
 
   async function guardar() {
     setBusy(true);
@@ -869,7 +874,7 @@ function ModalCorreccionH2({
             {scenario === "semana" && (
               <>
                 <p className="dk-exp-lbl">Semana del movimiento</p>
-                <div className="dk-seg2" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
+                <div className="dk-seg2" style={{ gridTemplateColumns: `repeat(${semanas.length}, 1fr)` }}>
                   {semanas.map(s => (
                     <button key={s} type="button" className={semana === s ? "on" : ""} onClick={() => setSemana(s)}>
                       {s}
@@ -2060,6 +2065,7 @@ export default function VistaSemanal({
           consumos={consumos}
           consumosMes={consumosMesInit}
           idsBolsillosMensuales={idsBolsillosMensuales}
+          mes={mes}
           onClose={() => setCorrigiendoConsumo(null)}
           onSaved={updated => {
             setConsumos(prev => prev.map(c => c.id === updated.id ? updated : c));
