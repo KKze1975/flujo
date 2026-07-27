@@ -1676,14 +1676,14 @@ export default function VistaSemanal({
                   <div
                     key={mov.id}
                     className="fl-concepto"
-                    style={ejecutado ? { cursor: "pointer" } : undefined}
-                    onClick={ejecutado ? () => setDesgloseModal(mov) : undefined}
+                    style={{ cursor: "pointer" }}
+                    onClick={() => setDesgloseModal(mov)}
                   >
                     <div className="top">
                       <div style={{ display: "flex", gap: 11, alignItems: "center", minWidth: 0 }}>
                         <Ring pct={pctB} over={over} />
                         <div style={{ minWidth: 0 }}>
-                          <p className="name" onClick={(e) => e.stopPropagation()}>{mov.nombreSnapshot}</p>
+                          <p className="name">{mov.nombreSnapshot}</p>
                           <p
                             className="cat"
                             data-h3b-trigger
@@ -2132,7 +2132,7 @@ export default function VistaSemanal({
                           <span style={{ flex: 1, fontSize: 13, color: "var(--ink)" }}>{c.descripcion || "Sin descripción"}</span>
                           <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600, fontSize: 13, flexShrink: 0 }}>{COP(c.monto)}</span>
                         </div>
-                        <p style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 2 }}>{c.fecha}</p>
+                        <p style={{ fontSize: 11, color: "var(--ink-faint)", marginTop: 2 }}>{c.fecha}{c.ejecutor ? ` · ${c.ejecutor}` : ""}</p>
                       </div>
                     ));
               })()}
