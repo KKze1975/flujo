@@ -6156,5 +6156,10 @@ mes calendario que nombra el string `mes`, sin relación con el ciclo de
 ### 2. Estado del Backlog (`tickets/INDICE.md`)
 - `BOTONES-POSPUESTOS-01`: `completado` (commit `9c00b91` en rama `dev`).
 
+### 3. Cierre y Merges a Producción (`main`)
+- PR #35 (`feat(POSPONER-S5-01): visibilidad de conceptos pospuestos PS Plus y Uber One en semana S5`) mergeado a `main` tras sign-off de Angie y Camilo (`I-17`).
+- PR #36 (`feat(BOTONES-POSPUESTOS-01): habilitar botones OK y Lápiz en conceptos pospuestos`) mergeado a `main` tras sign-off de Angie y Camilo (`I-17`).
+- Despliegue automático de Vercel en Producción activo.
+
 ### Estado del repo al cierre de esta entrada
-- Rama `dev` sincronizada con `origin/dev`. `npx tsc --noEmit` limpio (0 errores).
+- Ramas `dev` y `main` sincronizadas con `origin`. `npx tsc --noEmit` limpio (0 errores).
