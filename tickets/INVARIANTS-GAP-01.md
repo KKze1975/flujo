@@ -1,7 +1,7 @@
 ---
 ticket_id: INVARIANTS-GAP-01
 orden: 10
-estado: aprobado
+estado: completado
 tier: A
 dependencias: ninguna
 ---
@@ -29,23 +29,23 @@ nomenclatura documentada y nunca cerrada formalmente.
 
 ## Definition of Done
 
-- [ ] Leer `INVARIANTS.md` real completo (no la copia del proyecto Claude —
+- [x] Leer `INVARIANTS.md` real completo (no la copia del proyecto Claude —
       ya hubo un incidente de trabajar sobre una copia desactualizada,
       documentado en la sesión T54 del 29 jun 2026).
-- [ ] Confirmar cuáles invariantes candidatos mencionados en `ESTADO.md`
+- [x] Confirmar cuáles invariantes candidatos mencionados en `ESTADO.md`
       (patrón `ensureHeaders`, patrón de tabs físicos vs. nombres lógicos,
       "estado por ausencia de valor") ya fueron promovidos formalmente y
       cuáles siguen como candidatos sin número asignado.
-- [ ] Para cada candidato aprobado explícitamente por Camilo en su sesión de
+- [x] Para cada candidato aprobado explícitamente por Camilo en su sesión de
       origen (verificar contra el texto exacto de `ESTADO.md`, no asumir),
       asignar el siguiente número disponible real en `INVARIANTS.md` y
       redactarlo siguiendo el criterio de admisión ya vigente (solo reglas
       cuya violación produce error silencioso, dato corrupto, o
       comportamiento incorrecto no detectado automáticamente).
-- [ ] No promover ningún candidato que no tenga aprobación explícita
+- [x] No promover ningún candidato que no tenga aprobación explícita
       registrada — dejarlo como pendiente, documentado en las Notas de
       ejecución de este ticket, no inventar aprobación.
-- [ ] Commit único, solo `INVARIANTS.md` modificado.
+- [x] Commit único, solo `INVARIANTS.md` modificado.
 
 ## Contexto / diagnóstico previo
 
@@ -59,9 +59,11 @@ nomenclatura documentada y nunca cerrada formalmente.
 
 ## Commit de cierre
 
-(vacío hasta completar)
+`INVARIANTS-GAP-01: formalizar I-16 y consolidar candidatos en INVARIANTS.md`
 
 ## Notas de ejecución
 
-(vacío — lo llena Claude Code al cerrar: decisiones tomadas, deuda técnica
-encontrada, criterios de parada activados)
+- Se leyó `INVARIANTS.md` y `ESTADO.md` completo para auditoría de candidatos.
+- **I-16 ("Estados derivados por ausencia de valor")**: Confirmada aprobación explícita de Camilo en `ESTADO.md` (líneas 4877 y 4956). Promovido formalmente como **I-16**.
+- **I-14**: Confirmado en `ESTADO.md` (26 jun 2026) que era un error de nomenclatura para **I-01**. Documentado en la sección de candidatos como obsoleto/cubierto.
+- **I-13 (`ensureHeaders` completitud)** y los demás candidatos (`batchUpdate` vs `values.append`, pipe-tests para reglas externas, ampliación de scope de credenciales, tabs físicos vs lógicos, verificación de ancho al limpiar esquemas): No tienen registro de aprobación explícita por Camilo. Se mantienen como candidatos en la sección inferior de `INVARIANTS.md`.

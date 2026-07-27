@@ -6024,3 +6024,65 @@ mes calendario que nombra el string `mes`, sin relación con el ciclo de
 3. Retomar `TICKET-B-GUARDIA-01` (WIP abierto por excepción) o
    `DT-M1M4-NULL-01` (esperando elección de opción) según indique
    Camilo.
+
+---
+
+## Sesión — Resolución de entorno Antigravity, instalación de workspace, harness INVARIANTS-GAP-01 (PR #33 abierto) y actualización de gobernanza · 27 jul 2026
+
+**Tipo de sesión:** CONSTRUCCIÓN & GOBERNANZA (configuración e instalación de entorno de desarrollo, resolución de autenticación Antigravity, ejecución de harness sobre repo real con PR #33 abierto y formalización de gobernanza multi-agente).
+
+### 1. Configuración de entorno y workspace Linux
+- **Instalación de herramientas base:** Instalación de Node 22 y npm administrados vía `nvm`, `git`, y configuración de llaves SSH para autenticación e interacción segura con GitHub.
+- **Recuperación de secretos:** Descarga y restauración del archivo `.env.local` desde Google Drive para habilitar la conectividad con las APIs de Google Sheets y servicios auxiliares.
+
+### 2. Resolución de entorno Antigravity (Enterprise GCP vs Google One Consumer)
+- **Intento inicial (Enterprise GCP):** Se configuró y vinculó un proyecto GCP con billing activo (`flujo-agy`), pero la ruta falló por incompatibilidad de modelos y ubicación geográfica (los modelos Claude y GPT-OSS no estaban soportados en esa ruta de proyecto Enterprise GCP).
+- **Solución final (Google One Consumer):** Se pivotó al flujo de autenticación de consumidor vía Google One (`agy login`), logrando la activación real y el acceso a los modelos Claude Sonnet y Opus dentro del harness de Antigravity CLI.
+
+### 3. Validación de harness sobre repo real con `INVARIANTS-GAP-01` (PR #33 abierto)
+- Ejecución y validación del harness autónomo sobre el repositorio real de Flujo resolviendo el ticket `INVARIANTS-GAP-01`.
+- Formalización del invariante **I-16** (*Estados derivados por ausencia de valor*) en `INVARIANTS.md`, estableciendo la prohibición de inferir estados traslativos/reasignados mediante sentinels `null` en múltiples puntos de consumo sin fuente única declarativa.
+- Consolidación y reordenamiento de candidatos a invariantes en `INVARIANTS.md`.
+- **Estado del PR #33:** El Pull Request #33 (`INVARIANTS-GAP-01: formalizar I-16 y consolidar candidatos en INVARIANTS.md`) fue creado, pero **NO está aprobado ni mergeado** — permanece abierto, pendiente de revisión y sign-off.
+
+### 4. Actualización de Gobernanza (`CLAUDE.md` & `INVARIANTS.md`)
+- **Candidato I-17** (*Sign-off de Angie antes de merge a main*): Formalizado en `INVARIANTS.md` como gate humano obligatorio. Ningún merge a `main` proceeds sin la aprobación explícita de Angie como QA approver, independiente de que la protección técnica de rama (`I-11`, GH006) esté satisfecha.
+- **Candidato I-18** (*Verificación de tickets ejecutados autónomamente*): Formalizado en `INVARIANTS.md`. Todo ticket ejecutado de forma autónoma debe verificarse en la siguiente sesión antes de iniciar trabajo nuevo; sin hash de commit o evidencia documentada, el ticket no se asume completado.
+- **`CLAUDE.md` — Sección "Gobernanza y arquitectura de agentes (actualizado 27 jul 2026)"**:
+  - Generalización de la arquitectura de dos capas (Diseño/Project vs Ejecución intercambiable entre Claude Code, Antigravity, Aider, etc.).
+  - Definición de Git (`git log`/`git show`) como fuente de verdad autoritativa sobre la metadata diferida de Google Drive (hasta 60+ min de retraso).
+  - Integración de los gates humanos `I-17` e `I-18` en la guía de agentes (commit `5d62634`).
+
+### Estado del repo al cierre de esta entrada
+- Verificado mediante ejecución directa de `git status` (27 jul 2026, 13:49:14):
+  ```
+  On branch dev
+  nothing to commit, working tree clean
+  ```
+
+---
+
+## Sesión — Construcción de ticket SEMANAS-LUNES-01 (Modelo de semanas Lunes-Domingo y activación S5 27-Jul-2026) · 27 jul 2026
+
+**Tipo de sesión:** DISEÑO & CONSTRUCCIÓN (Refactor del modelo de cálculo de semanas a ciclos Lunes-Domingo, especificación alineada al flujo semanal de Angie y cierres dominicales, ejecución autónoma en rama `dev` con verificación por script y API contra Dev Sheet).
+
+### 1. Alineación y Especificación de Diseño (Spec)
+- **Definición:** Las semanas operativas se alinean al ciclo laboral/familiar de Lunes a Domingo (7 días continuos), asignándose al mes del Lunes de inicio.
+- **Estructura:** S1 (día 1 al 1er domingo), S2-S4 (bloques Lunes-Domingo) y S5 (iniciando el 4º o 5º Lunes del mes según la distribución de días).
+- **Evaluación de Fecha (27 de Julio de 2026):** Al ser Lunes 27 de Julio, el sistema evalúa automáticamente la fecha como **`S5`** (`Julio S5`).
+
+### 2. Construcción y Refactor (`dev`)
+- `lib/utils/fecha.ts`: Implementadas `obtenerLunesDelMes`, `semanaDeFechaEnMes`, `semanaActual`, `semanasDeMes` y `duracionSemana5`.
+- `app/api/mes/[mes]/semana/[semana]/route.ts` & `components/MesM1Desktop.tsx`: Migradas para consumir `semanaDeFechaEnMes`.
+- Commit `1ebbcdb` generado y subido a la rama `dev` (`git push origin dev`).
+- Despliegue automático de preview en Vercel activo en `https://flujo-git-dev-camilo-s-projects10.vercel.app`.
+
+### 3. Diagnóstico e Inicialización de Dev Sheet
+- Identificada causa de $0 presupuestados en dev (H2 estaba limpio tras el cierre del ticket anterior).
+- Re-inicializado `2026-07` en H2 de Dev Sheet con los 76 movimientos presupuestados reales de H1 (incluyendo los $250.000 para Entretenimiento, $200.000 Frutas y verduras, $250.000 Imprevistos, etc. en S5).
+
+### 4. Estado del Backlog (`tickets/INDICE.md`)
+- `SEMANAS-LUNES-01`: `completado` (commit `1ebbcdb` en rama `dev`).
+
+### Estado del repo al cierre de esta entrada
+- Rama `dev` sincronizada con `origin/dev`. `npx tsc --noEmit` limpio (0 errores).

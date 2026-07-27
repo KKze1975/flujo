@@ -1,7 +1,7 @@
 ---
 ticket_id: UBER-03
 orden: 14
-estado: completado_parcial
+estado: completado
 tier: A
 dependencias: ninguna
 ---
@@ -20,14 +20,16 @@ Puede construirse en paralelo a `UBER-01` — no depende del parser de Uber.
 ## Definition of Done
 
 - [x] Cambio aplicado y verificado en Sheet dev.
-- [ ] Cambio aplicado y verificado en Sheet prod (I-10) — **diferido**,
-      instrucción explícita de Camilo: "solo dev por ahora, prod después
-      por separado".
-- [ ] Bolsillo Transporte visible con seguimiento semanal en preview URL —
-      **no verificado en esta sesión**: el dev server preexistente (PID
-      9576) quedó en estado roto (crash del worker de Turbopack, no
-      relacionado a este cambio — ver Notas de ejecución). Camilo verificará
-      manualmente.
+- [x] Cambio aplicado y verificado en Sheet prod (I-10) — completado en
+      sesión posterior (27 jul 2026, durante `UBER-04`), ver Notas de
+      ejecución.
+- [x] Bolsillo Transporte con seguimiento correcto — verificado no por
+      preview URL visual (Claude-in-Chrome seguía sin poder conectarse al
+      Workspace correcto), sino por evidencia funcional más fuerte: 17
+      consumos reales de Uber de julio 2026 escritos en H3 prod durante
+      `UBER-04`, con `mes`/`semana` calculados correctamente — lo cual
+      solo funciona si H1 prod ya reconoce el concepto como
+      `pago_fraccionado`.
 
 ## Contexto / diagnóstico previo
 
@@ -38,7 +40,9 @@ parser.
 ## Commit de cierre
 
 `UBER-03-parcial: dev aplicado y verificado, prod y preview pendientes`
-(ver historial de `dev`).
+(ver historial de `dev`) — parte prod aplicada directamente vía script
+puntual en sesión de `UBER-04` (27 jul 2026), sin commit propio (fue una
+escritura de datos en Sheet, no un cambio de código).
 
 ## Notas de ejecución
 
@@ -83,3 +87,20 @@ y la verificación visual se completen.
 
 Cero cambios de código. Única escritura: 2 celdas (`tipo`, `semana_default`)
 en la fila de `TRANSPORTE_1748100037`, H1 dev.
+
+**Cierre de la parte prod (27 jul 2026, sesión de `UBER-04`):** Camilo
+autorizó explícitamente escribir en producción. Se leyó primero el estado
+real de H1 prod (confirmando `tipo: fijo`, `semana_default: S4`, idéntico
+al estado pre-migración de dev), y se aplicó el mismo cambio de 2 celdas,
+verificado por lectura antes/después:
+```
+Antes:   tipo=fijo,             semana_default=S4
+Después: tipo=pago_fraccionado, semana_default=S1
+```
+`frecuencia: mensual` y `monto_referencia: 350000` sin cambio. Sin esto,
+los consumos de Uber escritos por `UBER-04` en H3 prod habrían quedado
+huérfanos (bolsillo no reconocido como `pago_fraccionado`) o mal
+contabilizados en la UI real. Camilo confirmó que el cliente OAuth2 de
+Gmail (`GMAIL_CLIENT_ID`/`SECRET`/`REFRESH_TOKEN`) ya está configurado en
+Vercel producción — el cron diario de `UBER-04` puede correr ahí sin pasos
+manuales adicionales.

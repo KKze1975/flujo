@@ -156,6 +156,9 @@ Fecha, semana, mes, actor, sesión: el cliente/prompt no opina, no infiere, no t
 hardcoded. Si un SYSTEM_PROMPT tiene un valor de negocio con fallback tipo "sin referencia → 
 X", es un bug esperando manifestarse (lección de origen de este proyecto — bug S1, jun 2026).
 
+**Freno Informativo ante Preguntas — Prohibida la ejecución autónoma no solicitada.**
+Ante cualquier pregunta o consulta del usuario, el agente debe limitar su respuesta a explicar, diagnosticar o sugerir cursos de acción/opciones. Queda ESTRICTAMENTE PROHIBIDO ejecutar modificaciones de código, commits, escrituras de datos o comandos autónomos de forma reactiva a una pregunta, salvo que exista una orden explícita del usuario o se esté ejecutando un Loop autónomo previamente autorizado (/goal).
+
 **Cierre de sesión — contrato de síntesis.**
 Al cerrar, sintetiza el delta de ESTADO.md/SESSION_LOG.md sin preguntar. No es el estado 
 canónico — es borrador para corrección de Camilo. Usa anchor-guard: verifica contra el ancla 
@@ -169,3 +172,31 @@ conocida antes de escribir; si no coincide, halt — no sobrescribas.
 **Contexto de stack (para evitar ambigüedad dev/prod):**
 Next.js + TypeScript + Tailwind + Google Sheets (MVP) + Vercel. Declarar explícitamente 
 DEV vs PROD y el tab exacto antes de tocar Sheets.
+
+## Gobernanza y arquitectura de agentes (actualizado 27 jul 2026)
+
+**Arquitectura de dos capas — generalizada.**
+Claude.ai (vía Project) diseña, especifica, y mantiene `ESTADO.md` — Camilo
+es el único autor de `ESTADO.md`; ningún agente de ejecución lo edita
+directamente salvo el protocolo de anchor-guard ya documentado arriba
+("Ticket management").
+
+Cualquier agente de ejecución (Claude Code, Antigravity, Aider, u otro que
+se sume) hace el resto: escritura de código, operaciones de Git, lectura/
+escritura del Sheet. La capa de ejecución es intercambiable por diseño —
+el contexto en `AGENTS.md`/`CLAUDE.md`/`ESTADO.md`/`INVARIANTS.md` es la
+interfaz común que cualquier agente debe leer antes de operar, sin importar
+cuál sea.
+
+**Fuente de verdad: git sobre Drive.**
+Google Drive metadata puede tener 60+ minutos de retraso respecto a los
+commits reales del repo. `git log`/`git show` es la fuente autoritativa
+siempre que Drive y git diverjan.
+
+**Gates humanos (ver también `INVARIANTS.md` candidatos I-17, I-18).**
+- Ningún merge a `main` procede sin aprobación explícita de Angie como QA
+  approver, independiente de que la protección técnica de rama (I-11) esté
+  satisfecha. Un agente que detecte un PR listo para mergear debe escalar,
+  nunca mergear de forma autónoma.
+- Todo ticket ejecutado autónomamente debe verificarse en la siguiente
+  sesión antes de iniciar trabajo nuevo — ver I-18.
