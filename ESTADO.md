@@ -6119,5 +6119,9 @@ mes calendario que nombra el string `mes`, sin relación con el ciclo de
 ### 2. Estado del Backlog (`tickets/INDICE.md`)
 - `UBER-05`: `completado` (commit `19e34fb` en rama `dev`).
 
+### 3. Cierre y Merge a Producción (`main`)
+- PR #34 (`feat(DESGLOSE-BOLSILLOS-01 & UBER-05): popover flotante inline de consumos y fechas reales de Uber`) mergeado exitosamente a `main` tras sign-off de Angie y Camilo (`I-17`).
+- Despliegue automático de Vercel en Producción activo.
+
 ### Estado del repo al cierre de esta entrada
-- Rama `dev` sincronizada con `origin/dev`. `npx tsc --noEmit` limpio (0 errores).
+- Ramas `dev` y `main` sincronizadas con `origin`. `npx tsc --noEmit` limpio (0 errores).
