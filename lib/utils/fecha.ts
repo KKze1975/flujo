@@ -9,17 +9,36 @@ function getColombiaDate(fecha: Date): { year: number; month: number; day: numbe
   return { year: y, month: m, day: d }; // month: 1-indexed (enero = 1)
 }
 
-// Mes operativo en formato YYYY-MM.
-// Regla Iniciativa E: día >= 29 pertenece al ciclo del mes siguiente.
-export function mesActual(fecha: Date = new Date()): string {
+// Ciclo operativo (mes + semana) de una fecha.
+// Regla: el mes es el mes calendario real. Excepción de cierre — un
+// sábado/domingo que cae antes del primer lunes del mes (cola de la
+// semana cuyo lunes empezó en el mes anterior) pertenece al cierre de
+// ese mes anterior, no al mes nuevo. Reemplaza la regla vieja de
+// Iniciativa E ("día >= 29 → mes siguiente"), que quedó obsoleta desde
+// que SEMANA5-01 representa la última semana dentro del propio mes.
+function cicloOperativo(fecha: Date): { mes: string; semana: Semana } {
   const { year, month, day } = getColombiaDate(fecha);
-  if (day >= 29) {
-    // month es 1-indexed → pasado al constructor 0-indexed como "siguiente mes"
-    // JS maneja diciembre (month=12) → enero del año siguiente automáticamente
-    const next = new Date(year, month, 1);
-    return `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}`;
+  const dow = new Date(Date.UTC(year, month - 1, day, 12, 0, 0)).getUTCDay();
+  const esFinDeSemana = dow === 0 || dow === 6;
+  const mondays = obtenerLunesDelMes(year, month);
+  const enColaDeMesAnterior = mondays[0] > 1 && day < mondays[0] && esFinDeSemana;
+
+  if (enColaDeMesAnterior) {
+    const anterior = new Date(year, month - 2, 1);
+    const mesAnterior = `${anterior.getFullYear()}-${String(anterior.getMonth() + 1).padStart(2, "0")}`;
+    const semanasMesAnterior = semanasDeMes(mesAnterior);
+    return { mes: mesAnterior, semana: semanasMesAnterior[semanasMesAnterior.length - 1] };
   }
-  return `${year}-${String(month).padStart(2, "0")}`;
+
+  return {
+    mes: `${year}-${String(month).padStart(2, "0")}`,
+    semana: semanaDeFechaEnMes(fecha),
+  };
+}
+
+// Mes operativo en formato YYYY-MM.
+export function mesActual(fecha: Date = new Date()): string {
+  return cicloOperativo(fecha).mes;
 }
 
 function obtenerLunesDelMes(year: number, month: number): number[] {
@@ -36,7 +55,7 @@ function obtenerLunesDelMes(year: number, month: number): number[] {
 
 // Semana operativa S1-S5, calculada como ciclo Lunes-Domingo dentro del mes.
 export function semanaActual(fecha: Date = new Date()): Semana {
-  return semanaDeFechaEnMes(fecha);
+  return cicloOperativo(fecha).semana;
 }
 
 // ── SEMANA5-01 / SEMANAS-LUNES-01 ─────────────────────────────────────────
