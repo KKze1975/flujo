@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { getProvider } from "@/lib/data/provider";
 import type { Semana } from "@/lib/data/types";
-import { semanasDeMes, semanaActual } from "@/lib/utils/fecha";
+import { semanasDeMes, semanaActivaDeMes } from "@/lib/utils/fecha";
 
 const MES_REGEX = /^\d{4}-\d{2}$/;
 
@@ -46,7 +46,7 @@ export async function GET(
 
     return Response.json({
       semana,
-      semanaActivaMes: semanaActual(),
+      semanaActivaMes: semanaActivaDeMes(mes),
       movimientos,
       metricas: { totalPresupuestado, totalEjecutado, pct },
       cierreSemana,

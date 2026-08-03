@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { getProvider } from "@/lib/data/provider";
 import VistaSemanal from "@/components/VistaSemanal";
 import type { Actor } from "@/lib/data/types";
-import { semanaActual } from "@/lib/utils/fecha";
+import { semanaActivaDeMes } from "@/lib/utils/fecha";
 
 const MESES_FULL = [
   "", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -25,7 +25,7 @@ export default async function SemanaPage({
   const { mes } = await params;
   const { actor: actorParam } = await searchParams;
   const actor: Actor = actorParam === "angie" ? "angie" : "camilo";
-  const semana = semanaActual();
+  const semana = semanaActivaDeMes(mes);
   const provider = getProvider();
 
   const [movimientos, cierres, consumos, ingresosAngie, saldosCuenta, movimientosMes, consumosMes, conceptos] = await Promise.all([
