@@ -53,6 +53,19 @@ function obtenerLunesDelMes(year: number, month: number): number[] {
   return mondays;
 }
 
+// El "stub" son los días antes del primer lunes del mes (si el mes no empieza
+// en lunes). Si el mes empieza en sábado o domingo, ese stub mide 1-2 días y
+// es ÍNTEGRAMENTE fin de semana → cicloOperativo() lo desvía entero al cierre
+// del mes anterior, sin dejar ningún día real en el mes actual para una "S1"
+// corta. Cuando eso pasa, el primer lunes real debe arrancar en S1, igual que
+// en un mes que empieza en lunes — no en S2.
+// Única fuente de verdad: consumida por semanaDeFechaEnMes() y semanasDeMes().
+// Tocar la condición en un solo lugar reintroduce el bug de cc51db9 (semana
+// off-by-one en agosto 2026, detectado 3-ago-2026).
+function stubAbsorbidoPorMesAnterior(mondays: number[]): boolean {
+  return mondays[0] > 1 && mondays[0] <= 3;
+}
+
 // Semana operativa S1-S5, calculada como ciclo Lunes-Domingo dentro del mes.
 export function semanaActual(fecha: Date = new Date()): Semana {
   return cicloOperativo(fecha).semana;
@@ -84,7 +97,7 @@ export function duracionSemana5(mes: string): number {
 export function semanasDeMes(mes: string): Semana[] {
   const [year, month] = mes.split("-").map(Number);
   const mondays = obtenerLunesDelMes(year, month);
-  if (mondays[0] > 1) {
+  if (mondays[0] > 1 && !stubAbsorbidoPorMesAnterior(mondays)) {
     return mondays.length >= 4 ? ["S1", "S2", "S3", "S4", "S5"] : ["S1", "S2", "S3", "S4"];
   } else {
     return mondays.length >= 5 ? ["S1", "S2", "S3", "S4", "S5"] : ["S1", "S2", "S3", "S4"];
@@ -98,6 +111,21 @@ export function semanaSiguienteDe(semana: Semana, mes: string): Semana | null {
   return idx >= 0 && idx < orden.length - 1 ? orden[idx + 1] : null;
 }
 
+// Semana "activa" de un mes para efectos de edición/cierre (habilita el botón
+// "Cerrar semana" y decide si una semana visible es editable o de solo lectura).
+// En el mes operativo actual es la semana calendario real de hoy. En cualquier
+// otro mes (pasado) TODA semana ya transcurrida debe quedar editable/cerrable
+// — no solo la que por casualidad comparte etiqueta con la semana de hoy —
+// así que se usa la última semana de ese mes.
+// FIX-SEMANA-STUB-01: antes de esto, page.tsx y route.ts usaban semanaActual()
+// sin importar el `mes` visible, bloqueando el cierre de semanas pendientes de
+// meses pasados (ej. julio S5 sin cerrar, viendo agosto como mes activo).
+export function semanaActivaDeMes(mes: string, fecha: Date = new Date()): Semana {
+  if (mes === mesActual(fecha)) return semanaActual(fecha);
+  const semanas = semanasDeMes(mes);
+  return semanas[semanas.length - 1];
+}
+
 // ── UBER-04 ──────────────────────────────────────────────────────────────
 export function mesDeFecha(fecha: Date): string {
   const { year, month } = getColombiaDate(fecha);
@@ -109,7 +137,7 @@ export function semanaDeFechaEnMes(fecha: Date): Semana {
   const { year, month, day } = getColombiaDate(fecha);
   const mondays = obtenerLunesDelMes(year, month);
 
-  if (mondays[0] > 1) {
+  if (mondays[0] > 1 && !stubAbsorbidoPorMesAnterior(mondays)) {
     if (day < mondays[0]) return "S1";
     if (day < mondays[1]) return "S2";
     if (day < mondays[2]) return "S3";
