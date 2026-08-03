@@ -6208,4 +6208,39 @@ mes calendario que nombra el string `mes`, sin relación con el ciclo de
 
 ### Estado del repo al cierre de esta entrada
 - Ramas `dev` y `main` sincronizadas con `origin`. `npx tsc --noEmit` limpio (0 errores).
+
+---
+
+## Sesión — Seguimiento comercial Praxis (respuesta a propuesta, condicionamiento de presupuesto y contrapropuesta de piloto) · 3 ago 2026
+
+**Tipo de sesión:** DISEÑO/CONSTRUCCIÓN (comercial) — sin ticket de código asociado, sin cambios en `dev`/`main`.
+
+### 1. Respuesta de Praxis a la propuesta comercial
+- Praxis confirmó interés en avanzar. Fecha de kickoff estimada por Praxis: **21 de octubre de 2026**.
+- Condición explícita (palabras de Felipe Manrique): el kickoff depende de que **cartera** complete el recaudo de recursos destinados a la inversión, y de que se reduzca el gasto de nómina de contratistas por cierre de plazas en sedes.
+- Implicación: el presupuesto del proyecto **no está asignado de forma independiente** — depende del resultado de un proceso interno de Praxis (cartera), cuyo testimonio de mejora (Felipe, ~5%) ya está documentado con limitaciones estructurales (sesgo de selección, no extrapolable al portafolio histórico).
+
+### 2. Solicitud de trial/demo — declinada
+- Praxis solicitó acceso a un trial/demo antes de firmar.
+- Se respondió declinando, con razón explícita comunicada por escrito (correo del 3 ago 2026): la solución es desarrollo a la medida, no producto estandarizado — un trial pre-contrato transferiría el riesgo de construcción a Camilo sin garantía de cierre.
+
+### 3. Contrapropuesta: piloto Friends & Family escalonado
+- Arranque con número limitado de estudiantes en Cedritos.
+- Ampliación condicionada a criterios de validación definidos de antemano (tiempos de registro, ausencia de doble reserva, estabilidad durante un período mínimo).
+- Pago fraccionado por etapa validada.
+- **Pendiente:** definir los criterios de validación por etapa con precisión ejecutable (Señal 1 — acción, no estado) antes de la reunión de formalización.
+- Este piloto es también la vía para generar los datos de costo-por-evento que faltan para fijar el precio de la licencia recurrente por estudiante activo.
+
+### 4. Reunión de formalización propuesta
+- Se propuso a Praxis realizar la reunión de formalización (Felipe Manrique — legal/cartera, Lourdes y Lorena — administrativo) hacia mediados de septiembre 2026, dejando margen antes del kickoff estimado del 21 de octubre.
+
+### 5. Pregunta pendiente para Praxis
+- Si el presupuesto del proyecto está reservado como parte de la meta de recaudo de cartera, o se define como remanente posterior — determina el nivel de exposición real del proyecto al resultado de cartera.
+
+### 6. Próximo paso único
+- Esperar respuesta de Praxis sobre la pregunta de presupuesto y confirmación de fecha para la reunión de formalización de septiembre.
+- **No hay ticket activo — proyecto en pausa comercial hasta esa respuesta.**
+
+### 7. Deuda metodológica abierta (sin resolver en este delta)
+- La decisión de si surfacear el desalineamiento comercial-operativo (ventas vende horario fijo, operación funciona con disponibilidad real) se reservó explícitamente para la reunión presencial de septiembre, no para el correo escrito.
 - Pendiente: verificación visual en preview de Vercel (Claude in Chrome no se pudo conectar esta sesión). `DT-CICLO-OPERATIVO-UNIFICADO-01` y `DT-INTERPRETAR-IA-SEMANA-01` esperando elección de Camilo (tier B, HALT). `TICKET-B-GUARDIA-01` sigue `activo`, sin tocar.
