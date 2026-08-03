@@ -6163,3 +6163,49 @@ mes calendario que nombra el string `mes`, sin relación con el ciclo de
 
 ### Estado del repo al cierre de esta entrada
 - Ramas `dev` y `main` sincronizadas con `origin`. `npx tsc --noEmit` limpio (0 errores).
+
+---
+
+## Sesión — Debugging y construcción de FIX-SEMANA-STUB-01 (corrimiento S1→S2 en meses que empiezan sábado/domingo) · 3 ago 2026
+
+**Tipo de sesión:** DEBUGGING → CONSTRUCCIÓN (diagnóstico con reproducción exacta antes de tocar código, plan aprobado explícitamente por Camilo, luego construcción contra ese plan).
+
+### 1. Diagnóstico y causa raíz
+- **Síntoma reportado:** al abrir M4 hoy (3-ago-2026) aparecía "semana 2" en vez de "semana 1"; al navegar atrás, la semana que debía figurar como "semana 5" (julio, pendiente de cierre) figuraba como "semana 1" fantasma, no editable.
+- **Causa raíz:** `cc51db9` (29-jul) agregó la regla de cierre de fin de semana en `cicloOperativo()` pero no sincronizó `semanaDeFechaEnMes()`/`semanasDeMes()`. En meses cuyo día 1 cae sábado o domingo (agosto 2026), el stub previo al primer lunes se desvía entero al mes anterior y deja "S1" huérfana — toda la numeración se corre un lugar.
+- **Validado por simulación pura** de `lib/utils/fecha.ts` (sin tocar el Sheet) antes de proponer cualquier fix, siguiendo el protocolo DEBUGGING.
+- **Segundo bug encontrado durante la construcción** (no estaba en el diagnóstico original, pedido explícito de Camilo de "adelantarnos" a problemas futuros): `semanaActivaMes` ignoraba el `mes` visible y comparaba siempre contra "hoy" — habría bloqueado cerrar julio S5 aunque se arreglara la numeración.
+
+### 2. Construcción (`dev`)
+- `lib/utils/fecha.ts`: `stubAbsorbidoPorMesAnterior()` como única fuente de verdad de la condición "stub absorbido", consumida por `semanaDeFechaEnMes()` y `semanasDeMes()`. Nuevo helper `semanaActivaDeMes(mes, fecha?)`.
+- `app/mes/[mes]/semana/page.tsx` y `app/api/mes/[mes]/semana/[semana]/route.ts`: migrados de `semanaActual()` suelto a `semanaActivaDeMes(mes)`.
+- `scripts/verificar-ciclo-semanas.ts`: script de regresión nuevo (matriz de los 7 días de la semana como día-1-de-mes + casos límite reales de `cc51db9` + el caso de hoy) — **272/272 aserciones**. Corre con `node --experimental-strip-types scripts/verificar-ciclo-semanas.ts`.
+- `tsconfig.json`: excluido `scripts/**/*.ts` (el script importa `fecha.ts` con extensión `.ts` explícita para correr sin compilador; `moduleResolution: "bundler"` del proyecto no admite esa extensión en imports).
+- Verificado contra el **Sheet dev real** (no solo lógica pura) vía dev server + curl: `GET /api/mes/2026-08/semana/S1` → `S1`; `GET /api/mes/2026-07/semana/S5` → `semanaActivaMes="S5"`, `cierreSemana=null` (julio S5 sigue sin cerrar, confirmado).
+- `npx tsc --noEmit` limpio.
+
+### 3. Auditoría de datos (`AUDIT-SEMANA-STUB-01`)
+- H3 **dev**: 0 filas afectadas en la ventana 1-3 ago 2026.
+- H3 **prod**: 3 filas (2-ago), las tres ya correctamente etiquetadas `julio S5` por la regla de `cc51db9`. Nada que corregir.
+
+### 4. Estado del Backlog (`tickets/INDICE.md`)
+- `FIX-SEMANA-STUB-01`: `completado` (commits `8fc72c5`, `20fa9c1`).
+- `AUDIT-SEMANA-STUB-01`: `completado`, sin cambios de datos.
+- `DT-CICLO-OPERATIVO-UNIFICADO-01`: `propuesto`, tier B — `mesDeFecha()`/`semanaDeFechaEnMes()` llamadas por separado (no vía `cicloOperativo()`) en `cron/uber-parser`, sin aplicar la regla de cierre de fin de semana. Mismo patrón de bug, ruta distinta. HALT hasta que Camilo elija opción.
+- `DT-INTERPRETAR-IA-SEMANA-01`: `propuesto`, tier B — IA infiere `semana` en `/api/registro/interpretar` con fallback "sin referencia → S1", viola I-01 en espíritu (mitigado por ser campo editable). HALT hasta aprobación.
+- **Excepción de WIP limit (I-09)** autorizada explícitamente por Camilo — `TICKET-B-GUARDIA-01` sigue `activo`, sin tocar esta sesión.
+
+### 5. Cierre y merge a producción (`main`)
+- PR #38 (`fix(fecha): corregir corrimiento S1->S2...`) creado desde `dev`.
+- **Nota de proceso:** antes de mergear, `gh pr view 38` mostró `reviews: []` — sin review registrada en GitHub pese a que Camilo indicó que Angie ya había revisado. Se confirmó explícitamente con Camilo que la aprobación fue fuera de GitHub (verbal/chat) antes de proceder — la aprobación de Angie **no queda auditable en GitHub** para este PR.
+- PR #38 mergeado a `main` (`c98de82`). `main` y `dev` locales sincronizados con `origin`.
+
+### 6. Retrospectiva (Fase 4 HG SDD)
+- **Qué funcionó:** reproducir el bug con simulación pura de `lib/utils/fecha.ts` (Node `--experimental-strip-types` importando el `.ts` real, sin duplicar lógica) antes de tocar código — causa raíz con alta confianza y DoD verificable (272/272) sin depender del Sheet para el diagnóstico. El pedido explícito de "evaluar riesgo futuro" encontró `semanaActivaMes`, un segundo bug real que habría bloqueado el objetivo real (cerrar julio S5).
+- **Qué no funcionó:** Claude in Chrome no se pudo conectar pese a `/chrome` — verificación visual en browser quedó pendiente, sustituida por API contra Sheet dev real. El primer intento del script de regresión (import `.ts` explícito) rompió `tsc --noEmit` del proyecto completo hasta excluir `scripts/**/*.ts`.
+- **Qué cambia en la próxima sesión:** verificar `gh pr view <n> --json reviews,reviewDecision` antes de asumir que un merge está aprobado, incluso cuando Camilo lo confirma — no como excepción, como práctica estándar en cada merge.
+- **Invariante candidato:** registrado en `INVARIANTS.md` sección "Candidatos" (cálculo de mes/semana desde una única fuente de verdad) — no se promueve a invariante formal en esta entrada, sigue la regla del propio archivo de que las ideas nuevas entran como candidato y requieren aprobación explícita separada de Camilo.
+
+### Estado del repo al cierre de esta entrada
+- Ramas `dev` y `main` sincronizadas con `origin`. `npx tsc --noEmit` limpio (0 errores).
+- Pendiente: verificación visual en preview de Vercel (Claude in Chrome no se pudo conectar esta sesión). `DT-CICLO-OPERATIVO-UNIFICADO-01` y `DT-INTERPRETAR-IA-SEMANA-01` esperando elección de Camilo (tier B, HALT). `TICKET-B-GUARDIA-01` sigue `activo`, sin tocar.
