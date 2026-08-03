@@ -52,7 +52,7 @@ Ver `FIX-SEMANA-STUB-01` para el diagnóstico de causa raíz. Este ticket es pur
 **impacto en datos ya escritos**, no sobre el código.
 
 ## Commit de cierre
-(vacío hasta completar)
+`8fc72c5` (dev)
 
 ## Notas de ejecución
 (vacío)

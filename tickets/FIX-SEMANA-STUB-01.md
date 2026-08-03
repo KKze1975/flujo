@@ -90,7 +90,7 @@ vez de en julio S5 (la semana real pendiente de cierre). Plan aprobado explícit
 en la misma sesión.
 
 ## Commit de cierre
-(se llena al commitear — ver mensaje `fix(fecha): ...`)
+`8fc72c5` (dev)
 
 ## Notas de ejecución
 
