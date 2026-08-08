@@ -25,6 +25,11 @@ const FUENTES_PAGO = [
   { key: "fuenteEnMano" as const, label: "En mano",   persona: null         },
 ];
 
+// DT-M1M4-NULL-01 / B3: semanas ofrecidas como destino de un traslado al mes
+// siguiente. Nunca S5 — SemanaDefault (H1) no la admite, así que ningún
+// concepto trasladable la necesita como destino.
+const SEMANAS_DESTINO_MES_SIGUIENTE: Semana[] = ["S1", "S2", "S3", "S4"];
+
 function copCompact(n: number): string {
   const sign = n < 0 ? "-" : "";
   const a = Math.abs(n);
@@ -76,7 +81,7 @@ type EjecucionAction =
   | { tipo: "revertir" }
   | { tipo: "no_aplica" }
   | { tipo: "mover_semana"; semana: Semana }
-  | { tipo: "mover_mes_siguiente" };
+  | { tipo: "mover_mes_siguiente"; semana: Semana };
 
 // ── DkExecForm ────────────────────────────────────────────────────────────────
 
@@ -97,6 +102,9 @@ function DkExecForm({
     fuenteEnMano: false, fuenteNequi: false,
     fuenteCamilo: false, fuenteAngie: false,
   });
+  // DT-M1M4-NULL-01 / B3: picker de semana destino obligatorio antes de
+  // confirmar el traslado — nunca dispara mover_mes_siguiente sin semana.
+  const [pidiendoSemanaDestino, setPidiendoSemanaDestino] = useState(false);
 
   const monto = Number(state.monto);
   const diff = !isNaN(monto) ? monto - mov.montoPresupuestado : 0;
@@ -202,11 +210,25 @@ function DkExecForm({
             <span className="dk-opt-bx"><Icon name="x" size={12} /></span>
             <span className="tx">No aplica este mes</span>
           </button>
-          <button type="button" className="dk-opt"
-            onClick={() => onEjecucionAction({ tipo: "mover_mes_siguiente" })}>
+          <button type="button" className={`dk-opt${pidiendoSemanaDestino ? " on" : ""}`}
+            onClick={() => setPidiendoSemanaDestino(v => !v)}>
             <span className="dk-opt-bx"><Icon name="arrow" size={12} /></span>
             <span className="tx">Mover al mes siguiente</span>
           </button>
+          {pidiendoSemanaDestino && (
+            <div style={{ display: "flex", gap: 4, marginTop: 4, flexWrap: "wrap" }}>
+              <p className="dk-exp-lbl" style={{ width: "100%", marginBottom: 0 }}>
+                ¿A qué semana del mes siguiente?
+              </p>
+              {SEMANAS_DESTINO_MES_SIGUIENTE.map(s => (
+                <button key={s} type="button" className="dk-fchip"
+                  style={{ fontSize: 11, padding: "3px 8px" }}
+                  onClick={() => onEjecucionAction({ tipo: "mover_mes_siguiente", semana: s })}>
+                  → {s}
+                </button>
+              ))}
+            </div>
+          )}
           <div style={{ display: "flex", gap: 4, marginTop: 4, flexWrap: "wrap" }}>
             {semanas.map(s => (
               <button key={s} type="button" className="dk-fchip"
@@ -229,7 +251,7 @@ function DkPlanForm({
 }: {
   mov: Movimiento;
   busy: boolean;
-  onSave: (exc: null | "no" | "next", editedMonto: number) => void;
+  onSave: (exc: null | "no" | "next", editedMonto: number, semanaDestino?: Semana) => void;
   onCancel: () => void;
   onSemanaChange?: (s: Semana) => void;
   semanas: Semana[];
@@ -239,10 +261,16 @@ function DkPlanForm({
     (mov.estado === "pospuesto" || mov.estado === "pospuesto_mes_siguiente") ? "next" : null;
   const [exc, setExc] = useState<null | "no" | "next">(initialExc);
   const [editedMonto, setEditedMonto] = useState(String(mov.montoPresupuestado));
+  // DT-M1M4-NULL-01 / B3: semana destino obligatoria antes de confirmar un
+  // traslado nuevo (no aplica si ya estaba pospuesto — ahí Guardar solo
+  // cierra la tarjeta, no vuelve a llamar mover_mes_siguiente).
+  const originalPosp = mov.estado === "pospuesto" || mov.estado === "pospuesto_mes_siguiente";
+  const [semanaDestino, setSemanaDestino] = useState<Semana | null>(null);
   const off = exc !== null;
   const montoNum = Number(editedMonto);
   // B3: acepta monto = 0 como valor válido
   const montoChanged = !isNaN(montoNum) && montoNum !== mov.montoPresupuestado;
+  const faltaSemanaDestino = exc === "next" && !originalPosp && !semanaDestino;
 
   return (
     <div className="dk-exp" onClick={e => e.stopPropagation()}>
@@ -296,13 +324,36 @@ function DkPlanForm({
           <span className="tx">Mover al mes siguiente</span>
           <span className="dk-rb"><Icon name="check" size={11} /></span>
         </button>
+        {/* DT-M1M4-NULL-01 / B3: semana destino obligatoria — nunca se
+            confirma el traslado con semana implícita (null). */}
+        {exc === "next" && !originalPosp && (
+          <div style={{ marginTop: 4 }}>
+            <p className="dk-exp-lbl" style={{ marginBottom: 4 }}>¿A qué semana del mes siguiente?</p>
+            <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+              {SEMANAS_DESTINO_MES_SIGUIENTE.map(s => (
+                <button key={s} type="button"
+                  className={`dk-fchip${semanaDestino === s ? " on" : ""}`}
+                  style={{ fontSize: 11, padding: "3px 8px" }}
+                  onClick={() => setSemanaDestino(s)}>
+                  → {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="dk-exp-actions">
-        {/* B3: disabled solo si monto no es número válido (acepta 0) */}
+        {/* B3 (monto=0): disabled si monto no es número válido (acepta 0).
+            DT-M1M4-NULL-01 / B3 (traslado): disabled también si falta elegir
+            semana destino para un traslado nuevo. */}
         <button type="button" className="fl-btn primary sm block"
-          disabled={busy || (isNaN(montoNum) && !off)}
-          onClick={() => onSave(exc, !isNaN(montoNum) ? montoNum : mov.montoPresupuestado)}>
+          disabled={busy || (isNaN(montoNum) && !off) || faltaSemanaDestino}
+          onClick={() => onSave(
+            exc,
+            !isNaN(montoNum) ? montoNum : mov.montoPresupuestado,
+            semanaDestino ?? undefined,
+          )}>
           <Icon name="check" size={15} /> {busy ? "…" : "Guardar"}
         </button>
         <button type="button" className="dk-exp-cancel" onClick={onCancel}>Cancelar</button>
@@ -324,7 +375,7 @@ function ConceptCard({
   busy: boolean;
   onToggle: () => void;
   onConfirmExec: (s: ExecState) => void;
-  onSavePlan: (exc: null | "no" | "next", editedMonto: number) => void;
+  onSavePlan: (exc: null | "no" | "next", editedMonto: number, semanaDestino?: Semana) => void;
   onEjecucionAction?: (action: EjecucionAction) => void;
   onSemanaChange?: (s: Semana) => void;
   dragId: string | null;
@@ -460,7 +511,7 @@ function CatGroup({
   defaultOpen: boolean; empty: boolean;
   openCard: string | null; onToggle: (id: string) => void;
   onConfirmExec: (id: string, s: ExecState) => void;
-  onSavePlan: (id: string, exc: null | "no" | "next", editedMonto: number) => void;
+  onSavePlan: (id: string, exc: null | "no" | "next", editedMonto: number, semanaDestino?: Semana) => void;
   onEjecucionAction?: (id: string, action: EjecucionAction) => void;
   onSemanaChange?: (id: string, s: Semana) => void;
   busy: boolean; dragId: string | null;
@@ -504,7 +555,7 @@ function CatGroup({
               isOpen={openCard === mov.id}
               onToggle={() => onToggle(mov.id)}
               onConfirmExec={s => onConfirmExec(mov.id, s)}
-              onSavePlan={(exc, monto) => onSavePlan(mov.id, exc, monto)}
+              onSavePlan={(exc, monto, semanaDestino) => onSavePlan(mov.id, exc, monto, semanaDestino)}
               onEjecucionAction={onEjecucionAction ? (a) => onEjecucionAction(mov.id, a) : undefined}
               onSemanaChange={onSemanaChange ? (s) => onSemanaChange(mov.id, s) : undefined}
               dragId={dragId}
@@ -532,7 +583,7 @@ function WeekColumn({
   openCard: string | null;
   onToggle: (id: string) => void;
   onConfirmExec: (movId: string, s: ExecState) => void;
-  onSavePlan: (movId: string, exc: null | "no" | "next", editedMonto: number) => void;
+  onSavePlan: (movId: string, exc: null | "no" | "next", editedMonto: number, semanaDestino?: Semana) => void;
   onEjecucionAction?: (movId: string, action: EjecucionAction) => void;
   onSemanaChange?: (movId: string, s: Semana) => void;
   busy: boolean;
@@ -757,7 +808,7 @@ export default function ConceptoBoard({
     });
   };
 
-  const handleSavePlan = async (movId: string, exc: null | "no" | "next", editedMonto: number) => {
+  const handleSavePlan = async (movId: string, exc: null | "no" | "next", editedMonto: number, semanaDestino?: Semana) => {
     const mov = movs.find(m => m.id === movId);
     if (!mov) return;
     const originalPosp = mov.estado === "pospuesto" || mov.estado === "pospuesto_mes_siguiente";
@@ -806,7 +857,10 @@ export default function ConceptoBoard({
     if (exc === "no") {
       patchar(movId, { tipo: "no_aplica" });
     } else if (exc === "next") {
-      if (!originalPosp) patchar(movId, { tipo: "mover_mes_siguiente" });
+      // DT-M1M4-NULL-01 / B3: semanaDestino ya es obligatorio en DkPlanForm
+      // para un traslado nuevo (botón Guardar deshabilitado sin ella) — se
+      // reenvía siempre que exista, nunca se dispara sin semana explícita.
+      if (!originalPosp) patchar(movId, { tipo: "mover_mes_siguiente", semana: semanaDestino });
       else setOpenCard(null);
     } else {
       if (originalPosp) patchar(movId, { tipo: "revertir_mes_siguiente" });
@@ -817,7 +871,7 @@ export default function ConceptoBoard({
   const handleEjecucionAction = (movId: string, action: EjecucionAction) => {
     if (action.tipo === "revertir") patchar(movId, { tipo: "revertir_ejecucion" });
     else if (action.tipo === "no_aplica") patchar(movId, { tipo: "no_aplica" });
-    else if (action.tipo === "mover_mes_siguiente") patchar(movId, { tipo: "mover_mes_siguiente" });
+    else if (action.tipo === "mover_mes_siguiente") patchar(movId, { tipo: "mover_mes_siguiente", semana: action.semana });
     else patchar(movId, { tipo: "reasignar_semana", semana: action.semana });
   };
 
