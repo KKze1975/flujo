@@ -1,7 +1,7 @@
 ---
 ticket_id: DT-M1M4-NULL-01
 orden: 5
-estado: diagnostico_listo
+estado: completado
 tier: B
 dependencias: ninguna
 ---
@@ -207,10 +207,70 @@ fue la preferida en la sesión previa** — la decisión es tuya.
 
 `DT-M1M4-NULL-01-diagnostico: diagnostico_listo` (ver historial de `dev`).
 
+## Fase construcción — B3 implementada (8 ago 2026)
+
+Camilo aprobó explícitamente **B3** y autorizó excepción de WIP limit (I-09)
+— `TICKET-B-GUARDIA-01` sigue `activo`, esta construcción corrió en paralelo.
+
+**Reproducción del bug (paso 1 del loop), contra Sheet dev real:**
+Concepto de prueba `TEST-DT-M1M4-NULL-01-A` (`semanaDefault: "variable"`),
+movimiento pendiente en `2027-06` (mes sintético, nunca usado por datos
+reales). `PATCH .../movimientos/{id}` con `{tipo: "mover_mes_siguiente"}`
+(sin `semana`, código pre-fix) devolvió `200` y escribió en `2027-07` un
+movimiento con `semana: null`, confirmado por lectura directa de H2 vía
+`GET /api/mes/2027-07`. Ese movimiento apareció simultáneamente en
+`GET /api/mes/2027-07/semana/S1`, `S2`, `S3` y `S4` — síntoma de M4
+reproducido con escritura real, no memoria de sesión previa.
+
+**Prueba escrita (paso 2):** `scripts/verificar-dt-m1m4-null-01.ts` —
+integración real contra `http://localhost:3000` (dev) y el Sheet dev, sin
+mocks. Corrida contra el código pre-fix: **6/18 aserciones en FALLO**
+(rechazo de `semana` faltante no ocurría — HTTP 200 en vez de 400; `semana`
+explícita se ignoraba — quedaba `null` en vez de `"S2"`; el movimiento
+aparecía en S1/S3/S4 además de S2). Evidencia completa pegada en la sesión
+de construcción.
+
+**Fix (paso 3):**
+- Backend — `app/api/mes/[mes]/movimientos/[id]/route.ts`, bloque
+  `mover_mes_siguiente`: si `concepto.semanaDefault === "variable"` y no
+  viene `semana` en el body, `400` (mismo patrón que las validaciones
+  existentes del archivo). Si viene `semana`, se valida contra
+  `semanasDeMes(nextMes)`. El movimiento nuevo en el mes destino escribe
+  `semana: body.semana ?? null` (antes: `null` hardcodeado sin excepción).
+- Frontend — `components/m1/ConceptoBoard.tsx`: el botón "Mover al mes
+  siguiente" en `DkExecForm` (vista ejecución/M4) y el toggle equivalente en
+  `DkPlanForm` (vista planeación/M1) ahora abren un picker de semana
+  (`SEMANAS_DESTINO_MES_SIGUIENTE`, S1-S4) adaptado del patrón de chips ya
+  usado para `mover_semana`/`reasignar_semana` — la acción `mover_mes_siguiente`
+  nunca se dispara sin una semana elegida (en `DkPlanForm`, el botón
+  "Guardar" queda deshabilitado hasta elegirla).
+
+**Verificación post-fix (paso 4):** misma prueba (`verificar-dt-m1m4-null-01.ts`),
+misma reproducción, código con el fix: **12/12 OK, 0 FALLOS**. Lectura
+directa de H2 confirmó `semana: "S2"` (nunca `null`) para el movimiento
+trasladado; visible solo en `GET /api/mes/2027-07/semana/S2`, ausente en
+S1/S3/S4 — M1 y M4 quedan consistentes para este movimiento (`m.semana === s`
+es verdadero solo para S2 en ambas vistas). `npx tsc --noEmit` limpio.
+
+**Limpieza de datos de prueba (paso 5):** `scripts/limpiar-dt-m1m4-null-01.mjs`
+borró las filas sintéticas de H1/H2 (meses `2027-06`/`2027-07`,
+`TEST-DT-M1M4-NULL-01-*`). Verificado por lectura: `GET /api/conceptos` sin
+residuos del prefijo de prueba, `GET /api/mes/2027-06` y `2027-07` vuelven a
+`404` (mes no inicializado). Hallazgo lateral (no corregido, fuera de
+alcance de este ticket): `createConcepto` usa `values.append` sin
+`INSERT_ROWS` explícito (candidato de invariante ya registrado en
+`INVARIANTS.md`) — se observó que dos altas consecutivas de concepto
+sintético dejaron solo la última fila de H1 en vez de ambas; no afectó datos
+reales ni quedó corrupción tras la limpieza (verificado: 62 conceptos, sin
+ids duplicados).
+
+**Alcance respetado:** no se tocó el comportamiento de `semana_default:
+variable` en general, solo el traslado vía `mover_mes_siguiente`; no se hizo
+migración de esquema.
+
 ## Notas de ejecución
 
 Fase de diagnóstico cerrada — HALT obligatorio por diseño de Tier B. No se
-escribió código de fix ni se tocó ningún dato en Sheet (dev o prod). Falta:
-que Camilo elija B1/B2/B3 (o proponga una alternativa) y cambie `estado` a
-`aprobado_para_fix` para que `/goal-a DT-M1M4-NULL-01` ejecute el fix ya
-diagnosticado.
+escribió código de fix ni se tocó ningún dato en Sheet (dev o prod) durante
+esa fase. Fase de construcción completada y verificada (ver sección arriba)
+tras aprobación explícita de B3 por Camilo.

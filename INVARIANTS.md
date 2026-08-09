@@ -140,6 +140,20 @@ mergear debe escalar a Camilo/Angie, nunca mergear de forma autónoma.
 (Origen: Memory de Project claude.ai, formalizado 27 jul 2026).
 Pendiente de aprobación explícita de Camilo antes de convertirse en invariante real.
 
+### Candidato — Cálculo de mes/semana operativos desde una única fuente de verdad
+Toda función que derive mes/semana operativos de una fecha (para "hoy" o para
+una fecha arbitraria) debe consumir una única implementación compartida —
+prohibido duplicar la lógica de stub/cierre de fin de semana en más de un
+lugar. La desincronización entre copias ya produjo error silencioso dos veces
+sin que el sistema lo detectara: `cc51db9` (29 jul 2026, `cicloOperativo()` se
+sincronizó pero `semanaDeFechaEnMes()`/`semanasDeMes()` no) y `semanaActivaMes`
+en `FIX-SEMANA-STUB-01` (3 ago 2026, calculado sin considerar el `mes` visible).
+Sigue habiendo una tercera copia divergente sin resolver: `mesDeFecha()` +
+`semanaDeFechaEnMes()` llamadas por separado (no vía `cicloOperativo()`) en
+`cron/uber-parser` — ver `DT-CICLO-OPERATIVO-UNIFICADO-01`.
+(Origen: `FIX-SEMANA-STUB-01`, 3 ago 2026). Pendiente de aprobación explícita
+de Camilo antes de convertirse en invariante real.
+
 ### Candidato (I-18) — Verificación de tickets ejecutados de forma autónoma
 Todo ticket lanzado autónomamente por un agente de ejecución debe
 verificarse en la siguiente sesión antes de iniciar trabajo nuevo. Un

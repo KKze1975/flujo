@@ -21,7 +21,7 @@ type PatchBody =
   | { tipo: "no_aplica" }
   | { tipo: "reasignar_semana"; semana: Semana }
   | { tipo: "actualizar_monto"; montoPresupuestado: number }
-  | { tipo: "mover_mes_siguiente" }
+  | { tipo: "mover_mes_siguiente"; semana?: Semana }
   | { tipo: "revertir_mes_siguiente" }
   | { tipo: "revertir_ejecucion" };
 
@@ -111,11 +111,27 @@ export async function PATCH(
         ? `${year + 1}-01`
         : `${year}-${String(month + 1).padStart(2, "0")}`;
 
+      const conceptos = await provider.getConceptos();
+      const concepto = conceptos.find((c) => c.id === mov.conceptoId);
+
+      // DT-M1M4-NULL-01 / B3: un concepto de semana variable nunca puede
+      // trasladarse con semana:null (M1 lo excluye de cualquier filtro
+      // específico, M4 lo incluye en las 4 simultáneamente mientras esté
+      // pendiente — asimetría confirmada por auditoría de código). Exigir
+      // semana destino explícita en el body cuando aplica.
+      if (concepto?.semanaDefault === "variable" && !body.semana) {
+        return Response.json(
+          { error: "Este concepto requiere semana destino explícita para trasladarlo al mes siguiente." },
+          { status: 400 }
+        );
+      }
+      if (body.semana && !semanasDeMes(nextMes).includes(body.semana)) {
+        return Response.json({ error: "semana inválida." }, { status: 400 });
+      }
+
       // TICKET-B-GUARDIA-01 P1: un concepto no semanal solo puede tener una
       // fila activa por mes en el mes destino. Si ya existe (por un traslado
       // previo o por iniciar), no se traslada de nuevo.
-      const conceptos = await provider.getConceptos();
-      const concepto = conceptos.find((c) => c.id === mov.conceptoId);
       if (concepto?.frecuencia !== "semanal") {
         const movsDestino = await provider.getMovimientos(nextMes);
         const yaExiste = movsDestino.some((m) => m.conceptoId === mov.conceptoId);
@@ -135,7 +151,7 @@ export async function PATCH(
         nombreSnapshot: mov.nombreSnapshot,
         categoriaSnapshot: mov.categoriaSnapshot,
         tipoSnapshot: mov.tipoSnapshot,
-        semana: null,
+        semana: body.semana ?? null,
         montoPresupuestado: mov.montoPresupuestado,
         montoEjecutado: null,
         desviacion: null,

@@ -6163,3 +6163,150 @@ mes calendario que nombra el string `mes`, sin relación con el ciclo de
 
 ### Estado del repo al cierre de esta entrada
 - Ramas `dev` y `main` sincronizadas con `origin`. `npx tsc --noEmit` limpio (0 errores).
+
+---
+
+## Sesión — Debugging y construcción de FIX-SEMANA-STUB-01 (corrimiento S1→S2 en meses que empiezan sábado/domingo) · 3 ago 2026
+
+**Tipo de sesión:** DEBUGGING → CONSTRUCCIÓN (diagnóstico con reproducción exacta antes de tocar código, plan aprobado explícitamente por Camilo, luego construcción contra ese plan).
+
+### 1. Diagnóstico y causa raíz
+- **Síntoma reportado:** al abrir M4 hoy (3-ago-2026) aparecía "semana 2" en vez de "semana 1"; al navegar atrás, la semana que debía figurar como "semana 5" (julio, pendiente de cierre) figuraba como "semana 1" fantasma, no editable.
+- **Causa raíz:** `cc51db9` (29-jul) agregó la regla de cierre de fin de semana en `cicloOperativo()` pero no sincronizó `semanaDeFechaEnMes()`/`semanasDeMes()`. En meses cuyo día 1 cae sábado o domingo (agosto 2026), el stub previo al primer lunes se desvía entero al mes anterior y deja "S1" huérfana — toda la numeración se corre un lugar.
+- **Validado por simulación pura** de `lib/utils/fecha.ts` (sin tocar el Sheet) antes de proponer cualquier fix, siguiendo el protocolo DEBUGGING.
+- **Segundo bug encontrado durante la construcción** (no estaba en el diagnóstico original, pedido explícito de Camilo de "adelantarnos" a problemas futuros): `semanaActivaMes` ignoraba el `mes` visible y comparaba siempre contra "hoy" — habría bloqueado cerrar julio S5 aunque se arreglara la numeración.
+
+### 2. Construcción (`dev`)
+- `lib/utils/fecha.ts`: `stubAbsorbidoPorMesAnterior()` como única fuente de verdad de la condición "stub absorbido", consumida por `semanaDeFechaEnMes()` y `semanasDeMes()`. Nuevo helper `semanaActivaDeMes(mes, fecha?)`.
+- `app/mes/[mes]/semana/page.tsx` y `app/api/mes/[mes]/semana/[semana]/route.ts`: migrados de `semanaActual()` suelto a `semanaActivaDeMes(mes)`.
+- `scripts/verificar-ciclo-semanas.ts`: script de regresión nuevo (matriz de los 7 días de la semana como día-1-de-mes + casos límite reales de `cc51db9` + el caso de hoy) — **272/272 aserciones**. Corre con `node --experimental-strip-types scripts/verificar-ciclo-semanas.ts`.
+- `tsconfig.json`: excluido `scripts/**/*.ts` (el script importa `fecha.ts` con extensión `.ts` explícita para correr sin compilador; `moduleResolution: "bundler"` del proyecto no admite esa extensión en imports).
+- Verificado contra el **Sheet dev real** (no solo lógica pura) vía dev server + curl: `GET /api/mes/2026-08/semana/S1` → `S1`; `GET /api/mes/2026-07/semana/S5` → `semanaActivaMes="S5"`, `cierreSemana=null` (julio S5 sigue sin cerrar, confirmado).
+- `npx tsc --noEmit` limpio.
+
+### 3. Auditoría de datos (`AUDIT-SEMANA-STUB-01`)
+- H3 **dev**: 0 filas afectadas en la ventana 1-3 ago 2026.
+- H3 **prod**: 3 filas (2-ago), las tres ya correctamente etiquetadas `julio S5` por la regla de `cc51db9`. Nada que corregir.
+
+### 4. Estado del Backlog (`tickets/INDICE.md`)
+- `FIX-SEMANA-STUB-01`: `completado` (commits `8fc72c5`, `20fa9c1`).
+- `AUDIT-SEMANA-STUB-01`: `completado`, sin cambios de datos.
+- `DT-CICLO-OPERATIVO-UNIFICADO-01`: `propuesto`, tier B — `mesDeFecha()`/`semanaDeFechaEnMes()` llamadas por separado (no vía `cicloOperativo()`) en `cron/uber-parser`, sin aplicar la regla de cierre de fin de semana. Mismo patrón de bug, ruta distinta. HALT hasta que Camilo elija opción.
+- `DT-INTERPRETAR-IA-SEMANA-01`: `propuesto`, tier B — IA infiere `semana` en `/api/registro/interpretar` con fallback "sin referencia → S1", viola I-01 en espíritu (mitigado por ser campo editable). HALT hasta aprobación.
+- **Excepción de WIP limit (I-09)** autorizada explícitamente por Camilo — `TICKET-B-GUARDIA-01` sigue `activo`, sin tocar esta sesión.
+
+### 5. Cierre y merge a producción (`main`)
+- PR #38 (`fix(fecha): corregir corrimiento S1->S2...`) creado desde `dev`.
+- **Nota de proceso:** antes de mergear, `gh pr view 38` mostró `reviews: []` — sin review registrada en GitHub pese a que Camilo indicó que Angie ya había revisado. Se confirmó explícitamente con Camilo que la aprobación fue fuera de GitHub (verbal/chat) antes de proceder — la aprobación de Angie **no queda auditable en GitHub** para este PR.
+- PR #38 mergeado a `main` (`c98de82`). `main` y `dev` locales sincronizados con `origin`.
+
+### 6. Retrospectiva (Fase 4 HG SDD)
+- **Qué funcionó:** reproducir el bug con simulación pura de `lib/utils/fecha.ts` (Node `--experimental-strip-types` importando el `.ts` real, sin duplicar lógica) antes de tocar código — causa raíz con alta confianza y DoD verificable (272/272) sin depender del Sheet para el diagnóstico. El pedido explícito de "evaluar riesgo futuro" encontró `semanaActivaMes`, un segundo bug real que habría bloqueado el objetivo real (cerrar julio S5).
+- **Qué no funcionó:** Claude in Chrome no se pudo conectar pese a `/chrome` — verificación visual en browser quedó pendiente, sustituida por API contra Sheet dev real. El primer intento del script de regresión (import `.ts` explícito) rompió `tsc --noEmit` del proyecto completo hasta excluir `scripts/**/*.ts`.
+- **Qué cambia en la próxima sesión:** verificar `gh pr view <n> --json reviews,reviewDecision` antes de asumir que un merge está aprobado, incluso cuando Camilo lo confirma — no como excepción, como práctica estándar en cada merge.
+- **Invariante candidato:** registrado en `INVARIANTS.md` sección "Candidatos" (cálculo de mes/semana desde una única fuente de verdad) — no se promueve a invariante formal en esta entrada, sigue la regla del propio archivo de que las ideas nuevas entran como candidato y requieren aprobación explícita separada de Camilo.
+
+### Estado del repo al cierre de esta entrada
+- Ramas `dev` y `main` sincronizadas con `origin`. `npx tsc --noEmit` limpio (0 errores).
+
+---
+
+## Sesión — Seguimiento comercial Praxis (respuesta a propuesta, condicionamiento de presupuesto y contrapropuesta de piloto) · 3 ago 2026
+
+**Tipo de sesión:** DISEÑO/CONSTRUCCIÓN (comercial) — sin ticket de código asociado, sin cambios en `dev`/`main`.
+
+### 1. Respuesta de Praxis a la propuesta comercial
+- Praxis confirmó interés en avanzar. Fecha de kickoff estimada por Praxis: **21 de octubre de 2026**.
+- Condición explícita (palabras de Felipe Manrique): el kickoff depende de que **cartera** complete el recaudo de recursos destinados a la inversión, y de que se reduzca el gasto de nómina de contratistas por cierre de plazas en sedes.
+- Implicación: el presupuesto del proyecto **no está asignado de forma independiente** — depende del resultado de un proceso interno de Praxis (cartera), cuyo testimonio de mejora (Felipe, ~5%) ya está documentado con limitaciones estructurales (sesgo de selección, no extrapolable al portafolio histórico).
+
+### 2. Solicitud de trial/demo — declinada
+- Praxis solicitó acceso a un trial/demo antes de firmar.
+- Se respondió declinando, con razón explícita comunicada por escrito (correo del 3 ago 2026): la solución es desarrollo a la medida, no producto estandarizado — un trial pre-contrato transferiría el riesgo de construcción a Camilo sin garantía de cierre.
+
+### 3. Contrapropuesta: piloto Friends & Family escalonado
+- Arranque con número limitado de estudiantes en Cedritos.
+- Ampliación condicionada a criterios de validación definidos de antemano (tiempos de registro, ausencia de doble reserva, estabilidad durante un período mínimo).
+- Pago fraccionado por etapa validada.
+- **Pendiente:** definir los criterios de validación por etapa con precisión ejecutable (Señal 1 — acción, no estado) antes de la reunión de formalización.
+- Este piloto es también la vía para generar los datos de costo-por-evento que faltan para fijar el precio de la licencia recurrente por estudiante activo.
+
+### 4. Reunión de formalización propuesta
+- Se propuso a Praxis realizar la reunión de formalización (Felipe Manrique — legal/cartera, Lourdes y Lorena — administrativo) hacia mediados de septiembre 2026, dejando margen antes del kickoff estimado del 21 de octubre.
+
+### 5. Pregunta pendiente para Praxis
+- Si el presupuesto del proyecto está reservado como parte de la meta de recaudo de cartera, o se define como remanente posterior — determina el nivel de exposición real del proyecto al resultado de cartera.
+
+### 6. Próximo paso único
+- Esperar respuesta de Praxis sobre la pregunta de presupuesto y confirmación de fecha para la reunión de formalización de septiembre.
+- **No hay ticket activo — proyecto en pausa comercial hasta esa respuesta.**
+
+### 7. Deuda metodológica abierta (sin resolver en este delta)
+- La decisión de si surfacear el desalineamiento comercial-operativo (ventas vende horario fijo, operación funciona con disponibilidad real) se reservó explícitamente para la reunión presencial de septiembre, no para el correo escrito.
+- Pendiente: verificación visual en preview de Vercel (Claude in Chrome no se pudo conectar esta sesión). `DT-CICLO-OPERATIVO-UNIFICADO-01` y `DT-INTERPRETAR-IA-SEMANA-01` esperando elección de Camilo (tier B, HALT). `TICKET-B-GUARDIA-01` sigue `activo`, sin tocar.
+
+> **Corrección (8 ago 2026):** las secciones 1-5 de esta entrada (respuesta de Praxis, trial declinado, contrapropuesta de piloto F&F, reunión de formalización, plazo del 21 oct 2026) se archivaron aquí por error — el contenido es del cliente de **Praxis Laboratory** (instituto educativo), no de Flujo. Detectado por Camilo el 8 ago 2026. Contenido real migrado a `work/praxis-laboratory/ESTADO.md`. Esta entrada se deja intacta como registro histórico, no se borra.
+
+---
+
+## Backfill retroactivo — 8 agosto 2026 (snapshot de estado, no sesión de trabajo)
+
+> Nota: esta entrada no corresponde a una sesión de trabajo real en Flujo — es un snapshot construido a pedido de Camilo para que el Centro de Control (vault) tenga una ficha completa, no en fallback legacy. Datos tomados de `tickets/INDICE.md`, `INVARIANTS.md` y las entradas ya existentes arriba — nada inventado.
+>
+> **Corrección (8 ago 2026, mismo día):** la versión original de este bloque incluía un "Plazo de cliente: 21 oct 2026" y un próximo paso comercial sobre Praxis — heredados de la entrada del 3 ago 2026 de arriba, que resultó estar mal archivada (ver nota de corrección justo antes de este backfill). Flujo no tiene cliente externo ni plazo declarado propio; se corrige aquí, en el mismo backfill, no en una entrada aparte.
+
+**Estado accionable:**
+- Unidad: ticket
+- En curso: [Producto] TICKET-B-GUARDIA-01 — cerrar DoD pendiente de guardia anti-duplicación de traslado (P1/P2 ya commiteados, falta DoD bullet 2 + PR) — activo
+- Backlog priorizado (top 3 de 4 abiertos, sin contar los 3 bloqueados):
+  1. [Operación] BACKUP-NOCTURNO-01 — confirmar que el cron de backup corrió en producción (pendiente_confirmacion_humana)
+  2. [Producto] DT-CIERRE-01 — reversión atómica de cierre de semana (propuesto, sin diagnóstico iniciado)
+  3. [Operación] DT-SOBRE-TECHO-01 — `sobre_techo` no persiste en H2 (propuesto, sin diagnóstico iniciado)
+- Reactivo/incidentes: ninguno
+- Seguridad: SEC-AUTH-ADMIN-RESET-01 abierto — `/api/admin/reset-mes` sin autenticación (hallazgo de `AUDIT-FABLE-01`), propuesto, sin fix construido
+- FinOps/Costo: sin dato registrado — Vercel/Claude API no están cubiertos por el chequeo de AWS del Centro de Control (gap ya anotado en `CLAUDE.md` del vault)
+- Bloqueados esperando a Camilo: DT-M1M4-NULL-01 (elegir entre 3 opciones B1/B2/B3 ya documentadas), DT-CICLO-OPERATIVO-UNIFICADO-01 (HALT, no construir sin elección), DT-INTERPRETAR-IA-SEMANA-01 (HALT, hallazgo tangencial)
+- Próximo paso: completar DoD bullet 2 de TICKET-B-GUARDIA-01 y abrir PR
+- Pendiente: verificación visual en preview de Vercel (Claude in Chrome no se pudo conectar esta sesión). `DT-CICLO-OPERATIVO-UNIFICADO-01` y `DT-INTERPRETAR-IA-SEMANA-01` esperando elección de Camilo (tier B, HALT). `TICKET-B-GUARDIA-01` sigue `activo`, sin tocar.
+
+---
+
+## Sesión — Construcción de DT-M1M4-NULL-01, opción B3 (8 agosto 2026)
+
+Camilo aprobó B3 (preguntar semana destino al posponer) y autorizó excepción de WIP limit (I-09) — `TICKET-B-GUARDIA-01` siguió `activo`, sin tocar, construcción en paralelo. Verificación de vigencia de los 9 tickets abiertos hecha primero (mismo día): los 9 seguían vigentes contra código real; hallazgo colateral de esa verificación — `BUG-LABEL-MESM1-01` ya tenía diagnóstico completo por código (botón "Mes siguiente" en `MesM1Mobile.tsx` llama `posponer` en vez de `mover_mes_siguiente`) aunque el ticket seguía en `propuesto`/"sin diagnóstico" — pendiente que Camilo decida si vale la pena anotarlo en el ticket.
+
+Bug reproducido en dev con evidencia real, prueba de integración escrita (`scripts/verificar-dt-m1m4-null-01.ts`, 6/18 falla contra código pre-fix), B3 implementado (`route.ts` + picker de semana en `ConceptoBoard.tsx`), prueba post-fix 12/12, `tsc --noEmit` limpio, datos sintéticos limpiados. Hallazgo lateral no corregido (fuera de alcance, ya candidato a invariante existente): `createConcepto` usa `values.append` sin `INSERT_ROWS`. `tickets/INDICE.md`/`DT-M1M4-NULL-01.md` actualizados a `completado`. 2 commits en `dev` (`e221bc1`, `38d334a`), **PR #39 abierto, sin mergear** — pendiente QA/sign-off explícito de Angie (I-17), pasos de validación ya entregados a Camilo para pasárselos.
+
+**Estado accionable:**
+- Unidad: ticket
+- En curso: [Producto] TICKET-B-GUARDIA-01 — sin tocar esta sesión, sigue activo
+- Backlog priorizado (top 3 de 4 abiertos, sin contar los 3 bloqueados):
+  1. [Operación] BACKUP-NOCTURNO-01 — confirmar que el cron de backup corrió en producción
+  2. [Producto] DT-CIERRE-01 — reversión atómica de cierre de semana
+  3. [Operación] DT-SOBRE-TECHO-01 — `sobre_techo` no persiste en H2
+- Reactivo/incidentes: ninguno
+- Seguridad: SEC-AUTH-ADMIN-RESET-01 sigue abierto, sin fix construido; `BUG-LABEL-MESM1-01` ya diagnosticado pero no anotado en su ticket (pendiente de Camilo)
+- FinOps/Costo: sin dato registrado
+- Bloqueados esperando a Camilo: QA/sign-off de Angie sobre PR #39 (bloquea merge a main); DT-CICLO-OPERATIVO-UNIFICADO-01 y DT-INTERPRETAR-IA-SEMANA-01 siguen HALT
+- Próximo paso: Angie ejecuta los pasos de QA ya entregados sobre el preview del PR #39; una vez aprobado, Camilo autoriza el merge a main
+
+---
+
+## Sesión — Cierre de TICKET-B-GUARDIA-01 (8 agosto 2026)
+
+Ticket ya construido (P1 `ee0b9e1`, P2 `291e8bd`), solo faltaba cerrar su DoD pendiente (bullet 2, confirmación de lectura dinámica de H1, kanban, PR). Verificado contra Sheet **dev** (`GOOGLE_SHEET_ID` de `.env.local`, nunca producción) con meses sintéticos `2027-10`/`2027-11` (confirmados 404 antes de empezar, sin colisión con tickets previos).
+
+**Discrepancia documentada, no forzada:** el DoD original (redactado 3 jul 2026) decía "iniciar con traslado preexistente → 400". El código real de P2 responde **201, no 400/409** — el diseño evolucionó de "bloquear todo el mes" a "omitir solo la fila duplicada del traslado y seguir inicializando el resto normalmente". La guardia de 400 real vive en P1 (`mover_mes_siguiente`) al intentar trasladar el mismo movimiento dos veces. Ambas verificadas end-to-end: Prueba A (P1) — 1er `mover_mes_siguiente` → 200, crea fila en destino; repetir el mismo PATCH → 400 sin duplicar (1 fila confirmada por lectura de H2). Prueba B (P2) — `iniciar` sobre el mes destino con el traslado ya presente → 201, `total: 77` (conceptos reales), conteo H2 1→78, conceptoId de prueba sigue con exactamente 1 fila (no duplicado). Confirmado también por lectura de código que la exclusión de `frecuencia: "semanal"` en P1 lee H1 dinámicamente vía `provider.getConceptos()`, no es lista hardcodeada. `tsc --noEmit` limpio, `generate-kanban.mjs` corrido sin error (49 tickets, 69 items deuda). Datos sintéticos (concepto `TEST-TICKET-B-GUARDIA-01-A`, 79 filas de H2 en 2027-10/11) limpiados y verificados sin residuo. `tickets/TICKET-B-GUARDIA-01.md`/`INDICE.md` actualizados a `completado`. PR nuevo abierto desde `dev` → `main` (independiente del PR #39 ya existente), sin mergear.
+
+**Estado accionable:**
+- Unidad: ticket
+- En curso: ninguno — con este cierre no queda ningún ticket `activo` en Flujo (decisión de abrir el siguiente del backlog queda para Camilo)
+- Backlog priorizado (top 3 de 4 abiertos, sin contar los 3 bloqueados):
+  1. [Operación] BACKUP-NOCTURNO-01 — confirmar que el cron de backup corrió en producción
+  2. [Producto] DT-CIERRE-01 — reversión atómica de cierre de semana
+  3. [Operación] DT-SOBRE-TECHO-01 — `sobre_techo` no persiste en H2
+- Reactivo/incidentes: ninguno
+- Seguridad: SEC-AUTH-ADMIN-RESET-01 sigue abierto, sin fix construido; `BUG-LABEL-MESM1-01` ya diagnosticado pero no anotado en su ticket (pendiente de Camilo)
+- FinOps/Costo: sin dato registrado
+- Bloqueados esperando a Camilo: QA/sign-off de Angie sobre PR #39 (bloquea su merge a main); DT-CICLO-OPERATIVO-UNIFICADO-01 y DT-INTERPRETAR-IA-SEMANA-01 siguen HALT
+- Próximo paso: Camilo revisa y decide sobre el PR nuevo de TICKET-B-GUARDIA-01 (sin mergear); en paralelo, Angie sigue pendiente de QA sobre el PR #39
