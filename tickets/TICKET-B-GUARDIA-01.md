@@ -60,7 +60,7 @@ del mes por una sola fila de traslado preexistente).
 
 ## Commit de cierre
 
-`__COMMIT_HASH__` — cierre del ticket (DoD bullet 2 verificado con evidencia
+`f1570ac` — cierre del ticket (DoD bullet 2 verificado con evidencia
 real contra Sheet dev, `generate-kanban.mjs` corrido, PR abierto).
 
 ## Notas de ejecución
