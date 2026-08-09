@@ -6350,3 +6350,22 @@ viejo sobrevive. Hallazgo aparte, no bloqueante: falta el grupo de fecha
 - Próximo paso: Camilo decide si vale la pena investigar el gap del
   2026-07-30; en paralelo, sigue pendiente su revisión del PR de
   TICKET-B-GUARDIA-01 y el QA de Angie sobre el PR #39
+
+## Sesión — Diagnóstico e ingesta de viajes Uber + Migración Dev a Prod (8 ago 2026)
+
+Se investigó por qué los consumos de Uber no se reflejaban en la UI de producción durante la semana activa.
+Causa raíz identificada: los correos sí fueron leídos y procesados correctamente por el parser de `uber-parser`, pero las escrituras se dirigieron a la Hoja de Desarrollo (`GOOGLE_SHEET_ID`) en lugar de la Hoja de Producción (`PROD_GOOGLE_SHEET_ID`). Adicionalmente, 1 correo del 6 de agosto ($13.423 con Oscar Arturo) se mantuvo sin leer en Gmail deliberadamente debido a la marca `pagoConError: true` (notificación de Nu por falta de fondos).
+
+**Acciones realizadas y verificadas:**
+1. **Actualización de credenciales:** Se confirmó la actualización de `GMAIL_REFRESH_TOKEN` en `.env.local` el 8 de agosto de 2026 (20:49).
+2. **Migración de datos:** Se ejecutó `scripts/migrate-uber-august-dev-to-prod.mjs` deduplicando y migrando los 8 consumos de Uber de agosto 2026 desde `H3` Dev a `H3` Prod.
+3. **Verificación de lectura real:** Se leyó *de facto* `H3` de Producción confirmando la presencia de los 8 registros ($14.589, $26.522, $47.730, $61.776, $18.583, $19.873, $14.354, $19.135).
+
+**Candidato a Invariante:**
+- *Trabajo cron/ingesta en producción:* Todo worker de ingesta cron que se ejecute en entorno de producción debe validar explícitamente que las escrituras se dirijan a `PROD_GOOGLE_SHEET_ID` y no al Sheet por defecto de Dev.
+
+**Estado accionable:**
+- Unidad: investigación operativa / corrección de datos
+- En curso: ninguno — sin tickets activos pendientes de ejecución
+- Bloqueados esperando a Camilo: QA/sign-off de Angie sobre PR #39; PR de TICKET-B-GUARDIA-01 listo para revisión
+- Próximo paso: monitoreo autónomo de la próxima corrida del cron diario de Uber en producción
