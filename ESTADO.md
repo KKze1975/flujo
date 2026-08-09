@@ -6244,3 +6244,69 @@ mes calendario que nombra el string `mes`, sin relación con el ciclo de
 ### 7. Deuda metodológica abierta (sin resolver en este delta)
 - La decisión de si surfacear el desalineamiento comercial-operativo (ventas vende horario fijo, operación funciona con disponibilidad real) se reservó explícitamente para la reunión presencial de septiembre, no para el correo escrito.
 - Pendiente: verificación visual en preview de Vercel (Claude in Chrome no se pudo conectar esta sesión). `DT-CICLO-OPERATIVO-UNIFICADO-01` y `DT-INTERPRETAR-IA-SEMANA-01` esperando elección de Camilo (tier B, HALT). `TICKET-B-GUARDIA-01` sigue `activo`, sin tocar.
+
+> **Corrección (8 ago 2026):** las secciones 1-5 de esta entrada (respuesta de Praxis, trial declinado, contrapropuesta de piloto F&F, reunión de formalización, plazo del 21 oct 2026) se archivaron aquí por error — el contenido es del cliente de **Praxis Laboratory** (instituto educativo), no de Flujo. Detectado por Camilo el 8 ago 2026. Contenido real migrado a `work/praxis-laboratory/ESTADO.md`. Esta entrada se deja intacta como registro histórico, no se borra.
+
+---
+
+## Backfill retroactivo — 8 agosto 2026 (snapshot de estado, no sesión de trabajo)
+
+> Nota: esta entrada no corresponde a una sesión de trabajo real en Flujo — es un snapshot construido a pedido de Camilo para que el Centro de Control (vault) tenga una ficha completa, no en fallback legacy. Datos tomados de `tickets/INDICE.md`, `INVARIANTS.md` y las entradas ya existentes arriba — nada inventado.
+>
+> **Corrección (8 ago 2026, mismo día):** la versión original de este bloque incluía un "Plazo de cliente: 21 oct 2026" y un próximo paso comercial sobre Praxis — heredados de la entrada del 3 ago 2026 de arriba, que resultó estar mal archivada (ver nota de corrección justo antes de este backfill). Flujo no tiene cliente externo ni plazo declarado propio; se corrige aquí, en el mismo backfill, no en una entrada aparte.
+
+**Estado accionable:**
+- Unidad: ticket
+- En curso: [Producto] TICKET-B-GUARDIA-01 — cerrar DoD pendiente de guardia anti-duplicación de traslado (P1/P2 ya commiteados, falta DoD bullet 2 + PR) — activo
+- Backlog priorizado (top 3 de 4 abiertos, sin contar los 3 bloqueados):
+  1. [Operación] BACKUP-NOCTURNO-01 — confirmar que el cron de backup corrió en producción (pendiente_confirmacion_humana)
+  2. [Producto] DT-CIERRE-01 — reversión atómica de cierre de semana (propuesto, sin diagnóstico iniciado)
+  3. [Operación] DT-SOBRE-TECHO-01 — `sobre_techo` no persiste en H2 (propuesto, sin diagnóstico iniciado)
+- Reactivo/incidentes: ninguno
+- Seguridad: SEC-AUTH-ADMIN-RESET-01 abierto — `/api/admin/reset-mes` sin autenticación (hallazgo de `AUDIT-FABLE-01`), propuesto, sin fix construido
+- FinOps/Costo: sin dato registrado — Vercel/Claude API no están cubiertos por el chequeo de AWS del Centro de Control (gap ya anotado en `CLAUDE.md` del vault)
+- Bloqueados esperando a Camilo: DT-M1M4-NULL-01 (elegir entre 3 opciones B1/B2/B3 ya documentadas), DT-CICLO-OPERATIVO-UNIFICADO-01 (HALT, no construir sin elección), DT-INTERPRETAR-IA-SEMANA-01 (HALT, hallazgo tangencial)
+- Próximo paso: completar DoD bullet 2 de TICKET-B-GUARDIA-01 y abrir PR
+- Pendiente: verificación visual en preview de Vercel (Claude in Chrome no se pudo conectar esta sesión). `DT-CICLO-OPERATIVO-UNIFICADO-01` y `DT-INTERPRETAR-IA-SEMANA-01` esperando elección de Camilo (tier B, HALT). `TICKET-B-GUARDIA-01` sigue `activo`, sin tocar.
+
+---
+
+## Sesión — Construcción de DT-M1M4-NULL-01, opción B3 (8 agosto 2026)
+
+Camilo aprobó B3 (preguntar semana destino al posponer) y autorizó excepción de WIP limit (I-09) — `TICKET-B-GUARDIA-01` siguió `activo`, sin tocar, construcción en paralelo. Verificación de vigencia de los 9 tickets abiertos hecha primero (mismo día): los 9 seguían vigentes contra código real; hallazgo colateral de esa verificación — `BUG-LABEL-MESM1-01` ya tenía diagnóstico completo por código (botón "Mes siguiente" en `MesM1Mobile.tsx` llama `posponer` en vez de `mover_mes_siguiente`) aunque el ticket seguía en `propuesto`/"sin diagnóstico" — pendiente que Camilo decida si vale la pena anotarlo en el ticket.
+
+Bug reproducido en dev con evidencia real, prueba de integración escrita (`scripts/verificar-dt-m1m4-null-01.ts`, 6/18 falla contra código pre-fix), B3 implementado (`route.ts` + picker de semana en `ConceptoBoard.tsx`), prueba post-fix 12/12, `tsc --noEmit` limpio, datos sintéticos limpiados. Hallazgo lateral no corregido (fuera de alcance, ya candidato a invariante existente): `createConcepto` usa `values.append` sin `INSERT_ROWS`. `tickets/INDICE.md`/`DT-M1M4-NULL-01.md` actualizados a `completado`. 2 commits en `dev` (`e221bc1`, `38d334a`), **PR #39 abierto, sin mergear** — pendiente QA/sign-off explícito de Angie (I-17), pasos de validación ya entregados a Camilo para pasárselos.
+
+**Estado accionable:**
+- Unidad: ticket
+- En curso: [Producto] TICKET-B-GUARDIA-01 — sin tocar esta sesión, sigue activo
+- Backlog priorizado (top 3 de 4 abiertos, sin contar los 3 bloqueados):
+  1. [Operación] BACKUP-NOCTURNO-01 — confirmar que el cron de backup corrió en producción
+  2. [Producto] DT-CIERRE-01 — reversión atómica de cierre de semana
+  3. [Operación] DT-SOBRE-TECHO-01 — `sobre_techo` no persiste en H2
+- Reactivo/incidentes: ninguno
+- Seguridad: SEC-AUTH-ADMIN-RESET-01 sigue abierto, sin fix construido; `BUG-LABEL-MESM1-01` ya diagnosticado pero no anotado en su ticket (pendiente de Camilo)
+- FinOps/Costo: sin dato registrado
+- Bloqueados esperando a Camilo: QA/sign-off de Angie sobre PR #39 (bloquea merge a main); DT-CICLO-OPERATIVO-UNIFICADO-01 y DT-INTERPRETAR-IA-SEMANA-01 siguen HALT
+- Próximo paso: Angie ejecuta los pasos de QA ya entregados sobre el preview del PR #39; una vez aprobado, Camilo autoriza el merge a main
+
+---
+
+## Sesión — Cierre de TICKET-B-GUARDIA-01 (8 agosto 2026)
+
+Ticket ya construido (P1 `ee0b9e1`, P2 `291e8bd`), solo faltaba cerrar su DoD pendiente (bullet 2, confirmación de lectura dinámica de H1, kanban, PR). Verificado contra Sheet **dev** (`GOOGLE_SHEET_ID` de `.env.local`, nunca producción) con meses sintéticos `2027-10`/`2027-11` (confirmados 404 antes de empezar, sin colisión con tickets previos).
+
+**Discrepancia documentada, no forzada:** el DoD original (redactado 3 jul 2026) decía "iniciar con traslado preexistente → 400". El código real de P2 responde **201, no 400/409** — el diseño evolucionó de "bloquear todo el mes" a "omitir solo la fila duplicada del traslado y seguir inicializando el resto normalmente". La guardia de 400 real vive en P1 (`mover_mes_siguiente`) al intentar trasladar el mismo movimiento dos veces. Ambas verificadas end-to-end: Prueba A (P1) — 1er `mover_mes_siguiente` → 200, crea fila en destino; repetir el mismo PATCH → 400 sin duplicar (1 fila confirmada por lectura de H2). Prueba B (P2) — `iniciar` sobre el mes destino con el traslado ya presente → 201, `total: 77` (conceptos reales), conteo H2 1→78, conceptoId de prueba sigue con exactamente 1 fila (no duplicado). Confirmado también por lectura de código que la exclusión de `frecuencia: "semanal"` en P1 lee H1 dinámicamente vía `provider.getConceptos()`, no es lista hardcodeada. `tsc --noEmit` limpio, `generate-kanban.mjs` corrido sin error (49 tickets, 69 items deuda). Datos sintéticos (concepto `TEST-TICKET-B-GUARDIA-01-A`, 79 filas de H2 en 2027-10/11) limpiados y verificados sin residuo. `tickets/TICKET-B-GUARDIA-01.md`/`INDICE.md` actualizados a `completado`. PR nuevo abierto desde `dev` → `main` (independiente del PR #39 ya existente), sin mergear.
+
+**Estado accionable:**
+- Unidad: ticket
+- En curso: ninguno — con este cierre no queda ningún ticket `activo` en Flujo (decisión de abrir el siguiente del backlog queda para Camilo)
+- Backlog priorizado (top 3 de 4 abiertos, sin contar los 3 bloqueados):
+  1. [Operación] BACKUP-NOCTURNO-01 — confirmar que el cron de backup corrió en producción
+  2. [Producto] DT-CIERRE-01 — reversión atómica de cierre de semana
+  3. [Operación] DT-SOBRE-TECHO-01 — `sobre_techo` no persiste en H2
+- Reactivo/incidentes: ninguno
+- Seguridad: SEC-AUTH-ADMIN-RESET-01 sigue abierto, sin fix construido; `BUG-LABEL-MESM1-01` ya diagnosticado pero no anotado en su ticket (pendiente de Camilo)
+- FinOps/Costo: sin dato registrado
+- Bloqueados esperando a Camilo: QA/sign-off de Angie sobre PR #39 (bloquea su merge a main); DT-CICLO-OPERATIVO-UNIFICADO-01 y DT-INTERPRETAR-IA-SEMANA-01 siguen HALT
+- Próximo paso: Camilo revisa y decide sobre el PR nuevo de TICKET-B-GUARDIA-01 (sin mergear); en paralelo, Angie sigue pendiente de QA sobre el PR #39
