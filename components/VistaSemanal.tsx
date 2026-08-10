@@ -1722,7 +1722,14 @@ export default function VistaSemanal({
                         )}
                       </div>
                     </div>
-                    {!ejecutado && modoSemana !== "lectura" && (
+                    {/* FIX-BOLSILLO-MENSUAL-CIERRE-01: un bolsillo mensual (Mercado
+                        mensual, Frida, Fondo transporte) usa una única fila H2 ancla
+                        que se muestra sin filtrar por semana en las 4 semanas del mes
+                        (ver idsBolsillosMensuales arriba) — cerrarlo marca esa fila
+                        ejecutado de forma global y queda "ejecutado" en todas las
+                        semanas restantes. Su único propósito es acumular gasto contra
+                        un techo mensual, nunca debe poder cerrarse. */}
+                    {!ejecutado && !idsBolsillosMensuales.has(mov.conceptoId) && modoSemana !== "lectura" && (
                       <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
                         <button
                           className="fl-btn ghost sm"
