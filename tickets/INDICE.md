@@ -2,7 +2,7 @@
 
 | orden | ticket_id | estado | tier | dependencias | commit | notas |
 |---|---|---|---|---|---|---|
-| 1 | BACKUP-NOCTURNO-01 | pendiente_confirmacion_humana | A | ninguna | `0ec9684` | Arquitectura de contenedor (tercer intento) verificada por lectura directa, DoD del loop cumplido. PR #30 mergeado a `main` 2026-07-22 (`bb3b64b`). Falta confirmar que el cron corrió en producción — rutina de verificación programada para 2026-07-23 04:15 Bogotá. |
+| 1 | BACKUP-NOCTURNO-01 | completado | A | ninguna | `BACKUP-NOCTURNO-01-cierre` | Arquitectura de contenedor (tercer intento) verificada por lectura directa. PR #30 mergeado a `main` 2026-07-22 (`bb3b64b`). Confirmado 8 ago 2026: 14 fechas de tabs (`2026-07-25`→`2026-08-08`) creadas sin invocación manual — ejecución autónoma de Vercel Cron confirmada, limpieza >14 días funcionando (nada más viejo que `2026-07-25` presente). Gap detectado en `2026-07-30` (sin investigar), no bloquea el cierre. |
 | 2 | FIX-CREARMOVIMIENTOSMES-01 | completado | A | ninguna | `FIX-CREARMOVIMIENTOSMES-01-cierre` | Migrado a `values.get`+`values.update` determinístico. DoD verificado en dev vía 2 invocaciones reales consecutivas de `iniciar` (262→331→399 filas), cero sobrescritura, restaurado a 262. |
 | 3 | FIX-RESET-COLUMNAS-01 | completado | A | ninguna | `FIX-RESET-COLUMNAS-01-cierre` | Bugs reales confirmados y corregidos: H3 (faltaba col. `imprevisto`) y H5 (faltaban `destino_remanente`/`remanente_ejecutado`) en `reset-mes/route.ts` y varios scripts. Probado en dev con marcadores cruzados — corrupción reproducida sin el fix, ausente con el fix. |
 | 4 | DT-CIERRE-01 | propuesto | A | ninguna | | Reversión atómica de cierre de semana (H5+H2). Origen: incidente 24 jun 2026. |

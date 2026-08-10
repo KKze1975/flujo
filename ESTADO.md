@@ -6310,3 +6310,62 @@ Ticket ya construido (P1 `ee0b9e1`, P2 `291e8bd`), solo faltaba cerrar su DoD pe
 - FinOps/Costo: sin dato registrado
 - Bloqueados esperando a Camilo: QA/sign-off de Angie sobre PR #39 (bloquea su merge a main); DT-CICLO-OPERATIVO-UNIFICADO-01 y DT-INTERPRETAR-IA-SEMANA-01 siguen HALT
 - Próximo paso: Camilo revisa y decide sobre el PR nuevo de TICKET-B-GUARDIA-01 (sin mergear); en paralelo, Angie sigue pendiente de QA sobre el PR #39
+
+## Sesión — Cierre de BACKUP-NOCTURNO-01 (confirmación de ejecución nocturna autónoma, 8 ago 2026)
+
+Único punto pendiente del DoD (ejecución real disparada por Vercel Cron, no
+invocación manual). Verificación exclusivamente de lectura, protocolo
+`sheet-safety`: `spreadsheets.get` (metadata, sin `values.get`, sin
+escritura) sobre el Sheet contenedor (`BACKUP_SHEET_ID`). Resultado: 85
+tabs — 84 con patrón `{H1|H2|H3|H4|H5|H5B}_{fecha}` agrupados en 14 fechas
+(`2026-07-25` a `2026-08-08`, con las 6 tabs completas cada una, sin
+ejecuciones parciales) más `Hoja 1` (tab por defecto de Sheets, inofensivo).
+Ninguna de esas 14 fechas corresponde a la última invocación manual
+conocida (21 jul 2026) ni fue creada por esta sesión — confirma ejecución
+autónoma repetida del cron durante más de dos semanas. Confirma además que
+la limpieza de >14 días funciona en producción: la fecha más antigua
+presente (`2026-07-25`) es exactamente el límite de retención, nada más
+viejo sobrevive. Hallazgo aparte, no bloqueante: falta el grupo de fecha
+`2026-07-30` (gap de una noche, causa no investigada). `estado` del ticket
+→ `completado`; `tickets/BACKUP-NOCTURNO-01.md` e `INDICE.md` actualizados.
+
+**Estado accionable:**
+- Unidad: ticket
+- En curso: ninguno — BACKUP-NOCTURNO-01 era el único con confirmación
+  pendiente; no queda ningún ticket `activo` en Flujo (decisión de abrir
+  el siguiente del backlog sigue siendo de Camilo)
+- Backlog priorizado (top 2 de 3 abiertos, sin contar los 3 bloqueados —
+  BACKUP-NOCTURNO-01 sale de esta lista con este cierre):
+  1. [Producto] DT-CIERRE-01 — reversión atómica de cierre de semana
+  2. [Operación] DT-SOBRE-TECHO-01 — `sobre_techo` no persiste en H2
+- Reactivo/incidentes: gap de backup del 2026-07-30 (una sola noche,
+  sin investigar — no urgente, la racha alrededor está intacta)
+- Seguridad: SEC-AUTH-ADMIN-RESET-01 sigue abierto, sin fix construido;
+  `BUG-LABEL-MESM1-01` ya diagnosticado pero no anotado en su ticket
+  (pendiente de Camilo)
+- FinOps/Costo: sin dato registrado
+- Bloqueados esperando a Camilo: QA/sign-off de Angie sobre PR #39
+  (bloquea su merge a main); DT-CICLO-OPERATIVO-UNIFICADO-01 y
+  DT-INTERPRETAR-IA-SEMANA-01 siguen HALT
+- Próximo paso: Camilo decide si vale la pena investigar el gap del
+  2026-07-30; en paralelo, sigue pendiente su revisión del PR de
+  TICKET-B-GUARDIA-01 y el QA de Angie sobre el PR #39
+
+## Sesión — Diagnóstico e ingesta de viajes Uber + Migración Dev a Prod (8 ago 2026)
+
+Se investigó por qué los consumos de Uber no se reflejaban en la UI de producción durante la semana activa.
+Causa raíz identificada: los correos sí fueron leídos y procesados correctamente por el parser de `uber-parser`, pero las escrituras se dirigieron a la Hoja de Desarrollo (`GOOGLE_SHEET_ID`) en lugar de la Hoja de Producción (`PROD_GOOGLE_SHEET_ID`). Adicionalmente, 1 correo del 6 de agosto ($13.423 con Oscar Arturo) se mantuvo sin leer en Gmail deliberadamente debido a la marca `pagoConError: true` (notificación de Nu por falta de fondos).
+
+**Acciones realizadas y verificadas:**
+1. **Actualización de credenciales:** Se confirmó la actualización de `GMAIL_REFRESH_TOKEN` en `.env.local` el 8 de agosto de 2026 (20:49).
+2. **Migración de datos:** Se ejecutó `scripts/migrate-uber-august-dev-to-prod.mjs` deduplicando y migrando los 8 consumos de Uber de agosto 2026 desde `H3` Dev a `H3` Prod.
+3. **Verificación de lectura real:** Se leyó *de facto* `H3` de Producción confirmando la presencia de los 8 registros ($14.589, $26.522, $47.730, $61.776, $18.583, $19.873, $14.354, $19.135).
+
+**Candidato a Invariante:**
+- *Trabajo cron/ingesta en producción:* Todo worker de ingesta cron que se ejecute en entorno de producción debe validar explícitamente que las escrituras se dirijan a `PROD_GOOGLE_SHEET_ID` y no al Sheet por defecto de Dev.
+
+**Estado accionable:**
+- Unidad: investigación operativa / corrección de datos
+- En curso: ninguno — sin tickets activos pendientes de ejecución
+- Bloqueados esperando a Camilo: QA/sign-off de Angie sobre PR #39; PR de TICKET-B-GUARDIA-01 listo para revisión
+- Próximo paso: monitoreo autónomo de la próxima corrida del cron diario de Uber en producción

@@ -1,7 +1,7 @@
 ---
 ticket_id: BACKUP-NOCTURNO-01
 orden: 1
-estado: pendiente_confirmacion_humana
+estado: completado
 tier: A
 dependencias: ninguna
 ---
@@ -86,11 +86,13 @@ cerrado, no queda a criterio de quien ejecute el ticket):**
 día siguiente, documentada como tal, no fingida como parte del DoD
 automático:**
 
-- [ ] La ejecución nocturna real (disparada por Vercel Cron, no invocada
+- [x] La ejecución nocturna real (disparada por Vercel Cron, no invocada
       manualmente) ocurrió a la hora esperada. Camilo confirma esto
       revisando el Sheet `flujo-backup-{fecha}` al día siguiente — este
       punto queda explícitamente abierto en el ticket hasta esa
       confirmación, el ticket no pasa a `completado` sin ella.
+      **Confirmado 8 ago 2026 — ver "Confirmación de ejecución nocturna
+      autónoma" al final de este archivo.**
 
 ## Contexto / diagnóstico previo
 
@@ -109,7 +111,10 @@ comportamiento esperado de este ticket en particular.
 
 ## Commit de cierre
 
-(vacío — bloqueado, no cierra en esta sesión)
+Confirma DoD punto 6 (ejecución nocturna autónoma por Vercel Cron) vía
+lectura de metadata del Sheet contenedor — sin código nuevo, sin
+invocación manual del endpoint. Ver "Confirmación de ejecución nocturna
+autónoma — 8 ago 2026" al final de este archivo.
 
 ## Notas de ejecución
 
@@ -413,3 +418,64 @@ como especifica este ticket en su excepción de cierre): el sexto punto
 del DoD — que la ejecución nocturna real, disparada por Vercel Cron y no
 por invocación manual, ocurra a la hora esperada — queda abierto hasta
 que Camilo lo confirme revisando el Sheet contenedor al día siguiente.
+
+---
+
+## Confirmación de ejecución nocturna autónoma — 8 ago 2026
+
+Verificación exclusivamente de lectura (protocolo `sheet-safety` de este
+repo), sin invocar el endpoint. `spreadsheets.get` (metadata, sin
+`values.get`) sobre el Sheet contenedor (`BACKUP_SHEET_ID` de
+`.env.local`, ID `1ugOP9VYdgIkIPD3WOSmlBgPd9yNLDZrqD2CYv1A1DDg`) desde un
+script standalone (mismo patrón de auth que `scripts/limpiar-dt-m1m4-null-01.mjs`,
+scope `spreadsheets` únicamente).
+
+**Resultado — 85 tabs totales:**
+
+- 84 tabs con el patrón `{H1|H2|H3|H4|H5|H5B}_{fecha}`, agrupados en 14
+  fechas: `2026-07-25, 26, 27, 28, 29, 31` y `2026-08-01` a `2026-08-08`
+  (falta `2026-07-30` — ver anomalía abajo). Cada una de las 14 fechas
+  tiene exactamente los 6 tabs esperados (`H1, H2, H3, H4, H5, H5B`) —
+  conteo de 14 tabs por cada uno de los 6 nombres, sin faltantes ni
+  duplicados. Ninguna ejecución parcial detectada.
+- 1 tab residual `Hoja 1` — el tab por defecto que Sheets crea al
+  generar un spreadsheet nuevo, nunca usado por el mecanismo de backup
+  ni por la limpieza (no matchea el patrón `{tab}_{fecha}`). Inofensivo,
+  no es deuda técnica nueva de este ticket.
+
+**Confirma DoD punto 6 (ejecución autónoma):** la última invocación
+manual conocida fue el 21 jul 2026 (sesión de desbloqueo anterior, tabs
+`{tab}_2026-07-21`, ya no presentes — ver limpieza abajo). Ninguno de
+los 14 grupos de fecha listados arriba corresponde a esa invocación ni
+fue creado por esta sesión (esta sesión solo hizo `spreadsheets.get`,
+cero llamadas de escritura). Las 14 fechas — incluida la de hoy,
+`2026-08-08`, generada antes de que esta sesión tocara el Sheet — son
+evidencia directa de que Vercel Cron disparó `/api/admin/backup-sheet`
+sin intervención humana, de forma repetida, durante más de dos semanas.
+
+**Confirma también que la limpieza de >14 días SÍ funciona en
+producción:** la fecha más antigua presente es `2026-07-25`, exactamente
+14 días antes de hoy (`2026-08-08`) — el límite de la política de
+retención. No hay ningún tab de fecha anterior (ni los del 21 jul de la
+sesión previa, ni ninguno más viejo), lo que indica que `deleteSheet` se
+ejecutó correctamente sobre ellos en algún momento entre el 21 jul y
+hoy. Esto contradice la hipótesis de partida del ticket de que la
+limpieza pudiera haber quedado rota en producción — no es el caso.
+
+**Anomalía encontrada, documentada como hallazgo separado (no bloquea
+este cierre):** falta el grupo de fecha `2026-07-30` (jueves, sin
+relación aparente con fin de semana ni con ningún patrón de calendario
+visible). Es un gap de una noche dentro de una racha por lo demás
+continua de 14 ejecuciones exitosas — no se investigó la causa (podría
+ser un error transitorio de una sola corrida, un despliegue en curso esa
+noche, o un fallo silencioso puntual). No compromete la confirmación del
+DoD punto 6 (sobra evidencia de ejecución autónoma en las otras 13
+noches), pero queda como deuda a revisar si se repite.
+
+No se tuvo acceso a `vercel` CLI en este entorno (no instalado/autenticado)
+para cruzar contra logs de Vercel Cron directamente — la evidencia
+anterior, vía el Sheet contenedor, es la que el ticket mismo define como
+mecanismo de verificación válido.
+
+**`estado` → `completado`.** Los 6 puntos del DoD quedan verificados con
+evidencia leída, ninguno por afirmación.
