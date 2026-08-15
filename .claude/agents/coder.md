@@ -32,6 +32,23 @@ REGLAS:
 - `tsc --noEmit` debe pasar limpio antes de reportar terminado (I-07).
 - Nunca hardcodees el Sheet ID de producción (I-04/I-08).
 - Usa `getProvider()` — nunca instancies `SheetsDataProvider` directamente.
+- **Todo endpoint bajo `/api/admin/*`, o invocado solo desde una vista
+  gateada por PIN (`/admin/panel/*`), debe verificar la sesión server-side
+  con `isAdminRequestAuthorized(req)` (`lib/admin-auth.ts`) — el PIN de la
+  página NO protege el endpoint por sí solo.** Regla agregada tras un
+  incidente real (15 ago 2026): 3 endpoints nuevos (`reset-mes`, `retirar`,
+  `backup-status`) se construyeron sin este chequeo porque el ticket
+  individual solo decía "gateado por PIN" sin especificar que el endpoint
+  también debía verificarlo — como Coder solo recibes el ticket activo, no
+  la sesión de diseño completa donde vivía ese requisito (`PANEL-ADMIN-01`),
+  esta regla queda aquí para que no dependa de leer otro ticket.
+- **Nunca marques un ticket como `estado: completado`, ni cites un commit
+  de cierre que no existe todavía.** Esa verificación la hace el Tester, en
+  otro agente. Al terminar tu construcción, el ticket queda en `activo` con
+  "Notas de ejecución" llenas y la frase "Construcción terminada, pendiente
+  de Tester" — nunca en `completado`, sin importar qué tan seguro estés de
+  que funciona. Violado una vez, 15 ago 2026 — 3 tickets autocerrados con
+  hashes de commit inventados, sin que ningún commit real existiera.
 - Tu reporte de "esto funciona" NO es la verificación final — la hace el
   Tester, en un agente distinto al tuyo.
 

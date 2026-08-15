@@ -8,14 +8,20 @@
 // Uso:
 //   node scripts/check-ticket.mjs <TICKET_ID>          — GO/NO-GO de un ticket puntual
 //   node scripts/check-ticket.mjs --next <AGENTE>       — siguiente ticket listo para ese agente
+//   node scripts/check-ticket.mjs --audit-cierres       — commits de cierre citados que no existen
 //
 // Origen: sesión de vault, 11 ago 2026 — Camilo activa Antigravity
 // manualmente, sin que Claude Code medie como gate. Este script reemplaza
 // esa lectura manual del ticket por una verificación determinística.
 // Extendido 15 ago 2026 con --next tras confirmar que dejarle a un LLM la
 // lectura de INDICE.md + frontmatter produce errores de dependencia reales.
+// Extendido de nuevo el mismo día con --audit-cierres tras un incidente
+// real: Antigravity marcó 3 tickets `completado` citando commits de cierre
+// que nunca se crearon. No evita que vuelva a pasar, pero lo detecta en
+// segundos en vez de depender de que un Tester lo note leyendo a mano.
 
 import { readFileSync, existsSync } from "fs";
+import { execFileSync } from "child_process";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 
@@ -244,15 +250,90 @@ function runNext(agente) {
   process.exit(0);
 }
 
+function commitExists(ref) {
+  try {
+    execFileSync("git", ["cat-file", "-e", `${ref}^{commit}`], {
+      cwd: join(__dir, ".."),
+      stdio: "pipe",
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function commitLabelExistsInLog(label) {
+  try {
+    const out = execFileSync(
+      "git",
+      ["log", "--all", "--oneline", "--grep", label, "-F"],
+      { cwd: join(__dir, ".."), stdio: "pipe" }
+    ).toString();
+    return out.trim().length > 0;
+  } catch {
+    return false;
+  }
+}
+
+// Un "commit" citado en INDICE.md puede ser un hash real (`6d7a6ad`), una
+// lista de hashes (`a+b`), o una etiqueta descriptiva que aparece como
+// primera línea de un commit real (`UBER-01-cierre`) — no siempre es un
+// ref de git válido por sí solo. Se prueban ambos caminos antes de marcar
+// sospechoso.
+function verifyCommitRef(raw) {
+  const cleaned = raw.replace(/`/g, "").trim();
+  if (!cleaned) return { ok: false, reason: "sin commit citado" };
+
+  const candidates = cleaned.split(/[+, ]+/).filter(Boolean);
+  for (const c of candidates) {
+    if (/^[0-9a-f]{6,40}$/i.test(c) && commitExists(c)) continue;
+    if (commitLabelExistsInLog(c)) continue;
+    return { ok: false, reason: `"${c}" no aparece en git log ni como commit real` };
+  }
+  return { ok: true, reason: "" };
+}
+
+function runAuditCierres() {
+  const { indice } = loadIndice();
+  const completados = indice.filter((r) => r.estado === "completado");
+
+  const sospechosos = [];
+  for (const row of completados) {
+    const { ok, reason } = verifyCommitRef(row.commit || "");
+    if (!ok) sospechosos.push({ ...row, reason });
+  }
+
+  console.log(
+    `\n── audit-cierres: ${completados.length} ticket(s) completado(s), ${sospechosos.length} sospechoso(s) ──\n`
+  );
+
+  if (sospechosos.length === 0) {
+    console.log("✅ Todos los commits de cierre citados existen en git.\n");
+    process.exit(0);
+  }
+
+  for (const s of sospechosos) {
+    console.log(`  ⚠️  ${s.ticket_id} (orden ${s.orden}) — ${s.reason}`);
+  }
+  console.log(
+    "\nEsto no prueba que el trabajo esté mal — prueba que el commit de\ncierre citado no existe. Verificar manualmente antes de confiar en el\nestado \"completado\".\n"
+  );
+  process.exit(1);
+}
+
 function main() {
   const [a, b] = process.argv.slice(2);
   if (a === "--next") {
     runNext(b);
     return;
   }
+  if (a === "--audit-cierres") {
+    runAuditCierres();
+    return;
+  }
   if (!a) {
     console.error(
-      "Uso:\n  node scripts/check-ticket.mjs <TICKET_ID>\n  node scripts/check-ticket.mjs --next <agente_ejecucion>"
+      "Uso:\n  node scripts/check-ticket.mjs <TICKET_ID>\n  node scripts/check-ticket.mjs --next <agente_ejecucion>\n  node scripts/check-ticket.mjs --audit-cierres"
     );
     process.exit(1);
   }
