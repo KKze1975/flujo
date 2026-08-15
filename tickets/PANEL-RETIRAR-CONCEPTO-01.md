@@ -1,7 +1,7 @@
 ---
 ticket_id: PANEL-RETIRAR-CONCEPTO-01
 orden: 30
-estado: activo
+estado: completado
 tier: A
 agente_ejecucion: antigravity
 dependencias: PANEL-ADMIN-01
@@ -28,28 +28,35 @@ cliente).
 ## Definition of Done
 
 - [x] `tsc --noEmit` limpio.
-- [ ] Tarjeta "Retirar concepto" en `/admin/panel`, lista conceptos con
-      `estado: activo` — código presente (`ModalRetirarConcepto.tsx`), no
-      verificado visualmente por el Tester que la lista se puebla bien.
-- [~] Guardia de movimientos `pendiente`: **código presente** en
-      `app/api/conceptos/[id]/retirar/route.ts` (filtra `movimientos` por
-      `conceptoId` + `estado: "pendiente"` antes de permitir el retiro) —
-      no verificado con un caso real que sí tenga movimientos pendientes,
-      como pide el DoD literal ("no solo sintético").
+- [x] Tarjeta "Retirar concepto" en `/admin/panel` — `ModalRetirarConcepto.tsx`
+      hace `GET /api/conceptos` y filtra `c.estado === "activo"` para poblar
+      el selector (línea 25). El DoD original citaba `ModalAgregarConcepto`/
+      `ConceptoBoard` como los lugares donde debía desaparecer — verificado
+      que ninguno de esos dos lista conceptos por `estado` (no aplica);
+      el componente que sí importa es `ModalRetirarConcepto` mismo, y filtra
+      correctamente.
+- [x] Guardia de movimientos `pendiente` — **verificada con caso real**, no
+      sintético: creado concepto de prueba (`RECREACION_1786813340016`,
+      mes ficticio `2099-01`) con un movimiento real `estado: pendiente`.
+      Intento de retiro → `400`, `"No se puede retirar el concepto porque
+      tiene 1 movimiento(s) pendiente(s) registrado(s)."` — la guardia
+      bloqueó correctamente.
 - [x] `fechaRetiro` server-side: confirmado por lectura de
       `lib/data/sheets.ts` (`retirarConcepto` calcula `hoy` con
       `new Date()` en el servidor; el body del POST solo manda
-      `{action: "retirar"}`, sin campo de fecha).
-- [ ] **No verificado por el Tester:** retirar un concepto de prueba y
-      confirmar por lectura directa de H1. Requiere elegir un concepto
-      sintético seguro para no tocar catálogo real — no se hizo en este
-      pase, ver Notas.
+      `{action: "retirar"}`, sin campo de fecha) y por la respuesta real del
+      retiro (ver abajo): `fechaRetiro` llegó poblado sin que el cliente lo
+      mandara.
+- [x] Verificado en dev: resuelto el movimiento pendiente (`PATCH .../movimientos/MOV_1786813342527`,
+      `tipo: "no_aplica"`), reintentado el retiro → `200`,
+      `{"estado":"retirado","fechaRetiro":"2026-08-15"}`. Confirmado por
+      lectura independiente (`GET /api/conceptos`, no la respuesta del
+      propio POST): el concepto aparece con `estado: "retirado"`,
+      `fechaRetiro: "2026-08-15"`, y 0 conceptos activos con ese nombre.
 - [x] `isAdminRequestAuthorized` agregado al endpoint (hallazgo de
       seguridad del Tester, corregido — ver Notas). Guard verificado por
       `curl`: sin cookie → `401`; con cookie válida, la request pasa el
-      guard y llega a la lógica real (`curl` con un ID inexistente devolvió
-      `404`/`500` de "concepto no encontrado", no `401` — confirma que el
-      guard no bloquea requests autorizadas).
+      guard y llega a la lógica real.
 
 ## Contexto / diagnóstico previo
 
@@ -60,31 +67,43 @@ cliente).
   el modelo de datos ya soporta esto, solo falta la UI y la guardia de
   movimientos pendientes.
 
-## Commit de cierre
-
-(vacío — este ticket queda `activo`, no `completado`; ver Notas)
-
 ## Notas de ejecución
 
 Construido por Antigravity, 15 ago 2026, junto con `PANEL-RESET-MES-01` y
-`PANEL-BACKUP-INTEGRIDAD-01` en la misma pasada (violación de I-09) y
-auto-marcado `completado` sin pasar por Tester (violación del skill) — el
+`PANEL-BACKUP-INTEGRIDAD-01` en la misma pasada (batch explícitamente
+autorizado por Camilo — "inicia ejecución de los primeros tres" — no una
+violación de I-09) pero auto-marcado `completado` sin pasar por Tester
+(violación del skill, sin instrucción de Camilo que lo explique) — el
 `INDICE.md` citaba un commit `PANEL-RETIRAR-CONCEPTO-01-cierre` que no
 existía. Detalle completo del incidente en `PANEL-RESET-MES-01.md`.
 
-**Hallazgo del Tester:** `POST /api/conceptos/[id]/retirar` no verificaba
-sesión admin — corregido por Claude Code el mismo día
-(`isAdminRequestAuthorized`, compartido con los otros dos endpoints). También
-se corrigió `catch (err: any)` → `unknown` en `ModalRetirarConcepto.tsx`
-(error de lint preexistente).
+**Hallazgo del Tester (primer pase, mismo día):** `POST
+/api/conceptos/[id]/retirar` no verificaba sesión admin — corregido por
+Claude Code (`isAdminRequestAuthorized`, compartido con los otros dos
+endpoints). También se corrigió `catch (err: any)` → `unknown` en
+`ModalRetirarConcepto.tsx`.
 
-**Por qué queda `activo`, no `completado`:** el fix de seguridad y el guard
-ya están verificados. Lo que falta es la verificación de negocio del DoD
-original — retirar un concepto real (o sintético) y confirmar por lectura
-de H1 que `estado`/`fechaRetiro` quedaron bien escritos, y probar la
-guardia de movimientos pendientes con un caso real. No se hizo en este
-pase porque tocar el catálogo de conceptos (aunque sea en dev) merece su
-propia verificación con cuidado, no un apuro de cierre — mismo criterio que
-ya aplica el proyecto en otros tickets ("datos sintéticos limpiados al
-cierre"). Próximo paso: crear un concepto sintético, retirarlo, confirmar
-en `/admin/trazabilidad` o lectura directa, limpiar el dato de prueba.
+**Verificación de negocio (segundo pase, mismo día, protocolo
+`sheet-safety`, target DEV):** creado concepto sintético
+`ZZZ-TEST-RETIRAR-01` (`RECREACION_1786813340016`) vía
+`POST /api/mes/2099-01/conceptos` (mes ficticio, cero riesgo de tocar datos
+reales) con un movimiento real asociado. Guardia de pendientes probada con
+ese movimiento real → bloqueó correctamente. Movimiento resuelto
+(`no_aplica`), retiro reintentado → éxito, verificado por lectura
+independiente de H1 (no la respuesta del propio POST). Limpieza: H2 borrado
+vía `reset-mes(2099-01)` (`h2: 1` confirmado); el concepto sintético en H1
+se dejó `retirado` a propósito (decisión explícita de Camilo — borrar la
+fila es más riesgoso que dejar un registro retirado, inerte, con nota
+explícita de que es dato de prueba).
+
+**Corrección al DoD original:** citaba `ModalAgregarConcepto`/
+`ConceptoBoard` como los lugares donde el concepto retirado debía dejar de
+aparecer — ninguno de los dos filtra conceptos por `estado` en el código
+actual (no listan el catálogo H1 directamente). El componente relevante es
+`ModalRetirarConcepto.tsx` mismo, que sí filtra `estado === "activo"`
+correctamente.
+
+## Commit de cierre
+
+`0fc6227` (fix de seguridad) + este cierre (ver `git log` para el commit
+real del cierre de negocio)
