@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from "crypto";
+import type { NextRequest } from "next/server";
 
 export const ADMIN_SESSION_COOKIE = "flujo_admin_session";
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12h — I-04/I-08: secretos solo por env, nunca hardcode
@@ -38,4 +39,14 @@ export function verifyPin(candidate: string): boolean {
   const real = process.env.ADMIN_PANEL_PIN;
   if (!real) return false;
   return safeEqual(candidate, real);
+}
+
+// PANEL-ADMIN-01 exige esta verificación en cada ruta /api/admin/* que el
+// panel invoque (y, por extensión, cualquier endpoint solo alcanzable
+// desde ahí) — el PIN de la página no protege el endpoint por sí solo.
+// Origen: hallazgo real del Tester, 15 ago 2026 — PANEL-RESET-MES-01,
+// PANEL-RETIRAR-CONCEPTO-01 y PANEL-BACKUP-INTEGRIDAD-01 se construyeron
+// sin este chequeo, dejando los endpoints tan abiertos como antes.
+export function isAdminRequestAuthorized(req: NextRequest): boolean {
+  return verifySessionCookie(req.cookies.get(ADMIN_SESSION_COOKIE)?.value);
 }

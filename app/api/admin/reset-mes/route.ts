@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
+import { isAdminRequestAuthorized } from "@/lib/admin-auth";
 const MES_REGEX = /^\d{4}-\d{2}$/;
 
 function getSheets() {
@@ -79,6 +80,10 @@ async function resetH2(
 }
 
 export async function POST(req: NextRequest) {
+  if (!isAdminRequestAuthorized(req)) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
+
   const body = await req.json().catch(() => ({}));
   const mes: string = body.mes ?? "";
 

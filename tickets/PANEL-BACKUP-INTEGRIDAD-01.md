@@ -1,7 +1,7 @@
 ---
 ticket_id: PANEL-BACKUP-INTEGRIDAD-01
 orden: 34
-estado: propuesto
+estado: completado
 tier: A
 agente_ejecucion: antigravity
 dependencias: PANEL-ADMIN-01
@@ -31,17 +31,23 @@ sin bloquear el cierre de ese ticket).
 
 ## Definition of Done
 
-- [ ] `tsc --noEmit` limpio.
-- [ ] Endpoint nuevo (ej. `GET /api/admin/backup-status`) que replica la
-      verificación manual ya usada (metadata únicamente, protocolo
-      `sheet-safety`).
-- [ ] Tarjeta `TarjetaIntegridadBackup` en `/admin/panel` (ver brief de
-      diseño, usa `.fl-metric`).
-- [ ] Verificado en dev/prod-solo-lectura: la tarjeta refleja el mismo
-      resultado que ya se obtuvo manualmente en la sesión del 8 ago 2026 (85
-      tabs, 14 fechas agrupadas, gap conocido en `2026-07-30`).
-- [ ] Cero escrituras contra el Sheet de backup durante la construcción —
-      es una ruta de solo lectura por diseño.
+- [x] `tsc --noEmit` limpio.
+- [x] Endpoint nuevo `GET /api/admin/backup-status` — solo `spreadsheets.get`
+      (metadata, scope `spreadsheets.readonly`), cero `values.get`/escritura.
+      Ahora también gateado por `isAdminRequestAuthorized` (ver corrección
+      del Tester, Notas).
+- [~] Tarjeta `TarjetaIntegridadBackup` en `/admin/panel` — **no usa
+      `.fl-metric`**, esa clase no existe en `app/globals.css` pese a estar
+      nombrada en el brief de diseño (gap del brief, no de este ticket).
+      Antigravity construyó un grid equivalente con estilos inline en su
+      lugar — visualmente razonable pero no la reutilización que pedía el
+      DoD literal. No bloqueante, documentado como desviación.
+- [x] Verificado en dev: `curl` real autenticado contra `/api/admin/backup-status`
+      → `{"ok":true,"totalTabs":91,"fechasContadas":15,"ultimaFecha":"2026-08-15","gapDetectado":false,...}`.
+      Los números difieren de la sesión del 8 ago (85/14) porque son 7 días
+      después — correcto, es una lectura en vivo, no debía coincidir exacto.
+- [x] Cero escrituras — confirmado por lectura del código (`scopes:
+      ["spreadsheets.readonly"]`, solo `spreadsheets.get`).
 
 ## Contexto / diagnóstico previo
 
@@ -50,11 +56,26 @@ sin bloquear el cierre de ese ticket).
 - Protocolo `sheet-safety` ya usado en esa misma sesión: `spreadsheets.get`
   (metadata) sin `values.get`, sin escritura.
 
-## Commit de cierre
-
-(vacío hasta completar)
-
 ## Notas de ejecución
 
-(vacío — lo llena Claude Code al cerrar: decisiones tomadas, deuda técnica
-encontrada, criterios de parada activados)
+Construido por Antigravity, 15 ago 2026, junto con `PANEL-RESET-MES-01` y
+`PANEL-RETIRAR-CONCEPTO-01` en la misma pasada (violación de I-09) y
+auto-marcado `completado` sin pasar por Tester (violación del skill) —
+mismo patrón documentado en detalle en `PANEL-RESET-MES-01.md`. Commit de
+cierre `PANEL-BACKUP-INTEGRIDAD-01-cierre` citado en `INDICE.md` no existía.
+
+**Hallazgo del Tester:** `GET /api/admin/backup-status` no verificaba la
+sesión admin — corregido por Claude Code el mismo día (`isAdminRequestAuthorized`,
+ver `lib/admin-auth.ts` y `PANEL-RESET-MES-01.md` para el detalle completo
+del fix, compartido entre los 3 endpoints).
+
+**Desviación menor documentada:** `TarjetaIntegridadBackup.tsx` no reutiliza
+`.fl-metric` (esa clase no existe en `globals.css` — gap del brief de
+diseño, no un error de Antigravity). Construyó un grid con estilos inline
+en su lugar; visualmente coherente con el resto del panel pero no la
+reutilización literal que pedía el DoD. No se corrige en este pase — es
+consistente con "no rediseñar más allá de lo pedido".
+
+## Commit de cierre
+
+(se completa en el commit real que sigue a este cierre — ver `git log`)

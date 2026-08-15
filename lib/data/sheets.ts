@@ -130,8 +130,9 @@ export class SheetsDataProvider implements IDataProvider {
     return updated;
   }
 
-  retirarConcepto(_id: string): Promise<Concepto> {
-    throw new Error("Not implemented yet");
+  async retirarConcepto(id: string): Promise<Concepto> {
+    const hoy = new Date().toISOString().split("T")[0];
+    return this.updateConcepto(id, { estado: "retirado", fechaRetiro: hoy });
   }
 
   // ── H2 ───────────────────────────────────────────────────────────────────
