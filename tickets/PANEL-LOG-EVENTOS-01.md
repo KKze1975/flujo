@@ -1,7 +1,7 @@
 ---
 ticket_id: PANEL-LOG-EVENTOS-01
 orden: 33
-estado: propuesto
+estado: aprobado
 tier: B
 agente_ejecucion: antigravity
 dependencias: PANEL-ADMIN-01
@@ -24,21 +24,38 @@ invoca `claude-haiku-4-5-20251001`) **escribe solo el resultado final** en H3B
 texto vio, ni si hubo error/fallback silencioso. No se puede reconstruir esa
 decisión retroactivamente: hay que capturarla en el momento en que ocurre.
 
-**Tier B — HALT obligatorio antes de construir**, con estas preguntas abiertas:
-- [ ] ¿Nueva tab en el Sheet (ej. `H9` — "EventosLog") o servicio de logging
-      externo? Una tab nueva es cambio de esquema (I-10 aplica: migración
-      manual a prod antes de merge). Recomendación a evaluar: tab nueva, mismo
-      patrón que el resto del proyecto (todo vive en Sheets), pero declarar el
-      volumen esperado de filas/mes antes de decidir — puede crecer rápido.
-- [ ] ¿Qué eventos exactamente se loguean? (lista cerrada, no "todo" — cada
-      evento nuevo que se agregue después es su propio sub-ticket).
-- [ ] ¿Qué rutas hay que instrumentar para el set inicial? Al menos:
-      `PATCH /api/mes/[mes]/movimientos/[id]` (todos los `tipo` discriminados),
-      `POST /api/consumos/[id]/clasificar` (decisión de Haiku), `POST
-      /api/mes/[mes]/cerrar-semana`, el futuro `revertir-cierre`
+**Tier B con HALT ya resuelto (aprobado por Camilo, 15 ago 2026)** — se deja
+el tier en B porque el patrón de este proyecto es no reclasificar tickets
+que ya pasaron por diagnóstico, aunque la decisión esté tomada (ver
+`PANEL-ADMIN-01`/`DT-M1M4-NULL-01` como precedente).
+
+**Decisión aprobada — las 4 preguntas de HALT:**
+- [x] **Dónde vive el log:** tab nueva en el Sheet, `H9` — `EventosLog`. No
+      un servicio externo — el volumen real es bajo (familia de 2 usuarios,
+      un puñado de eventos/día) y el proyecto ya evita sumar credenciales
+      nuevas sin autorizar (mismo criterio que excluyó métricas de Vercel/
+      Sheets del alcance). Cambio de esquema — aplica I-10 (migración manual
+      a prod antes de merge). Columnas mínimas: `timestamp` (ISO real,
+      server-side), `tipo_evento`, `entidad_id` (movimiento/concepto),
+      `mes` (para poder limpiar por ventana igual que el resto de H1-H6),
+      `detalle` (texto o JSON compacto).
+- [x] **Qué eventos:** lista cerrada — movimiento ejecutado, pospuesto,
+      movido a mes siguiente (y sus reversiones: `revertir_mes_siguiente`,
+      `revertir_ejecucion`), reasignación de semana, decisión de
+      clasificación de Haiku (incluye cuándo falla o cae a "imprevistos"),
+      cierre de semana, reversión de cierre (cuando exista `DT-CIERRE-01`),
+      reset de mes. Cualquier evento nuevo fuera de esta lista es su propio
+      sub-ticket, no se agrega ad-hoc.
+- [x] **Rutas del set inicial:**
+      `PATCH /api/mes/[mes]/movimientos/[id]` (todos los `tipo`
+      discriminados: `ejecutar`, `posponer`, `mover_mes_siguiente`,
+      `revertir_mes_siguiente`, `revertir_ejecucion`, `reasignar_semana`),
+      `POST /api/consumos/[id]/clasificar` (decisión de Haiku),
+      `POST /api/mes/[mes]/cerrar-semana`, el futuro `revertir-cierre`
       (`DT-CIERRE-01`), y `reset-mes`.
-- [ ] Retención: ¿el log crece indefinidamente o aplica el mismo patrón de
-      limpieza >14 días que ya usa `BACKUP-NOCTURNO-01`?
+- [x] **Retención:** 14 días, mismo patrón de limpieza por ventana que ya
+      usa `BACKUP-NOCTURNO-01` — cubre con margen el mínimo declarado por
+      Camilo ("al menos una semana completa" de trazabilidad retrospectiva).
 
 **No cubre (fuera de alcance v1, decisión de Camilo 11 ago 2026):**
 - Métricas de consumo de recursos de Vercel — requiere credencial nueva
@@ -50,17 +67,26 @@ decisión retroactivamente: hay que capturarla en el momento en que ocurre.
 ## Definition of Done
 
 **Fase diagnóstico (Tier B):**
-- [ ] Las 4 preguntas de HALT de arriba, con recomendación concreta por cada
-      una. HALT — Camilo aprueba el alcance antes de construir.
+- [x] Las 4 preguntas de HALT, con recomendación concreta por cada una —
+      aprobadas por Camilo 15 ago 2026 (ver "Decisión aprobada" arriba).
+      Ninguna pregunta abierta restante — este ticket ya puede tomarse para
+      construcción directamente (`/goal-a PANEL-LOG-EVENTOS-01` o
+      equivalente vía Antigravity).
 
 **Fase construcción (tras aprobación):**
 - [ ] `tsc --noEmit` limpio.
-- [ ] Si aplica cambio de esquema: aplicado en dev, con el mismo cambio
+- [ ] Tab `H9` (`EventosLog`) creada en Sheet de dev, columnas `timestamp`,
+      `tipo_evento`, `entidad_id`, `mes`, `detalle` — mismo cambio
       replicado manualmente en el Sheet de prod antes del merge (I-10).
-- [ ] Cada ruta del set aprobado escribe un evento con timestamp real
-      (server-side, nunca del cliente — mismo criterio que I-01/I-02).
+- [ ] Las 5 rutas del set aprobado escriben un evento con timestamp real
+      (server-side, nunca del cliente — mismo criterio que I-01/I-02):
+      `movimientos/[id]` (todos los `tipo`), `consumos/[id]/clasificar`,
+      `cerrar-semana`, `revertir-cierre` (si `DT-CIERRE-01` ya existe),
+      `reset-mes`.
 - [ ] Vista `VistaLogEventos` en el panel (ver brief de diseño), filtro por
       tipo de evento y rango de fecha.
+- [ ] Limpieza por ventana de 14 días — mismo mecanismo/cron que
+      `BACKUP-NOCTURNO-01`, o extensión de ese mismo cron.
 - [ ] Verificado en dev: al menos un evento de cada tipo del set aprobado,
       generado por una acción real (no insertado a mano), visible en el log
       con timestamp correcto.
