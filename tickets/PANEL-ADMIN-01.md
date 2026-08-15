@@ -139,3 +139,28 @@ este ticket; se dejan para que Camilo decida su alcance por separado.
 
 `6d7a6ad` — "Construye PANEL-ADMIN-01: fundación del panel de administración
 (PIN)" — pusheado a `origin/dev`, 15 ago 2026.
+
+## QA integrado del panel (15 ago 2026, tras cerrar los 3 tickets PANEL-*)
+
+Hasta este punto, cada ticket (`PANEL-RESET-MES-01`, `PANEL-RETIRAR-CONCEPTO-01`,
+`PANEL-BACKUP-INTEGRIDAD-01`) se había verificado por separado (curl contra su
+propio endpoint). Faltaba probar `/admin/panel` como conjunto — pedido
+explícito de Camilo. Verificado en dev (Chrome, sesión ya autenticada):
+
+- Las 6 tarjetas renderizan juntas sin conflicto: 2 activas (Resetear mes,
+  Retirar concepto), 1 descartada (Fusionar duplicados), 2 pendientes
+  (Revertir cierre, Log de eventos), 1 con datos en vivo (Integridad de
+  Backup Nocturno — 91 pestañas, 15 fechas, `AL DÍA`, coincide con la
+  verificación aislada anterior).
+- `ModalRetirarConcepto` carga el catálogo real (49 conceptos activos,
+  formato "Nombre (Categoría) — $Monto") — confirmado por árbol de
+  accesibilidad que el concepto sintético retirado (`ZZZ-TEST-RETIRAR-01`)
+  **no aparece** en el selector, sin necesidad de curl.
+- Abrir y cancelar el modal de "Retirar concepto" no interfiere con el
+  selector de mes de "Resetear mes" al probarlo después, en la misma
+  sesión de página — sin herencia de estado entre acciones.
+- Consola del navegador limpia en toda la interacción (0 errores/warnings,
+  solo ruido normal de HMR/dev).
+- No se confirmó ninguna acción destructiva real durante este QA (ni
+  retiro de concepto real, ni reset de mes) — solo se verificó que los
+  flujos abren, cargan datos reales, y cierran limpio.
