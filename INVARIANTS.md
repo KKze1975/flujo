@@ -84,6 +84,22 @@ Segunda ocurrencia detectada: activa evaluación de migración a estado
 ## I-19 — Freno Informativo ante Preguntas
 Ante una pregunta o consulta del usuario, la respuesta del agente debe limitarse exclusivamente a informar, explicar, diagnosticar o proponer opciones. Queda prohibido ejecutar modificaciones en el código, commits, escrituras en base de datos o acciones reactivas sin una instrucción u orden explícita del usuario, a menos que se esté ejecutando un Loop autónomo autorizante (`/goal`). (Origen: Aprobado por Camilo en sesión del 27 jul 2026).
 
+## I-20 — Verificación determinística antes de invocar un agente de ejecución
+Ningún agente de ejecución (Antigravity, Claude Code) se invoca sobre un
+ticket sin correr primero `node scripts/check-ticket.mjs {ticket_id}` (o
+`--next {agente}` para elegir cuál). Camilo activa Antigravity manualmente,
+sin que Claude Code medie como gate — sin esta verificación, un agente
+puede tomar un ticket Tier B sin HALT resuelto, con una dependencia sin
+completar, o romper I-09 (WIP=1), sin que nadie se dé cuenta, porque el
+único control vivía en la memoria de quien leía el ticket. Confirmado como
+riesgo real, no hipotético: el 15 ago 2026, sin correr el script, Antigravity
+razonó a mano sobre `tickets/INDICE.md` y ofreció como disponible un ticket
+bloqueado por una dependencia sin completar, y omitió uno que sí estaba
+listo — error silencioso, el sistema no lo detectó por sí solo.
+(Origen: candidato registrado en sesión de vault, 11 ago 2026 — diseño del
+panel de administración, `PANEL-*`. Promovido a invariante por Camilo,
+15 ago 2026, tras el incidente real de la misma fecha.)
+
 ---
 
 ## Candidatos (pendientes de aprobación — no vinculantes)
@@ -153,6 +169,11 @@ Sigue habiendo una tercera copia divergente sin resolver: `mesDeFecha()` +
 `cron/uber-parser` — ver `DT-CICLO-OPERATIVO-UNIFICADO-01`.
 (Origen: `FIX-SEMANA-STUB-01`, 3 ago 2026). Pendiente de aprobación explícita
 de Camilo antes de convertirse en invariante real.
+
+### Candidato — Verificación determinística antes de invocar un agente de ejecución — Promovido a I-20
+Ver **I-20** en la sección principal. Promovido por Camilo el 15 ago 2026,
+tras confirmarse como riesgo real (no hipotético) el mismo día. Entrada
+conservada aquí solo como historial de origen.
 
 ### Candidato (I-18) — Verificación de tickets ejecutados de forma autónoma
 Todo ticket lanzado autónomamente por un agente de ejecución debe
