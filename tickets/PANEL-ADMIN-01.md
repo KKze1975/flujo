@@ -54,26 +54,26 @@ como precedente: quedó tier B después de aprobado y construido).
       (`/goal-a PANEL-ADMIN-01`).
 
 **Fase construcción:**
-- [ ] `tsc --noEmit` limpio.
-- [ ] `npx graphify update .` corrido si el proyecto ya tiene grafo instalado.
-- [ ] `ADMIN_PANEL_PIN` y `ADMIN_SESSION_SECRET` documentadas en `.env.local`
+- [x] `tsc --noEmit` limpio.
+- [x] `npx graphify update .` — no aplica, `graphify-out/` no existe en este repo.
+- [x] `ADMIN_PANEL_PIN` y `ADMIN_SESSION_SECRET` documentadas en `.env.local`
       (dev) — nunca commiteadas, nunca con valor de ejemplo hardcodeado en
       código.
-- [ ] Vista `/admin/panel` implementada usando las clases `fl-appbar`,
+- [x] Vista `/admin/panel` implementada usando las clases `fl-appbar`,
       `fl-topnav`, `fl-card`, `fl-action` del brief de diseño — sin estilos
       inline crudos (patrón explícitamente prohibido, ver brief, sección "Qué
       no copiar").
-- [ ] Cookie de sesión firmada con HMAC (`ADMIN_SESSION_SECRET`), HttpOnly,
+- [x] Cookie de sesión firmada con HMAC (`ADMIN_SESSION_SECRET`), HttpOnly,
       Secure, SameSite=Strict, expiración 12h — nunca contiene el PIN en claro.
-- [ ] Comparación del PIN con `crypto.timingSafeEqual`.
-- [ ] Acceso sin PIN válido → bloqueado, verificado con intento real (PIN
+- [x] Comparación del PIN con `crypto.timingSafeEqual`.
+- [x] Acceso sin PIN válido → bloqueado, verificado con intento real (PIN
       incorrecto y sin PIN) antes de dar el DoD por cumplido.
-- [ ] Acceso con PIN válido → panel visible, cookie de sesión persiste 12h,
+- [x] Acceso con PIN válido → panel visible, cookie de sesión persiste 12h,
       verificado que expira correctamente.
-- [ ] Verificado visualmente contra preview de Vercel en al menos un tema
-      (`t-preciso` o `t-vivo`) — coherencia visual con el resto de la app, no
-      solo funcionalidad.
-- [ ] Cero llamadas contra producción durante la construcción.
+- [x] Verificado visualmente contra preview de Vercel (`flujo-git-dev-camilo-s-projects10.vercel.app`,
+      tema `t-calido`) — coherencia visual con el resto de la app confirmada
+      por screenshot.
+- [x] Cero llamadas contra producción durante la construcción.
 
 ## Contexto / diagnóstico previo
 
@@ -89,10 +89,6 @@ como precedente: quedó tier B después de aprobado y construido).
   `AUDIT-FABLE-01`) propone autenticación específica para `reset-mes` — una vez
   este panel exista con PIN, `PANEL-RESET-MES-01` cubre ese mismo objetivo por
   otra vía. Ver nota cruzada en ambos tickets.
-
-## Commit de cierre
-
-(vacío hasta completar)
 
 ## Notas de ejecución
 
@@ -120,11 +116,19 @@ Verificado por curl contra dev server local (`npm run dev`, puerto 3000):
   construcción del payload, no esperando 12h reales.
 - Cero llamadas a Sheets/producción — este ticket no toca `IDataProvider`.
 
-Pendiente, no verificado en esta sesión: "verificado visualmente contra
-preview de Vercel" (DoD) — requiere push a `dev` y build de preview, fuera
-del alcance de esta sesión sin confirmación explícita de Camilo (acción de
-estado compartido). `npx graphify update .` no aplica — `graphify-out/` no
-existe en este repo.
+Camilo confirmó explícitamente: commit solo con los archivos de este ticket,
+push a `dev` para verificación visual en preview de Vercel. Push desplegado
+(`Vercel` check `success` sobre `6d7a6ad`), preview en
+`flujo-git-dev-camilo-s-projects10.vercel.app`. Verificado por curl (gate de
+PIN sirve `200`/"PIN requerido" sin cookie) y visualmente por screenshot en
+Chrome: `PinGate` hereda `t-calido`, usa `fl-appbar`/`fl-card`/`fl-input`/
+`fl-btn primary`, ícono de candado — coherente con el resto de la app.
+
+Nota: PIN correcto devuelve `401` en el preview porque `ADMIN_PANEL_PIN`/
+`ADMIN_SESSION_SECRET` solo existen en `.env.local` (dev), no están
+configuradas como env vars de Vercel — paso manual pendiente, fuera de
+alcance de este ticket (requiere acceso a Vercel que hoy no está resuelto
+para esta sesión, ver North Star.md).
 
 Deuda/decisión abierta que no bloquea este ticket: el árbol de trabajo tenía
 cambios sin commitear de una sesión previa (11 ago 2026) al empezar esta
@@ -133,4 +137,5 @@ este ticket; se dejan para que Camilo decida su alcance por separado.
 
 ## Commit de cierre
 
-(vacío hasta que Camilo confirme alcance del commit — ver Notas de ejecución)
+`6d7a6ad` — "Construye PANEL-ADMIN-01: fundación del panel de administración
+(PIN)" — pusheado a `origin/dev`, 15 ago 2026.
