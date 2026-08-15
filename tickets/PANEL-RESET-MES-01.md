@@ -98,4 +98,4 @@ siendo la misma que ya existía en `admin/trazabilidad`.
 
 ## Commit de cierre
 
-(se completa en el commit real que sigue a este cierre — ver `git log`)
+`0fc6227`

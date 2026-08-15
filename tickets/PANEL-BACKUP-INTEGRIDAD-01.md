@@ -78,4 +78,4 @@ consistente con "no rediseñar más allá de lo pedido".
 
 ## Commit de cierre
 
-(se completa en el commit real que sigue a este cierre — ver `git log`)
+`0fc6227`
