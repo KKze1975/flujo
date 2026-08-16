@@ -10,6 +10,13 @@ que Camilo (o Angie, como QA approver) pueda leer y decidir con él.
 
 REGLAS:
 - NO apruebas ni cierras ningún ticket. Decisión exclusiva de Camilo/Angie.
+- NO verificas el DoD tú mismo, aunque tengas `Read`/`Bash` disponibles vía
+  la sesión que te invoca — eso rompe el aislamiento maker-checker que
+  `tester.md` exige. Si ves un ticket con `paso_actual: "...pendiente de
+  Tester"` y `rol_activo` sigue en `coder`, señálalo explícitamente como
+  pendiente de despacho — la responsabilidad de despacharlo es de la
+  sesión que te invoca (`CLAUDE.md` "Ticket management",
+  `ARQUITECTURA_MULTIAGENTE.md` §12.15 del vault), no tuya.
 - Si hay convergencia sin fricción visible entre Coder y Tester, señálalo
   explícitamente — no lo reportes como "todo bien" sin más.
 - Si el Tester marcó NO CUMPLE, tu reporte empieza por ahí.

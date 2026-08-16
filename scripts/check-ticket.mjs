@@ -9,6 +9,7 @@
 //   node scripts/check-ticket.mjs <TICKET_ID>          — GO/NO-GO de un ticket puntual
 //   node scripts/check-ticket.mjs --next <AGENTE>       — siguiente ticket listo para ese agente
 //   node scripts/check-ticket.mjs --audit-cierres       — commits de cierre citados que no existen
+//   node scripts/check-ticket.mjs --audit-tester-gate   — tickets "pendiente de Tester" sin Tester despachado
 //
 // Origen: sesión de vault, 11 ago 2026 — Camilo activa Antigravity
 // manualmente, sin que Claude Code medie como gate. Este script reemplaza
@@ -19,8 +20,13 @@
 // real: Antigravity marcó 3 tickets `completado` citando commits de cierre
 // que nunca se crearon. No evita que vuelva a pasar, pero lo detecta en
 // segundos en vez de depender de que un Tester lo note leyendo a mano.
+// Extendido 16 ago 2026 con --audit-tester-gate (ARQUITECTURA_MULTIAGENTE.md
+// §12.15 del vault) tras un incidente real: la sesión que hablaba con Camilo
+// sobre PANEL-LOG-EVENTOS-01 verificó el DoD ella misma en vez de despachar
+// Tester como subagente aparte. Reusa el campo `rol_activo` que ya escribe
+// tester.md (§12.12) como señal — no inventa un log nuevo.
 
-import { readFileSync, existsSync } from "fs";
+import { readFileSync, existsSync, readdirSync } from "fs";
 import { execFileSync } from "child_process";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
@@ -321,6 +327,44 @@ function runAuditCierres() {
   process.exit(1);
 }
 
+// --audit-tester-gate: detecta tickets cuyo Coder ya reportó "pendiente de
+// Tester" (paso_actual, §12.12) pero `rol_activo` sigue en "coder" — señal
+// de que nadie despachó Tester como subagente aparte todavía. No prueba que
+// el ticket esté mal, prueba que el paso de verificación no arrancó.
+function runAuditTesterGate() {
+  const files = readdirSync(ticketsDir).filter(
+    (f) => f.endsWith(".md") && f.toUpperCase() !== "INDICE.MD" && !f.toUpperCase().startsWith("_TEMPLATE")
+  );
+
+  const sospechosos = [];
+  for (const f of files) {
+    const fm = parseFrontmatter(readFileSync(join(ticketsDir, f), "utf-8"));
+    if (!fm) continue;
+    const paso = (fm.paso_actual || "").toLowerCase();
+    const pendienteDeTester = paso.includes("pendiente de tester");
+    if (pendienteDeTester && fm.rol_activo !== "tester") {
+      sospechosos.push({ ticket_id: fm.ticket_id || f.replace(/\.md$/, ""), rol_activo: fm.rol_activo || "(vacío)" });
+    }
+  }
+
+  console.log(
+    `\n── audit-tester-gate: ${sospechosos.length} ticket(s) "pendiente de Tester" sin Tester despachado ──\n`
+  );
+
+  if (sospechosos.length === 0) {
+    console.log("✅ Ningún ticket quedó esperando Tester sin que se despachara.\n");
+    process.exit(0);
+  }
+
+  for (const s of sospechosos) {
+    console.log(`  ⚠️  ${s.ticket_id} — paso_actual dice "pendiente de Tester", rol_activo sigue en "${s.rol_activo}".`);
+  }
+  console.log(
+    "\nDespacha Tester como subagente aparte (Agent tool, solo diff final + DoD) antes\nde verificar este ticket tú mismo — no lo hagas inline. Ver CLAUDE.md \"Ticket\nmanagement\" y ARQUITECTURA_MULTIAGENTE.md §12.15 del vault.\n"
+  );
+  process.exit(1);
+}
+
 function main() {
   const [a, b] = process.argv.slice(2);
   if (a === "--next") {
@@ -331,9 +375,13 @@ function main() {
     runAuditCierres();
     return;
   }
+  if (a === "--audit-tester-gate") {
+    runAuditTesterGate();
+    return;
+  }
   if (!a) {
     console.error(
-      "Uso:\n  node scripts/check-ticket.mjs <TICKET_ID>\n  node scripts/check-ticket.mjs --next <agente_ejecucion>\n  node scripts/check-ticket.mjs --audit-cierres"
+      "Uso:\n  node scripts/check-ticket.mjs <TICKET_ID>\n  node scripts/check-ticket.mjs --next <agente_ejecucion>\n  node scripts/check-ticket.mjs --audit-cierres\n  node scripts/check-ticket.mjs --audit-tester-gate"
     );
     process.exit(1);
   }
