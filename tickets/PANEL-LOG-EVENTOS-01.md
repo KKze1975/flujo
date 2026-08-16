@@ -203,7 +203,7 @@ aprobación explícita.
 
 ## Commit de cierre
 
-(vacío hasta completar)
+`72d9005` — Cierra PANEL-LOG-EVENTOS-01: log de eventos H9 + migración I-10 a PROD
 
 ## Notas de ejecución
 
