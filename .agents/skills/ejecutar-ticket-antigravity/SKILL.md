@@ -56,18 +56,33 @@ lo repitas de memoria.
 6. Marca el ticket como `activo` en `tickets/INDICE.md` y en su propio
    frontmatter, **antes** de empezar a construir — para que quede visible
    que está tomado.
-7. Construye exactamente contra el DoD del ticket. Nada de alcance nuevo.
-8. `tsc --noEmit` limpio antes de terminar (I-07).
-9. **Nunca marques el ticket como `completado`** — esa verificación la
-   hace el Tester (otro agente, en Claude Code) después. Al terminar la
-   construcción, dejas el ticket en `activo` y escribes en su sección
-   "Notas de ejecución": qué se hizo, qué quedó fuera de alcance o
-   ambiguo, y la frase explícita "Construcción terminada, pendiente de
-   Tester".
-10. Si durante la ejecución se dispara cualquiera de los 8 criterios de
+7. **Escribe también en el frontmatter del ticket** (misma edición que el
+   paso 6, no un archivo aparte): `rol_activo: coder`, `paso_actual:
+   "<texto libre, breve, ej. 'escribiendo /api/admin/reset-mes'>"`,
+   `actualizado_en: <timestamp real de tu shell — nunca inventado>`.
+   **Repite esta escritura en cada cambio de paso relevante durante la
+   construcción**, no solo al empezar — esto es lo que alimenta la
+   pestaña Digest de Founder OS (vault `obsidian-mind`); si no lo
+   actualizas, tu ticket aparece "sin instrumentar" ahí aunque estés
+   trabajando activamente.
+8. Construye exactamente contra el DoD del ticket. Nada de alcance nuevo.
+9. `tsc --noEmit` limpio antes de terminar (I-07).
+10. **Nunca marques el ticket como `completado`** — esa verificación la
+    hace el Tester (otro agente, en Claude Code) después. Al terminar la
+    construcción, dejas el ticket en `activo` y escribes en su sección
+    "Notas de ejecución": qué se hizo, qué quedó fuera de alcance o
+    ambiguo, y la frase explícita "Construcción terminada, pendiente de
+    Tester". Actualiza también `paso_actual` a esa misma frase y refresca
+    `actualizado_en` — es tu último reporte visible en el Digest hasta que
+    el Tester tome el ticket.
+11. Si durante la ejecución se dispara cualquiera de los 8 criterios de
     HALT de `.claude/agents/coder.md`, DETENTE, deja el ticket en
     `bloqueado`, y explica el motivo exacto en "Notas de ejecución" —
-    nunca decidas por tu cuenta cómo resolverlo.
+    nunca decidas por tu cuenta cómo resolverlo. Escribe también
+    `necesita_aprobacion: alta` y `halt_criterio: <1-8>` en el
+    frontmatter — el texto en "Notas de ejecución" lo lee un humano que
+    ya abrió el archivo; estos dos campos son lo que hace que el Digest
+    lo muestre sin que nadie tenga que abrirlo primero.
 
 ## Si te preguntan "¿qué tickets tienes asignados?" sin pedir que construyas
 
