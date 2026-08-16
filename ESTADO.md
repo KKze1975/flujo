@@ -6731,3 +6731,38 @@ explícita de no bloquear cierre por hallazgos no bloqueantes.
   del sistema multiagente, no tocados por esta sesión, dejados fuera de este commit
   deliberadamente)
 - Próximo paso: sin definir todavía — el backlog de arriba queda para que Camilo priorice
+
+---
+
+## Sesión — 16 agosto 2026 (DEBUGGING — acceso al panel en Vercel tras cerrar PANEL-LOG-EVENTOS-01)
+
+**Contexto:** inmediatamente después de cerrar `PANEL-LOG-EVENTOS-01` (commit `72d9005`/`0d49cf5`), Camilo pidió acceder al panel en Vercel. Reveló dos problemas independientes que el cierre del ticket no había verificado.
+
+**Qué se encontró:**
+1. `ADMIN_PANEL_PIN`/`ADMIN_SESSION_SECRET` nunca existieron como env vars en Vercel — solo en `.env.local` local. `verifyPin()` (`lib/admin-auth.ts:38`) devuelve `false` siempre que la var no está definida, así que ningún PIN habría entrado, no era un problema del valor.
+2. Más grave: **nada de la sesión estaba pusheado.** 9 commits locales en `dev` (incluida toda la construcción de `PANEL-LOG-EVENTOS-01`) nunca llegaron a GitHub — el último deploy de preview en Vercel era de *antes* de que Antigravity empezara a construir el ticket. Cerrar el ticket localmente no significaba que existiera en el entorno real.
+
+**Qué se hizo:** reautenticación del conector MCP de Vercel (falló una vez por scope, funcionó tras reconectar), Camilo agregó las 2 env vars en Vercel (ambiente Preview únicamente, decisión correcta — el ticket sigue sin mergear a `main`), `git push origin dev` (con confirmación explícita previa), deploy nuevo verificado por API hasta `READY`. Probé `POST /api/admin/auth` contra el preview con el PIN local (`760906`) — **401, PIN incorrecto**. Camilo no confirmó qué valor puso realmente en Vercel; sesión cerrada antes de resolverlo.
+
+**Decisión con razón:** ninguna decisión de arquitectura nueva — fue troubleshooting puntual. Sí se estableció el hábito de usar el conector Vercel MCP para diagnosticar (`list_deployments`/`get_deployment`) en vez de asumir estado por lo que dice el código local.
+
+**Deuda técnica nueva:** ninguna de código.
+
+**Retrospectiva:**
+- **Qué funcionó:** el conector Vercel MCP identificó rápido la causa real (deploy desactualizado) en vez de asumir que el problema era el PIN.
+- **Qué no funcionó:** cerrar un ticket como `completado` no verificó que estuviera realmente desplegado y accesible — "commiteado localmente" y "accesible en el entorno real" se trataron como equivalentes sin serlo.
+- **Qué cambia en la próxima sesión:** confirmar con Camilo qué PIN puso en Vercel Preview antes de seguir depurando.
+- **Candidato a invariante:** todo ticket que agrega una env var nueva debe declarar explícitamente en su DoD que esa var fue propagada al entorno de deploy correspondiente (Preview/Production en Vercel), no solo a `.env.local` — su ausencia produce exactamente este error silencioso (feature "cerrado" pero inaccesible). Pendiente de aprobación explícita de Camilo, mismo patrón que los demás candidatos en `INVARIANTS.md`.
+
+**Estado accionable:**
+- Unidad: ticket
+- En curso: ninguno
+- Backlog priorizado (top 3 abiertos):
+  1. [Producto] DT-CIERRE-01 — reversión atómica de cierre de semana, dependencia bloqueante de `PANEL-REVERTIR-CIERRE-01`
+  2. [Operación] DT-SOBRE-TECHO-01 — `sobre_techo` no persiste en H2, diagnóstico pendiente
+  3. [Operación] Hallazgos menores de `PANEL-LOG-EVENTOS-01` (race condition en purga, `ensureH9` sin reparación de headers) — deuda documentada, no priorizada
+- Reactivo/incidentes: ninguno nuevo
+- Seguridad: sin pendientes nuevos
+- FinOps/Costo: sin dato registrado — sin cambio
+- Bloqueados esperando a Camilo: confirmar el valor real de `ADMIN_PANEL_PIN` en Vercel Preview — el panel de `PANEL-LOG-EVENTOS-01` sigue inaccesible ahí hasta resolver esto
+- Próximo paso: confirmar PIN de Vercel con Camilo y volver a probar `/admin/panel` en el preview
