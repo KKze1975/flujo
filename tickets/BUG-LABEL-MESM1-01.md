@@ -55,7 +55,7 @@ ticket ni cerrado el ciclo DIAGNÓSTICO→CONSTRUCCIÓN — este handoff lo hace
 
 ## Commit de cierre
 
-(vacío hasta completar)
+`518f8fa` — Cierra BUG-LABEL-MESM1-01: botón "Mes siguiente" ejecuta mover_mes_siguiente en vez de posponer
 
 ## Notas de ejecución
 
