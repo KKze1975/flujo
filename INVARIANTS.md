@@ -170,6 +170,18 @@ Sigue habiendo una tercera copia divergente sin resolver: `mesDeFecha()` +
 (Origen: `FIX-SEMANA-STUB-01`, 3 ago 2026). Pendiente de aprobación explícita
 de Camilo antes de convertirse en invariante real.
 
+### Candidato — Acciones de UI sobre filas H2 compartidas entre vistas semanales
+Una acción de UI que muta el `estado` de una fila H2 mostrada sin filtrar por
+semana en múltiples vistas semanales (caso: bolsillos `pago_fraccionado` con
+`frecuencia: mensual` — Mercado mensual, Frida, Fondo transporte, ver
+`FIX-BOLSILLO-MENSUAL-01`) debe excluir explícitamente esos casos. De lo
+contrario, la mutación queda visible como estado global incorrecto en todas
+las semanas donde la fila se muestra, sin que el sistema lo detecte por sí
+solo — causó que "Cerrar bolsillo" dejara Mercado mensual y Frida marcados
+`ejecutado` de forma permanente desde semana 1 en adelante.
+(Origen: bugfix bolsillos mensuales, 10 ago 2026). Pendiente de aprobación
+explícita de Camilo antes de convertirse en invariante real.
+
 ### Candidato — Verificación determinística antes de invocar un agente de ejecución — Promovido a I-20
 Ver **I-20** en la sección principal. Promovido por Camilo el 15 ago 2026,
 tras confirmarse como riesgo real (no hipotético) el mismo día. Entrada
