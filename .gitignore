@@ -54,3 +54,6 @@ dev-server.log
 scripts/backup-julio-defectuoso.json
 scripts/capturas/
 scripts/reset-julio.mjs
+
+doctrine
+.aider*

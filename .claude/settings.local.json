@@ -5,7 +5,9 @@
       "Bash(git commit *)",
       "Bash(git push *)",
       "Bash(mkdir -p /d/Users/camilo/flujo/.claude/skills/sheet-safety)",
-      "Bash(cp /d/Users/camilo/claude-improvements/flujo/skills/sheet-safety/SKILL.md /d/Users/camilo/flujo/.claude/skills/sheet-safety/SKILL.md)"
+      "Bash(cp /d/Users/camilo/claude-improvements/flujo/skills/sheet-safety/SKILL.md /d/Users/camilo/flujo/.claude/skills/sheet-safety/SKILL.md)",
+      "Bash(git *)",
+      "Bash(mkdir *)"
     ]
   }
 }
