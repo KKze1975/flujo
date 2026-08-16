@@ -57,3 +57,6 @@ scripts/reset-julio.mjs
 
 doctrine
 .aider*
+
+# cron de Antigravity (scripts/cron-antigravity.sh) — kill switch en disco
+scripts/.cron-antigravity-pausado
