@@ -143,9 +143,24 @@ export async function POST(
       );
     }
 
+    // Instrumentación H9 Log de Eventos (PANEL-LOG-EVENTOS-01)
+    await provider.createEventoLog({
+      timestamp: new Date().toISOString(),
+      tipoEvento: "cierre_semana",
+      entidadId: cierre.id,
+      mes,
+      detalle: JSON.stringify({
+        semana,
+        totalPresupuestado,
+        totalEjecutado,
+        remanenteAngie,
+      }),
+    }).catch((err) => console.error("Error silencioso registrando evento log:", err));
+
     return Response.json({ ok: true, cierre, plan });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Error interno";
     return Response.json({ error: msg }, { status: 500 });
   }
 }
+

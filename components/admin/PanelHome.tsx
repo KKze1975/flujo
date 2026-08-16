@@ -6,6 +6,7 @@ import Icon from "@/components/ui/Icon";
 import ModalConfirmacionDestructiva from "@/components/admin/ModalConfirmacionDestructiva";
 import ModalRetirarConcepto from "@/components/admin/ModalRetirarConcepto";
 import TarjetaIntegridadBackup from "@/components/admin/TarjetaIntegridadBackup";
+import VistaLogEventos from "@/components/admin/VistaLogEventos";
 import type { Concepto } from "@/lib/data/types";
 
 type ResetResult = {
@@ -30,7 +31,9 @@ export default function PanelHome() {
   const [mesError, setMesError] = useState<string | null>(null);
   const [showResetModal, setShowResetModal] = useState(false);
   const [showRetirarModal, setShowRetirarModal] = useState(false);
+  const [showLogModal, setShowLogModal] = useState(false);
   const [retiradoNotification, setRetiradoNotification] = useState<string | null>(null);
+
   const [targetMes, setTargetMes] = useState("");
   const [resetResult, setResetResult] = useState<ResetResult | null>(null);
 
@@ -209,14 +212,25 @@ export default function PanelHome() {
             </span>
           </div>
 
-          {/* Tarjeta 5: PANEL-LOG-EVENTOS-01 · pendiente */}
-          <div className="fl-action" style={{ opacity: 0.55, cursor: "default" }}>
-            <span className="ic"><Icon name="book" /></span>
+          {/* Tarjeta 5: PANEL-LOG-EVENTOS-01 */}
+          <div
+            className="fl-action"
+            style={{ cursor: "pointer" }}
+            onClick={() => setShowLogModal((prev) => !prev)}
+          >
+            <span className="ic" style={{ color: "var(--accent)" }}>
+              <Icon name="book" />
+            </span>
             <span className="txt">
               <p className="t">Log de eventos</p>
-              <p className="d">PANEL-LOG-EVENTOS-01 · pendiente</p>
+              <p className="d">Histórico cronológico de eventos y auditoría de Haiku / movimientos</p>
             </span>
+            <span className="chev">›</span>
           </div>
+
+          {showLogModal && (
+            <VistaLogEventos onClose={() => setShowLogModal(false)} />
+          )}
 
           {/* Tarjeta 6: PANEL-BACKUP-INTEGRIDAD-01 */}
           <TarjetaIntegridadBackup />

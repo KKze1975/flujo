@@ -11,6 +11,8 @@ import type {
   CierreSemana,
   PlanSemana,
   CierreMensual,
+  EventoLog,
+  TipoEventoLog,
 } from "./types";
 
 export interface IDataProvider {
@@ -66,7 +68,13 @@ export interface IDataProvider {
   getCierresMensuales(): Promise<CierreMensual[]>;
   getCierreMensual(mes: number, año: number): Promise<CierreMensual | null>;
   createCierreMensual(data: Omit<CierreMensual, "id">): Promise<CierreMensual>;
+
+  // ── H9 ───────────────────────────────────────────────────────────────────
+  createEventoLog(data: Omit<EventoLog, "id">): Promise<EventoLog>;
+  getEventosLog(filtro?: { tipoEvento?: TipoEventoLog; mes?: string; desde?: string; hasta?: string }): Promise<EventoLog[]>;
+  limpiarEventosLogAntiguos(diasRetencion?: number): Promise<number>;
 }
 
-export type { Semana, Concepto, Movimiento, Bolsillo, Consumo, ConsumoH3, IngresoCamilo, IngresoAngie, SaldoCuenta, CierreSemana, PlanSemana, CierreMensual };
+export type { Semana, Concepto, Movimiento, Bolsillo, Consumo, ConsumoH3, IngresoCamilo, IngresoAngie, SaldoCuenta, CierreSemana, PlanSemana, CierreMensual, EventoLog, TipoEventoLog };
 export * from "./types";
+

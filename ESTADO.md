@@ -6651,3 +6651,83 @@ en git — probablemente convención informal de esa época, sin revisar todaví
   esta sesión)
 - Próximo paso: pasarle el prompt de construcción a Antigravity para `PANEL-LOG-EVENTOS-01`,
   y hacer de Tester cuando termine
+
+---
+
+## Sesión — 16 agosto 2026 (CONSTRUCCIÓN + DEBUGGING — cierra PANEL-LOG-EVENTOS-01: 3 rondas de Tester, migración I-10 a PROD)
+
+**Contexto:** sesión corrida desde el vault (`obsidian-mind`), rol Manager — el Coder
+(Antigravity) se autodescubrió el ticket vía `check-ticket.mjs --next antigravity` sin que
+esta sesión le pasara ningún prompt manual. Corrección de proceso a mitad de sesión: Camilo
+señaló que la verificación (Tester) no debe hacerla el Manager inline en la conversación —
+debe despacharse como agente aparte. A partir de ahí, las 3 rondas de verificación de este
+ticket corrieron como subagentes independientes, no inline.
+
+**Qué se hizo:** Antigravity construyó `PANEL-LOG-EVENTOS-01` completo (tab `H9`/`EventosLog`,
+5 rutas instrumentadas, endpoint admin `GET/DELETE /api/admin/eventos-log`, vista
+`VistaLogEventos` en `/admin/panel`, purga a 14 días). Tester (ronda 1, agente aparte)
+verificó en vivo contra DEV — auth server-side confirmada, ciclo escribir→leer→purgar
+probado — y encontró un hallazgo bloqueante real: `mes: body.mes ?? new Date().toISOString()...`
+en `app/api/consumos/[id]/clasificar/route.ts` combinaba una fórmula de fallback errónea
+(UTC en vez de la fuente canónica `mesActual()`) con una dependencia de un valor client-side,
+violando I-01/I-02. Ronda 1 de fix de Antigravity solo corrigió la fórmula, dejando
+`body.mes ?? mesActual()` — Tester ronda 2 (agente aparte) lo marcó NO CUMPLE por seguir
+confiando en el cliente. En ese punto Camilo bajó el umbral de corrección: HALT directo si
+la ronda 2 de fix también fallaba, sin ronda 3 automática — quedó escrito en el propio ticket.
+Ronda 2 de fix de Antigravity sí eliminó `body.mes` por completo (`mes: mesActual()` sin
+`??`); Tester ronda 3 (agente aparte, verificación acotada) confirmó CUMPLE. Con el bloqueante
+cerrado, se ejecutó I-10 explícitamente: `scripts/setup-h9-prod.mjs` (nuevo, seed one-off que
+sigue el mismo patrón que `setup-h2.mjs`) creó la tab `H9` en `PROD_GOOGLE_SHEET_ID` y escribió
+los headers, verificado por lectura de vuelta. Ticket cerrado `completado`, `tsc --noEmit`
+limpio confirmado en cada ronda.
+
+**Decisión con razón:** el ciclo completo de este ticket (3 rondas de Tester + 2 rondas de
+fix del Coder) es la primera validación real, de punta a punta, de la arquitectura
+Coder→Tester→Manager con despacho de subagentes — hasta ahora solo estaba escrita en
+`.claude/agents/*.md`, nunca ejercitada así en Flujo. Confirma en la práctica: (1) que el
+patrón "fix pedido con código literal, no solo prosa" reduce el riesgo de que el Coder
+interprete angosto — la ronda 1 de fix (prosa: "no confiar en body.mes") solo corrigió la
+mitad del problema, la ronda 2 de fix (código exacto: `mes: mesActual();`) se aplicó tal
+cual; (2) que el umbral de corrección bajado (HALT tras 2 intentos en vez de esperar a que
+se agote solo) es una decisión válida de Camilo caso a caso, no un cambio de regla general —
+no se propuso modificar `tester.md` con esto, quedó como decisión puntual de este ticket.
+
+**Deuda técnica nueva:** ninguna de código nueva — los 2 hallazgos menores de ronda 1 de
+Tester (`limpiarEventosLogAntiguos()` con race condition en `clear`+`update`; `ensureH9()`
+sin reparación de headers a diferencia de `ensureH5()`) quedan documentados en el ticket y
+en `INVARIANTS.md` como candidatos ya existentes, no se corrigieron esta sesión — decisión
+explícita de no bloquear cierre por hallazgos no bloqueantes.
+
+**Retrospectiva:**
+- **Qué funcionó:** el aislamiento de contexto real entre rondas de Tester (cada una un
+  agente nuevo, sin ver el razonamiento de la ronda anterior, solo el ticket actualizado)
+  atrapó algo que una verificación inline probablemente habría dejado pasar por
+  "convergencia cómoda" — la ronda 2 de fix se veía razonable a primera lectura.
+- **Qué no funcionó:** el primer "fix pedido" que escribí (ronda 1) fue una descripción en
+  prosa de la intención, no el código exacto — eso le costó una ronda completa de ida y
+  vuelta con Antigravity. Corregido en la ronda 2 escribiendo el diff literal.
+- **Qué cambia en la próxima sesión:** al escribir un "fix pedido" para cualquier Coder,
+  preferir código exacto sobre descripción de intención siempre que el fix sea acotado —
+  no esperar a la segunda ronda para aplicar esto.
+- **Candidato a invariante:** ninguno nuevo — los candidatos relevantes ya estaban
+  registrados en `INVARIANTS.md` antes de esta sesión.
+
+**Estado accionable:**
+- Unidad: ticket
+- En curso: ninguno
+- Backlog priorizado (top 3 abiertos):
+  1. [Producto] DT-CIERRE-01 — reversión atómica de cierre de semana, dependencia bloqueante
+     de `PANEL-REVERTIR-CIERRE-01`
+  2. [Operación] DT-SOBRE-TECHO-01 — `sobre_techo` no persiste en H2, diagnóstico pendiente
+  3. [Operación] Los 2 hallazgos menores de `PANEL-LOG-EVENTOS-01` (race condition en purga,
+     `ensureH9` sin reparación de headers) — deuda documentada, no priorizada todavía
+- Reactivo/incidentes: ninguno nuevo esta sesión
+- Seguridad: sin pendientes nuevos — `/api/admin/eventos-log` verifica sesión server-side
+  desde su construcción original
+- FinOps/Costo: sin dato registrado — sin cambio
+- Bloqueados esperando a Camilo: ninguno nuevo — decidir si commitear el resto de deuda de
+  repo sin relación con este ticket (`.claude/agents/manager.md`, `CLAUDE.md`,
+  `scripts/check-ticket.mjs` — modificados por otra sesión en paralelo trabajando la doctrina
+  del sistema multiagente, no tocados por esta sesión, dejados fuera de este commit
+  deliberadamente)
+- Próximo paso: sin definir todavía — el backlog de arriba queda para que Camilo priorice

@@ -23,6 +23,8 @@ import type {
   CierreSemana,
   PlanSemana,
   CierreMensual,
+  EventoLog,
+  TipoEventoLog,
 } from "./types";
 
 export class SheetsDataProvider implements IDataProvider {
@@ -1015,4 +1017,123 @@ export class SheetsDataProvider implements IDataProvider {
   createCierreMensual(_data: Omit<CierreMensual, "id">): Promise<CierreMensual> {
     throw new Error("Not implemented yet");
   }
+
+  // ── H9 EventosLog ──────────────────────────────────────────────────────────
+  private readonly H9_HEADERS = ["timestamp", "tipo_evento", "entidad_id", "mes", "detalle", "id"];
+
+  private async ensureH9(): Promise<void> {
+    const meta = await this.sheets.spreadsheets.get({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+    });
+    const exists = meta.data.sheets?.some(s => s.properties?.title === "H9");
+    if (!exists) {
+      await this.sheets.spreadsheets.batchUpdate({
+        spreadsheetId: process.env.GOOGLE_SHEET_ID,
+        requestBody: { requests: [{ addSheet: { properties: { title: "H9" } } }] },
+      });
+      await this.sheets.spreadsheets.values.update({
+        spreadsheetId: process.env.GOOGLE_SHEET_ID,
+        range: "H9!A1",
+        valueInputOption: "RAW",
+        requestBody: { values: [this.H9_HEADERS] },
+      });
+    }
+  }
+
+  async createEventoLog(data: Omit<EventoLog, "id">): Promise<EventoLog> {
+    await this.ensureH9();
+    const id = `EVT_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const evento: EventoLog = { id, ...data };
+    const row = [evento.timestamp, evento.tipoEvento, evento.entidadId, evento.mes, evento.detalle, evento.id];
+
+    await this.sheets.spreadsheets.values.append({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: "H9!A:F",
+      valueInputOption: "RAW",
+      requestBody: { values: [row] },
+    });
+
+    return evento;
+  }
+
+  async getEventosLog(filtro?: { tipoEvento?: TipoEventoLog; mes?: string; desde?: string; hasta?: string }): Promise<EventoLog[]> {
+    await this.ensureH9();
+    const res = await this.sheets.spreadsheets.values.get({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: "H9!A:F",
+    });
+
+    const rows = res.data.values as string[][] | undefined;
+    if (!rows || rows.length < 2) return [];
+
+    const [headers, ...dataRows] = rows;
+    const colIdx = (name: string) => headers.indexOf(name);
+
+    let eventos: EventoLog[] = dataRows.map((row) => ({
+      timestamp: row[colIdx("timestamp")] ?? "",
+      tipoEvento: (row[colIdx("tipo_evento")] ?? "") as TipoEventoLog,
+      entidadId: row[colIdx("entidad_id")] ?? "",
+      mes: row[colIdx("mes")] ?? "",
+      detalle: row[colIdx("detalle")] ?? "",
+      id: row[colIdx("id")] ?? "",
+    }));
+
+    if (filtro?.tipoEvento) {
+      eventos = eventos.filter((e) => e.tipoEvento === filtro.tipoEvento);
+    }
+    if (filtro?.mes) {
+      eventos = eventos.filter((e) => e.mes === filtro.mes);
+    }
+    if (filtro?.desde) {
+      eventos = eventos.filter((e) => e.timestamp >= filtro.desde!);
+    }
+    if (filtro?.hasta) {
+      eventos = eventos.filter((e) => e.timestamp <= filtro.hasta!);
+    }
+
+    return eventos.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+  }
+
+  async limpiarEventosLogAntiguos(diasRetencion = 14): Promise<number> {
+    await this.ensureH9();
+    const res = await this.sheets.spreadsheets.values.get({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: "H9!A:F",
+    });
+
+    const rows = res.data.values as string[][] | undefined;
+    if (!rows || rows.length < 2) return 0;
+
+    const [headers, ...dataRows] = rows;
+    const tsIdx = headers.indexOf("timestamp");
+    if (tsIdx === -1) return 0;
+
+    const ahora = new Date();
+    const limiteMs = ahora.getTime() - diasRetencion * 24 * 60 * 60 * 1000;
+
+    const filasFiltradas = dataRows.filter((row) => {
+      const tsStr = row[tsIdx];
+      if (!tsStr) return false;
+      const tsDate = new Date(tsStr);
+      return !isNaN(tsDate.getTime()) && tsDate.getTime() >= limiteMs;
+    });
+
+    const eliminadasCount = dataRows.length - filasFiltradas.length;
+    if (eliminadasCount === 0) return 0;
+
+    await this.sheets.spreadsheets.values.clear({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: "H9!A:F",
+    });
+
+    await this.sheets.spreadsheets.values.update({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: "H9!A1",
+      valueInputOption: "RAW",
+      requestBody: { values: [headers, ...filasFiltradas] },
+    });
+
+    return eliminadasCount;
+  }
 }
+
