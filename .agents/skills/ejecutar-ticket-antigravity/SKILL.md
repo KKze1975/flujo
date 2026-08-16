@@ -60,11 +60,18 @@ lo repitas de memoria.
    paso 6, no un archivo aparte): `rol_activo: coder`, `paso_actual:
    "<texto libre, breve, ej. 'escribiendo /api/admin/reset-mes'>"`,
    `actualizado_en: <timestamp real de tu shell — nunca inventado>`.
-   **Repite esta escritura en cada cambio de paso relevante durante la
-   construcción**, no solo al empezar — esto es lo que alimenta la
-   pestaña Digest de Founder OS (vault `obsidian-mind`); si no lo
-   actualizas, tu ticket aparece "sin instrumentar" ahí aunque estés
-   trabajando activamente.
+   **Anclaje determinístico — no depende de tu criterio de "cuándo es
+   relevante" (ese criterio ya falló una vez: `PANEL-LOG-EVENTOS-01`,
+   16 ago 2026, solo escribió al empezar y al terminar, cero pasos
+   intermedios).** Cada ticket tiene una lista de Definition of Done con
+   ítems `- [ ]`. Cada vez que marques uno como hecho (`- [ ]` → `- [x]`),
+   en esa misma edición actualiza también `paso_actual` (describiendo ese
+   ítem) y refresca `actualizado_en`. Si el DoD tiene N ítems, se esperan
+   al menos N escrituras de `paso_actual` durante la construcción, no solo
+   una al principio y otra al final. Esto es lo que alimenta la pestaña
+   Digest de Founder OS (vault `obsidian-mind`); si no lo actualizas, tu
+   ticket aparece "sin instrumentar" ahí aunque estés trabajando
+   activamente.
 8. Construye exactamente contra el DoD del ticket. Nada de alcance nuevo.
 9. `tsc --noEmit` limpio antes de terminar (I-07).
 10. **Nunca marques el ticket como `completado`** — esa verificación la
