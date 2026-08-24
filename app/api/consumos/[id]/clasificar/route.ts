@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { NextRequest } from "next/server";
 import { getProvider } from "@/lib/data/provider";
+import { mesActual } from "@/lib/utils/fecha";
 
 const SYSTEM_PROMPT = `Eres un asistente de finanzas personales de la familia Villamil en Colombia.
 Dado una descripción de un gasto y una lista de conceptos disponibles, indica cuál concepto se ajusta mejor.
@@ -58,6 +59,20 @@ export async function POST(
       ...(bolsilloId ? { bolsilloId } : { imprevisto: true }),
       clasificado: true,
     });
+
+    // Instrumentación H9 Log de Eventos (PANEL-LOG-EVENTOS-01)
+    await provider.createEventoLog({
+      timestamp: new Date().toISOString(),
+      tipoEvento: "clasificacion_haiku",
+      entidadId: id,
+      mes: mesActual(),
+      detalle: JSON.stringify({
+        descripcion: body.descripcion,
+        bolsilloIdClasificado: bolsilloId ?? null,
+        esImprevisto: !bolsilloId,
+        modelo: "claude-haiku-4-5-20251001",
+      }),
+    }).catch((err) => console.error("Error silencioso registrando evento log:", err));
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Error actualizando H3";
     return Response.json({ error: msg }, { status: 500 });
@@ -65,3 +80,4 @@ export async function POST(
 
   return Response.json({ ok: true, bolsilloId: bolsilloId ?? null });
 }
+

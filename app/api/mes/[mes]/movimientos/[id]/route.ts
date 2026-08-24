@@ -190,9 +190,37 @@ export async function PATCH(
     }
 
     const updated = await provider.updateMovimiento(id, patch);
+
+    // Instrumentación H9 Log de Eventos (PANEL-LOG-EVENTOS-01)
+    if (["ejecutar", "posponer", "mover_mes_siguiente", "revertir_mes_siguiente", "revertir_ejecucion", "reasignar_semana"].includes(body.tipo)) {
+      const tipoEventoMap: Record<string, import("@/lib/data/types").TipoEventoLog> = {
+        ejecutar: "movimiento_ejecutar",
+        posponer: "movimiento_posponer",
+        mover_mes_siguiente: "movimiento_mover_mes_siguiente",
+        revertir_mes_siguiente: "movimiento_revertir_mes_siguiente",
+        revertir_ejecucion: "movimiento_revertir_ejecucion",
+        reasignar_semana: "movimiento_reasignar_semana",
+      };
+      const tipoEvento = tipoEventoMap[body.tipo];
+      if (tipoEvento) {
+        await provider.createEventoLog({
+          timestamp: new Date().toISOString(),
+          tipoEvento,
+          entidadId: id,
+          mes,
+          detalle: JSON.stringify({
+            conceptoId: mov.conceptoId,
+            nombre: mov.nombreSnapshot,
+            patch,
+          }),
+        }).catch((err) => console.error("Error silencioso registrando evento log:", err));
+      }
+    }
+
     return Response.json(updated);
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Error interno";
     return Response.json({ error: msg }, { status: 500 });
   }
 }
+

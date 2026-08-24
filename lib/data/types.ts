@@ -207,3 +207,27 @@ export interface CierreMensual {
   saldoFinal: number;
   notas?: string;
 }
+
+// ── H9 ─────────────────────────────────────────────────────────────────────
+
+export type TipoEventoLog =
+  | "movimiento_ejecutar"
+  | "movimiento_posponer"
+  | "movimiento_mover_mes_siguiente"
+  | "movimiento_revertir_mes_siguiente"
+  | "movimiento_revertir_ejecucion"
+  | "movimiento_reasignar_semana"
+  | "clasificacion_haiku"
+  | "cierre_semana"
+  | "revertir_cierre_semana"
+  | "reset_mes";
+
+export interface EventoLog {
+  id: string;            // EVT_{unix_timestamp}_{rand}
+  timestamp: string;     // ISO String UTC/Server
+  tipoEvento: TipoEventoLog;
+  entidadId: string;     // movimiento_id, concepto_id, consumo_id, mes, etc.
+  mes: string;           // "2026-08"
+  detalle: string;       // JSON string o texto legible
+}
+
