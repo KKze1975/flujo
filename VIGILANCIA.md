@@ -140,3 +140,143 @@
 3. **Sin cap de requests por día/usuario ni estimado de costo documentado en ningún lugar del repo** — confirmado por grep de dependencias y comentarios.
 
 ---
+
+## Auditoría — 2026-08-24
+
+**Resumen:** Corrida sobre `vigilancia-auto` sincronizada con `dev` (mergeado `0d49cf5`, previamente ~3 semanas desactualizada), incorporando por primera vez el panel de administración nuevo (`app/admin/panel`, PIN-gated: reset-mes, backup, retirar-concepto, log de eventos H9). 27 hallazgos: 4 críticos, 10 altos, 9 medios, 4 menores/contexto. Crítico principal: `reset-mes` borra H2 de **todos** los meses (no solo el elegido) mientras su propio modal de confirmación le promete al operador que solo afecta un mes; y la práctica totalidad de la superficie de escritura no-admin (PATCH/DELETE de consumos, movimientos, ingresos, conceptos) sigue sin ningún control de acceso. `npm audit` confirma 4 CVEs altos en `next@16.2.6` (incluye disclosure no autenticado y SSRF). La mayoría de hallazgos de la corrida del 17-ago siguen presentes sin corregir; el único fix real es la instrumentación H9 (4 rutas ahora auditables), pero con huecos de cobertura nuevos (retirar-concepto, backup-sheet).
+
+### Pilar 1 — Seguridad
+
+**Controles positivos confirmados (no hallazgo, contexto):** `lib/admin-auth.ts:8-42` usa `crypto.timingSafeEqual` para PIN y firma de sesión, falla cerrado si `ADMIN_PANEL_PIN`/`ADMIN_SESSION_SECRET` no están seteadas; cookie de sesión `httpOnly`+`secure`+`sameSite:strict`, TTL 12h. Ningún path de escritura en `lib/data/sheets.ts` usa `valueInputOption: "USER_ENTERED"` (100% `"RAW"`) — descarta inyección de fórmulas Sheets (OWASP A03) como vector.
+
+1. **CRÍTICO — `app/api/admin/reset-mes/route.ts:61-80` (`resetH2`).** Cuenta filas de H2 del `mes` solicitado en `antes` (línea 72) pero el borrado real es `values.clear({range: "H2!A2:Y1000"})` (línea 78) — el tab **completo**, sin filtrar por mes y sin reescribir `otherRows` como sí hace `deleteRowsByMes` (usado para H3/H4/H5). Un `POST /api/admin/reset-mes {mes:"2026-06"}` borra los `Movimiento` de todos los meses, no solo junio. El JSON de respuesta y el log H9 (`detalle: JSON.stringify(resetData)`) reportan solo el conteo de junio — subestiman el daño real. Agravante: `components/admin/PanelHome.tsx:176,243` y el `ModalConfirmacionDestructiva` prometen textualmente al operador "elimina... de un mes específico" antes de que confirme — la UI de doble confirmación le da al humano una garantía de alcance que el backend no cumple. El DoD del propio ticket (`PANEL-RESET-MES-01.md`) solo se probó contra un mes sin filas reales (`2099-01`), por lo que nunca se detectó. OWASP A04/integridad de datos.
+
+2. **CRÍTICO — superficie de escritura no-admin prácticamente sin autenticación.** `grep -rn "isAdminRequestAuthorized" app/api` solo aparece en 4 rutas (`admin/backup-status`, `admin/eventos-log`, `admin/reset-mes`, `conceptos/[id]/retirar`). No existe `middleware.ts`. Todo el resto de rutas mutadoras están abiertas: `app/api/consumos/[id]/route.ts` (PATCH/DELETE, confirmado sin ningún chequeo de auth), `app/api/mes/[mes]/movimientos/[id]/route.ts` (PATCH, incluye `ejecutar`/`mover_mes_siguiente`/etc.), `consumos/[id]/clasificar`, `mes/[mes]/iniciar`, `mes/[mes]/cerrar-semana`, `registro/interpretar`, `registro/sin-concepto`, `ingresos/camilo/[mes]`, `ingresos/angie/[mes]`, `conceptos/route.ts`, `conceptos/[id]/route.ts`. Un `curl -X DELETE /api/consumos/{id}` sin credenciales borra un gasto; un `PATCH /api/mes/{mes}/movimientos/{id} {tipo:"ejecutar"}` fabrica la ejecución de una línea de presupuesto. El PIN del panel solo protege 4 rutas — el resto de la superficie de escritura de la app es tan abierta como antes de que el panel existiera. OWASP A01.
+
+3. **CRÍTICO (re-confirmado, hallazgo #3 de la corrida 17-ago) — `app/api/admin/backup-sheet/route.ts:155-162` y `app/api/cron/uber-parser/route.ts:78-84`.** Mismo patrón fail-open: si `CRON_SECRET` no está seteado en el entorno, el bloque de validación se salta completo y la ruta queda sin ningún auth — ninguna de las dos llama `isAdminRequestAuthorized`. Ambas están registradas como crons de Vercel alcanzables por `GET` sin autenticar. `backup-sheet` expone el Sheet ID del contenedor de backup en la respuesta JSON.
+
+4. **ALTO — `app/api/admin/reset-mes/route.ts:104` viola I-05 explícitamente.** `deleteRowsByMes(sheets, spreadsheetId, mes, "H4!X:AE", ..., "H4D")` lee y escribe el rango H4D. CLAUDE.md: *"H4D is legacy — never read or write it (I-05)"*. Es el único sitio del repo que toca ese rango. El panel nuevo expone este resultado directamente en la UI (`PanelHome.tsx:105`, campo `H4D:`), haciendo visible en cada reset una violación de invariante documentada.
+
+5. **ALTO (re-confirmado, #5 corrida anterior, ahora más preciso) — `app/api/consumos/[id]/clasificar/route.ts:53-61` + `lib/data/sheets.ts:790-819`.** Cuando la llamada a Haiku falla (catch vacío) o no encuentra match, el código escribe `clasificado: true` sin `bolsilloId` — no es un edge case, es el fallback diseñado. `updateConsumoH3` hace un merge ciego sin verificar I-03 en ningún punto. `app/api/consumos/[id]/route.ts` PATCH acepta `clasificado`/`bolsilloId` como campos independientes del cliente, mismo problema.
+
+6. **ALTO (re-confirmado, #2) — `app/api/admin/auth/route.ts:9-26`.** Sin rate limit, contador de intentos ni bloqueo sobre el PIN. `PinGate.tsx` usa `inputMode="numeric"` (PIN corto). Grep repo-wide de `ratelimit|upstash` sin resultados — brute-forceable por script.
+
+7. **ALTO (re-confirmado, #3) — `scripts/auditoria-julio.mjs:25`.** Sheet ID de producción hardcodeado y commiteado (I-04/I-08), repetido en texto plano en `ESTADO.md`/`PROMPT_AGENTE.md`/`SESSION_LOG.md`/`AUDITORIA_JULIO.md`. `.git/hooks/pre-commit` sigue sin instalarse (solo existe `.sample`) — la afirmación de CLAUDE.md de que el pre-commit hook verifica esto no se sostiene: ningún hook corre automáticamente en este entorno.
+
+8. **ALTO — confirmado con evidencia (era "sin confirmar" el 17-ago) — `package.json:14` (`next@16.2.6`).** `npm audit --omit=dev` reporta 4 advisories altos: `GHSA-955p-x3mx-jcvp` (disclosure no autenticado de endpoints internos de Server Functions), `GHSA-p9j2-gv94-2wf4` (SSRF vía rewrites con hostname controlado por atacante), `GHSA-6gpp-xcg3-4w24` (bypass de middleware/proxy en Turbopack), `GHSA-m99w-x7hq-7vfj` (DoS de Server Actions), más highs transitivos en `postcss`/`sharp`/`nanoid`. Fix requiere `next@16.3.2`, fuera del rango declarado. OWASP A06.
+
+9. **MEDIO (re-confirmado, #4) — `app/api/registro/sin-concepto/route.ts:82,68`.** `mes` del cliente sin regex (viola I-01/I-02); `monto` solo con chequeo de truthy, no de tipo.
+
+10. **MEDIO (re-confirmado, #6, agravado por hallazgo 2) — `app/api/registro/interpretar/route.ts:46-125`.** Sin auth, sin límite de tamaño en imagen base64 ni texto libre antes de enviar a `claude-sonnet-4-6`.
+
+11. **MEDIO — nuevo.** No existe `middleware.ts` ni `headers()` en `next.config.ts` — cero cabeceras de seguridad (CSP, `X-Frame-Options`, HSTS) en toda la app. OWASP A05.
+
+12. **MEDIO — nuevo, patrón transversal.** Múltiples rutas (`backup-status/route.ts:79-84`, `eventos-log/route.ts:27-30,43-45`, `consumos/[id]/route.ts:62-64`, `sin-concepto/route.ts:113-115`) devuelven `error.message` crudo al cliente en el catch — puede filtrar detalle interno de errores de la API de Sheets (rangos, cuota). OWASP A05.
+
+### Pilar 2 — Resiliencia
+
+1. **CRÍTICO (re-confirmado, #1, ver también Pilar 1 hallazgo 1) — `app/api/admin/reset-mes/route.ts:61-80`.** Ver detalle completo en Pilar 1 — se repite aquí porque además de ser un hueco de acceso es el bug de resiliencia más grave del repo: un reset de un mes borra Movimientos de todos los meses sin ningún mecanismo de reversión.
+
+2. **CONFIRMADO — `app/api/admin/reset-mes/route.ts:98-107`.** 8 operaciones de reset en un solo `Promise.all` sin try/catch envolvente; el log H9 nuevo (líneas 111-124) corre después y solo registra el resultado agregado — no ayuda a diagnosticar qué tab falló si el `Promise.all` rechaza a mitad de camino.
+
+3. **CONFIRMADO — `app/api/mes/[mes]/movimientos/[id]/route.ts:135-144` (`mover_mes_siguiente`).** El guard anti-duplicado sigue sin aplicar a conceptos `frecuencia: "semanal"`.
+
+4. **CONFIRMADO — `lib/data/sheets.ts:273-291` (`crearMovimientosMes`).** Lectura de `H2!A:A` para `nextRow` seguida de `values.update`, sin atomicidad — llamadas concurrentes pueden sobrescribirse.
+
+5. **CONFIRMADO — 7 sitios de `values.append` sin `insertDataOption: "INSERT_ROWS"`, ahora 8: se suma `createEventoLog` (H9) en `lib/data/sheets.ts:1049`,** que hereda el mismo patrón que causó la pérdida real de 67 filas.
+
+6. **CONFIRMADO, con matiz — sin ruta de restore.** `grep -rn "restore" app/ scripts/` sigue vacío. El nombre del ticket `PANEL-REVERTIR-CIERRE-01` sugiere que esto se resolvió — **no es así**: el ticket está en `estado: propuesto`, bloqueado por `DT-CIERRE-01` (también propuesto). No existe ningún endpoint `revertir-cierre`; solo existen `revertir_mes_siguiente`/`revertir_ejecucion` para movimientos individuales, no para un cierre de semana completo (H5). RTO/RPO indefinidos.
+
+7. **CONFIRMADO — `app/api/mes/[mes]/cerrar-semana/route.ts:83-158`.** H5A → H5B → `Promise.all` de bolsillos siguen siendo fases sin rollback; el log H9 añadido al final documenta el resultado pero no previene ni repara el estado inconsistente ante un fallo a mitad de camino.
+
+### Pilar 3 — Datos y modelo
+
+1. **CONFIRMADO — `app/api/registro/sin-concepto/route.ts` y `app/api/cron/uber-parser/route.ts`** siguen instanciando su propio cliente `google.sheets` y escribiendo directo a H3 sin pasar por `getProvider()` (`IDataProvider` sigue sin `createConsumoH3`).
+
+2. **CONFIRMADO — triplicación del array de 17 headers de H3B** en `lib/data/sheets.ts:710-714`, `registro/sin-concepto/route.ts:5-9`, `cron/uber-parser/route.ts:10-15`.
+
+3. **CONFIRMADO — `app/api/cron/uber-parser/route.ts:106-107`** sigue llamando `mesDeFecha()`/`semanaDeFechaEnMes()` crudas en vez de `mesActual(fecha)`/`semanaActual(fecha)` (que sí aplican la excepción de cola de mes en fin de semana vía `cicloOperativo()`, no exportada directamente). Fix sería trivial pero no se hizo. Candidato `DT-CICLO-OPERATIVO-UNIFICADO-01` de INVARIANTS.md sigue abierto.
+
+4. **CONFIRMADO, con mitigación parcial nueva — `ConsumoH3` (`lib/data/types.ts:79-97`)** sigue sin campo de procedencia IA. `consumos/[id]/clasificar/route.ts:70-77` ahora sí escribe modelo/confianza al log H9, pero H9 tiene retención de 14 días — pasado ese plazo la trazabilidad de esa clasificación se pierde aunque el `ConsumoH3` en H3B siga vivo indefinidamente.
+
+5. **ALTO — `app/api/admin/reset-mes/route.ts:104` viola I-05** (ver Pilar 1, hallazgo 4, y Pilar 7 hallazgo 1 — mismo hecho, tres ángulos: acceso, modelo de datos, mantenibilidad).
+
+6. **NUEVO — rutas admin bypasean `IDataProvider` por completo, creando una tercera fuente de rangos hardcodeados.** `app/api/admin/reset-mes/route.ts:6-16` y `app/api/admin/backup-sheet/route.ts:26-35` instancian su propio `google.auth.JWT`/`google.sheets(...)` en vez de usar `getProvider()`, contradiciendo la regla explícita de CLAUDE.md ("Every API route calls `getProvider()` — never instantiate `SheetsDataProvider` directly"). `reset-mes` re-hardcodea los mismos rangos H2/H3/H4/H5/H5B que ya existen en `lib/data/sheets.ts` con formato distinto — un cambio de esquema ahora requiere tocar 3 lugares.
+
+### Pilar 4 — Observabilidad/Logs
+
+1. **CONFIRMADO — cero `console.*` en `lib/`.**
+
+2. **CONFIRMADO, forma cambiada — 4 `console.error` en `app/api`, todos del mismo patrón "fallo silencioso al registrar H9".** `movimientos/[id]/route.ts:216`, `consumos/[id]/clasificar/route.ts:75`, `cerrar-semana/route.ts:158`, `admin/reset-mes/route.ts:123` — todos con catch que traga el error y responde 200 igual; el fallo del log de auditoría es invisible fuera de los logs de Vercel.
+
+3. **NUEVO — `app/api/admin/backup-sheet/route.ts` (199 líneas, la pieza central de la historia de DR) tiene cero `console.*`.** Si `crearTabsFaltantes`/`escribirValores`/`limpiarBackupsAntiguos` fallan a mitad de camino, no queda rastro server-side salvo la respuesta HTTP al cron, que nadie lee en vivo.
+
+4. **CONFIRMADO — `app/api/mes/[mes]/iniciar/route.ts` y `app/api/cron/uber-parser/route.ts`** siguen sin try/catch alrededor del handler completo.
+
+5. **CONFIRMADO — `lib/uber/gmail.ts:112-116` (`marcarComoLeidos`)** sigue sin try/catch ni logging por mensaje en el loop secuencial.
+
+### Pilar 5 — Trazabilidad
+
+1. **PARCIALMENTE CORREGIDO — H9 ahora se llama desde 4 archivos** (`movimientos/[id]/route.ts:206`, `consumos/[id]/clasificar/route.ts:71`, `cerrar-semana/route.ts:147`, `admin/reset-mes/route.ts:115`), con endpoints de lectura/purga (`GET`/`DELETE /api/admin/eventos-log`). Fix real para ese subconjunto, no cosmético.
+
+2. **CONFIRMADO — `movimientos/[id]/route.ts:195`** sigue omitiendo `"actualizar_monto"` y `"no_aplica"` de la allowlist de logging, aunque ambos mutan H2 incondicionalmente (línea 192).
+
+3. **CONFIRMADO — `mes/[mes]/iniciar/route.ts`** sigue sin ninguna llamada a `createEventoLog` pese a crear todos los `Movimiento` de un mes.
+
+4. **CONFIRMADO — `mes/[mes]/cerrar-m1/route.ts:6-61`,** segundo camino de cierre de semana, sigue sin llamar `createEventoLog` — invisible en el log aunque `cerrar-semana` (la otra vía) ya sí audita.
+
+5. **CONFIRMADO — `consumos/[id]/route.ts` PATCH y `consumos/[id]/imprevisto/route.ts` PATCH** siguen sin ninguna llamada a `createEventoLog`.
+
+6. **CONFIRMADO + NUEVO — `conceptos/*`, `ingresos/*` sin H9, y específicamente `app/api/conceptos/[id]/retirar/route.ts` (acción irreversible del panel, gateada por PIN) tampoco llama `createEventoLog`,** ni `lib/data/sheets.ts:135-138` (`retirarConcepto`). El propio ticket `PANEL-LOG-EVENTOS-01.md` no incluye `retirar_concepto` entre los tipos aprobados de log — hueco de alcance, no bug de implementación: una acción irreversible (no existe "reactivar", declarado fuera de alcance en `PANEL-RETIRAR-CONCEPTO-01.md`) queda sin ningún rastro de auditoría. Nota menor: `retirarConcepto` (línea 136) calcula `fechaRetiro` con `new Date().toISOString().split("T")[0]` (UTC), no con `mesActual()`/hora Bogotá como el resto del proyecto — mismo patrón de bug ya corregido una vez en H9 durante `PANEL-LOG-EVENTOS-01`.
+
+7. **NUEVO — `admin/backup-sheet` y `admin/backup-status` no generan ningún evento H9.** Ni el backup nocturno ni la verificación de integridad quedan correlacionables con el resto de actividad del sistema en H9.
+
+### Pilar 6 — Eficiencia/Desempeño
+
+1. **CONFIRMADO — `lib/data/sheets.ts:303-336` (`updateMovimiento`)** sigue leyendo `H2!A:Y` completo antes de escribir una fila.
+
+2. **CONFIRMADO — `cerrar-semana/route.ts:130-144`,** `Promise.all` sobre N bolsillos con full-read × N, ahora suma además `createEventoLog` (ver hallazgo 6 abajo).
+
+3. **CONFIRMADO, agravado — `movimientos/[id]/route.ts:52`.** Para `tipo: "mover_mes_siguiente"` (líneas 108-173) son ahora ~4 lecturas grandes (`getConceptos`, `getMovimientos(mes)`, `getMovimientos(nextMes)`, `H2!A:A` dentro de `crearMovimientosMes`) + 2 escrituras por un solo clic, antes de contar H9.
+
+4. **CONFIRMADO — `mes/[mes]/iniciar/route.ts:56-60`.** 2 full reads de H2 + 1 full read de H1 + `H2!A:A` read adicional dentro de `crearMovimientosMes`.
+
+5. **CONFIRMADO — `lib/data/sheets.ts:1097-1137` (`limpiarEventosLogAntiguos`).** Costo sigue escalando con el tamaño total del log, no con las filas purgadas; condición de carrera documentada por el propio Tester del ticket (`createEventoLog` concurrente durante la ventana de limpieza se pierde).
+
+6. **NUEVO — `ensureH9()` (`lib/data/sheets.ts:1024-1041`) hace `spreadsheets.get` (metadata completa) en CADA operación de H9,** no solo cuando el tab no existe — a diferencia de `ensureH2Headers` (línea 213-229), que sí evita esto leyendo solo `H2!A1`. Es invocado por `createEventoLog`/`getEventosLog`/`limpiarEventosLogAntiguos`, es decir en cada acción de usuario ya instrumentada (movimientos, cierre-semana, clasificar, reset-mes) — suma sistemáticamente 2 llamadas extra a Sheets API por clic.
+
+7. **NUEVO — la retención de 14 días de H9 es 100% manual, sin cron.** `vercel.json` solo tiene crons para `backup-sheet` y `uber-parser`. La purga solo ocurre si alguien abre el panel y hace clic en "Limpiar >14 días" (`VistaLogEventos.tsx:144-151`) — si nadie lo hace, H9 crece sin límite y el costo del hallazgo 5 se agrava con el tiempo.
+
+### Pilar 7 — Mantenibilidad
+
+1. **CONFIRMADO — `app/api/admin/reset-mes/route.ts:104`** contradice I-05 (ver Pilar 1 hallazgo 4, Pilar 3 hallazgo 5) — el resultado se expone incluso en `PanelHome.tsx:105` (campo `H4D:`).
+
+2. **CONFIRMADO — rangos hardcodeados duplicados en `lib/data/sheets.ts`** ("H1!A:L", "H2!A:Y", "H3!A:Q", "H4!A:G", etc.).
+
+3. **NUEVO — CLAUDE.md documenta tabs (H3B, H4A/B/C, H5A, H6) que no son tabs físicos reales.** Comentario del propio autor en `app/api/admin/backup-sheet/route.ts:9-12`: *"Tabs físicos reales del Sheet de producción... NO los nombres lógicos de CLAUDE.md/sheet-safety (H3B, H4A/B/C, H5A, H6 son tipos de dato o rangos de columnas dentro de estos tabs físicos, no tabs independientes)"*. Los tabs físicos reales son solo `H1, H2, H3, H4, H5, H5B` — cualquier agente que confíe en la tabla de CLAUDE.md sin leer el código real calculará rangos equivocados.
+
+4. **Ver Pilar 3 hallazgo 6** — rutas admin bypasean `IDataProvider`, tercera fuente de rangos hardcodeados.
+
+### Pilar 8 — Degradación de UI/Usabilidad
+
+1. **CONFIRMADO — `components/VistaSemanal.tsx:1091-1127` (`navegar`).** Sin `semRes.ok`, no hay error seteado pero `setSemanaVisible(s)` (línea 1115) corre igual — UI muestra datos obsoletos bajo una pestaña nueva sin aviso.
+
+2. **CONFIRMADO — `components/VistaSemanal.tsx:1198-1214` (`handleSheetSuccess`).** Catch vacío (línea 1213) — un gasto recién registrado puede no aparecer sin ningún error visible.
+
+3. **CONFIRMADO — `components/VistaSemanal.tsx:156-174` (`toggleImprevisto`).** Catch solo revierte el toggle optimista sin `setError`, a diferencia de `guardar()`/`revertir()` en el mismo archivo.
+
+4. **NUEVO — `components/admin/VistaLogEventos.tsx` usa 4 variables CSS custom no definidas en ningún `.css` del repo:** `var(--bg-card)` (líneas 94,126,191), `var(--fg)` (95,179), `var(--bg-subtle)` (171), `var(--border)` (96,128). El resto del proyecto (incluido el resto de `components/admin/*`) usa consistentemente `var(--surface)`, `var(--surface-2)`, `var(--ink)`, `var(--ink-soft)`, `var(--line)`. Con custom properties inexistentes el navegador descarta la declaración — fondo/borde probablemente no se renderizan y el color hereda del padre, especialmente notorio en dark mode. No verificado visualmente (auditoría read-only, sin dev server), pero el defecto en el código fuente es determinístico.
+
+5. **NUEVO — `lib/admin-auth.ts:8-12` (`sign()`) lanza excepción no capturada si `ADMIN_SESSION_SECRET` falta,** llamado sin try/catch desde `createSessionCookie` (`app/api/admin/auth/route.ts:18`) — 500 genérico sin mensaje útil en vez de un error controlado. No es vulnerabilidad (falla cerrado), pero el propio `PANEL-ADMIN-01.md` (líneas 127-131) documenta que en preview de Vercel esas env vars no estaban configuradas — deuda de despliegue ya anticipada por el equipo, sin resolver.
+
+### Pilar 9 — Costos/FinOps
+
+1. **CONFIRMADO — `registro/interpretar` y `consumos/[id]/clasificar`** siguen sin auth y sin rate limit (grep repo-wide de `ratelimit|upstash` sin resultados). Las rutas admin nuevas no tocan estos dos endpoints.
+
+2. **CONFIRMADO — `registro/interpretar/route.ts:106-111` + `components/m4/InputRegistro.tsx`.** `accept="image/*"` sin resize/compresión (grep confirma cero ocurrencias de `resize|canvas|toBlob|compress`) antes de enviar a `claude-sonnet-4-6`.
+
+3. **CONFIRMADO — sin cap diario/por-usuario ni estimado de costo documentado.**
+
+4. **Verificado, sin hallazgo — el panel admin en sí no agrega presión de costo relevante de LLM.** `backup-status` solo hace `spreadsheets.get` (metadata, sin polling); `eventos-log` solo se consulta al expandir manualmente. Ninguno invoca la API de Claude. El único costo nuevo real es de cuota de Sheets API (Pilar 6, hallazgo 6), no de LLM.
+
+---
