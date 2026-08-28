@@ -149,4 +149,16 @@ export class MockDataProvider implements IDataProvider {
   createCierreMensual(_data: Omit<CierreMensual, "id">): Promise<CierreMensual> {
     return Promise.resolve({ id: "mock-1", ..._data });
   }
+
+  // ── H9 ───────────────────────────────────────────────────────────────────
+  createEventoLog(data: Omit<import("./types").EventoLog, "id">): Promise<import("./types").EventoLog> {
+    return Promise.resolve({ id: "mock-evt-1", ...data });
+  }
+  getEventosLog(_filtro?: { tipoEvento?: import("./types").TipoEventoLog; mes?: string; desde?: string; hasta?: string }): Promise<import("./types").EventoLog[]> {
+    return Promise.resolve([]);
+  }
+  limpiarEventosLogAntiguos(_diasRetencion?: number): Promise<number> {
+    return Promise.resolve(0);
+  }
 }
+

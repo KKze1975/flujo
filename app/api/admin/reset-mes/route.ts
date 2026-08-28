@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
+import { isAdminRequestAuthorized } from "@/lib/admin-auth";
 const MES_REGEX = /^\d{4}-\d{2}$/;
 
 function getSheets() {
@@ -79,6 +80,10 @@ async function resetH2(
 }
 
 export async function POST(req: NextRequest) {
+  if (!isAdminRequestAuthorized(req)) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
+
   const body = await req.json().catch(() => ({}));
   const mes: string = body.mes ?? "";
 
@@ -101,8 +106,26 @@ export async function POST(req: NextRequest) {
     deleteRowsByMes(sheets, spreadsheetId, mes, "H5B!A:I",  "H5B!A2:I10000",  "H5B!A2",  "H5B"),
   ]);
 
+  const resetData = { h2: h2.borradas, h3b: h3b.borradas, h4a: h4a.borradas, h4b: h4b.borradas, h4c: h4c.borradas, h4d: h4d.borradas, h5a: h5a.borradas, h5b: h5b.borradas };
+
+  // Instrumentación H9 Log de Eventos (PANEL-LOG-EVENTOS-01)
+  try {
+    const { getProvider } = await import("@/lib/data/provider");
+    const provider = getProvider();
+    await provider.createEventoLog({
+      timestamp: new Date().toISOString(),
+      tipoEvento: "reset_mes",
+      entidadId: mes,
+      mes,
+      detalle: JSON.stringify(resetData),
+    });
+  } catch (err) {
+    console.error("Error silencioso registrando evento log:", err);
+  }
+
   return NextResponse.json({
     mes,
-    reset: { h2: h2.borradas, h3b: h3b.borradas, h4a: h4a.borradas, h4b: h4b.borradas, h4c: h4c.borradas, h4d: h4d.borradas, h5a: h5a.borradas, h5b: h5b.borradas },
+    reset: resetData,
   });
 }
+

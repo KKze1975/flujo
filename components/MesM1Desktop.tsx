@@ -14,6 +14,7 @@ import ModalConfirmarSaldos from "@/components/m1/ModalConfirmarSaldos";
 import ModalCerrarSemana from "@/components/m1/ModalCerrarSemana";
 import ModalAporteAngie from "@/components/m1/ModalAporteAngie";
 import { semanasDeMes, semanaDeFechaEnMes } from "@/lib/utils/fecha";
+import { remanenteEncadenadoPorSemana } from "@/lib/utils/balanceSemanal";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -428,25 +429,39 @@ export default function MesM1Desktop({
   }, [cierresSemanaProps, SEMANAS]);
 
   const balanceSemanas = useMemo(() => {
-    let remanente = ingresoCamiloLocal?.montoCop ?? 0;
-    return SEMANAS.map((s) => {
-      const items = movs.filter((m) => m.semana === s);
-      const comprometido = items.reduce((sum, m) => sum + m.montoPresupuestado, 0);
-      const ejecutadoH2 = movs
-        .filter((m) => m.estado === "ejecutado" && (
-          m.semana === s ||
-          (m.semana === null && semanaFromFecha(m.fechaEjecucion, mes) === s)
-        ))
-        .reduce((sum, m) => sum + (m.montoEjecutado ?? m.montoPresupuestado), 0);
-      const ejecutado = ejecutadoH2 + (gastoH3PorSemana[s] ?? 0);
-      const pendiente = items.filter((m) => m.estado === "pendiente").length;
-      const aporteAngie = ingresosAngieProp.find(a => a.semana === s)?.monto ?? 0;
-      const disponible = remanente + aporteAngie;
-      const diferencia = disponible - ejecutado;
-      const isConfirmado = cierresSemanaProps.some((c) => c.semana === s);
-      remanente = diferencia;
-      return { semana: s, remanente: disponible, aporteAngie, comprometido, ejecutado, diferencia, pendiente, isConfirmado };
-    });
+    const chain = remanenteEncadenadoPorSemana(
+      SEMANAS,
+      ingresoCamiloLocal?.montoCop ?? 0,
+      (s) => ingresosAngieProp.find(a => a.semana === s)?.monto ?? 0,
+      (s) => {
+        const items = movs.filter((m) => m.semana === s);
+        const comprometido = items.reduce((sum, m) => sum + m.montoPresupuestado, 0);
+        const ejecutadoH2 = movs
+          .filter((m) => m.estado === "ejecutado" && (
+            m.semana === s ||
+            (m.semana === null && semanaFromFecha(m.fechaEjecucion, mes) === s)
+          ))
+          .reduce((sum, m) => sum + (m.montoEjecutado ?? m.montoPresupuestado), 0);
+        // ejecutado_real: lo mismo que ya calculaba balanceSemanas antes del fix.
+        const ejecutadoReal = ejecutadoH2 + (gastoH3PorSemana[s] ?? 0);
+        // comprometido_restante: la porción de `comprometido` de esta semana
+        // que todavía NO está marcada como ejecutada (evita doble conteo con
+        // ejecutadoReal, que ya cubre lo que sí está marcado ejecutado).
+        const comprometidoEjecutado = items
+          .filter((m) => m.estado === "ejecutado")
+          .reduce((sum, m) => sum + m.montoPresupuestado, 0);
+        const comprometidoRestante = comprometido - comprometidoEjecutado;
+        const pendiente = items.filter((m) => m.estado === "pendiente").length;
+        const isConfirmado = cierresSemanaProps.some((c) => c.semana === s);
+        return {
+          restar: comprometidoRestante + ejecutadoReal,
+          extra: { comprometido, ejecutado: ejecutadoReal, pendiente, isConfirmado },
+        };
+      },
+    );
+    return chain.map(({ semana, disponible, aporteAngie, diferencia, extra }) => ({
+      semana, remanente: disponible, aporteAngie, diferencia, ...extra,
+    }));
   }, [movs, ingresoCamiloLocal, ingresosAngieProp, cierresSemanaProps, gastoH3PorSemana]);
 
 
@@ -478,29 +493,29 @@ export default function MesM1Desktop({
   const diferenciaTotal = ingresoTotal - totalComprometido;
 
   const balancePlanificacion = useMemo(() => {
-    const result = [];
-    let remanente = ingresoCamiloNum;
-    for (let i = 0; i < SEMANAS.length; i++) {
-      const s = SEMANAS[i];
-      const aporteAngie = Number(aportes[s]) || 0;
-      const comprometido = conceptosActivosMes.reduce((sum, c) => {
-        if (c.frecuencia === "semanal") {
-        const movSem = movs.find(m =>
-          m.conceptoId === c.id &&
-          m.semana === s &&
-          !["no_aplica", "pospuesto", "pospuesto_mes_siguiente"].includes(m.estado)
-        );
-        return movSem ? sum + movSem.montoPresupuestado : sum;
-      }
-        const mov = movs.find(m => m.conceptoId === c.id && !["no_aplica", "pospuesto", "pospuesto_mes_siguiente"].includes(m.estado));
-        return mov?.semana === s ? sum + mov.montoPresupuestado : sum;
-      }, 0);
-      const disponible = remanente + aporteAngie;
-      const diferencia = disponible - comprometido;
-      result.push({ semana: s, remanente, aporteAngie, disponible, comprometido, diferencia });
-      remanente = diferencia;
-    }
-    return result;
+    const chain = remanenteEncadenadoPorSemana(
+      SEMANAS,
+      ingresoCamiloNum,
+      (s) => Number(aportes[s]) || 0,
+      (s) => {
+        const comprometido = conceptosActivosMes.reduce((sum, c) => {
+          if (c.frecuencia === "semanal") {
+          const movSem = movs.find(m =>
+            m.conceptoId === c.id &&
+            m.semana === s &&
+            !["no_aplica", "pospuesto", "pospuesto_mes_siguiente"].includes(m.estado)
+          );
+          return movSem ? sum + movSem.montoPresupuestado : sum;
+        }
+          const mov = movs.find(m => m.conceptoId === c.id && !["no_aplica", "pospuesto", "pospuesto_mes_siguiente"].includes(m.estado));
+          return mov?.semana === s ? sum + mov.montoPresupuestado : sum;
+        }, 0);
+        return { restar: comprometido, extra: { comprometido } };
+      },
+    );
+    return chain.map(({ semana, remanente, aporteAngie, disponible, diferencia, extra }) => ({
+      semana, remanente, aporteAngie, disponible, diferencia, ...extra,
+    }));
   }, [conceptosActivosMes, movs, aportes, ingresoCamiloNum]);
 
   const gruposPlan = useMemo(() => {

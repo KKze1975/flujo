@@ -400,7 +400,7 @@ export default function MesM1Mobile({
                             No aplica
                           </button>
                           <button type="button" disabled={busy}
-                            onClick={() => patchar(mov.id, { tipo: "posponer", razonPostergacion: null })}
+                            onClick={() => patchar(mov.id, { tipo: "mover_mes_siguiente" })}
                             className="fl-chip"
                             style={{ cursor: "pointer", background: "var(--warn-soft)", color: "var(--warn)", borderColor: "transparent" }}>
                             Mes siguiente
