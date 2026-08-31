@@ -125,6 +125,17 @@ assertEq("semanaActual(HOY 3-ago-2026) — bug reportado: daba S2", semanaActual
 assertEq("semanaActual(4-ago-2026)", semanaActual(bogota(2026, 8, 4)), "S1");
 assertEq("semanaActual(10-ago-2026, siguiente lunes)", semanaActual(bogota(2026, 8, 10)), "S2");
 
+// ── 3b. Caso reportado 31-ago-2026: parche temporal en cicloOperativo() ────
+// Agosto tiene 5 lunes; el último (31) es el último día del mes y su viernes
+// de pago (4-sep) cae en septiembre. Sin el parche, mesActual/semanaActual
+// daban "2026-08"/"S5" (1 día huérfano) en vez de "2026-09"/"S1". Este
+// bloque debe seguir pasando mientras el parche puntual siga en fecha.ts;
+// si el fix de fondo (ancla-viernes) lo reemplaza, migrar esta aserción a
+// la fórmula general en vez de borrarla.
+
+assertEq("mesActual(31-ago-2026, parche puntual)", mesActual(bogota(2026, 8, 31)), "2026-09");
+assertEq("semanaActual(31-ago-2026, parche puntual)", semanaActual(bogota(2026, 8, 31)), "S1");
+
 // ── 4. semanaActivaDeMes: mes actual vs. mes pasado ─────────────────────────
 
 assertEq(
