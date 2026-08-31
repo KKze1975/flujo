@@ -6731,3 +6731,217 @@ explícita de no bloquear cierre por hallazgos no bloqueantes.
   del sistema multiagente, no tocados por esta sesión, dejados fuera de este commit
   deliberadamente)
 - Próximo paso: sin definir todavía — el backlog de arriba queda para que Camilo priorice
+
+---
+
+## Sesión — 16 agosto 2026 (DEBUGGING — acceso al panel en Vercel tras cerrar PANEL-LOG-EVENTOS-01)
+
+**Contexto:** inmediatamente después de cerrar `PANEL-LOG-EVENTOS-01` (commit `72d9005`/`0d49cf5`), Camilo pidió acceder al panel en Vercel. Reveló dos problemas independientes que el cierre del ticket no había verificado.
+
+**Qué se encontró:**
+1. `ADMIN_PANEL_PIN`/`ADMIN_SESSION_SECRET` nunca existieron como env vars en Vercel — solo en `.env.local` local. `verifyPin()` (`lib/admin-auth.ts:38`) devuelve `false` siempre que la var no está definida, así que ningún PIN habría entrado, no era un problema del valor.
+2. Más grave: **nada de la sesión estaba pusheado.** 9 commits locales en `dev` (incluida toda la construcción de `PANEL-LOG-EVENTOS-01`) nunca llegaron a GitHub — el último deploy de preview en Vercel era de *antes* de que Antigravity empezara a construir el ticket. Cerrar el ticket localmente no significaba que existiera en el entorno real.
+
+**Qué se hizo:** reautenticación del conector MCP de Vercel (falló una vez por scope, funcionó tras reconectar), Camilo agregó las 2 env vars en Vercel (ambiente Preview únicamente, decisión correcta — el ticket sigue sin mergear a `main`), `git push origin dev` (con confirmación explícita previa), deploy nuevo verificado por API hasta `READY`. Probé `POST /api/admin/auth` contra el preview con el PIN local (`760906`) — **401, PIN incorrecto**. Camilo no confirmó qué valor puso realmente en Vercel; sesión cerrada antes de resolverlo.
+
+**Decisión con razón:** ninguna decisión de arquitectura nueva — fue troubleshooting puntual. Sí se estableció el hábito de usar el conector Vercel MCP para diagnosticar (`list_deployments`/`get_deployment`) en vez de asumir estado por lo que dice el código local.
+
+**Deuda técnica nueva:** ninguna de código.
+
+**Retrospectiva:**
+- **Qué funcionó:** el conector Vercel MCP identificó rápido la causa real (deploy desactualizado) en vez de asumir que el problema era el PIN.
+- **Qué no funcionó:** cerrar un ticket como `completado` no verificó que estuviera realmente desplegado y accesible — "commiteado localmente" y "accesible en el entorno real" se trataron como equivalentes sin serlo.
+- **Qué cambia en la próxima sesión:** confirmar con Camilo qué PIN puso en Vercel Preview antes de seguir depurando.
+- **Candidato a invariante:** todo ticket que agrega una env var nueva debe declarar explícitamente en su DoD que esa var fue propagada al entorno de deploy correspondiente (Preview/Production en Vercel), no solo a `.env.local` — su ausencia produce exactamente este error silencioso (feature "cerrado" pero inaccesible). Pendiente de aprobación explícita de Camilo, mismo patrón que los demás candidatos en `INVARIANTS.md`.
+
+**Estado accionable:**
+- Unidad: ticket
+- En curso: ninguno
+- Backlog priorizado (top 3 abiertos):
+  1. [Producto] DT-CIERRE-01 — reversión atómica de cierre de semana, dependencia bloqueante de `PANEL-REVERTIR-CIERRE-01`
+  2. [Operación] DT-SOBRE-TECHO-01 — `sobre_techo` no persiste en H2, diagnóstico pendiente
+  3. [Operación] Hallazgos menores de `PANEL-LOG-EVENTOS-01` (race condition en purga, `ensureH9` sin reparación de headers) — deuda documentada, no priorizada
+- Reactivo/incidentes: ninguno nuevo
+- Seguridad: sin pendientes nuevos
+- FinOps/Costo: sin dato registrado — sin cambio
+- Bloqueados esperando a Camilo: confirmar el valor real de `ADMIN_PANEL_PIN` en Vercel Preview — el panel de `PANEL-LOG-EVENTOS-01` sigue inaccesible ahí hasta resolver esto
+- Próximo paso: confirmar PIN de Vercel con Camilo y volver a probar `/admin/panel` en el preview
+
+---
+
+## Sesión — 28 agosto 2026 (CONSTRUCCIÓN + VERIFICACIÓN — cierra ciclo de FIX-BALANCE-SEMANAL-EJECUCION-01, pendiente decisión de Camilo)
+
+**Contexto:** ciclo completo Diagnóstico → Coder → Tester → Manager para
+`FIX-BALANCE-SEMANAL-EJECUCION-01` (Tier B, diagnóstico previo ya
+cerrado, HALT de producto ya resuelto por Camilo, ticket entró directo
+`aprobado`). El bug reportado por Camilo: la tab Ejecución de `MesM1`
+mostraba un superávit acumulado falso (+20M) muy alejado del déficit
+real de Planificación (-11M en semana 2), con casi nada ejecutado en el
+momento del reporte.
+
+**Qué se hizo:** causa raíz — dos implementaciones independientes del
+mismo cálculo ("remanente encadenado por semana") en
+`MesM1Desktop.tsx`: Planificación restaba `comprometido` completo por
+semana, Ejecución restaba solo `ejecutado`, midiendo conceptualmente
+cosas distintas bajo el mismo nombre/layout. El Coder unificó el loop de
+encadenamiento en una función compartida nueva
+(`remanenteEncadenadoPorSemana`, `lib/utils/balanceSemanal.ts`) y cambió
+la fórmula de Ejecución para restar `comprometido_restante +
+ejecutado_real`, dejando Planificación con el mismo output que antes
+(fórmula copiada literal, cero regresión). El Tester verificó y marcó
+**CUMPLE** en el primer intento — convergencia sin fricción entre Coder
+y Tester, sin rondas de corrección (0 reintentos de cada lado). `tsc
+--noEmit` limpio, `disponiblePorCuenta()` confirmado sin tocar. Como
+Manager, agregué el bloque `metricas_agente` al ticket (coder ~101443
+tokens, tester ~66824 tokens, sin HALT) y esta entrada de cierre de
+sesión.
+
+**Decisión con razón:** ninguna decisión de arquitectura nueva en esta
+sesión — el HALT de producto ya se había resuelto en el diagnóstico
+previo. Sí vale registrar que este es el tercer caso del mismo patrón ya
+anotado como candidato de invariante en `INVARIANTS.md` ("Cálculo de
+mes/semana operativos desde una única fuente de verdad", origen
+`FIX-SEMANA-STUB-01`) — no se creó un candidato nuevo, este ticket queda
+como evidencia adicional a favor de promover el existente.
+
+**Deuda técnica nueva:** ninguna de código. Quedan explícitamente fuera
+de alcance (ya documentados en el ticket): el gate de saldos asimétrico
+entre desktop y mobile, y el código muerto en `MesM1.tsx`/
+`VistaPlanificacion.tsx` con una tercera copia divergente de la misma
+lógica.
+
+**Retrospectiva:**
+- **Qué funcionó:** el diagnóstico previo dejó la fórmula exacta
+  resuelta antes de que el ticket entrara en construcción — el Coder no
+  tuvo que tomar ninguna decisión de producto ambigua, y eso se reflejó
+  en que el Tester convergió sin fricción en el primer intento.
+- **Qué no funcionó:** nada nombrable esta sesión.
+- **Qué cambia en la próxima sesión:** ninguna acción de proceso — el
+  ciclo quedó documentado, pendiente de decisión de Camilo (ver
+  bloqueados).
+- **Candidato a invariante:** ninguno nuevo — evidencia adicional a
+  favor del candidato ya existente en `INVARIANTS.md` (ver arriba).
+
+**Estado accionable:**
+- Unidad: ticket
+- En curso: ninguno
+- Backlog priorizado (top 3 abiertos):
+  1. [Producto] DT-CIERRE-01 — reversión atómica de cierre de semana,
+     dependencia bloqueante de `PANEL-REVERTIR-CIERRE-01`
+  2. [Operación] DT-SOBRE-TECHO-01 — `sobre_techo` no persiste en H2,
+     diagnóstico pendiente
+  3. [Operación] Hallazgos menores de `PANEL-LOG-EVENTOS-01` (race
+     condition en purga, `ensureH9` sin reparación de headers) — deuda
+     documentada, no priorizada
+- Reactivo/incidentes: ninguno nuevo
+- Seguridad: sin pendientes nuevos
+- FinOps/Costo: sin dato registrado — sin cambio
+- Bloqueados esperando a Camilo: (1) decidir si `FIX-BALANCE-SEMANAL-EJECUCION-01`
+  pasa a `completado` (el ticket sigue en `activo`, esa decisión no es
+  del Manager); (2) decidir si pushear el commit local `ee02ba1` en
+  `dev` (sigue sin push, separado de la decisión anterior); (3)
+  confirmar el valor real de `ADMIN_PANEL_PIN` en Vercel Preview,
+  pendiente desde la sesión anterior.
+- Próximo paso: sin definir todavía — queda para que Camilo decida sobre
+  los tres puntos bloqueados de arriba.
+
+---
+
+## Sesión — 28 agosto 2026 (CONTINUACIÓN — cierre de `FIX-BALANCE-SEMANAL-EJECUCION-01`, eliminación de `PRUEBA-CRON-01`, promoción de `dev` a producción)
+
+**Contexto:** continuación directa de la entrada anterior de esta misma
+sesión (el ciclo Diagnóstico→Coder→Tester→Manager de
+`FIX-BALANCE-SEMANAL-EJECUCION-01` ya estaba verificado CUMPLE, con 3
+puntos bloqueados esperando decisión de Camilo). Camilo resolvió los
+tres explícitamente en esta continuación.
+
+**Qué se hizo:**
+1. Ticket `FIX-BALANCE-SEMANAL-EJECUCION-01` pasado a `completado`
+   (commit de metadata `1355c89`, separado del de construcción
+   `ee02ba1`).
+2. Ticket desechable `PRUEBA-CRON-01` (validación de infraestructura del
+   cron de Antigravity, veredicto NO CUMPLE previo) eliminado a pedido
+   de Camilo — ticket + fila del índice. Hallazgo de paso: el archivo
+   marcador que ese ticket debía crear nunca se había commiteado (el
+   Coder original había tocado por error `lib/utils/fecha.ts` en vez de
+   crear un archivo nuevo); no quedaba nada real que limpiar en la app.
+   Commit `6a9d4db`.
+3. Camilo confirmó el sign-off de Angie (QA approver, I-17) para
+   **todo** lo acumulado en `dev`, no solo el ticket del día — al
+   revisar, `main` estaba 26 commits atrás (todo `PANEL-ADMIN-01` y sus
+   4 sub-tickets, ya `completado` en sus propios tickets pero nunca
+   desplegados, más este fix). PR #42 (`dev`→`main`) creado, mergeado
+   (merge commit, sin bloqueo de branch protection, sin reviewers
+   formales en GitHub — el sign-off fue verbal/fuera de banda), deploy
+   de producción disparado automáticamente y confirmado en estado
+   **Ready** (commit `18f6037`).
+4. **Verificación independiente con Claude in Chrome** (no solo el
+   reporte del agente que ejecutó el merge, dado un aviso de seguridad
+   del clasificador sobre esa tarea): confirmado visualmente en GitHub
+   que el PR #42 está `Merged`, y en Vercel que el deployment de
+   producción está `Ready` con el commit correcto.
+5. **Hallazgo confirmado, no resuelto:** en Vercel → Environment
+   Variables, `ADMIN_PANEL_PIN` y `ADMIN_SESSION_KEY` (nombre real — la
+   documentación previa del proyecto decía `ADMIN_SESSION_SECRET`,
+   discrepancia a corregir) existen **solo en Preview**, ninguna en
+   Production. El panel de administración (`/admin/panel`, recién en
+   producción tras este merge) va a fallar en silencio ahí —
+   `verifyPin()` devuelve `false` siempre que la env var no exista, sin
+   error visible.
+
+**Decisión con razón:** promover todo lo acumulado en `dev` en vez de
+aislar solo el fix de balance semanal — decisión de Camilo tras
+confirmársele explícitamente que el merge arrastraría los 26 commits,
+no solo 2. Evita dejar el panel de administración completo
+indefinidamente sin desplegar cuando ya estaba verificado y aprobado en
+sus propios tickets.
+
+**Deuda técnica / documentación nueva:** el nombre real de la env var es
+`ADMIN_SESSION_KEY`, no `ADMIN_SESSION_SECRET` — corregir esa referencia
+donde aparezca en `CLAUDE.md`/`ESTADO.md` de este proyecto para que no
+se repita la confusión.
+
+**Retrospectiva:**
+- **Qué funcionó:** revisar `git log origin/main..origin/dev` antes de
+  mergear evitó una promoción a producción con un alcance distinto al
+  que Camilo tenía en mente cuando dio la orden inicial ("promueve
+  estos cambios") — se le presentó el alcance real (26 commits) antes
+  de actuar, y confirmó explícitamente. La verificación independiente
+  con Claude in Chrome, disparada por el aviso de seguridad del
+  clasificador sobre el agente de merge/deploy, sirvió para corroborar
+  el resultado sin depender solo del reporte del agente.
+- **Qué no funcionó:** el aviso de seguridad ("Blocked by classifier")
+  no vino con detalle de qué acción específica lo disparó — quedó como
+  caja negra, mitigado por verificación externa pero sin causa raíz
+  identificada.
+- **Qué cambia en la próxima sesión:** antes de asumir que el panel de
+  administración funciona en producción, confirmar que Camilo agregó
+  `ADMIN_PANEL_PIN`/`ADMIN_SESSION_KEY` a Production en Vercel.
+- **Candidato a invariante:** ninguno nuevo de código. Sí vale una nota
+  de proceso (no invariante de producto): todo merge a `main` que
+  arrastre tickets con env vars nuevas debe verificar el ambiente
+  Production de esas vars antes de considerarse "promovido" — ya había
+  un candidato similar registrado el 16 ago 2026 (pendiente de
+  aprobación de Camilo), este incidente es evidencia adicional a favor.
+
+**Estado accionable:**
+- Unidad: ticket
+- En curso: ninguno
+- Backlog priorizado (top 3 de N abiertos):
+  1. [Operación] Agregar `ADMIN_PANEL_PIN`/`ADMIN_SESSION_KEY` a Vercel
+     Production — bloquea que el panel de administración funcione en el
+     entorno real
+  2. [Producto] DT-CIERRE-01 — reversión atómica de cierre de semana,
+     dependencia bloqueante de `PANEL-REVERTIR-CIERRE-01`
+  3. [Operación] DT-SOBRE-TECHO-01 — `sobre_techo` no persiste en H2,
+     diagnóstico pendiente
+- Reactivo/incidentes: ninguno nuevo
+- Seguridad: sin pendientes nuevos (el panel admin sigue gateado
+  server-side; el hallazgo de env vars es disponibilidad, no
+  exposición)
+- FinOps/Costo: sin dato registrado — sin cambio
+- Bloqueados esperando a Camilo: agregar las 2 env vars a Production en
+  Vercel (tiene que ser Camilo — no tengo forma de leer/escribir env
+  vars de Vercel con las herramientas disponibles)
+- Próximo paso: Camilo confirma las env vars de Production; después de
+  eso, probar `/admin/panel` en producción real
