@@ -6945,3 +6945,117 @@ se repita la confusión.
   vars de Vercel con las herramientas disponibles)
 - Próximo paso: Camilo confirma las env vars de Production; después de
   eso, probar `/admin/panel` en producción real
+
+---
+
+## Sesión — 31 agosto 2026 (bug de clasificación de semana: 31-ago cae como agosto S5 en vez de septiembre S1)
+
+**Contexto:** Camilo reportó que "los libros" mostraban la semana del
+31-ago-2026 (lunes) como semana 5 de agosto, cuando debía ser semana 1
+de septiembre — el viernes de pago de esa semana (4-sept) cae en
+septiembre. Pidió análisis de por qué sigue pasando y una regla de
+fondo, con la opción de un cambio manual puntual mientras tanto.
+
+**Qué se hizo:**
+1. Diagnóstico confirmado leyendo directamente `lib/utils/fecha.ts` (no
+   hipótesis): agosto 2026 tiene 5 lunes; el último (31) coincide con
+   el último día del mes, y `cicloOperativo()`, anclado al lunes,
+   clasificaba ese día solo como "agosto S5" (1 día huérfano) mientras
+   el resto de esa misma semana operativa (1-6 sept) ya se clasificaba
+   correctamente como septiembre S1 — la semana real quedaba partida
+   entre dos meses.
+2. Confirmado path activo (I-12): las rutas API reales
+   (`mes/[mes]/semana/[semana]`, `cerrar-semana`, `movimientos/[id]`,
+   etc.) importan esta misma copia de `fecha.ts`, no la copia
+   divergente de `cron/uber-parser`.
+3. Propuesta y verificada matemáticamente una regla de fondo — anclar
+   mes/semana al viernes de pago de la semana ISO (semana N = N-ésimo
+   viernes del mes) — contra los 4 casos límite ya existentes en
+   `scripts/verificar-ciclo-semanas.ts`: da el mismo resultado en todos
+   los casos ya validados y corrige el caso de hoy. Elimina de raíz los
+   dos parches ad-hoc (`enColaDeMesAnterior`,
+   `stubAbsorbidoPorMesAnterior`) que ya causaron los bugs de
+   `cc51db9` y `FIX-SEMANA-STUB-01`.
+4. Camilo decidió diferir ese fix de fondo y aplicar solo un parche
+   puntual mientras tanto. Confirmado que nada se había persistido aún
+   en el Sheet con la etiqueta incorrecta (problema solo en cálculo en
+   vivo).
+5. Parche aplicado en `cicloOperativo()`: intercepta únicamente la
+   fecha 31-ago-2026 → retorna `(2026-09, S1)`, comentado explícitamente
+   como temporal y referenciando el fix de fondo pendiente. No toca la
+   lógica general.
+6. Verificado: `tsc --noEmit` limpio, `scripts/verificar-ciclo-semanas.ts`
+   274/274 (agregado el caso de regresión de este parche). Commit
+   `4564d05` en `dev`, push a `origin/dev` (autorizado explícitamente
+   por Camilo).
+7. Camilo confirmó sign-off de Angie (QA approver, I-17) y autorizó
+   promover a producción. Antes de mergear: merge-base check + `git
+   merge-tree` en seco confirmaron merge limpio sin conflictos; alcance
+   real mostrado a Camilo (2 commits: el parche + un commit documental
+   de la sesión anterior que había quedado sin promover). PR #43
+   creado y mergeado a `main` (commit `3491066`).
+8. Deploy de producción verificado con evidencia real (Vercel API, no
+   solo el reporte del merge): `state: READY`, commit `349106644c...`
+   confirmado.
+
+**Decisión con razón:** aplicar solo el parche puntual ahora y diferir
+el fix de fondo — decisión explícita de Camilo, para resolver el
+síntoma inmediato sin comprometer tiempo de Coder en la regla general
+todavía. La fórmula de reemplazo ya queda verificada y lista para
+cuando se retome.
+
+**Deuda técnica nueva:**
+- El parche puntual mismo es deuda reconocida por diseño: hardcodea una
+  fecha específica (el tipo de patrón que este proyecto ya señala como
+  riesgoso — "un fallback hardcoded es un bug esperando
+  manifestarse"), mitigado por estar aislado, comentado, y cubierto por
+  un caso de regresión explícito que debe migrarse (no borrarse) cuando
+  el fix de fondo lo reemplace.
+- Efecto colateral cosmético sin resolver: `semanasDeMes("2026-08")`
+  sigue reportando una pestaña S5 para agosto sin ningún día real que
+  mapee a ella (huérfana) si se navega a la vista de ese mes pasado. No
+  afecta datos, no bloqueante.
+
+**Retrospectiva:**
+- **Qué funcionó:** diagnosticar con evidencia de código real (I-12)
+  permitió llegar a una fórmula de reemplazo más simple que la lógica
+  actual (elimina los dos parches ad-hoc existentes) y verificarla
+  matemáticamente contra los casos límite ya cubiertos por el script de
+  regresión, sin tocar código para validarla antes de proponerla.
+  Mostrar el alcance real del PR (2 commits, no solo 1) antes de
+  mergear — mismo hábito que la sesión anterior — evitó otra sorpresa
+  de alcance.
+- **Qué no funcionó:** nada nombrable esta sesión.
+- **Qué cambia en la próxima sesión:** cuando se retome el fix de
+  fondo, la fórmula ya está lista (ancla al viernes de pago) — no hay
+  que rediagnosticar. Al implementarla: remover el parche puntual de
+  `cicloOperativo()` y migrar su aserción de regresión a la fórmula
+  general en vez de borrarla.
+- **Candidato a invariante:** ninguno nuevo — esta sesión es la 3ª
+  ocurrencia del mismo patrón ya registrado en `INVARIANTS.md`
+  ("Cálculo de mes/semana operativos desde una única fuente de
+  verdad", origen `FIX-SEMANA-STUB-01`). Ahora hay una fórmula concreta
+  de reemplazo, no solo el diagnóstico del síntoma — vale la pena que
+  Camilo evalúe promoverlo cuando se cierre el ticket de fondo.
+
+**Estado accionable:**
+- Unidad: ticket
+- En curso: ninguno
+- Backlog priorizado (top 3 de N abiertos):
+  1. [Operación] Agregar `ADMIN_PANEL_PIN`/`ADMIN_SESSION_KEY` a Vercel
+     Production — sigue bloqueando el panel de administración en el
+     entorno real, sin cambios desde la sesión anterior
+  2. [Operación] Fix de fondo del cálculo de mes/semana (ancla al
+     viernes de pago) — fórmula lista y verificada, ticket sin abrir
+  3. [Producto] DT-CIERRE-01 — reversión atómica de cierre de semana,
+     dependencia bloqueante de `PANEL-REVERTIR-CIERRE-01`
+- Reactivo/incidentes: [Operación] bug de clasificación de semana
+  (31-ago mostraba agosto S5 en vez de septiembre S1) — resuelto con
+  parche puntual, desplegado a producción
+- Seguridad: sin pendientes nuevos
+- FinOps/Costo: sin dato registrado — sin cambio
+- Bloqueados esperando a Camilo: agregar las 2 env vars a Production en
+  Vercel (sin cambios desde la sesión anterior — sigue sin resolverse)
+- Próximo paso: decidir cuándo abrir el ticket del fix de fondo
+  (fórmula ya lista); en paralelo, confirmar las env vars de Production
+  sigue siendo el pendiente más antiguo
