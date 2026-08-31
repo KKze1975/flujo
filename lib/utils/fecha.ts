@@ -18,6 +18,21 @@ function getColombiaDate(fecha: Date): { year: number; month: number; day: numbe
 // que SEMANA5-01 representa la última semana dentro del propio mes.
 function cicloOperativo(fecha: Date): { mes: string; semana: Semana } {
   const { year, month, day } = getColombiaDate(fecha);
+
+  // PARCHE TEMPORAL (31-ago-2026): agosto 2026 tiene 5 lunes y el último (31)
+  // cae en el último día del mes — el viernes de pago de esa semana (4-sep)
+  // cae en septiembre, pero cicloOperativo() anclado al lunes clasifica el
+  // 31-ago solo como "agosto S5" (1 día), partiendo la semana operativa real
+  // en dos meses. Cubre solo esta fecha puntual, no una regla general.
+  // Fix de fondo pendiente (aprobado por Camilo, 31-ago-2026): anclar mes y
+  // semana al viernes de la semana ISO en vez de al lunes — ver candidato en
+  // INVARIANTS.md "Cálculo de mes/semana operativos desde una única fuente
+  // de verdad" (origen FIX-SEMANA-STUB-01). Remover este bloque cuando ese
+  // ticket se implemente y verifique.
+  if (year === 2026 && month === 8 && day === 31) {
+    return { mes: "2026-09", semana: "S1" };
+  }
+
   const dow = new Date(Date.UTC(year, month - 1, day, 12, 0, 0)).getUTCDay();
   const esFinDeSemana = dow === 0 || dow === 6;
   const mondays = obtenerLunesDelMes(year, month);
