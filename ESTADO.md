@@ -6945,3 +6945,385 @@ se repita la confusión.
   vars de Vercel con las herramientas disponibles)
 - Próximo paso: Camilo confirma las env vars de Production; después de
   eso, probar `/admin/panel` en producción real
+
+---
+
+## Sesión — 31 agosto 2026 (bug de clasificación de semana: 31-ago cae como agosto S5 en vez de septiembre S1)
+
+**Contexto:** Camilo reportó que "los libros" mostraban la semana del
+31-ago-2026 (lunes) como semana 5 de agosto, cuando debía ser semana 1
+de septiembre — el viernes de pago de esa semana (4-sept) cae en
+septiembre. Pidió análisis de por qué sigue pasando y una regla de
+fondo, con la opción de un cambio manual puntual mientras tanto.
+
+**Qué se hizo:**
+1. Diagnóstico confirmado leyendo directamente `lib/utils/fecha.ts` (no
+   hipótesis): agosto 2026 tiene 5 lunes; el último (31) coincide con
+   el último día del mes, y `cicloOperativo()`, anclado al lunes,
+   clasificaba ese día solo como "agosto S5" (1 día huérfano) mientras
+   el resto de esa misma semana operativa (1-6 sept) ya se clasificaba
+   correctamente como septiembre S1 — la semana real quedaba partida
+   entre dos meses.
+2. Confirmado path activo (I-12): las rutas API reales
+   (`mes/[mes]/semana/[semana]`, `cerrar-semana`, `movimientos/[id]`,
+   etc.) importan esta misma copia de `fecha.ts`, no la copia
+   divergente de `cron/uber-parser`.
+3. Propuesta y verificada matemáticamente una regla de fondo — anclar
+   mes/semana al viernes de pago de la semana ISO (semana N = N-ésimo
+   viernes del mes) — contra los 4 casos límite ya existentes en
+   `scripts/verificar-ciclo-semanas.ts`: da el mismo resultado en todos
+   los casos ya validados y corrige el caso de hoy. Elimina de raíz los
+   dos parches ad-hoc (`enColaDeMesAnterior`,
+   `stubAbsorbidoPorMesAnterior`) que ya causaron los bugs de
+   `cc51db9` y `FIX-SEMANA-STUB-01`.
+4. Camilo decidió diferir ese fix de fondo y aplicar solo un parche
+   puntual mientras tanto. Confirmado que nada se había persistido aún
+   en el Sheet con la etiqueta incorrecta (problema solo en cálculo en
+   vivo).
+5. Parche aplicado en `cicloOperativo()`: intercepta únicamente la
+   fecha 31-ago-2026 → retorna `(2026-09, S1)`, comentado explícitamente
+   como temporal y referenciando el fix de fondo pendiente. No toca la
+   lógica general.
+6. Verificado: `tsc --noEmit` limpio, `scripts/verificar-ciclo-semanas.ts`
+   274/274 (agregado el caso de regresión de este parche). Commit
+   `4564d05` en `dev`, push a `origin/dev` (autorizado explícitamente
+   por Camilo).
+7. Camilo confirmó sign-off de Angie (QA approver, I-17) y autorizó
+   promover a producción. Antes de mergear: merge-base check + `git
+   merge-tree` en seco confirmaron merge limpio sin conflictos; alcance
+   real mostrado a Camilo (2 commits: el parche + un commit documental
+   de la sesión anterior que había quedado sin promover). PR #43
+   creado y mergeado a `main` (commit `3491066`).
+8. Deploy de producción verificado con evidencia real (Vercel API, no
+   solo el reporte del merge): `state: READY`, commit `349106644c...`
+   confirmado.
+
+**Decisión con razón:** aplicar solo el parche puntual ahora y diferir
+el fix de fondo — decisión explícita de Camilo, para resolver el
+síntoma inmediato sin comprometer tiempo de Coder en la regla general
+todavía. La fórmula de reemplazo ya queda verificada y lista para
+cuando se retome.
+
+**Deuda técnica nueva:**
+- El parche puntual mismo es deuda reconocida por diseño: hardcodea una
+  fecha específica (el tipo de patrón que este proyecto ya señala como
+  riesgoso — "un fallback hardcoded es un bug esperando
+  manifestarse"), mitigado por estar aislado, comentado, y cubierto por
+  un caso de regresión explícito que debe migrarse (no borrarse) cuando
+  el fix de fondo lo reemplace.
+- Efecto colateral cosmético sin resolver: `semanasDeMes("2026-08")`
+  sigue reportando una pestaña S5 para agosto sin ningún día real que
+  mapee a ella (huérfana) si se navega a la vista de ese mes pasado. No
+  afecta datos, no bloqueante.
+
+**Retrospectiva:**
+- **Qué funcionó:** diagnosticar con evidencia de código real (I-12)
+  permitió llegar a una fórmula de reemplazo más simple que la lógica
+  actual (elimina los dos parches ad-hoc existentes) y verificarla
+  matemáticamente contra los casos límite ya cubiertos por el script de
+  regresión, sin tocar código para validarla antes de proponerla.
+  Mostrar el alcance real del PR (2 commits, no solo 1) antes de
+  mergear — mismo hábito que la sesión anterior — evitó otra sorpresa
+  de alcance.
+- **Qué no funcionó:** nada nombrable esta sesión.
+- **Qué cambia en la próxima sesión:** cuando se retome el fix de
+  fondo, la fórmula ya está lista (ancla al viernes de pago) — no hay
+  que rediagnosticar. Al implementarla: remover el parche puntual de
+  `cicloOperativo()` y migrar su aserción de regresión a la fórmula
+  general en vez de borrarla.
+- **Candidato a invariante:** ninguno nuevo — esta sesión es la 3ª
+  ocurrencia del mismo patrón ya registrado en `INVARIANTS.md`
+  ("Cálculo de mes/semana operativos desde una única fuente de
+  verdad", origen `FIX-SEMANA-STUB-01`). Ahora hay una fórmula concreta
+  de reemplazo, no solo el diagnóstico del síntoma — vale la pena que
+  Camilo evalúe promoverlo cuando se cierre el ticket de fondo.
+
+**Estado accionable:**
+- Unidad: ticket
+- En curso: ninguno
+- Backlog priorizado (top 3 de N abiertos):
+  1. [Operación] Agregar `ADMIN_PANEL_PIN`/`ADMIN_SESSION_KEY` a Vercel
+     Production — sigue bloqueando el panel de administración en el
+     entorno real, sin cambios desde la sesión anterior
+  2. [Operación] Fix de fondo del cálculo de mes/semana (ancla al
+     viernes de pago) — fórmula lista y verificada, ticket sin abrir
+  3. [Producto] DT-CIERRE-01 — reversión atómica de cierre de semana,
+     dependencia bloqueante de `PANEL-REVERTIR-CIERRE-01`
+- Reactivo/incidentes: [Operación] bug de clasificación de semana
+  (31-ago mostraba agosto S5 en vez de septiembre S1) — resuelto con
+  parche puntual, desplegado a producción
+- Seguridad: sin pendientes nuevos
+- FinOps/Costo: sin dato registrado — sin cambio
+- Bloqueados esperando a Camilo: agregar las 2 env vars a Production en
+  Vercel (sin cambios desde la sesión anterior — sigue sin resolverse)
+- Próximo paso: decidir cuándo abrir el ticket del fix de fondo
+  (fórmula ya lista); en paralelo, confirmar las env vars de Production
+  sigue siendo el pendiente más antiguo
+
+---
+
+## Sesión — 11 septiembre 2026 (DEBUGGING — incidente de seguridad: app en producción sin autenticación, expuesta a internet)
+
+**Contexto:** sesión corrida desde el vault (`obsidian-mind`), rol Manager de Flujo —
+despacho de diagnóstico y registro, **sin construcción**. El diagnóstico inicial lo hizo la
+sesión Chief of Staff del vault el mismo día; esta entrada lo consolida y agrega el inventario
+completo de rutas verificado contra código. No se tocó código de la app, ni configuración de
+Vercel, ni ninguna hoja, ni se hizo commit/push/merge.
+
+### Incidente — clasificación: reactivo, [Operación], seguridad
+
+**Qué se encontró.** La app está publicada en internet sin ninguna capa de identidad: ni
+protección de despliegues en Vercel, ni autenticación propia en la app. Cualquiera con la URL
+lee los datos financieros reales de la familia.
+
+**Evidencia — plataforma (Vercel, proyecto `flujo`, `prj_WSnbudQ4NPR5nrstI4LsiHxNn103`, team
+`team_R88U778lhwetvHGDrc5wpOsj`, plan Hobby):** protección de despliegues completamente
+desactivada — password, Vercel Authentication/SSO y trusted IPs los tres en `enabled: false`.
+Dominios expuestos: `flujo-dun.vercel.app`, `flujo-camilo-s-projects10.vercel.app`,
+`flujo-git-main-camilo-s-projects10.vercel.app`, y la vista previa de `dev`
+`flujo-git-dev-camilo-s-projects10.vercel.app`.
+
+**Evidencia — lecturas sin sesión** (solo `GET`, `curl` contra `flujo-dun.vercel.app`,
+11 sept 2026; se registra código HTTP y tamaño, nunca contenido ni montos):
+
+| Ruta | HTTP | Tamaño |
+|---|---|---|
+| `/` | 200 | 15.733 B |
+| `/meses` | 200 | 21.870 B |
+| `/mes/2026-09` | 200 | 104.746 B |
+| `/mes/2026-09/semana` | 200 | 111.533 B |
+| `/registro` | 200 | 14.530 B |
+| `/admin/trazabilidad` | 200 | 13.486 B |
+| `/admin/panel` | 200 | 12.810 B (renderiza `PinGate`, no el panel) |
+| `/kanban.html` | 200 | 63.264 B |
+| `/api/conceptos` | 200 | 17.862 B |
+| `/api/meses` | 200 | 846 B |
+| `/api/mes/2026-09` | 200 | 46.566 B |
+| `/api/mes/2026-09/saldos` | 200 | 678 B |
+| `/api/mes/2026-09/semana/S1` | 200 | 17.697 B |
+| `/api/mes/2026-09/consumos/S1` | 200 | 3.879 B |
+| `/api/ingresos/camilo/2026-09` | 200 | 165 B |
+| `/api/ingresos/angie/2026-09` | 200 | 576 B |
+| `/api/admin/backup-status` | 401 | 25 B |
+| `/api/admin/eventos-log` | 401 | 25 B |
+
+Las páginas `/`, `/meses`, `/mes/[mes]` y `/mes/[mes]/semana` renderizan server-side con
+`getProvider()` — el HTML servido a un visitante anónimo ya trae los datos reales, no solo las
+APIs. El Chief of Staff verificó además el mismo resultado en la vista previa de `dev`, y que
+`/api/conceptos` devuelve 63 conceptos reales con montos y nombres de terceros.
+
+**Evidencia — código (lectura directa, sin invocar métodos de escritura).** No existe
+`middleware.ts` ni `proxy.ts` (Next.js 16.2.6 renombró la convención `middleware` → `proxy`,
+ver `node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/proxy.md:11`) —
+no hay ninguna verificación transversal. Inventario completo de las 26 rutas de `app/api/**`
+y las 2 páginas de `app/admin`:
+
+| Ruta | Métodos | ¿Verifica identidad? | Lee/escribe | Hoja |
+|---|---|---|---|---|
+| `/api/conceptos` | GET | no | lee H1 | `GOOGLE_SHEET_ID` |
+| `/api/conceptos/[id]` | PATCH | **no** | escribe H1 | `GOOGLE_SHEET_ID` |
+| `/api/conceptos/[id]/retirar` | POST | sí — `isAdminRequestAuthorized` | escribe H1 | `GOOGLE_SHEET_ID` |
+| `/api/consumos/[id]` | DELETE, PATCH | **no** | escribe H3B | `GOOGLE_SHEET_ID` |
+| `/api/consumos/[id]/imprevisto` | PATCH | **no** | escribe H3B | `GOOGLE_SHEET_ID` |
+| `/api/consumos/[id]/clasificar` | POST | **no** | lee H1, escribe H3B+H9, llama Claude Haiku | `GOOGLE_SHEET_ID` |
+| `/api/ingresos/angie/[mes]` | GET, PUT | **no** | lee/escribe H4B | `GOOGLE_SHEET_ID` |
+| `/api/ingresos/camilo/[mes]` | GET, POST | **no** | lee/escribe H4A | `GOOGLE_SHEET_ID` |
+| `/api/mes/[mes]` | GET | no | lee H2 | `GOOGLE_SHEET_ID` |
+| `/api/mes/[mes]/saldos` | GET, POST | **no** | lee/escribe H4C | `GOOGLE_SHEET_ID` |
+| `/api/mes/[mes]/semana/[semana]` | GET | no | lee H2/H5A/H4B/H3B | `GOOGLE_SHEET_ID` |
+| `/api/mes/[mes]/consumos/[semana]` | GET | no | lee H3B | `GOOGLE_SHEET_ID` |
+| `/api/mes/[mes]/conceptos` | POST | **no** | escribe H1 + H2 | `GOOGLE_SHEET_ID` |
+| `/api/mes/[mes]/iniciar` | POST | **no** | escribe H2 (`crearMovimientosMes`) | `GOOGLE_SHEET_ID` |
+| `/api/mes/[mes]/movimientos/[id]` | PATCH | **no** | escribe H2 + H9 | `GOOGLE_SHEET_ID` |
+| `/api/mes/[mes]/cerrar-semana` | POST | **no** | escribe H5A/H5B/H2 + H9 | `GOOGLE_SHEET_ID` |
+| `/api/mes/[mes]/cerrar-m1` | POST | **no** | escribe H5A | `GOOGLE_SHEET_ID` |
+| `/api/meses` | GET | no | lee H2/H4A/H4B | `GOOGLE_SHEET_ID` |
+| `/api/registro/interpretar` | POST | **no** | no toca hoja; llama Claude Sonnet (gasto de API) | — |
+| `/api/registro/sin-concepto` | POST | **no** | escribe H3B (`values.append`) | `GOOGLE_SHEET_ID` |
+| `/api/admin/auth` | POST | público por diseño (valida PIN) | no toca hoja | — |
+| `/api/admin/backup-status` | GET | sí — `isAdminRequestAuthorized` | lee metadata | `BACKUP_SHEET_ID` |
+| `/api/admin/eventos-log` | GET, DELETE | sí — `isAdminRequestAuthorized` | lee/escribe H9 | `GOOGLE_SHEET_ID` |
+| `/api/admin/reset-mes` | POST | sí — `isAdminRequestAuthorized` | escribe destructivo (`values.clear`) | `GOOGLE_SHEET_ID` |
+| `/api/admin/backup-sheet` | GET | `CRON_SECRET` **fail-open** (`if (cronSecret)`) | lee PROD, escribe backup | `PROD_GOOGLE_SHEET_ID` → `BACKUP_SHEET_ID` |
+| `/api/cron/uber-parser` | GET | `CRON_SECRET` **fail-open** | lee/escribe H3B | `GOOGLE_SHEET_ID` |
+| `/admin/panel` (página) | — | sí — `verifySessionCookie` server-side | — | — |
+| `/admin/trazabilidad` (página) | — | **no** | lee vía APIs públicas; "Reset completo" invoca `/api/admin/reset-mes` (401 sin sesión); "Limpiar" es solo estado local del componente, no toca la hoja | `GOOGLE_SHEET_ID` |
+
+**DEV vs PROD:** todas las rutas de la app (salvo backup) usan una sola variable,
+`GOOGLE_SHEET_ID` — qué hoja es depende del ambiente de Vercel: Preview → hoja dev,
+Production → hoja prod, según el diseño documentado en este mismo archivo (T51-T54, 9 jun
+2026). **No verificado por lectura de las env vars de Vercel en esta sesión** (no hay
+herramienta disponible para leerlas; ver también el pendiente abierto desde el 28 ago). Es
+decir: la escritura sin identidad en el dominio de producción cae sobre la hoja de producción
+si ese mapeo sigue vigente.
+
+**Hallazgos adicionales, no reportados en el diagnóstico inicial:**
+1. `CRON_SECRET` está implementado **fail-open** en las dos rutas de cron
+   (`app/api/admin/backup-sheet/route.ts:156-162` y `app/api/cron/uber-parser/route.ts:78-84`):
+   si la variable no existe en el entorno, el `if` no entra y el endpoint queda abierto. Fue
+   una decisión consciente para pruebas locales (documentada en
+   `tickets/BACKUP-NOCTURNO-01.md`, "Notas de ejecución"), pero en un despliegue público
+   significa que la protección depende de que la env var exista. **No verificable por `curl`
+   sin disparar una escritura** — un `GET` a esas rutas ejecuta el job. Queda como pregunta
+   para Camilo, no se probó.
+2. `/api/admin/auth` no tiene límite de intentos: un PIN corto es forzable por fuerza bruta
+   desde internet, sin rate limiting ni bloqueo.
+3. Discrepancia de nombre ya registrada el 28 ago (`ADMIN_SESSION_SECRET` en código vs.
+   `ADMIN_SESSION_KEY` en Vercel) + las env vars del panel existen solo en Preview: el efecto
+   neto es que en Production el panel admin **falla cerrado** (`verifyPin()` devuelve `false`
+   sin la var). Eso protege hoy por accidente, no por diseño.
+4. Una entrada previa de este mismo `ESTADO.md` (16 ago 2026) transcribió el valor en claro de
+   un PIN de administración. El archivo está commiteado en un repo público — ese valor debe
+   considerarse quemado y rotarse en todos los ambientes, sin importar qué se decida sobre la
+   visibilidad del repo.
+5. `public/kanban.html` se sirve públicamente (200, 63 KB) y publica el estado interno del
+   backlog, incluidos textos de deuda del tipo "requiere autenticación real — post go-live".
+
+**Lo que no está comprometido:** las hojas de Google siguen privadas (compartidas solo con
+Camilo y la cuenta de servicio); la app las toca con la cuenta de servicio
+(`lib/data/sheets.ts:34`, `GOOGLE_CLIENT_EMAIL`/`GOOGLE_PRIVATE_KEY` como env vars). No hay
+credenciales en ningún commit del repo. No hay evidencia, en ningún sentido, de que alguien
+haya accedido — nadie la buscó todavía: la instrumentación existente (H9/`EventosLog`) cubre 5
+rutas y no registra lecturas.
+
+**Decisión de Camilo registrada en esta misma sesión — riesgo aceptado, visibilidad del repo:**
+el repo `KKze1975/flujo` **se queda público por ahora**; la prioridad es cerrar la exposición
+en vivo de la app. Opciones que se le presentaron: (1) privado en GitHub Free — quita la
+exposición de documentos y capturas pero pierde la protección técnica de `main`, porque GitHub
+Free no protege ramas en repos privados (verificado en `school-bot`, `obsidian-mind` y
+`consultorio`: "Upgrade to GitHub Pro…"); (2) privado con GitHub Pro, de pago; (3) público por
+ahora — **la elegida**. Consecuencia aceptada explícitamente: el historial público sigue
+conteniendo datos financieros reales y nombres de terceros (`AUDITORIA_JULIO.md`, `ESTADO.md`,
+`SESSION_LOG.md`, capturas `ss-*.png`) y publica las URLs y la lista de rutas de la app. La
+protección de `main` (I-11) sigue intacta. Esta sesión no tocó la visibilidad.
+
+**Qué se produjo:** `tickets/SEC-EXPOSICION-PUBLICA-01.md` (Tier B, `estado: propuesto`) con
+las cuatro opciones evaluadas —(A) protección de despliegues de Vercel, (B) autenticación
+propia en la app, (C) combinación, (D) mitigación inmediata— **sin elegir ninguna**, más el
+tratamiento de `public/kanban.html`. Fila agregada a `tickets/INDICE.md` (orden 36). El ticket
+queda pendiente de "aprobado para construir" por Camilo; no se despachó Coder ni Tester.
+
+**Deuda técnica nueva:** ninguna de código — esta sesión no escribió código. `kanban.html` no
+se regeneró (`scripts/generate-kanban.mjs` no se corrió: regla del despacho de no ejecutar
+nada de `scripts/`), así que el tablero público no muestra todavía el ticket nuevo.
+
+**Retrospectiva:**
+- **Qué funcionó:** separar la verificación en dos capas —`curl` solo `GET` para confirmar la
+  exposición de lectura, y lectura de código para la de escritura— permitió medir el radio real
+  del hueco sin ejecutar ni una sola escritura contra datos reales.
+- **Qué no funcionó:** el proyecto cerró tres tickets de seguridad previos
+  (`PANEL-*`, `SEC-AUTH-ADMIN-RESET-01` en la práctica) y registró "Seguridad: sin pendientes
+  abiertos" en cuatro cierres de sesión seguidos — pero esa afirmación solo cubría los
+  endpoints `/api/admin/*`. Nunca se preguntó por el resto de la superficie, que nació sin
+  política de acceso declarada y siguió así.
+- **Qué cambia en la próxima sesión:** nada se construye hasta que Camilo apruebe una de las
+  opciones del ticket; la mitigación inmediata (opción D) es lo único que podría ejecutarse
+  antes, y también requiere su visto bueno.
+- **Candidato a invariante:** toda ruta nueva bajo `app/api/**` y toda página nueva declara su
+  política de acceso explícitamente antes de cerrar su ticket — "sin autenticación" es válido
+  solo si es una decisión consciente y escrita, nunca una omisión. El principio ya estaba
+  enunciado en `SEC-AUTH-ADMIN-RESET-01` (hallazgo de `AUDIT-FABLE-01`) pero nunca se promovió
+  a invariante; su ausencia produjo exactamente este error silencioso. Pendiente de aprobación
+  explícita de Camilo, mismo patrón que los demás candidatos de `INVARIANTS.md`.
+
+**Estado accionable:**
+- Unidad: ticket
+- En curso: ninguno
+- Backlog priorizado (top 3 abiertos):
+  1. [Operación] **SEC-EXPOSICION-PUBLICA-01** — cerrar la exposición pública de la app;
+     pendiente de que Camilo apruebe una opción (A/B/C) y autorice la mitigación (D)
+  2. [Operación] Agregar `ADMIN_PANEL_PIN`/`ADMIN_SESSION_KEY` a Vercel Production (+ corregir
+     la discrepancia `ADMIN_SESSION_SECRET`/`ADMIN_SESSION_KEY` y **rotar el PIN quemado**) —
+     pendiente desde el 28 ago, ahora entrelazado con el ticket de arriba
+  3. [Operación] Fix de fondo del cálculo de mes/semana (ancla al viernes de pago) — fórmula
+     lista y verificada, ticket sin abrir
+- Reactivo/incidentes: [Operación] **exposición pública de la app sin autenticación** — abierto,
+  sin mitigar, registrado en esta entrada
+- Seguridad: pendiente mayor abierto (este incidente). Las entradas previas que decían
+  "sin pendientes abiertos" quedan acotadas retroactivamente a `/api/admin/*`
+- FinOps/Costo: sin dato registrado — sin cambio. Nota nueva: `/api/registro/interpretar` y
+  `/api/consumos/[id]/clasificar` llaman a la API de Claude sin identidad, así que el gasto
+  también es superficie expuesta
+- Bloqueados esperando a Camilo: (1) elegir entre las opciones A/B/C del ticket y autorizar
+  construcción; (2) decidir si se aplica ya la mitigación D; (3) confirmar si `CRON_SECRET`
+  existe en Vercel Production (no verificable desde aquí sin disparar una escritura);
+  (4) aprobar o no el candidato a invariante de arriba; (5) decidir qué hacer con
+  `public/kanban.html`
+- Próximo paso: Camilo revisa `tickets/SEC-EXPOSICION-PUBLICA-01.md` y decide. Nada se
+  construye antes de eso.
+
+---
+
+## Cierre de sesión — verificación adicional del PIN filtrado y candidato a invariante (11 sept 2026)
+
+**Verificación adicional, hecha por la sesión Chief de Staff del vault sobre el hallazgo #4
+del Manager ("PIN quemado"), antes de dar por buena su cita:** el valor real del PIN no vive
+solo en `ESTADO.md`. Aparece en texto plano en **3 commits, en 2 ramas remotas**:
+- `9367235` — "docs: cierre de sesión — debugging de acceso al panel en Vercel" (la entrada
+  original en `ESTADO.md`).
+- `8e13d90` y `44341d5` — dos corridas de la **rutina automática de vigilancia semanal**
+  (`vigilancia: auditoría automática`, rama `vigilancia-auto`), que **citó el valor textual del
+  PIN dentro de su propio reporte (`VIGILANCIA.md`) dos veces**, al describir el hallazgo. Es
+  decir: el mecanismo que debía señalar la fuga la volvió a cometer, dos veces, sin que nadie lo
+  notara hasta hoy.
+
+Esto no cambia ninguna decisión pendiente (la rotación del PIN sigue siendo la misma acción,
+independiente de las demás), pero sí agrega un segundo candidato a invariante, distinto del ya
+registrado arriba (política de acceso declarada):
+
+**Candidato a invariante — no citar textualmente un secreto ya identificado como filtrado
+dentro de un nuevo artefacto (reporte, log, auditoría):** el patrón de falla es silencioso y
+autoperpetuante — un hallazgo de seguridad que se documenta citando el valor real vuelve a
+filtrarlo, y cada corrida futura de la misma rutina de auditoría puede repetirlo sin que el
+propio proceso lo detecte (la rutina de vigilancia no se audita a sí misma). Aplica en
+particular a `VIGILANCIA.md`, que corre semanalmente y ya lo hizo dos veces. Pendiente de
+aprobación explícita de Camilo, mismo patrón que los demás candidatos de `INVARIANTS.md`.
+
+**Sesión cerrada — se deja como siguiente paso, sin construir nada, a la espera de las
+decisiones de Camilo listadas en el "Estado accionable" de arriba.**
+
+---
+
+## Cierre de sesión — BOLSILLO-BOTON-OK-01, botón verde de incentivo visual (18 sept 2026)
+
+**Qué se pidió:** Angie (usuaria/QA approver), relayado por Camilo — cambiar el color
+del botón "Cerrar bolsillo" en los bolsillos semanales (Frutas y verduras, Víveres y
+otros, Entretenimiento, Imprevistos) de gris a verde, como incentivo visual a la
+ejecución. Cambio puramente cosmético: mismo texto, mismo `onClick`/`patchar`, sin
+tocar el guard que excluye a los bolsillos mensuales (Mercado mensual, Frida, Fondo
+transporte — esos nunca deben poder cerrarse, por diseño de `FIX-BOLSILLO-MENSUAL-01`).
+
+**Qué se construyó:** una sola línea cambiada en `components/VistaSemanal.tsx:1735`
+(`className="fl-btn ghost sm"` → `"fl-btn pos sm"`), la misma clase verde que ya usa
+el botón "OK" de conceptos regulares en producción. `npx tsc --noEmit` limpio. Commit
+de cierre `6efec48`, rama `dev`.
+
+**Veredicto del Tester — CUMPLE, con una salvedad:** el diff real (`git show 6efec48`)
+confirma que es exactamente esa línea, nada más — guard de bolsillos mensuales intacto,
+`onClick`/`patchar` idénticos. El Tester levantó `npm run dev` contra los datos reales
+de la hoja de Google y navegó la app, pero no había ningún bolsillo semanal con pago
+pendiente esa semana para ver el botón cambiado renderizado en pantalla — y decidió no
+forzar el modo "Editar semana" de una semana pasada para no arriesgar un `patchar`
+accidental contra datos financieros reales. Por eso el último ítem del DoD (verificación
+visual) se marca cumplido apoyado en evidencia de código equivalente — la misma clase
+`fl-btn pos` ya renderiza verde hoy en el botón "OK" del mismo archivo, sin reportes de
+que se vea mal — no en una captura del botón "Cerrar bolsillo" ya cambiado.
+
+**Pendiente para Camilo:** dos archivos de documentación quedaron sin commitear encima
+del commit de cierre del Coder (`6efec48`) — `tickets/INDICE.md` (falta la fila de este
+ticket) y `tickets/BOLSILLO-BOTON-OK-01.md` (con las notas del Tester y de este Manager
+ya escritas). Este Manager no tiene `Bash`, así que no puede hacer ese commit — alguien
+con acceso a `git` en el repo necesita agregarlos.
+
+**Estado accionable:**
+- Unidad: ticket
+- En curso: ninguno (BOLSILLO-BOTON-OK-01 completado)
+- Backlog priorizado: sin cambios respecto a la entrada anterior — sigue primero
+  **SEC-EXPOSICION-PUBLICA-01**, esperando que Camilo elija opción A/B/C
+- Bloqueados esperando a Camilo: (1) todo lo ya listado en la entrada anterior sobre
+  SEC-EXPOSICION-PUBLICA-01; (2) commit de `tickets/INDICE.md` y
+  `tickets/BOLSILLO-BOTON-OK-01.md` (pendiente de esta sesión, ver arriba); (3) opcional
+  — pedirle a Angie que confirme visualmente el botón verde cuando exista un bolsillo
+  semanal con pago pendiente real, dado que el Tester no pudo verlo en pantalla.
+- Próximo paso: commitear los dos archivos de documentación sueltos; el ticket en sí no
+  necesita más trabajo de construcción.
