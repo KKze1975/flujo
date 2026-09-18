@@ -82,7 +82,7 @@ SheetsDataProvider" (DEV). I-10 (esquema en PROD) no generó un commit de "ejecu
 fue correr `node scripts/setup-h10-prod.mjs` contra la API de Google Sheets, un cambio de
 datos en PROD, no un cambio de código. El cierre administrativo de este ticket (esta
 actualización + el tracking de `scripts/setup-h10-prod.mjs`) queda registrado en el commit
-`PENDIENTE-HASH` (DEV).
+`fb1f470` (DEV).
 
 ## Notas de ejecución
 
