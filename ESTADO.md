@@ -7600,3 +7600,37 @@ señala "esto lo interpretó Claude" en `PropuestaCard.tsx` — evita implicar I
 no la hay). `IDEAS-CAPTURA-01` pasa de `bloqueado` a `aprobado`, listo para
 construcción — esta aprobación directa de Camilo satisface la regla `T21` sin necesidad
 de pasar por Antigravity/Stitch.
+
+---
+
+## IDEAS-CAPTURA-01 completado (18 sept 2026) — línea "backlog de ideas de features" funcionalmente terminada
+
+Construido: `POST /api/ideas` (crea fila en H10 vía `createIdea`) + `components/m4/SugerirIdea.tsx`
+(formulario de 3 estados idle/enviando/éxito, selector Camilo/Angie, descripción libre +
+las dos preguntas fijas de profundización aprobadas en Fase 1 — caso de uso concreto y
+por qué le parece importante a quien la propone) + fila `.fl-action` "Sugerir una mejora"
+en `components/HomeHub.tsx` (ícono `pencil`, posición aprobada: después de las métricas/
+`AporteCard`, antes de "Registrar un gasto"). Detalle completo en
+`tickets/IDEAS-CAPTURA-01.md`.
+
+Verificación completa, sin salvedades — a diferencia de la construcción anterior de esta
+misma línea: el Coder verificó API (POST 200/400) y lectura real de H10 en DEV, más dos
+vías indirectas de verificación visual (sin navegador disponible para él). El Tester,
+aislado del razonamiento del Coder, repitió la verificación de datos de forma
+independiente (puerto distinto, datos propios) y además **sí pudo verificar visualmente
+con navegador real (Claude in Chrome)** contra `next dev -p 3212`: sheet completo,
+selector, las dos preguntas en el orden correcto, botón deshabilitado hasta completar los
+4 campos, y estado de éxito confirmados en vivo. `npx tsc --noEmit` limpio, corrido por
+Coder y por Tester de forma independiente. Veredicto del Tester: CUMPLE, sin salvedades.
+`estado` del ticket pasa a `completado`.
+
+**La línea completa de "backlog de ideas de features" queda funcionalmente terminada con
+este ticket.** `IDEAS-SCHEMA-01` (esquema H10) y `IDEAS-CAPTURA-01` (captura) son los dos
+únicos tickets construidos de la línea; `IDEAS-TRIAGE-01` y `IDEAS-VISTA-PRIORIZADA-01`
+quedan `descartado` (ver "Simplificación de alcance", arriba) — el triage y la vista
+priorizada se resuelven conversando en sesiones del vault, no dentro de la app.
+
+Pendiente para Camilo (no resoluble por el Manager, sin `Bash`): el commit de
+construcción del Coder (`6df3a2b`) está en `dev` sin `push`, y los cambios que hizo el
+Tester sobre el propio ticket (DoD marcado, notas de verificación) quedaron sin
+commitear encima.

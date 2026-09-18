@@ -1,13 +1,13 @@
 ---
 ticket_id: IDEAS-CAPTURA-01
 orden: 39
-estado: activo
+estado: completado
 tier: B
 agente_ejecucion: claude-code
 dependencias: [IDEAS-SCHEMA-01]
-rol_activo: coder
-paso_actual: "construcción terminada, pendiente de Tester"
-actualizado_en: 2026-09-18T15:50:56-05:00
+rol_activo: tester
+paso_actual: "verificado por Tester — DoD cumplido con evidencia real (API + tsc + visual en navegador)"
+actualizado_en: 2026-09-18T15:55:34-05:00
 necesita_aprobacion: no
 ---
 
@@ -67,10 +67,12 @@ construir).
       usuario en Flujo hoy, no inventar identidad inferida).
 - [x] `npx tsc --noEmit` limpio.
 - [x] Verificado con un registro real de idea en dev: POST produce fila en H10 (leída de
-      vuelta), y con captura de pantalla o descripción del render confirmando que las dos
-      preguntas de profundización aparecen antes de poder confirmar. Ver "Notas de
-      ejecución" para el detalle — verificación real, no captura de pantalla (sin acceso a
-      navegador en este agente), confirmado por HTML servido y logs del server.
+      vuelta), y con captura de pantalla confirmando que las dos preguntas de
+      profundización aparecen antes de poder confirmar. Verificado dos veces —
+      independientemente por el Coder (HTML/logs) y por el Tester con navegador real
+      (Claude in Chrome) contra `next dev -p 3212`: se ve el sheet completo, las dos
+      preguntas en el orden correcto, el botón deshabilitado hasta completar los 4 campos,
+      y el estado de éxito "Idea registrada". Ver "Notas de ejecución — Tester".
 
 ## Contexto / diagnóstico previo
 
@@ -145,3 +147,61 @@ Spec de Fase 2 completo en `ESTADO.md`. Patrón visual de referencia:
     fuera de lo declarado.
 
   **Construcción terminada, pendiente de Tester.**
+
+- **18 sept 2026 — verificación (Tester, Claude Code, aislado del razonamiento del
+  Coder).** Partí solo del diff del commit de cierre (`6df3a2b`) y del DoD del ticket,
+  sin confiar en lo reportado por el Coder.
+  - `git show 6df3a2b`: confirmado que toca exactamente `app/api/ideas/route.ts` (nuevo),
+    `components/m4/SugerirIdea.tsx` (nuevo), `components/HomeHub.tsx` (modificado) y el
+    propio ticket. `app/api/ideas/[id]/triage/route.ts` NO aparece en el diff — confirmado
+    que ya existía de `IDEAS-TRIAGE-01` y no se tocó.
+  - `app/api/ideas/route.ts`: valida los 4 campos (`propuestaPor` con `esActorValido`,
+    `descripcion`/`casoDeUso`/`motivoImportancia` con `.trim()`), 400 si falta alguno, usa
+    `getProvider().createIdea(...)` cuya firma en `lib/data/index.ts`/`sheets.ts`/`mock.ts`
+    coincide exactamente con lo que se le pasa.
+  - `components/HomeHub.tsx`: la fila `.fl-action` nueva está exactamente después del
+    bloque `AporteCard`/métricas y antes del botón `.fl-btn primary block` "Registrar un
+    gasto" — confirmado por lectura del diff y por captura de pantalla real (ver abajo).
+    Ícono `pencil` (no `sparkle`), confirmado en `Icon.tsx` línea 15.
+  - `npx tsc --noEmit` corrido por mí (Tester, no confiando en el resultado reportado):
+    limpio, exit code 0.
+  - **Verificación de datos, independiente del Coder:** levanté `next dev -p 3212`
+    (puerto distinto al 3211 que usó el Coder). `POST /api/ideas` con los 4 campos →
+    `200`, con datos de prueba propios (`angie`, "Prueba Tester IDEAS-CAPTURA-01").
+    `POST /api/ideas` con un campo faltante → `400` con el mensaje de validación. Leí H10
+    de vuelta con un script desechable propio (`scripts/tester-check-h10-ideas-captura-01.mjs`,
+    confirmé antes `GOOGLE_SHEET_ID !== PROD_GOOGLE_SHEET_ID`) — la última fila coincide
+    exactamente con lo enviado. Script borrado al terminar.
+  - **Verificación visual — sí se pudo, con Claude in Chrome (navegador real):**
+    contra lo que decía el ticket ("sin acceso a navegador en este agente"), este Tester
+    sí tiene acceso a un navegador real vía la extensión Claude in Chrome. Navegué a
+    `http://localhost:3212`, hice scroll hasta la fila "Sugerir una mejora" / "Ideas para
+    Flujo" con ícono lápiz en la posición exacta esperada, la abrí, confirmé el sheet
+    completo (selector Camilo/Angie, descripción libre, las dos preguntas fijas en el
+    orden correcto, botón "Enviar idea" deshabilitado con los campos vacíos), llené los 4
+    campos (botón pasó a habilitado), envié, y confirmé el estado de éxito ("Idea
+    registrada" con check verde y botón "Sugerir otra"). Las 3 fases (idle/enviando/éxito)
+    se vieron correctamente. Servidor de dev apagado al terminar.
+  - **Nota de convergencia:** hubo convergencia sin fricción con lo reportado por el
+    Coder en casi todo — el único punto donde mi verificación fue estrictamente más
+    fuerte que la suya es la verificación visual (el Coder la dio por no disponible; yo sí
+    pude hacerla con navegador real y confirmó exactamente lo que el ticket exigía). No
+    encontré ninguna discrepancia entre el diff real y lo que el ticket narra.
+  - **Veredicto: CUMPLE.** Los 6 ítems del DoD verificados con evidencia real, incluida la
+    verificación visual que antes quedaba pendiente. `estado` pasa a `completado`.
+
+- **18 sept 2026 — reporte (Manager, Claude Code).** Reporte ejecutivo de 4 puntos
+  entregado a Camilo/Angie fuera de este archivo (mensaje de cierre de la sesión que
+  despachó este ticket). Pendiente identificado y trasladado a Camilo: el commit de
+  construcción del Coder (`6df3a2b`) está en `dev` sin `push`, y los cambios que hizo el
+  Tester sobre este mismo ticket (marcar DoD, agregar sus notas de verificación) quedaron
+  sin commitear encima — el Manager no tiene `Bash` para resolver esto, requiere que
+  Camilo (o un agente con `Bash`) lo cierre.
+
+```yaml
+metricas_agente:
+  coder: { agente: claude-sonnet, tokens: no_medido, reintentos: 0 }
+  tester: { agente: claude-sonnet, tokens: no_medido, veredicto: CUMPLE }
+  manager: { reportó: si, resumen_4_puntos: si }
+  halt: { disparado: no, criterio: null }
+```
