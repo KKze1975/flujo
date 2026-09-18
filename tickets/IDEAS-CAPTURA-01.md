@@ -1,7 +1,7 @@
 ---
 ticket_id: IDEAS-CAPTURA-01
 orden: 39
-estado: bloqueado
+estado: aprobado
 tier: B
 agente_ejecucion: claude-code
 dependencias: [IDEAS-SCHEMA-01]
@@ -21,15 +21,30 @@ dos, tal como las nombró Camilo en Fase 1: (1) caso de uso concreto, (2) por qu
 parece importante a quien la propone. No hay conversación multi-turno ni preguntas que
 varíen por idea en esta primera versión.
 
-**BLOQUEADO — no construir sin resolver esto primero:** no existe diseño aprobado para
-el punto de entrada/formulario de captura (regla no negociable del proyecto — ver
-`CLAUDE.md`, "REGLA ESPECÍFICA DE FLUJO" del Spec Writer, y el precedente `T21`,
-revertido por construirse sin diseño). El spec de Fase 2 identificó un patrón visual
-reusable (`components/ui/BottomNav.tsx` + `components/m4/RegistroRapido.tsx`, el mismo
-FAB de registro rápido de gastos) pero **no decide** dónde vive exactamente el punto de
-entrada de esta funcionalidad nueva — esa decisión es del rol Diseñador/Integrador, no
-de este ticket. Antes de que un Coder tome este ticket, se necesita el brief de diseño
-correspondiente (`.claude/agents/disenador-integrador.md`) y su integración aprobada.
+**DISEÑO APROBADO (18 sept 2026) — ya no bloqueado.** Brief completo en
+`design-handoff/IDEAS-CAPTURA-01-brief.md`. En vez de pasar por Antigravity/Stitch,
+Camilo pidió una recomendación directa reusando el sistema visual `fl-*` ya existente,
+y la aprobó explícitamente ("vamos"). Decisión final:
+
+- **Componente:** una tercera fila `.fl-action` en `components/HomeHub.tsx`, mismo
+  patrón exacto que "Esta semana"/"Inicio de mes" (icono + título + descripción +
+  flecha).
+- **Ubicación:** DESPUÉS de la tarjeta de métricas (`metricas && (...)`) y de
+  `AporteCard`, ANTES del botón `.fl-btn primary block` "Registrar un gasto" — menor
+  protagonismo que las dos acciones de navegación primaria, porque es una acción
+  ocasional, no algo que se mira todos los días.
+- **Ícono:** `pencil` (ya existe en `Icon.tsx`) — explícitamente NO `sparkle`, porque
+  ese ícono ya señala "esto lo interpretó Claude" en `PropuestaCard.tsx`, y esta
+  funcionalidad decidió explícitamente no tener IA de por medio (ver descarte de
+  `IDEAS-TRIAGE-01`).
+- **Texto:** "Sugerir una mejora" (título) / algo como "Ideas para Flujo" (descripción,
+  el Coder puede ajustar la redacción exacta).
+- **Interacción:** al tocarla, abre el mismo tipo de sheet (`.sheet-backdrop`/`.sheet`)
+  que "Registrar un gasto", con el formulario descrito en el brief (sección 4).
+
+No hace falta pasar por el paso de integración de Antigravity/Stitch — esta aprobación
+directa de Camilo satisface la regla `T21` (diseño aprobado explícitamente antes de
+construir).
 
 **Fuera de alcance:**
 - Triage — eso es `IDEAS-TRIAGE-01`.
@@ -37,9 +52,9 @@ correspondiente (`.claude/agents/disenador-integrador.md`) y su integración apr
 
 ## Definition of Done
 
-- [ ] Diseño aprobado existe para el punto de entrada y el formulario (brief +
-      integración del rol Diseñador/Integrador) — **precondición antes de marcar este
-      ticket como `activo`**, no parte del DoD de construcción en sí.
+- [x] Diseño aprobado existe para el punto de entrada y el formulario — ver decisión
+      completa arriba (tercera fila `.fl-action` en `HomeHub.tsx`, ícono `pencil`,
+      posición antes de "Registrar un gasto"), aprobada explícitamente por Camilo.
 - [ ] `POST /api/ideas` crea una fila en H10 vía `createIdea` (de `IDEAS-SCHEMA-01`) con
       `propuesta_por`, `descripcion`, `caso_de_uso`, `motivo_importancia`.
 - [ ] La UI presenta las dos preguntas fijas de profundización antes de confirmar el

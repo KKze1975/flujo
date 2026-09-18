@@ -7581,3 +7581,22 @@ real por el que las ideas capturadas llegan a estas sesiones.
 Alineado con INV-002 (agotar la hipótesis simple antes de infraestructura) — la
 solución final es más simple que la aprobada originalmente en el spec de Fase 2, no
 más compleja.
+
+---
+
+## Diseño aprobado — IDEAS-CAPTURA-01 (18 sept 2026)
+
+Brief de diseño escrito (`design-handoff/IDEAS-CAPTURA-01-brief.md`) dejaba explícitamente
+sin resolver dónde vive el punto de entrada de captura de ideas, para que lo definiera
+Antigravity/Stitch. Camilo pidió en cambio una recomendación directa, reusando el sistema
+visual `fl-*` ya existente en vez de generar diseño nuevo — decisión: **"el diseño ya
+existe de la app, sugiere dónde puede vivir este botón de sugerencias"**.
+
+Recomendación entregada y aprobada ("vamos"): tercera fila `.fl-action` en
+`components/HomeHub.tsx` (mismo patrón que "Esta semana"/"Inicio de mes"), ubicada
+después de la tarjeta de métricas y `AporteCard`, antes del botón "Registrar un gasto"
+— menor protagonismo por ser una acción ocasional. Ícono `pencil` (no `sparkle`, que ya
+señala "esto lo interpretó Claude" en `PropuestaCard.tsx` — evita implicar IA donde ya
+no la hay). `IDEAS-CAPTURA-01` pasa de `bloqueado` a `aprobado`, listo para
+construcción — esta aprobación directa de Camilo satisface la regla `T21` sin necesidad
+de pasar por Antigravity/Stitch.
