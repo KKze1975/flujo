@@ -7481,3 +7481,38 @@ proceso) ya está de acuerdo.
 
 **Fase 1 cerrada.** Sigue Fase 2 — Especificación (requisitos funcionales, esquema de
 datos, arquitectura técnica mínima viable, backlog de tickets) — todavía no iniciada.
+
+---
+
+## Fase 2 — Especificación: backlog de ideas de features con triage por IA (18 sept 2026)
+
+Spec Writer despachado con el to-be de Fase 1 como único insumo. Produjo spec completo
+(resumen para decisión + spec técnico) con seis decisiones técnicas propuestas —nunca
+decididas antes por Camilo— marcadas explícitamente como propuestas a validar: modelo de
+IA (Haiku, reusando el patrón ya en producción de `/api/consumos/[id]/clasificar`),
+preguntas de profundización fijas (sin IA generativa), criterios de triage
+(impacto/esfuerzo/alineación + `prioridad_score` calculado server-side), esquema de datos
+(nueva tab H10, mismo patrón que H9/EventosLog), sincronización hacia el vault (script
+que genera `flujo/IDEAS-BACKLOG.md`, disparo manual, sin conector nuevo), y modelo de
+estados (`nueva → en_triage → priorizada → en_construccion → construida | descartada`).
+
+**Cierre — aprobación textual de Camilo, 18 sept 2026: "aprobado para construir".**
+Aprueba el spec completo, incluidas las seis propuestas técnicas — no se recibió ninguna
+corrección puntual.
+
+**Backlog de tickets creado** (`tickets/IDEAS-SCHEMA-01.md` a `IDEAS-VAULT-SYNC-01.md`,
+`tickets/INDICE.md` órdenes 38-42), secuencial por I-09:
+- `IDEAS-SCHEMA-01` (orden 38, tier A, sin dependencias) — **listo para construcción**,
+  sin bloqueo.
+- `IDEAS-CAPTURA-01` (orden 39, tier B, depende de `IDEAS-SCHEMA-01`) — **bloqueado por
+  diseño**: la vista/formulario de captura no tiene diseño aprobado (regla `T21`); pasa
+  primero por el rol Diseñador/Integrador.
+- `IDEAS-TRIAGE-01` (orden 40, tier B, depende de `IDEAS-SCHEMA-01`) — criterios ya
+  aprobados por Camilo, no bloqueado por diseño, solo por la dependencia de esquema.
+- `IDEAS-VISTA-PRIORIZADA-01` (orden 41, tier B, depende de `IDEAS-SCHEMA-01` +
+  `IDEAS-TRIAGE-01`) — **bloqueado por diseño**, mismo motivo que `IDEAS-CAPTURA-01`.
+- `IDEAS-VAULT-SYNC-01` (orden 42, tier A, depende de `IDEAS-SCHEMA-01`) — sin bloqueo de
+  diseño (es un script, no UI).
+
+**Fase 2 cerrada.** Empieza Fase 3 — Construcción iterativa, un ticket a la vez (I-09).
+Primer ticket a construir: `IDEAS-SCHEMA-01`.
