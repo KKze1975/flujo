@@ -1182,6 +1182,7 @@ export class SheetsDataProvider implements IDataProvider {
 
   private rowToIdea(row: string[], headers: string[]): Idea {
     const col = (name: string) => row[headers.indexOf(name)] ?? "";
+    const strOrNull = (v: string) => (v === "" || v === undefined ? null : v);
     const numOrNull = (v: string) => (v === "" || v === undefined ? null : Number(v));
     return {
       id: col("id"),
@@ -1190,9 +1191,9 @@ export class SheetsDataProvider implements IDataProvider {
       descripcion: col("descripcion"),
       casoDeUso: col("caso_de_uso"),
       motivoImportancia: col("motivo_importancia"),
-      triageImpacto: numOrNull(col("triage_impacto")),
-      triageEsfuerzo: numOrNull(col("triage_esfuerzo")),
-      triageAlineacion: numOrNull(col("triage_alineacion")),
+      triageImpacto: strOrNull(col("triage_impacto")) as Idea["triageImpacto"],
+      triageEsfuerzo: strOrNull(col("triage_esfuerzo")) as Idea["triageEsfuerzo"],
+      triageAlineacion: strOrNull(col("triage_alineacion")),
       estado: (col("estado") || "nueva") as EstadoIdea,
       prioridadScore: numOrNull(col("prioridad_score")),
     };

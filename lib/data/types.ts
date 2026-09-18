@@ -241,6 +241,9 @@ export type EstadoIdea =
   | "construida"
   | "descartada";
 
+export type TriageImpacto = "alto" | "medio" | "bajo";
+export type TriageEsfuerzo = "S" | "M" | "L";
+
 export interface Idea {
   id: string;                        // IDEA_{unix_timestamp}
   timestamp: string;                 // ISO String UTC/Server
@@ -248,10 +251,10 @@ export interface Idea {
   descripcion: string;
   casoDeUso: string;
   motivoImportancia: string;
-  triageImpacto: number | null;      // lo llena IDEAS-TRIAGE-01 en adelante
-  triageEsfuerzo: number | null;
-  triageAlineacion: number | null;
+  triageImpacto: TriageImpacto | null;   // lo llena IDEAS-TRIAGE-01
+  triageEsfuerzo: TriageEsfuerzo | null; // lo llena IDEAS-TRIAGE-01
+  triageAlineacion: string | null;       // texto corto, lo llena IDEAS-TRIAGE-01
   estado: EstadoIdea;
-  prioridadScore: number | null;     // lo calcula IDEAS-TRIAGE-01 en adelante
+  prioridadScore: number | null;     // calculado server-side por IDEAS-TRIAGE-01, nunca por el modelo
 }
 
