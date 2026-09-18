@@ -7557,3 +7557,27 @@ si Angie también los mira) pero **Camilo pidió parquear esta línea antes de r
 para terminar primero la línea de "backlog de ideas de features" que ya estaba en
 construcción. Fase -1/0 queda abierta, sin cerrar — no descartada. Retomar desde las
 preguntas ya formuladas cuando Camilo vuelva a esto.
+
+---
+
+## Simplificación de alcance: backlog de ideas sin bot independiente (18 sept 2026)
+
+`IDEAS-TRIAGE-01` se construyó (endpoint con Haiku, `commit f6d45d8`) pero quedó sin
+verificar por saldo insuficiente en la cuenta de Anthropic de `ANTHROPIC_API_KEY`
+(confirmado con `curl` directo a la API, no relacionado con el plan Claude Max de
+Camilo — son productos y facturación separados). En vez de recargar crédito, Camilo
+decidió simplificar el flujo: **"no hay interacción con un bot independiente, sino que
+se procesa acá conmigo durante nuestras sesiones"** — el triage se hace conversando en
+sesiones del vault, y el resultado se escribe al Sheet con `updateIdea` (ya construido)
+directamente desde esta sesión, sin llamar a ningún modelo de IA.
+
+Consecuencia: **`IDEAS-TRIAGE-01` y `IDEAS-VISTA-PRIORIZADA-01` quedan `descartado`**
+(detalle y razón en cada ticket, `tickets/INDICE.md` órdenes 40-41). El esquema de
+`IDEAS-SCHEMA-01` sigue vigente sin cambios — los campos de triage ahora se llenan a
+mano en vez de por un endpoint automático. `IDEAS-CAPTURA-01` sigue siendo el ticket
+activo pendiente de diseño; `IDEAS-VAULT-SYNC-01` gana relevancia como el mecanismo
+real por el que las ideas capturadas llegan a estas sesiones.
+
+Alineado con INV-002 (agotar la hipótesis simple antes de infraestructura) — la
+solución final es más simple que la aprobada originalmente en el spec de Fase 2, no
+más compleja.

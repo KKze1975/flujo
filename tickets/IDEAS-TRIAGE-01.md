@@ -1,15 +1,14 @@
 ---
 ticket_id: IDEAS-TRIAGE-01
 orden: 40
-estado: activo
+estado: descartado
 tier: B
 agente_ejecucion: claude-code
 dependencias: [IDEAS-SCHEMA-01]
-rol_activo: coder
-paso_actual: "Construcción y tsc limpios; verificación de distinción de triage bloqueada por saldo insuficiente en la API key de Anthropic (.env.local) — código listo, falta correrlo con crédito disponible"
-actualizado_en: 2026-09-18T14:25:37-05:00
-necesita_aprobacion: alta
-halt_criterio: "no encaja exacto en 1-8 — bloqueo externo de billing (saldo Anthropic API insuficiente), confirmado con curl directo a api.anthropic.com fuera de mi código, no reparable por este agente"
+rol_activo: manager
+paso_actual: "Descartado por decisión explícita de Camilo, 18 sept 2026 — ver Notas de ejecución"
+actualizado_en: 2026-09-18T15:00:00-05:00
+necesita_aprobacion: no
 ---
 
 # IDEAS-TRIAGE-01 — Triage automático de ideas con Haiku
@@ -172,3 +171,21 @@ distinción de valores sin tener que recrear datos de prueba. IDs: `IDEA_1789759
 (alto esperado), `IDEA_1789759396196` (bajo esperado).
 
 Construcción terminada, pendiente de Tester.
+
+## Descartado (18 sept 2026)
+
+Camilo decidió simplificar el flujo tras el bloqueo de crédito de la API de Anthropic:
+en vez de un triage automático con Haiku, el triage se hace conversando con él durante
+sesiones del vault (Chief of Staff), y el resultado se escribe directo al Sheet con
+`updateIdea` (ya construido en `IDEAS-SCHEMA-01`) — no hace falta ningún endpoint ni
+llamada a un modelo. Decisión textual: "no hay interacción con un bot independiente,
+sino que se procesa acá conmigo durante nuestras sesiones". No es una falla técnica —
+el bloqueo de billing fue la señal, pero la decisión final es de producto (más simple,
+sin dependencia de crédito de API, alineado con INV-002 del vault).
+
+El endpoint `app/api/ideas/[id]/triage/route.ts` y los ajustes de tipos en
+`lib/data/types.ts`/`lib/data/sheets.ts` (commit `f6d45d8`, en `dev`, sin push) quedan
+en el historial pero sin usarse — no se revierten (el ajuste de tipos de
+`triageImpacto`/`triageEsfuerzo` de `number|null` a los enums correctos sigue siendo
+válido y necesario, lo reusa el flujo manual). Si más adelante Camilo quiere retomar
+el triage automático, este ticket es el punto de partida.

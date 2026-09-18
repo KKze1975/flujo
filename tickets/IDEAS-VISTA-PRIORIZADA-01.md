@@ -1,7 +1,7 @@
 ---
 ticket_id: IDEAS-VISTA-PRIORIZADA-01
 orden: 41
-estado: bloqueado
+estado: descartado
 tier: B
 agente_ejecucion: claude-code
 dependencias: [IDEAS-SCHEMA-01, IDEAS-TRIAGE-01]
@@ -59,4 +59,14 @@ Spec de Fase 2 completo en `ESTADO.md`.
 
 ## Notas de ejecución
 
-(vacío)
+## Descartado (18 sept 2026)
+
+Camilo decidió que el triage y la revisión priorizada ya no ocurren dentro de la app —
+pasan a hacerse conversando con él durante sesiones del vault (ver decisión gemela en
+`IDEAS-TRIAGE-01`). Sin triage automático ni una revisión periódica dentro de Flujo que
+lo justifique, esta vista pierde su propósito: el vault (leyendo el Sheet directo, o
+`IDEAS-BACKLOG.md` de `IDEAS-VAULT-SYNC-01`) cumple el mismo rol de "vista" sin construir
+nada nuevo en la app — alineado con INV-002. Decisión textual de Camilo: "confirmado"
+(sobre la pregunta explícita de si descartar este ticket dado el nuevo flujo).
+
+Nunca se construyó nada de este ticket — no hay código que revertir.
