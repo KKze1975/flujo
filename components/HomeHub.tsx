@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Icon from "@/components/ui/Icon";
 import BottomNav from "@/components/ui/BottomNav";
 import RegistroRapido from "@/components/m4/RegistroRapido";
+import SugerirIdea from "@/components/m4/SugerirIdea";
 
 function COP(n: number, compact = false): string {
   if (compact && Math.abs(n) >= 1_000_000) {
@@ -59,6 +60,7 @@ export default function HomeHub({
 }) {
   const router = useRouter();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [ideaSheetOpen, setIdeaSheetOpen] = useState(false);
 
   const destSemana = mesActivo ? `/mes/${mesActivo}/semana` : "/meses";
   const dias = diasRestantes(semanaActiva);
@@ -135,6 +137,15 @@ export default function HomeHub({
           <AporteCard aporteCamilo={metricas.aporteCamilo} aporteAngie={metricas.aporteAngie} />
         )}
 
+        <button className="fl-action" type="button" onClick={() => setIdeaSheetOpen(true)}>
+          <span className="ic"><Icon name="pencil" /></span>
+          <span className="txt">
+            <p className="t">Sugerir una mejora</p>
+            <p className="d">Ideas para Flujo</p>
+          </span>
+          <Icon name="arrow" size={18} style={{ color: "var(--ink-faint)" }} />
+        </button>
+
         <button
           className="fl-btn primary block"
           type="button"
@@ -160,6 +171,23 @@ export default function HomeHub({
             </div>
             <div className="sheet-body">
               <RegistroRapido onClose={() => setSheetOpen(false)} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {ideaSheetOpen && (
+        <div className="sheet-backdrop" onClick={() => setIdeaSheetOpen(false)}>
+          <div className="sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="sheet-grip" />
+            <div className="sheet-head">
+              <h2>Sugerir una mejora</h2>
+              <button className="icon-btn" type="button" onClick={() => setIdeaSheetOpen(false)}>
+                <Icon name="x" size={16} />
+              </button>
+            </div>
+            <div className="sheet-body">
+              <SugerirIdea onClose={() => setIdeaSheetOpen(false)} />
             </div>
           </div>
         </div>

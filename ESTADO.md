@@ -7327,3 +7327,310 @@ con acceso a `git` en el repo necesita agregarlos.
   semanal con pago pendiente real, dado que el Tester no pudo verlo en pantalla.
 - Próximo paso: commitear los dos archivos de documentación sueltos; el ticket en sí no
   necesita más trabajo de construcción.
+
+---
+
+## Fase -1/0 — Nueva línea: backlog de ideas de features con triage por IA (18 sept 2026)
+
+**Origen:** sesión de vault (Chief of Staff), tras cerrar `BOLSILLO-BOTON-OK-01`. Camilo
+propuso "un bot sencillo que con IA acepte recomendaciones y haga triage para nuevos
+features". Por ser una línea/vertical nueva dentro de Flujo planteada como intuición de
+solución en lenguaje natural, se aplicó el protocolo `fase0` del vault antes de discutir
+cualquier atributo de la solución (canal, modelo de IA, arquitectura) — dos veces Camilo
+introdujo detalles de solución ("modelo barato", "con Haiku", "vía desde la aplicación al
+repositorio de memoria") y se dejaron explícitamente de lado hasta el cierre de esta fase.
+
+**Flujo as-is (fuente: Camilo, confianza alta — es quien ejecuta el proceso en carne
+propia):**
+- Las ideas de mejora surgen en tres momentos: caminata matutina de Camilo y Angie,
+  reuniones de ambos, y mientras alguien usa la app (típicamente Angie).
+- Camilo captura algunas en la app Notes de su teléfono — "no en todos los casos".
+- Cuando una idea no queda en Notes, "tiende a perderse del todo".
+- Las que sí quedan en Notes tampoco tienen revisión sistemática: "a veces la he
+  revisado, a veces no" — depende de si Camilo llega a abrir Notes.
+- No existe ningún mecanismo de seguimiento de una idea entre una conversación y la
+  siguiente — no solo falta capturarla, falta que sobreviva y se retome.
+- Angie comunica sus ideas directamente a Camilo (no las pierde por falta de canal); el
+  hueco está después de que la idea llega a Camilo, no en cómo Angie la expresa.
+- **Caso concreto y recurrente:** "conciliación bancaria" (comparar los correos/movimientos
+  del banco contra lo registrado en la app para detectar gastos no capturados) se ha
+  conversado varias veces entre Camilo y Angie, en momentos distintos, sin que ninguna vez
+  quedara registrada de forma que sobreviviera — cada vez se "redescubre" desde cero. Nota:
+  la idea de conciliación bancaria en sí es una idea de feature separada, no forma parte
+  del alcance de esta línea — queda registrada aquí solo como evidencia del patrón de
+  pérdida.
+
+**Dolor y retorno (segundo momento de calificación, post-etnografía):**
+- Dolor: recurrente (3-5 ideas nuevas al mes según Camilo), costoso (ideas repetidas sin
+  avanzar, como conciliación bancaria) y atribuible a un proceso concreto (falta de
+  backlog persistente), no a una persona — Camilo lo nombra explícitamente como "el
+  problema más costoso" hoy en Flujo, no solo el más visible: **"es el más costoso dado
+  que la aplicación está estancada en evolución"** (respuesta textual a la pregunta
+  obligatoria de cierre de Fase 0).
+- Retorno, en palabras de Camilo: "se aumenta la adopción de nuevos features que tienen
+  impacto real en la cultura financiera y las finanzas de la familia" — retorno
+  habilitador (permite que la app siga evolucionando), no solo instrumental.
+- Motivación sostenible: no bloqueante por sí sola (criterio del método), pero evidenciada
+  — Camilo trajo el tema espontáneamente tras cerrar un ticket real originado en una idea
+  de Angie (`BOLSILLO-BOTON-OK-01`), no por presión externa.
+
+**Mapa de actores (fuente: Camilo, confianza alta):**
+- Champion: Camilo (lo propuso sin que nadie se lo pidiera).
+- Blocker: "nada identificado".
+- Decisor: Camilo y Angie, en conversación conjunta — no hay un tercero que apruebe
+  presupuesto.
+- Métrica de éxito en palabras del cliente: mayor adopción de nuevos features con impacto
+  real en la cultura financiera y las finanzas de la familia (misma frase que el retorno).
+
+**Criterio de cierre — confirmación textual de Camilo** (quien ejecuta el proceso en
+carne propia, no como consultor ni constructor): *"exactamente como funciona hoy"*, en
+respuesta directa a la reconstrucción del as-is que se le presentó (caminatas/reuniones/
+uso de la app → captura inconsistente en Notes → pérdida sin seguimiento entre sesiones).
+
+**Fase -1/0 cerrada.** Sigue Fase 1 — Diseño (flujos to-be, sin tecnología, con
+alternativas evaluadas y validación de quien vive el proceso) — todavía no iniciada en
+esta sesión.
+
+---
+
+## Fase 1 — Diseño: backlog de ideas de features con triage por IA (18 sept 2026)
+
+**Sesión DISEÑO** (misma sesión de vault que cerró Fase -1/0 arriba). Sin tecnología
+propuesta ni decidida en este hilo — todo lo técnico que surgió queda estacionado en
+"Insumos para Fase 2" abajo.
+
+### To-be — Alternativa A (elegida)
+
+Narrado a partir de lo que describió Camilo, reorganizado por la sesión para el
+contraste con el as-is (marcado explícitamente qué es reformulación del constructor):
+
+- En el momento en que a Camilo o Angie se les ocurre algo, lo registran ahí mismo — no
+  esperan a acordarse después.
+- **Declaración textual de Camilo, corrigiéndose a sí mismo en la misma sesión:** "No
+  necesariamente [hace falta revisarla entre los dos antes]. Todas las ideas se pueden
+  subir." — cualquier idea, de cualquiera de los dos, se registra directamente, sin
+  filtro previo entre ellos.
+- Después de registrada, alguien le hace preguntas a quien la propuso — sobre el caso de
+  uso concreto y por qué le parece importante — para no quedarse con una frase suelta.
+  Cita de Camilo: "retener el caso de uso y por qué el usuario cree que eso es
+  importante".
+- Con esas respuestas, la idea pasa por un triage según criterios (sin definir — Fase 2).
+- Cuando Camilo y Angie se sientan a revisar (como en estas sesiones), ven las ideas
+  **priorizadas, con contexto ya armado**, y con noción de qué haría falta para
+  ejecutar cada una y en qué estado está. Cita de Camilo: "me gustaría verlas
+  priorizadas con contexto ya armado, e incluso ya un plan de ejecución".
+
+*(Nota: la estructura narrativa "un día cualquiera" y el contraste as-is/to-be de abajo
+son formulación del constructor (la sesión), a partir de los fragmentos citados de
+Camilo — no una narración continua que él dictó tal cual.)*
+
+**Contraste con el as-is de Fase -1/0 (arriba):**
+- *Desaparece:* depender de que Camilo se acuerde de escribir la idea en Notes; la
+  pérdida total cuando no queda registrada; "redescubrir" la misma idea varias veces
+  (como pasó con "conciliación bancaria").
+- *Cambia:* el momento de tener la idea y el momento de registrarla se vuelven el mismo
+  acto — ya no hay brecha entre "se me ocurrió" y "quedó en algún lado". La revisión
+  conjunta en caminatas/reuniones sigue existiendo igual que hoy.
+- *Aparece:* un paso de preguntas que profundiza cada idea antes de llegar a la revisión
+  conjunta; una vista priorizada con contexto cuando Camilo/Angie se sientan a decidir.
+
+### Alternativa B — no tecnológica (evaluada y descartada)
+
+Hábito manual: revisar juntos las notas del teléfono cada semana, o al cierre de cada
+sesión de Flujo, sin construir nada nuevo.
+
+**Descartada por Camilo**, decisor junto con Angie (mismo mapa de actores de Fase -1/0),
+con razón textual: *"no hay realmente tiempo para hacer esto... nos hemos acostumbrado a
+que [la app] funcione de una manera... no pensamos tanto en la innovación de esa
+aplicación"* — con la evidencia ya disponible de que un hábito manual no funcionó
+("conciliación bancaria" se habló varias veces sin que ningún hábito manual la
+organizara).
+
+**Pregunta de diagnóstico del método** ("¿qué alternativa no estoy evaluando?"): se hizo
+explícitamente en la sesión; la respuesta fue la Alternativa B de arriba — no surgió una
+tercera alternativa no tecnológica adicional.
+
+### Conclusiones del equipo
+
+- El triage debe capturar caso de uso + motivo de importancia para quien propone — dicho
+  por Camilo, no agregado por el constructor.
+- No debe haber filtro previo entre Camilo y Angie antes de registrar una idea — dicho
+  por Camilo, corrigiéndose a sí mismo en vivo.
+- La vista de revisión conjunta debe mostrar prioridad + contexto + estado de ejecución —
+  dicho por Camilo.
+- La narrativa de "un día cualquiera" y el contraste as-is/to-be fueron formulados por el
+  constructor (la sesión) a partir de esos fragmentos — aceptados por Camilo sin
+  corrección al validarlos ("lo refleja bien").
+
+### Insumos para Fase 2 (estacionados, sin decidir)
+
+- Modelo de IA a usar ("modelo barato", mencionado "Haiku").
+- Canal de captura ("la aplicación", "el bot") — cómo se registra la idea en el momento.
+- "Vía desde la aplicación al repositorio de memoria" (integración Flujo ↔ obsidian-mind).
+- Criterios/parámetros concretos del triage.
+- Quién/qué hace las preguntas de profundización ("un agente que tiene parámetros").
+- Generación de "plan de ejecución" por idea.
+- Modelo de estados (en desarrollo / en proceso / etc.).
+
+### Cierre — validación de quien vive el proceso
+
+Cita textual de Camilo, 18 sept 2026: **"lo refleja bien, está confirmado con Angie
+también."** — validación explícita del to-be de la Alternativa A tal como quedó
+reconstruido arriba, confirmando además que Angie (la otra persona que vive este
+proceso) ya está de acuerdo.
+
+**Fase 1 cerrada.** Sigue Fase 2 — Especificación (requisitos funcionales, esquema de
+datos, arquitectura técnica mínima viable, backlog de tickets) — todavía no iniciada.
+
+---
+
+## Fase 2 — Especificación: backlog de ideas de features con triage por IA (18 sept 2026)
+
+Spec Writer despachado con el to-be de Fase 1 como único insumo. Produjo spec completo
+(resumen para decisión + spec técnico) con seis decisiones técnicas propuestas —nunca
+decididas antes por Camilo— marcadas explícitamente como propuestas a validar: modelo de
+IA (Haiku, reusando el patrón ya en producción de `/api/consumos/[id]/clasificar`),
+preguntas de profundización fijas (sin IA generativa), criterios de triage
+(impacto/esfuerzo/alineación + `prioridad_score` calculado server-side), esquema de datos
+(nueva tab H10, mismo patrón que H9/EventosLog), sincronización hacia el vault (script
+que genera `flujo/IDEAS-BACKLOG.md`, disparo manual, sin conector nuevo), y modelo de
+estados (`nueva → en_triage → priorizada → en_construccion → construida | descartada`).
+
+**Cierre — aprobación textual de Camilo, 18 sept 2026: "aprobado para construir".**
+Aprueba el spec completo, incluidas las seis propuestas técnicas — no se recibió ninguna
+corrección puntual.
+
+**Backlog de tickets creado** (`tickets/IDEAS-SCHEMA-01.md` a `IDEAS-VAULT-SYNC-01.md`,
+`tickets/INDICE.md` órdenes 38-42), secuencial por I-09:
+- `IDEAS-SCHEMA-01` (orden 38, tier A, sin dependencias) — **listo para construcción**,
+  sin bloqueo.
+- `IDEAS-CAPTURA-01` (orden 39, tier B, depende de `IDEAS-SCHEMA-01`) — **bloqueado por
+  diseño**: la vista/formulario de captura no tiene diseño aprobado (regla `T21`); pasa
+  primero por el rol Diseñador/Integrador.
+- `IDEAS-TRIAGE-01` (orden 40, tier B, depende de `IDEAS-SCHEMA-01`) — criterios ya
+  aprobados por Camilo, no bloqueado por diseño, solo por la dependencia de esquema.
+- `IDEAS-VISTA-PRIORIZADA-01` (orden 41, tier B, depende de `IDEAS-SCHEMA-01` +
+  `IDEAS-TRIAGE-01`) — **bloqueado por diseño**, mismo motivo que `IDEAS-CAPTURA-01`.
+- `IDEAS-VAULT-SYNC-01` (orden 42, tier A, depende de `IDEAS-SCHEMA-01`) — sin bloqueo de
+  diseño (es un script, no UI).
+
+**Fase 2 cerrada.** Empieza Fase 3 — Construcción iterativa, un ticket a la vez (I-09).
+Primer ticket a construir: `IDEAS-SCHEMA-01`.
+
+---
+
+## Fase 3 — IDEAS-SCHEMA-01 completado (18 sept 2026)
+
+Primer ticket de la línea de ideas de features construido y cerrado. Se agregó el
+esquema H10 (`IdeasBacklog`) al Sheet — tab `H10` con los 11 campos aprobados en el spec
+de Fase 2 (`id, timestamp, propuesta_por, descripcion, caso_de_uso, motivo_importancia,
+triage_impacto, triage_esfuerzo, triage_alineacion, estado, prioridad_score`) — junto con
+`IDataProvider` ganando `createIdea`/`getIdeas`/`updateIdea` e implementadas en
+`SheetsDataProvider` (y el stub obligatorio en `MockDataProvider`), siguiendo el mismo
+patrón ya usado para H9/EventosLog. Commit de construcción: `63e7bc3` (DEV).
+
+DEV y PROD quedaron verificados. DEV: `npx tsc --noEmit` limpio y escritura/lectura real
+en el Sheet DEV confirmando los 11 campos. PROD (I-10): el harness bloqueó la escritura
+directa contra PROD tanto al Coder como a la sesión de vault (`[Production Deploy]`) —
+Camilo aplicó el cambio de esquema él mismo, corriendo `node scripts/setup-h10-prod.mjs`
+(réplica del patrón ya aprobado de `setup-h9-prod.mjs`), confirmado por lectura
+independiente de la sesión de vault contra `PROD_GOOGLE_SHEET_ID`: tab `H10` existe con
+los 11 headers correctos.
+
+Próximo ticket disponible sin bloqueo de diseño: `IDEAS-TRIAGE-01` (orden 40, depende
+solo de `IDEAS-SCHEMA-01`, ya resuelto). `IDEAS-CAPTURA-01` e `IDEAS-VISTA-PRIORIZADA-01`
+siguen bloqueados por diseño (regla `T21`, pendiente de pasar por el rol
+Diseñador/Integrador).
+
+---
+
+## Fase -1/0 — Nueva línea abierta y parqueada: métricas clave en la home (18 sept 2026)
+
+Origen: análisis financiero real de PROD (dispatchado por la sesión de vault) que
+encontró tres puntos ciegos coincidentes en jul-ago 2026 (registro degradándose,
+"sin clasificar" creciendo, Imprevistos sin presupuesto). Camilo pidió que estas métricas
+aparezcan como lo primero visible en la home de la app. Por ser línea nueva planteada
+como intuición de solución sin etnografía as-is, se activó `fase0` — se alcanzaron a
+formular las preguntas de calificación de dolor (qué ve hoy Camilo al abrir la app, con
+qué frecuencia mira panorama general vs. semana puntual, si ya sospechaba estos patrones,
+si Angie también los mira) pero **Camilo pidió parquear esta línea antes de responder**,
+para terminar primero la línea de "backlog de ideas de features" que ya estaba en
+construcción. Fase -1/0 queda abierta, sin cerrar — no descartada. Retomar desde las
+preguntas ya formuladas cuando Camilo vuelva a esto.
+
+---
+
+## Simplificación de alcance: backlog de ideas sin bot independiente (18 sept 2026)
+
+`IDEAS-TRIAGE-01` se construyó (endpoint con Haiku, `commit f6d45d8`) pero quedó sin
+verificar por saldo insuficiente en la cuenta de Anthropic de `ANTHROPIC_API_KEY`
+(confirmado con `curl` directo a la API, no relacionado con el plan Claude Max de
+Camilo — son productos y facturación separados). En vez de recargar crédito, Camilo
+decidió simplificar el flujo: **"no hay interacción con un bot independiente, sino que
+se procesa acá conmigo durante nuestras sesiones"** — el triage se hace conversando en
+sesiones del vault, y el resultado se escribe al Sheet con `updateIdea` (ya construido)
+directamente desde esta sesión, sin llamar a ningún modelo de IA.
+
+Consecuencia: **`IDEAS-TRIAGE-01` y `IDEAS-VISTA-PRIORIZADA-01` quedan `descartado`**
+(detalle y razón en cada ticket, `tickets/INDICE.md` órdenes 40-41). El esquema de
+`IDEAS-SCHEMA-01` sigue vigente sin cambios — los campos de triage ahora se llenan a
+mano en vez de por un endpoint automático. `IDEAS-CAPTURA-01` sigue siendo el ticket
+activo pendiente de diseño; `IDEAS-VAULT-SYNC-01` gana relevancia como el mecanismo
+real por el que las ideas capturadas llegan a estas sesiones.
+
+Alineado con INV-002 (agotar la hipótesis simple antes de infraestructura) — la
+solución final es más simple que la aprobada originalmente en el spec de Fase 2, no
+más compleja.
+
+---
+
+## Diseño aprobado — IDEAS-CAPTURA-01 (18 sept 2026)
+
+Brief de diseño escrito (`design-handoff/IDEAS-CAPTURA-01-brief.md`) dejaba explícitamente
+sin resolver dónde vive el punto de entrada de captura de ideas, para que lo definiera
+Antigravity/Stitch. Camilo pidió en cambio una recomendación directa, reusando el sistema
+visual `fl-*` ya existente en vez de generar diseño nuevo — decisión: **"el diseño ya
+existe de la app, sugiere dónde puede vivir este botón de sugerencias"**.
+
+Recomendación entregada y aprobada ("vamos"): tercera fila `.fl-action` en
+`components/HomeHub.tsx` (mismo patrón que "Esta semana"/"Inicio de mes"), ubicada
+después de la tarjeta de métricas y `AporteCard`, antes del botón "Registrar un gasto"
+— menor protagonismo por ser una acción ocasional. Ícono `pencil` (no `sparkle`, que ya
+señala "esto lo interpretó Claude" en `PropuestaCard.tsx` — evita implicar IA donde ya
+no la hay). `IDEAS-CAPTURA-01` pasa de `bloqueado` a `aprobado`, listo para
+construcción — esta aprobación directa de Camilo satisface la regla `T21` sin necesidad
+de pasar por Antigravity/Stitch.
+
+---
+
+## IDEAS-CAPTURA-01 completado (18 sept 2026) — línea "backlog de ideas de features" funcionalmente terminada
+
+Construido: `POST /api/ideas` (crea fila en H10 vía `createIdea`) + `components/m4/SugerirIdea.tsx`
+(formulario de 3 estados idle/enviando/éxito, selector Camilo/Angie, descripción libre +
+las dos preguntas fijas de profundización aprobadas en Fase 1 — caso de uso concreto y
+por qué le parece importante a quien la propone) + fila `.fl-action` "Sugerir una mejora"
+en `components/HomeHub.tsx` (ícono `pencil`, posición aprobada: después de las métricas/
+`AporteCard`, antes de "Registrar un gasto"). Detalle completo en
+`tickets/IDEAS-CAPTURA-01.md`.
+
+Verificación completa, sin salvedades — a diferencia de la construcción anterior de esta
+misma línea: el Coder verificó API (POST 200/400) y lectura real de H10 en DEV, más dos
+vías indirectas de verificación visual (sin navegador disponible para él). El Tester,
+aislado del razonamiento del Coder, repitió la verificación de datos de forma
+independiente (puerto distinto, datos propios) y además **sí pudo verificar visualmente
+con navegador real (Claude in Chrome)** contra `next dev -p 3212`: sheet completo,
+selector, las dos preguntas en el orden correcto, botón deshabilitado hasta completar los
+4 campos, y estado de éxito confirmados en vivo. `npx tsc --noEmit` limpio, corrido por
+Coder y por Tester de forma independiente. Veredicto del Tester: CUMPLE, sin salvedades.
+`estado` del ticket pasa a `completado`.
+
+**La línea completa de "backlog de ideas de features" queda funcionalmente terminada con
+este ticket.** `IDEAS-SCHEMA-01` (esquema H10) y `IDEAS-CAPTURA-01` (captura) son los dos
+únicos tickets construidos de la línea; `IDEAS-TRIAGE-01` y `IDEAS-VISTA-PRIORIZADA-01`
+quedan `descartado` (ver "Simplificación de alcance", arriba) — el triage y la vista
+priorizada se resuelven conversando en sesiones del vault, no dentro de la app.
+
+Pendiente para Camilo (no resoluble por el Manager, sin `Bash`): el commit de
+construcción del Coder (`6df3a2b`) está en `dev` sin `push`, y los cambios que hizo el
+Tester sobre el propio ticket (DoD marcado, notas de verificación) quedaron sin
+commitear encima.

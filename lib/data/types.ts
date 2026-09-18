@@ -231,3 +231,30 @@ export interface EventoLog {
   detalle: string;       // JSON string o texto legible
 }
 
+// ── H10 ────────────────────────────────────────────────────────────────────
+
+export type EstadoIdea =
+  | "nueva"
+  | "en_triage"
+  | "priorizada"
+  | "en_construccion"
+  | "construida"
+  | "descartada";
+
+export type TriageImpacto = "alto" | "medio" | "bajo";
+export type TriageEsfuerzo = "S" | "M" | "L";
+
+export interface Idea {
+  id: string;                        // IDEA_{unix_timestamp}
+  timestamp: string;                 // ISO String UTC/Server
+  propuestaPor: Actor;               // "camilo" | "angie"
+  descripcion: string;
+  casoDeUso: string;
+  motivoImportancia: string;
+  triageImpacto: TriageImpacto | null;   // lo llena IDEAS-TRIAGE-01
+  triageEsfuerzo: TriageEsfuerzo | null; // lo llena IDEAS-TRIAGE-01
+  triageAlineacion: string | null;       // texto corto, lo llena IDEAS-TRIAGE-01
+  estado: EstadoIdea;
+  prioridadScore: number | null;     // calculado server-side por IDEAS-TRIAGE-01, nunca por el modelo
+}
+

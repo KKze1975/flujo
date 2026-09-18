@@ -25,6 +25,8 @@ import type {
   CierreMensual,
   EventoLog,
   TipoEventoLog,
+  Idea,
+  EstadoIdea,
 } from "./types";
 
 export class SheetsDataProvider implements IDataProvider {
@@ -1134,6 +1136,142 @@ export class SheetsDataProvider implements IDataProvider {
     });
 
     return eliminadasCount;
+  }
+
+  // ── H10 IdeasBacklog ────────────────────────────────────────────────────────
+  private readonly H10_HEADERS = [
+    "id", "timestamp", "propuesta_por", "descripcion", "caso_de_uso",
+    "motivo_importancia", "triage_impacto", "triage_esfuerzo", "triage_alineacion",
+    "estado", "prioridad_score",
+  ];
+
+  private async ensureH10(): Promise<void> {
+    const meta = await this.sheets.spreadsheets.get({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+    });
+    const exists = meta.data.sheets?.some(s => s.properties?.title === "H10");
+    if (!exists) {
+      await this.sheets.spreadsheets.batchUpdate({
+        spreadsheetId: process.env.GOOGLE_SHEET_ID,
+        requestBody: { requests: [{ addSheet: { properties: { title: "H10" } } }] },
+      });
+      await this.sheets.spreadsheets.values.update({
+        spreadsheetId: process.env.GOOGLE_SHEET_ID,
+        range: "H10!A1",
+        valueInputOption: "RAW",
+        requestBody: { values: [this.H10_HEADERS] },
+      });
+    }
+  }
+
+  private ideaToRow(idea: Idea): string[] {
+    return [
+      idea.id,
+      idea.timestamp,
+      idea.propuestaPor,
+      idea.descripcion,
+      idea.casoDeUso,
+      idea.motivoImportancia,
+      idea.triageImpacto == null ? "" : String(idea.triageImpacto),
+      idea.triageEsfuerzo == null ? "" : String(idea.triageEsfuerzo),
+      idea.triageAlineacion == null ? "" : String(idea.triageAlineacion),
+      idea.estado,
+      idea.prioridadScore == null ? "" : String(idea.prioridadScore),
+    ];
+  }
+
+  private rowToIdea(row: string[], headers: string[]): Idea {
+    const col = (name: string) => row[headers.indexOf(name)] ?? "";
+    const strOrNull = (v: string) => (v === "" || v === undefined ? null : v);
+    const numOrNull = (v: string) => (v === "" || v === undefined ? null : Number(v));
+    return {
+      id: col("id"),
+      timestamp: col("timestamp"),
+      propuestaPor: col("propuesta_por") as Idea["propuestaPor"],
+      descripcion: col("descripcion"),
+      casoDeUso: col("caso_de_uso"),
+      motivoImportancia: col("motivo_importancia"),
+      triageImpacto: strOrNull(col("triage_impacto")) as Idea["triageImpacto"],
+      triageEsfuerzo: strOrNull(col("triage_esfuerzo")) as Idea["triageEsfuerzo"],
+      triageAlineacion: strOrNull(col("triage_alineacion")),
+      estado: (col("estado") || "nueva") as EstadoIdea,
+      prioridadScore: numOrNull(col("prioridad_score")),
+    };
+  }
+
+  async createIdea(data: Pick<Idea, "propuestaPor" | "descripcion" | "casoDeUso" | "motivoImportancia">): Promise<Idea> {
+    await this.ensureH10();
+    const id = `IDEA_${Date.now()}`;
+    const idea: Idea = {
+      id,
+      timestamp: new Date().toISOString(),
+      propuestaPor: data.propuestaPor,
+      descripcion: data.descripcion,
+      casoDeUso: data.casoDeUso,
+      motivoImportancia: data.motivoImportancia,
+      triageImpacto: null,
+      triageEsfuerzo: null,
+      triageAlineacion: null,
+      estado: "nueva",
+      prioridadScore: null,
+    };
+
+    await this.sheets.spreadsheets.values.append({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: "H10!A:K",
+      valueInputOption: "RAW",
+      requestBody: { values: [this.ideaToRow(idea)] },
+    });
+
+    return idea;
+  }
+
+  async getIdeas(filtro?: { estado?: EstadoIdea; propuestaPor?: Idea["propuestaPor"] }): Promise<Idea[]> {
+    await this.ensureH10();
+    const res = await this.sheets.spreadsheets.values.get({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: "H10!A:K",
+    });
+
+    const rows = res.data.values as string[][] | undefined;
+    if (!rows || rows.length < 2) return [];
+
+    const [headers, ...dataRows] = rows;
+    let ideas = dataRows
+      .filter((row) => row.length > 0 && row[headers.indexOf("id")])
+      .map((row) => this.rowToIdea(row, headers));
+
+    if (filtro?.estado) {
+      ideas = ideas.filter((i) => i.estado === filtro.estado);
+    }
+    if (filtro?.propuestaPor) {
+      ideas = ideas.filter((i) => i.propuestaPor === filtro.propuestaPor);
+    }
+
+    return ideas.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+  }
+
+  async updateIdea(id: string, data: Partial<Omit<Idea, "id">>): Promise<Idea> {
+    await this.ensureH10();
+    const res = await this.sheets.spreadsheets.values.get({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: "H10!A:K",
+    });
+    const rows = (res.data.values ?? []) as string[][];
+    if (rows.length < 2) throw new Error("H10 vacía");
+    const [headers, ...dataRows] = rows;
+    const rowIndex = dataRows.findIndex((row) => row[headers.indexOf("id")] === id);
+    if (rowIndex === -1) throw new Error(`Idea ${id} no encontrada`);
+    const existing = this.rowToIdea(dataRows[rowIndex], headers);
+    const updated: Idea = { ...existing, ...data, id };
+    const sheetRow = rowIndex + 2;
+    await this.sheets.spreadsheets.values.update({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: `H10!A${sheetRow}:K${sheetRow}`,
+      valueInputOption: "RAW",
+      requestBody: { values: [this.ideaToRow(updated)] },
+    });
+    return updated;
   }
 }
 

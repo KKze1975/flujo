@@ -160,5 +160,25 @@ export class MockDataProvider implements IDataProvider {
   limpiarEventosLogAntiguos(_diasRetencion?: number): Promise<number> {
     return Promise.resolve(0);
   }
+
+  // ── H10 ──────────────────────────────────────────────────────────────────
+  createIdea(data: Pick<import("./types").Idea, "propuestaPor" | "descripcion" | "casoDeUso" | "motivoImportancia">): Promise<import("./types").Idea> {
+    return Promise.resolve({
+      id: "mock-idea-1",
+      timestamp: new Date().toISOString(),
+      triageImpacto: null,
+      triageEsfuerzo: null,
+      triageAlineacion: null,
+      estado: "nueva",
+      prioridadScore: null,
+      ...data,
+    });
+  }
+  getIdeas(_filtro?: { estado?: import("./types").EstadoIdea; propuestaPor?: import("./types").Idea["propuestaPor"] }): Promise<import("./types").Idea[]> {
+    return Promise.resolve([]);
+  }
+  updateIdea(_id: string, _data: Partial<Omit<import("./types").Idea, "id">>): Promise<import("./types").Idea> {
+    return Promise.resolve(null as unknown as import("./types").Idea);
+  }
 }
 
