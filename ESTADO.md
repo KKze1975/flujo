@@ -7541,3 +7541,19 @@ Próximo ticket disponible sin bloqueo de diseño: `IDEAS-TRIAGE-01` (orden 40, 
 solo de `IDEAS-SCHEMA-01`, ya resuelto). `IDEAS-CAPTURA-01` e `IDEAS-VISTA-PRIORIZADA-01`
 siguen bloqueados por diseño (regla `T21`, pendiente de pasar por el rol
 Diseñador/Integrador).
+
+---
+
+## Fase -1/0 — Nueva línea abierta y parqueada: métricas clave en la home (18 sept 2026)
+
+Origen: análisis financiero real de PROD (dispatchado por la sesión de vault) que
+encontró tres puntos ciegos coincidentes en jul-ago 2026 (registro degradándose,
+"sin clasificar" creciendo, Imprevistos sin presupuesto). Camilo pidió que estas métricas
+aparezcan como lo primero visible en la home de la app. Por ser línea nueva planteada
+como intuición de solución sin etnografía as-is, se activó `fase0` — se alcanzaron a
+formular las preguntas de calificación de dolor (qué ve hoy Camilo al abrir la app, con
+qué frecuencia mira panorama general vs. semana puntual, si ya sospechaba estos patrones,
+si Angie también los mira) pero **Camilo pidió parquear esta línea antes de responder**,
+para terminar primero la línea de "backlog de ideas de features" que ya estaba en
+construcción. Fase -1/0 queda abierta, sin cerrar — no descartada. Retomar desde las
+preguntas ya formuladas cuando Camilo vuelva a esto.
