@@ -7281,3 +7281,49 @@ aprobación explícita de Camilo, mismo patrón que los demás candidatos de `IN
 
 **Sesión cerrada — se deja como siguiente paso, sin construir nada, a la espera de las
 decisiones de Camilo listadas en el "Estado accionable" de arriba.**
+
+---
+
+## Cierre de sesión — BOLSILLO-BOTON-OK-01, botón verde de incentivo visual (18 sept 2026)
+
+**Qué se pidió:** Angie (usuaria/QA approver), relayado por Camilo — cambiar el color
+del botón "Cerrar bolsillo" en los bolsillos semanales (Frutas y verduras, Víveres y
+otros, Entretenimiento, Imprevistos) de gris a verde, como incentivo visual a la
+ejecución. Cambio puramente cosmético: mismo texto, mismo `onClick`/`patchar`, sin
+tocar el guard que excluye a los bolsillos mensuales (Mercado mensual, Frida, Fondo
+transporte — esos nunca deben poder cerrarse, por diseño de `FIX-BOLSILLO-MENSUAL-01`).
+
+**Qué se construyó:** una sola línea cambiada en `components/VistaSemanal.tsx:1735`
+(`className="fl-btn ghost sm"` → `"fl-btn pos sm"`), la misma clase verde que ya usa
+el botón "OK" de conceptos regulares en producción. `npx tsc --noEmit` limpio. Commit
+de cierre `6efec48`, rama `dev`.
+
+**Veredicto del Tester — CUMPLE, con una salvedad:** el diff real (`git show 6efec48`)
+confirma que es exactamente esa línea, nada más — guard de bolsillos mensuales intacto,
+`onClick`/`patchar` idénticos. El Tester levantó `npm run dev` contra los datos reales
+de la hoja de Google y navegó la app, pero no había ningún bolsillo semanal con pago
+pendiente esa semana para ver el botón cambiado renderizado en pantalla — y decidió no
+forzar el modo "Editar semana" de una semana pasada para no arriesgar un `patchar`
+accidental contra datos financieros reales. Por eso el último ítem del DoD (verificación
+visual) se marca cumplido apoyado en evidencia de código equivalente — la misma clase
+`fl-btn pos` ya renderiza verde hoy en el botón "OK" del mismo archivo, sin reportes de
+que se vea mal — no en una captura del botón "Cerrar bolsillo" ya cambiado.
+
+**Pendiente para Camilo:** dos archivos de documentación quedaron sin commitear encima
+del commit de cierre del Coder (`6efec48`) — `tickets/INDICE.md` (falta la fila de este
+ticket) y `tickets/BOLSILLO-BOTON-OK-01.md` (con las notas del Tester y de este Manager
+ya escritas). Este Manager no tiene `Bash`, así que no puede hacer ese commit — alguien
+con acceso a `git` en el repo necesita agregarlos.
+
+**Estado accionable:**
+- Unidad: ticket
+- En curso: ninguno (BOLSILLO-BOTON-OK-01 completado)
+- Backlog priorizado: sin cambios respecto a la entrada anterior — sigue primero
+  **SEC-EXPOSICION-PUBLICA-01**, esperando que Camilo elija opción A/B/C
+- Bloqueados esperando a Camilo: (1) todo lo ya listado en la entrada anterior sobre
+  SEC-EXPOSICION-PUBLICA-01; (2) commit de `tickets/INDICE.md` y
+  `tickets/BOLSILLO-BOTON-OK-01.md` (pendiente de esta sesión, ver arriba); (3) opcional
+  — pedirle a Angie que confirme visualmente el botón verde cuando exista un bolsillo
+  semanal con pago pendiente real, dado que el Tester no pudo verlo en pantalla.
+- Próximo paso: commitear los dos archivos de documentación sueltos; el ticket en sí no
+  necesita más trabajo de construcción.
