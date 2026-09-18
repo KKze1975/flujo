@@ -7516,3 +7516,28 @@ corrección puntual.
 
 **Fase 2 cerrada.** Empieza Fase 3 — Construcción iterativa, un ticket a la vez (I-09).
 Primer ticket a construir: `IDEAS-SCHEMA-01`.
+
+---
+
+## Fase 3 — IDEAS-SCHEMA-01 completado (18 sept 2026)
+
+Primer ticket de la línea de ideas de features construido y cerrado. Se agregó el
+esquema H10 (`IdeasBacklog`) al Sheet — tab `H10` con los 11 campos aprobados en el spec
+de Fase 2 (`id, timestamp, propuesta_por, descripcion, caso_de_uso, motivo_importancia,
+triage_impacto, triage_esfuerzo, triage_alineacion, estado, prioridad_score`) — junto con
+`IDataProvider` ganando `createIdea`/`getIdeas`/`updateIdea` e implementadas en
+`SheetsDataProvider` (y el stub obligatorio en `MockDataProvider`), siguiendo el mismo
+patrón ya usado para H9/EventosLog. Commit de construcción: `63e7bc3` (DEV).
+
+DEV y PROD quedaron verificados. DEV: `npx tsc --noEmit` limpio y escritura/lectura real
+en el Sheet DEV confirmando los 11 campos. PROD (I-10): el harness bloqueó la escritura
+directa contra PROD tanto al Coder como a la sesión de vault (`[Production Deploy]`) —
+Camilo aplicó el cambio de esquema él mismo, corriendo `node scripts/setup-h10-prod.mjs`
+(réplica del patrón ya aprobado de `setup-h9-prod.mjs`), confirmado por lectura
+independiente de la sesión de vault contra `PROD_GOOGLE_SHEET_ID`: tab `H10` existe con
+los 11 headers correctos.
+
+Próximo ticket disponible sin bloqueo de diseño: `IDEAS-TRIAGE-01` (orden 40, depende
+solo de `IDEAS-SCHEMA-01`, ya resuelto). `IDEAS-CAPTURA-01` e `IDEAS-VISTA-PRIORIZADA-01`
+siguen bloqueados por diseño (regla `T21`, pendiente de pasar por el rol
+Diseñador/Integrador).
