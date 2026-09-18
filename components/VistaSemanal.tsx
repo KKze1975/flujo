@@ -1732,7 +1732,7 @@ export default function VistaSemanal({
                     {!ejecutado && !idsBolsillosMensuales.has(mov.conceptoId) && modoSemana !== "lectura" && (
                       <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
                         <button
-                          className="fl-btn ghost sm"
+                          className="fl-btn pos sm"
                           style={{ flex: 1 }}
                           type="button"
                           disabled={busy}
