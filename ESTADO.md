@@ -7327,3 +7327,66 @@ con acceso a `git` en el repo necesita agregarlos.
   semanal con pago pendiente real, dado que el Tester no pudo verlo en pantalla.
 - Próximo paso: commitear los dos archivos de documentación sueltos; el ticket en sí no
   necesita más trabajo de construcción.
+
+---
+
+## Fase -1/0 — Nueva línea: backlog de ideas de features con triage por IA (18 sept 2026)
+
+**Origen:** sesión de vault (Chief of Staff), tras cerrar `BOLSILLO-BOTON-OK-01`. Camilo
+propuso "un bot sencillo que con IA acepte recomendaciones y haga triage para nuevos
+features". Por ser una línea/vertical nueva dentro de Flujo planteada como intuición de
+solución en lenguaje natural, se aplicó el protocolo `fase0` del vault antes de discutir
+cualquier atributo de la solución (canal, modelo de IA, arquitectura) — dos veces Camilo
+introdujo detalles de solución ("modelo barato", "con Haiku", "vía desde la aplicación al
+repositorio de memoria") y se dejaron explícitamente de lado hasta el cierre de esta fase.
+
+**Flujo as-is (fuente: Camilo, confianza alta — es quien ejecuta el proceso en carne
+propia):**
+- Las ideas de mejora surgen en tres momentos: caminata matutina de Camilo y Angie,
+  reuniones de ambos, y mientras alguien usa la app (típicamente Angie).
+- Camilo captura algunas en la app Notes de su teléfono — "no en todos los casos".
+- Cuando una idea no queda en Notes, "tiende a perderse del todo".
+- Las que sí quedan en Notes tampoco tienen revisión sistemática: "a veces la he
+  revisado, a veces no" — depende de si Camilo llega a abrir Notes.
+- No existe ningún mecanismo de seguimiento de una idea entre una conversación y la
+  siguiente — no solo falta capturarla, falta que sobreviva y se retome.
+- Angie comunica sus ideas directamente a Camilo (no las pierde por falta de canal); el
+  hueco está después de que la idea llega a Camilo, no en cómo Angie la expresa.
+- **Caso concreto y recurrente:** "conciliación bancaria" (comparar los correos/movimientos
+  del banco contra lo registrado en la app para detectar gastos no capturados) se ha
+  conversado varias veces entre Camilo y Angie, en momentos distintos, sin que ninguna vez
+  quedara registrada de forma que sobreviviera — cada vez se "redescubre" desde cero. Nota:
+  la idea de conciliación bancaria en sí es una idea de feature separada, no forma parte
+  del alcance de esta línea — queda registrada aquí solo como evidencia del patrón de
+  pérdida.
+
+**Dolor y retorno (segundo momento de calificación, post-etnografía):**
+- Dolor: recurrente (3-5 ideas nuevas al mes según Camilo), costoso (ideas repetidas sin
+  avanzar, como conciliación bancaria) y atribuible a un proceso concreto (falta de
+  backlog persistente), no a una persona — Camilo lo nombra explícitamente como "el
+  problema más costoso" hoy en Flujo, no solo el más visible: **"es el más costoso dado
+  que la aplicación está estancada en evolución"** (respuesta textual a la pregunta
+  obligatoria de cierre de Fase 0).
+- Retorno, en palabras de Camilo: "se aumenta la adopción de nuevos features que tienen
+  impacto real en la cultura financiera y las finanzas de la familia" — retorno
+  habilitador (permite que la app siga evolucionando), no solo instrumental.
+- Motivación sostenible: no bloqueante por sí sola (criterio del método), pero evidenciada
+  — Camilo trajo el tema espontáneamente tras cerrar un ticket real originado en una idea
+  de Angie (`BOLSILLO-BOTON-OK-01`), no por presión externa.
+
+**Mapa de actores (fuente: Camilo, confianza alta):**
+- Champion: Camilo (lo propuso sin que nadie se lo pidiera).
+- Blocker: "nada identificado".
+- Decisor: Camilo y Angie, en conversación conjunta — no hay un tercero que apruebe
+  presupuesto.
+- Métrica de éxito en palabras del cliente: mayor adopción de nuevos features con impacto
+  real en la cultura financiera y las finanzas de la familia (misma frase que el retorno).
+
+**Criterio de cierre — confirmación textual de Camilo** (quien ejecuta el proceso en
+carne propia, no como consultor ni constructor): *"exactamente como funciona hoy"*, en
+respuesta directa a la reconstrucción del as-is que se le presentó (caminatas/reuniones/
+uso de la app → captura inconsistente en Notes → pérdida sin seguimiento entre sesiones).
+
+**Fase -1/0 cerrada.** Sigue Fase 1 — Diseño (flujos to-be, sin tecnología, con
+alternativas evaluadas y validación de quien vive el proceso) — todavía no iniciada en
+esta sesión.
