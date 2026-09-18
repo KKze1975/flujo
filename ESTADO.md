@@ -7390,3 +7390,94 @@ uso de la app → captura inconsistente en Notes → pérdida sin seguimiento en
 **Fase -1/0 cerrada.** Sigue Fase 1 — Diseño (flujos to-be, sin tecnología, con
 alternativas evaluadas y validación de quien vive el proceso) — todavía no iniciada en
 esta sesión.
+
+---
+
+## Fase 1 — Diseño: backlog de ideas de features con triage por IA (18 sept 2026)
+
+**Sesión DISEÑO** (misma sesión de vault que cerró Fase -1/0 arriba). Sin tecnología
+propuesta ni decidida en este hilo — todo lo técnico que surgió queda estacionado en
+"Insumos para Fase 2" abajo.
+
+### To-be — Alternativa A (elegida)
+
+Narrado a partir de lo que describió Camilo, reorganizado por la sesión para el
+contraste con el as-is (marcado explícitamente qué es reformulación del constructor):
+
+- En el momento en que a Camilo o Angie se les ocurre algo, lo registran ahí mismo — no
+  esperan a acordarse después.
+- **Declaración textual de Camilo, corrigiéndose a sí mismo en la misma sesión:** "No
+  necesariamente [hace falta revisarla entre los dos antes]. Todas las ideas se pueden
+  subir." — cualquier idea, de cualquiera de los dos, se registra directamente, sin
+  filtro previo entre ellos.
+- Después de registrada, alguien le hace preguntas a quien la propuso — sobre el caso de
+  uso concreto y por qué le parece importante — para no quedarse con una frase suelta.
+  Cita de Camilo: "retener el caso de uso y por qué el usuario cree que eso es
+  importante".
+- Con esas respuestas, la idea pasa por un triage según criterios (sin definir — Fase 2).
+- Cuando Camilo y Angie se sientan a revisar (como en estas sesiones), ven las ideas
+  **priorizadas, con contexto ya armado**, y con noción de qué haría falta para
+  ejecutar cada una y en qué estado está. Cita de Camilo: "me gustaría verlas
+  priorizadas con contexto ya armado, e incluso ya un plan de ejecución".
+
+*(Nota: la estructura narrativa "un día cualquiera" y el contraste as-is/to-be de abajo
+son formulación del constructor (la sesión), a partir de los fragmentos citados de
+Camilo — no una narración continua que él dictó tal cual.)*
+
+**Contraste con el as-is de Fase -1/0 (arriba):**
+- *Desaparece:* depender de que Camilo se acuerde de escribir la idea en Notes; la
+  pérdida total cuando no queda registrada; "redescubrir" la misma idea varias veces
+  (como pasó con "conciliación bancaria").
+- *Cambia:* el momento de tener la idea y el momento de registrarla se vuelven el mismo
+  acto — ya no hay brecha entre "se me ocurrió" y "quedó en algún lado". La revisión
+  conjunta en caminatas/reuniones sigue existiendo igual que hoy.
+- *Aparece:* un paso de preguntas que profundiza cada idea antes de llegar a la revisión
+  conjunta; una vista priorizada con contexto cuando Camilo/Angie se sientan a decidir.
+
+### Alternativa B — no tecnológica (evaluada y descartada)
+
+Hábito manual: revisar juntos las notas del teléfono cada semana, o al cierre de cada
+sesión de Flujo, sin construir nada nuevo.
+
+**Descartada por Camilo**, decisor junto con Angie (mismo mapa de actores de Fase -1/0),
+con razón textual: *"no hay realmente tiempo para hacer esto... nos hemos acostumbrado a
+que [la app] funcione de una manera... no pensamos tanto en la innovación de esa
+aplicación"* — con la evidencia ya disponible de que un hábito manual no funcionó
+("conciliación bancaria" se habló varias veces sin que ningún hábito manual la
+organizara).
+
+**Pregunta de diagnóstico del método** ("¿qué alternativa no estoy evaluando?"): se hizo
+explícitamente en la sesión; la respuesta fue la Alternativa B de arriba — no surgió una
+tercera alternativa no tecnológica adicional.
+
+### Conclusiones del equipo
+
+- El triage debe capturar caso de uso + motivo de importancia para quien propone — dicho
+  por Camilo, no agregado por el constructor.
+- No debe haber filtro previo entre Camilo y Angie antes de registrar una idea — dicho
+  por Camilo, corrigiéndose a sí mismo en vivo.
+- La vista de revisión conjunta debe mostrar prioridad + contexto + estado de ejecución —
+  dicho por Camilo.
+- La narrativa de "un día cualquiera" y el contraste as-is/to-be fueron formulados por el
+  constructor (la sesión) a partir de esos fragmentos — aceptados por Camilo sin
+  corrección al validarlos ("lo refleja bien").
+
+### Insumos para Fase 2 (estacionados, sin decidir)
+
+- Modelo de IA a usar ("modelo barato", mencionado "Haiku").
+- Canal de captura ("la aplicación", "el bot") — cómo se registra la idea en el momento.
+- "Vía desde la aplicación al repositorio de memoria" (integración Flujo ↔ obsidian-mind).
+- Criterios/parámetros concretos del triage.
+- Quién/qué hace las preguntas de profundización ("un agente que tiene parámetros").
+- Generación de "plan de ejecución" por idea.
+- Modelo de estados (en desarrollo / en proceso / etc.).
+
+### Cierre — validación de quien vive el proceso
+
+Cita textual de Camilo, 18 sept 2026: **"lo refleja bien, está confirmado con Angie
+también."** — validación explícita del to-be de la Alternativa A tal como quedó
+reconstruido arriba, confirmando además que Angie (la otra persona que vive este
+proceso) ya está de acuerdo.
+
+**Fase 1 cerrada.** Sigue Fase 2 — Especificación (requisitos funcionales, esquema de
+datos, arquitectura técnica mínima viable, backlog de tickets) — todavía no iniciada.
