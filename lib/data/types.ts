@@ -231,3 +231,27 @@ export interface EventoLog {
   detalle: string;       // JSON string o texto legible
 }
 
+// ── H10 ────────────────────────────────────────────────────────────────────
+
+export type EstadoIdea =
+  | "nueva"
+  | "en_triage"
+  | "priorizada"
+  | "en_construccion"
+  | "construida"
+  | "descartada";
+
+export interface Idea {
+  id: string;                        // IDEA_{unix_timestamp}
+  timestamp: string;                 // ISO String UTC/Server
+  propuestaPor: Actor;               // "camilo" | "angie"
+  descripcion: string;
+  casoDeUso: string;
+  motivoImportancia: string;
+  triageImpacto: number | null;      // lo llena IDEAS-TRIAGE-01 en adelante
+  triageEsfuerzo: number | null;
+  triageAlineacion: number | null;
+  estado: EstadoIdea;
+  prioridadScore: number | null;     // lo calcula IDEAS-TRIAGE-01 en adelante
+}
+

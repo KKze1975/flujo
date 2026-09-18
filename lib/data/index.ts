@@ -13,6 +13,8 @@ import type {
   CierreMensual,
   EventoLog,
   TipoEventoLog,
+  Idea,
+  EstadoIdea,
 } from "./types";
 
 export interface IDataProvider {
@@ -73,8 +75,13 @@ export interface IDataProvider {
   createEventoLog(data: Omit<EventoLog, "id">): Promise<EventoLog>;
   getEventosLog(filtro?: { tipoEvento?: TipoEventoLog; mes?: string; desde?: string; hasta?: string }): Promise<EventoLog[]>;
   limpiarEventosLogAntiguos(diasRetencion?: number): Promise<number>;
+
+  // ── H10 ──────────────────────────────────────────────────────────────────
+  createIdea(data: Pick<Idea, "propuestaPor" | "descripcion" | "casoDeUso" | "motivoImportancia">): Promise<Idea>;
+  getIdeas(filtro?: { estado?: EstadoIdea; propuestaPor?: Idea["propuestaPor"] }): Promise<Idea[]>;
+  updateIdea(id: string, data: Partial<Omit<Idea, "id">>): Promise<Idea>;
 }
 
-export type { Semana, Concepto, Movimiento, Bolsillo, Consumo, ConsumoH3, IngresoCamilo, IngresoAngie, SaldoCuenta, CierreSemana, PlanSemana, CierreMensual, EventoLog, TipoEventoLog };
+export type { Semana, Concepto, Movimiento, Bolsillo, Consumo, ConsumoH3, IngresoCamilo, IngresoAngie, SaldoCuenta, CierreSemana, PlanSemana, CierreMensual, EventoLog, TipoEventoLog, Idea, EstadoIdea };
 export * from "./types";
 
