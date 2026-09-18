@@ -62,4 +62,14 @@ Spec de Fase 2 completo en `ESTADO.md`. Patrón visual de referencia:
 
 ## Notas de ejecución
 
-(vacío)
+- **18 sept 2026 — brief de diseño listo.** Rol Diseñador/Integrador (paso 1 de 2)
+  escribió el brief para Antigravity/Stitch en
+  `design-handoff/IDEAS-CAPTURA-01-brief.md`. Cubre el flujo to-be paso a paso, el
+  patrón visual real a reusar (`BottomNav.tsx`, `RegistroRapido.tsx`,
+  `InputRegistro.tsx`, el wrapper `.sheet-*` de `HomeHub.tsx`), la decisión de dónde
+  vive el punto de entrada nuevo (explícitamente NO resuelta acá — nombrada como
+  pendiente del diseño, con opciones observadas en el código), el detalle del
+  formulario, y qué queda fuera de alcance. **El ticket sigue `bloqueado`**: este brief
+  no es la aprobación de diseño, es el insumo para generarla. Falta que Camilo lleve
+  el brief a Antigravity/Stitch y traiga el HTML/diseño resultante para la integración
+  (paso 2, otra sesión) antes de que este ticket pueda pasar a `activo`.
