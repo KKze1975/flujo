@@ -7634,3 +7634,92 @@ Pendiente para Camilo (no resoluble por el Manager, sin `Bash`): el commit de
 construcción del Coder (`6df3a2b`) está en `dev` sin `push`, y los cambios que hizo el
 Tester sobre el propio ticket (DoD marcado, notas de verificación) quedaron sin
 commitear encima.
+
+---
+
+## Cierre de sesión — 18 sept 2026 (Chief of Staff, vault)
+
+**Delta de la sesión:**
+
+1. `BOLSILLO-BOTON-OK-01` — botón verde en bolsillos semanales, pedido de Angie.
+   Construido, verificado (CUMPLE con una salvedad razonada), desplegado a producción
+   vía PR #44 (`fcaa42e`), validado en vivo por Angie. **Terminado.**
+2. Investigación puntual sobre "mercado mensual"/"fondo transporte": confirmado que el
+   comportamiento actual es correcto (sin doble conteo). Asimetría de presupuesto
+   conocida, Camilo decidió dejarla como está.
+3. Línea "backlog de ideas de features con triage por IA" — ciclo completo Fase
+   -1/0→1→2→3 (detalle en las entradas propias de cada fase, arriba en este archivo):
+   `IDEAS-SCHEMA-01` construido y verificado en DEV+PROD (Camilo corrió el script de
+   esquema en PROD él mismo tras el bloqueo del permission-prompt "Production Deploy");
+   `IDEAS-TRIAGE-01` construido pero descartado (sin crédito en la cuenta de API de
+   Anthropic — separada del plan Claude Max de Camilo — decidió simplificar: el triage
+   se hace conversando en sesión, no con un bot); `IDEAS-VISTA-PRIORIZADA-01` descartado
+   como consecuencia; `IDEAS-CAPTURA-01` diseño aprobado directo por Camilo (sin
+   Antigravity), construido, CUMPLE completo con verificación visual real (Claude in
+   Chrome). PR #45 (`dev`→`main`, `e6d916e`) creado y mergeado, confirmado por `git`.
+4. Análisis financiero real de PROD (informativo, sin tickets): registro degradándose en
+   jul-ago 2026 (10%→4%→21%→43% de movimientos pendientes), "sin clasificar" ya es el
+   tercer rubro más grande ($4.39M en 4 meses, por encima de Entretenimiento y Víveres),
+   Víveres es el bolsillo peor calibrado (se pasa del techo 24% de las veces), Imprevistos
+   sin presupuesto desde julio pero sigue gastándose ($73k-$1.9M/mes), solo 9 de ~17
+   semanas esperadas tienen cierre formal (H5). Las tres primeras métricas inflexionan
+   juntas en jul-ago — un mismo cambio de hábito, no tres derivas separadas. Top gasto:
+   Arriendo ($20.69M) y Colegio ($16.16M) dominan. Mayor crecimiento confiable:
+   Imprevistos (+175%, jun→ago).
+5. Línea "métricas clave en la home" — Fase -1/0 abierta (activada por el punto 4),
+   preguntas de calificación de dolor formuladas, **parqueada por Camilo** antes de
+   responder para priorizar la línea de ideas (entrada propia arriba en este archivo).
+6. **Pendiente crítico sin resolver:** tras el merge de PR #45, Vercel no disparó ningún
+   deploy nuevo — confirmado por `git` que `main` tiene el código correcto, pero no se
+   pudo diagnosticar la causa (intento por navegador sin sesión logueada en la cuenta de
+   Vercel de Camilo, cerrada a su pedido en vez de intentar loguearse). **En producción,
+   al cierre de esta sesión, el botón "Sugerir una mejora" probablemente NO existe
+   todavía**, aunque el código esté mergeado en GitHub.
+
+**Deuda técnica nueva:**
+- `scripts/check-ticket.mjs` no reconoce `dependencias: [X]` con corchetes (sintaxis ya
+  usada en varios tickets del proyecto) — genera advertencias falsas de "no aparece en
+  INDICE.md". No bloqueante, pendiente de arreglo.
+- Código muerto a propósito: el endpoint de `IDEAS-TRIAGE-01` (Haiku) queda en el
+  historial sin usarse — decisión explícita documentada en el propio ticket, no
+  descuido.
+
+**Retrospectiva (Fase 4):**
+- **Qué funcionó:** el ciclo Fase -1/0→1→2→3 corrió de punta a punta dos veces en una
+  sola sesión, con Coder/Tester/Manager aislados y verificación real en cada paso, sin
+  saltos de fase. El HALT del Coder ante el permission-prompt "Production Deploy"
+  funcionó como debía, dos veces, sin que nadie intentara sortearlo. La simplificación
+  de `IDEAS-TRIAGE-01`/`IDEAS-VISTA-PRIORIZADA-01` es un ejemplo limpio de INV-002 en
+  acción, bien documentado con su razón.
+- **Qué no funcionó:** el deploy a producción se rompió después del merge sin causa
+  identificada — queda abierto. El script de setup de PROD para H10 falló en el primer
+  intento (corrido desde el directorio equivocado) sin mensaje de error obvio hasta
+  investigarlo.
+- **Qué cambia en la próxima sesión:** revisar primero el estado del deploy de Vercel.
+  Después, decidir si se retoma "métricas en la home" o se prioriza otra cosa — y ya
+  existe un canal real (el botón nuevo, una vez en producción) para que los hallazgos
+  del análisis financiero no se pierdan.
+- **Candidato a invariante:** ninguno pasa el filtro estricto esta sesión — los
+  hallazgos son operativos (herramienta de despliegue) o ya cubiertos por invariantes
+  existentes (I-10, aplicado correctamente).
+
+**Estado accionable:**
+- Unidad: ticket
+- En curso: [Producto] Deploy de PR #45 a producción — bloqueado (Vercel no disparó
+  build tras el merge, causa sin identificar)
+- Backlog priorizado (top 3 de 3 abiertos):
+  1. [Producto] Fase -1/0 "métricas clave en la home" — parqueada, preguntas de dolor
+     ya formuladas sin responder
+  2. [Operación] `SEC-EXPOSICION-PUBLICA-01` — sigue esperando que Camilo elija opción
+     A/B/C (de sesión anterior, no tocado hoy)
+  3. [Operación] `check-ticket.mjs` — bug de parseo con `dependencias: [X]`,
+     advertencias falsas
+- Reactivo/incidentes: [Operación] deploy de Vercel no se disparó tras el merge de
+  PR #45 — diagnosticar (posible webhook GitHub↔Vercel desconectado)
+- Seguridad: sin cambios — `SEC-EXPOSICION-PUBLICA-01` sigue abierto
+- FinOps/Costo: cuenta de API de Anthropic (`console.anthropic.com`) sin crédito,
+  separada del plan Claude Max de Camilo — sin acción pendiente, decidió no recargarla
+- Bloqueados esperando a Camilo: (1) diagnosticar el deploy de Vercel — bloquea que la
+  línea de ideas funcione en producción; (2) decidir si retoma "métricas en la home"
+- Próximo paso: revisar el dashboard de Vercel; una vez resuelto, confirmar con un
+  health check que `IDEAS-CAPTURA-01` está realmente en producción.
