@@ -2,6 +2,31 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Tablero de inicio de sesión (mecanismo del vault `obsidian-mind`, §24, 22 sept 2026)
+
+Antes de responder al contenido del primer mensaje de una sesión rooteada acá, si esta sesión
+corre en la máquina Linux/Crostini (con acceso a `/home/camilovillamil/obsidian-mind`) — no
+aplica si corre en la máquina Windows, donde los hooks de este mismo `CLAUDE.md` sí funcionan
+pero este script no está disponible todavía — corré:
+
+```
+python3 /home/camilovillamil/obsidian-mind/scripts/centro-de-control.py --proyecto "Flujo"
+```
+
+y pegá la tabla completa tal cual la devuelve el comando — markdown literal, todas las filas, sin resumir en prosa ni convertirla a texto corrido (`#` / `Tipo` / `Item` / `Urgencia` — 🔴 Bloqueado / ⏳ Pendiente
+/ 💡 Idea / 🤖 Agente-tarea recurrente, ordenada por urgencia) antes de proceder con lo que Camilo
+pidió. El mecanismo y el formato son propiedad del vault (`obsidian-mind`), no de este proyecto
+— este proyecto solo lo invoca. Ver `brain/doctrine/ARQUITECTURA_MULTIAGENTE.md` §24 en el vault
+para el diseño completo.
+
+**Pendientes marcados `[Vault]` (25 sept 2026, mecanismo nuevo):** si la tabla trae una fila
+`📌 Iniciativa` cuyo texto empieza con `[Vault]`, señalalo explícitamente en tu primera
+respuesta antes de proceder con lo que Camilo pidió — es un pendiente que bajó de una decisión
+de la sesión Chief of Staff del vault, no generado por este proyecto; funciona como un *push*
+de actualización que hay que confirmar que se vio, no dejar enterrado en la tabla. Se cierra
+cambiando su estado en `PENDIENTES.md` (`hecha`/`descartada: <razón>`) igual que cualquier
+otra fila — nunca por omisión.
+
 @AGENTS.md
 
 ## graphify
