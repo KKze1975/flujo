@@ -19,7 +19,6 @@
 
 | Proyecto | Iniciativa | Estado | Próxima revisión | Métrica objetivo | Resultado medido | Puntero |
 |---|---|---|---|---|---|---|
-| Flujo | [Vault] Deploy PR #45 a producción | bloqueada | 2026-10-02 | 100% uptime post-deploy | no aplica | ESTADO.md, sesión 19 sept — Vercel no disparó build; necesita investigación antes de retry |
 | Flujo | [Vault] SEC-EXPOSICION-PUBLICA-01 — decisión Camilo A/B/C | bloqueada | 2026-10-02 | decisión explícita | esperando | ESTADO.md, sesión 19 sept — operación bloqueada; requiere input de Camilo sobre opción elegida |
 | Flujo | [Vault] bug check-ticket.mjs: parseo con `dependencias: [X]` | pendiente | 2026-09-30 | bug no reaparece | no verificado aún | ESTADO.md, sesión 19 sept — error en parseo de arrays en campo; categorizado como reactivo/incidentes |
 | Flujo | [Vault] Fase -1/0: módulo flujo de caja para Ángela María | en curso | 2026-09-30 | etnografía as-is completada | en espera | ESTADO.md, sesión 19 sept — nueva línea, integrada en Flujo; próximo paso: etnografía directa de Camilo con Ángela María (confirmado pivote de Consultorio) |
@@ -28,3 +27,4 @@
 
 | Proyecto | Iniciativa | Estado | Fecha de cierre | Puntero |
 |---|---|---|---|---|
+| Flujo | [Vault] Deploy PR #45 a producción | hecha | 2026-09-28 | Falso bloqueo: deploy `dpl_9x5NFUF2…` READY en producción desde 2026-09-18, `flujo-dun.vercel.app` HTTP 200 con "Sugerir una mejora". Ver ESTADO.md, sesión DEBUGGING 28 sept |

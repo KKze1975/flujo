@@ -7723,3 +7723,196 @@ commitear encima.
   línea de ideas funcione en producción; (2) decidir si retoma "métricas en la home"
 - Próximo paso: revisar el dashboard de Vercel; una vez resuelto, confirmar con un
   health check que `IDEAS-CAPTURA-01` está realmente en producción.
+
+---
+
+## Fase -1/0 — Nueva línea abierta: módulo profesional para Ángela María, flujo de caja de su práctica de psicología (19 sept 2026)
+
+*(Sesión de vault, Chief of Staff — conducida directo por excepción de `CLAUDE.md`
+raíz: proyecto/línea nueva sin Fase -1/0 cerrada no se delega a un Manager de
+proyecto-hijo. Activado por skill `fase0`, `.claude/skills/fase0/SKILL.md` del vault,
+porque el pedido llegó como intuición de solución en lenguaje natural — "módulo
+profesional para que ella pueda manejar el flujo de caja de su práctica" — sin flujo
+as-is validado adjunto todavía.)*
+
+**Origen:** Camilo declaró un proyecto comisionado por Ángela María, con intención
+explícita de que viva integrado en Flujo como módulo, no como proyecto aparte — decisión
+suya, no asumida por este protocolo.
+
+**Dolor candidato (hipótesis inicial, Fase -1, primer momento — fuente: relato de
+Camilo, no todavía voz directa de Ángela María; confianza media):** desde hace tiempo,
+Ángela María lleva en Excel el seguimiento de los pagos de los clientes de su práctica.
+Según Camilo, ese seguimiento "suele ser complejo, suele tomar mucho tiempo y es
+proclive a errores" — sin cuantificar todavía frecuencia, costo en tiempo/plata, ni si
+es atribuible al proceso (Excel manual) o a otra causa.
+
+**Retorno:** sin calificar — pendiente de la etnografía.
+
+**Motivación sostenible:** sin evaluar — pendiente.
+
+**Sin calificar todavía (pendiente antes de cerrar Fase -1, mismos criterios del
+protocolo):** frecuencia/costo real del dolor, si es recurrente y atribuible al proceso
+de seguimiento en Excel (no a otra causa), retorno específico y verificable si se
+resolviera, motivación de Ángela María para usar esto de forma continuada.
+
+**Mapa de actores (parcial):**
+- Quien vive el proceso: Ángela María (psicóloga, práctica propia) — su confirmación es
+  la única válida para cerrar Fase 0, no la de Camilo relayando.
+- Camilo: no vive el proceso — trae la intuición inicial, va a tener la sesión de
+  etnografía directamente con ella.
+- Champion / blocker / decisor de presupuesto / métrica de éxito: pendientes.
+
+**Nota de continuidad sin resolver, no bloqueante — pendiente de que Camilo confirme:**
+existe un proyecto previo, "Consultorio" (Ángela María Velasco / "Angie"), registrado en
+`brain/doctrine/ESTADO.md` (apéndice 19 jul 2026) y en `org/CLIENTES-SOCIOS.md`, descrito
+como Fase 3 en curso a esa fecha — bots de WhatsApp para su práctica. No tiene carpeta en
+`work/` hoy, no aparece en `brain/North Star.md`, y no hay rastro de qué pasó con él desde
+jul 2026. "Angie" además es quien hoy aporta ingresos semanales en Flujo (`H4B
+IngresoAngie`) y es la QA approver de merges a `main` (`INVARIANTS.md` candidato I-17) —
+mismo nombre, no confirmado todavía si es la misma persona que "Ángela María" de este
+pedido nuevo (altamente probable, pero no se asume por inferencia). Si es la misma
+persona, vale la pena que Camilo aclare si este módulo de flujo de caja es continuación/
+pivote de "Consultorio" o una línea nueva sin relación — afecta dónde vive el historial
+relevante, no es una pregunta de producto.
+
+**Próximo paso:** Camilo tiene una sesión de etnografía directa con Ángela María y trae
+los hallazgos — no se avanza a Fase 0 real (evidencia as-is) ni se cierra Fase -1 hasta
+entonces. No se ha tomado ninguna decisión de producto, canal, stack ni arquitectura —
+prohibido explícitamente mientras esta fase esté abierta.
+
+**Actualización — confirmación de continuidad + revisión del historial de "Consultorio"
+(misma sesión, 19 sept 2026).** Camilo confirmó: sí es un pivote de "Consultorio" — "en la
+manera ya tiene un bot que está funcionando con... que se hizo la empresa de Daniel" (el
+bot de agendamiento por WhatsApp de esa línea ya está en producción hoy, construido por un
+tercero — la empresa de Daniel — no por ejecución propia de HG SDD). Confirmado también que
+"Angie" = Ángela María Velasco es la misma persona en ambos proyectos.
+
+Revisado el historial real de Consultorio (evidencia local encontrada, no memoria/
+inferencia — cumple el paso 1-2 del protocolo `fase0`, "reúne evidencia real / evalúa su
+calidad antes de tratarla como etnografía"):
+- `/mnt/shared/MyFiles/Downloads/fase0-consultorio-psicologia.html` — Fase 0 real,
+  **validada por Ángela María el 29 jun 2026** con la frase de cierre exacta del método
+  ("Así es exactamente como funciona hoy"). Evidencia de alta calidad: narrada en primera
+  persona del proceso (llamada inicial → formulario → evaluación 6 sesiones → slot fijo →
+  ciclos de tratamiento de 3 meses → cierre), con cifras reales (23 pacientes, 21/23 con
+  ambos correos, 13/23 sin motivo de consulta registrado) y riesgos declarados, no solo
+  proceso aplanado — pasa la prueba de "voz de quien ejecuta, no de quien gerencia".
+- **Hallazgo crítico para esta línea nueva: el seguimiento de pagos está explícitamente
+  fuera del alcance de ese MVP** — el propio documento lista "Seguimiento de pagos manual
+  en Google Sheets separado" como parte del As-Is, y "Pagos fuera del MVP — Angie continúa
+  su flujo actual" como decisión explícita del To-Be ("Módulo de pagos" en la columna
+  "Fuera del MVP"). Es decir: **no existe etnografía previa validada del proceso de pagos**
+  — lo único heredado es la confirmación independiente de que hoy ese seguimiento vive en
+  un Google Sheets separado, coincide con lo que Camilo relató hoy.
+- `INVARIANTS-Consultorio-Psicologia.md` (3 invariantes: etnografía antes de arquitectura,
+  agotar hipótesis simple, verificar arquitectura real antes de diseñar) — ninguno
+  menciona pagos/dinero; no aporta evidencia de proceso, solo confirma la misma disciplina
+  metodológica ya vigente en este vault (INV-001/002/003 equivalentes).
+- `Tickets Consultorio - Piloto WhatsApp - Tickets.tsv` (backlog de tickets CON-xx/MD-xx/
+  MSG-xx/etc.) — revisado por `grep` de pago/cobro/factura/dinero/caja: un único match
+  (CON-05, sobre plantillas de mensajes de Meta, no financiero). Confirma que el módulo de
+  pagos nunca se construyó ni se especificó dentro de Consultorio.
+
+**Conclusión del paso "reúne evidencia" para esta línea nueva:** el historial de
+Consultorio es información de contexto útil (mismo cliente, mismo criterio de cierre ya
+validado una vez, confirma que el dolor de seguimiento de pagos en Excel/Sheets es
+preexistente y conocido) pero **no sustituye la etnografía as-is del proceso de pagos en
+sí** — ese proceso nunca fue documentado ni validado por Ángela María, en ningún proyecto
+anterior. La sesión de etnografía que Camilo va a tener con ella sigue siendo necesaria e
+insustituible para cerrar Fase 0 de esta línea. No se tomó ninguna decisión de producto,
+canal, stack ni arquitectura a partir de esta revisión — solo se evaluó evidencia
+existente, tal como exige el protocolo.
+
+---
+
+## Cierre de sesión — Fase -1/0 abierta para Ángela María, historial de Consultorio revisado (19 sept 2026, Chief of Staff, vault)
+
+**Qué cambió esta sesión:**
+- Nueva línea Fase -1/0 abierta: módulo profesional de flujo de caja para la práctica de
+  psicología de Ángela María, comisionado por ella, integrado en Flujo por decisión
+  explícita de Camilo (no como proyecto aparte).
+- Dolor candidato registrado (hipótesis, confianza media — relato de Camilo, no aún voz
+  directa de Ángela María): seguimiento de pagos en Excel, complejo/lento/propenso a
+  errores.
+- Confirmado que es pivote del proyecto "Consultorio" (reactivado en paralelo en
+  `work/consultorio/ESTADO.md`). Revisado su historial real (Drive + `/mnt/shared`):
+  Fase 0 de agendamiento validada por Ángela María el 29 jun 2026, pero el seguimiento de
+  pagos estaba explícitamente **fuera** de ese MVP — no hay etnografía previa reutilizable
+  para este dolor específico.
+
+**Decisión tomada (con razón):** el módulo vive en Flujo, no en un proyecto aparte —
+decisión explícita de Camilo, no inferida por esta sesión.
+
+**Qué queda pendiente:** la etnografía directa con Ángela María que Camilo va a traer;
+hasta entonces Fase -1/0 sigue abierta, sin decisión de producto/canal/stack.
+
+**Deuda técnica nueva:** ninguna — Fase -1/0, sin código.
+
+**Retrospectiva (Fase 4 HG SDD):**
+1. **Qué funcionó:** revisar el historial real antes de etnografiar de cero evitó duplicar
+   trabajo y detectó a tiempo que el dolor de pagos nunca fue validado (a diferencia del
+   agendamiento, que sí lo fue).
+2. **Qué no funcionó:** nada que señalar — la sesión se mantuvo dentro de los límites de
+   `fase0` sin desvíos.
+3. **Qué cambia en la próxima sesión:** cuando Camilo traiga la etnografía de Ángela
+   María, retomar directo desde el mapa de actores (incompleto hoy) y los tres criterios
+   de calificación (dolor/retorno/motivación).
+4. **Candidato a invariante:** ninguno pasa el filtro estricto — no hubo error silencioso
+   ni dato corrupto, solo trabajo de proceso funcionando como diseñado.
+
+**Estado accionable:**
+- Unidad: fase/gate
+- En curso: [Producto] Fase -1/0 — flujo de caja para Ángela María — activo, esperando
+  etnografía directa
+- Backlog priorizado (top 3 de 3 abiertos, sin cambios respecto a la sesión anterior):
+  1. [Producto] Deploy de PR #45 a producción — bloqueado (Vercel no disparó build)
+  2. [Operación] `SEC-EXPOSICION-PUBLICA-01` — esperando que Camilo elija opción A/B/C
+  3. [Operación] `check-ticket.mjs` — bug de parseo con `dependencias: [X]`
+- Reactivo/incidentes: ninguno nuevo
+- Seguridad: sin cambios
+- FinOps/Costo: sin cambios
+- Bloqueados esperando a Camilo: etnografía directa con Ángela María (no bloqueante para
+  otras líneas)
+- Próximo paso: Camilo trae la etnografía; en paralelo sigue pendiente lo ya bloqueado del
+  deploy de Vercel
+
+---
+
+## Sesión DEBUGGING — bloqueo del deploy de PR #45 resuelto: nunca estuvo roto (28 sept 2026, Chief of Staff, vault)
+
+**Tipo de sesión:** DEBUGGING. Diagnóstico con evidencia leída de vuelta, sin cambios de código.
+
+**Problema original (entrada de 18-19 sept):** "tras el merge de PR #45, Vercel no disparó
+ningún deploy nuevo". Nunca se diagnosticó: el intento por navegador no tenía sesión en la
+cuenta de Vercel de Camilo.
+
+**Evidencia (MCP de Vercel + `curl`, 28 sept 2026):**
+- Deployment `dpl_9x5NFUF2Dd1yGd6KQBW3HwNkDVST`, proyecto `flujo`
+  (`prj_WSnbudQ4NPR5nrstI4LsiHxNn103`): rama `main`, commit `e6d916e` ("Merge pull request
+  #45 from KKze1975/dev"), `target: production`, estado `READY`, `aliasError: null`.
+- Creado 2026-09-18 21:10 UTC, ~7 min después del merge (16:07 -0500), listo ~11 min
+  después de crearse.
+- Alias de producción asignados a ese deployment: `flujo-dun.vercel.app`,
+  `flujo-camilo-s-projects10.vercel.app`, `flujo-git-main-camilo-s-projects10.vercel.app`.
+- `curl https://flujo-dun.vercel.app/` → HTTP 200 y el HTML contiene "Sugerir una mejora".
+
+**Conclusión:** el webhook GitHub↔Vercel funcionó y PR #45 está en producción. El bloqueo
+era un falso positivo de la sesión anterior. Causa probable (inferencia, no verificada): el
+deploy existía pero el panel de Vercel no se pudo leer sin sesión iniciada.
+
+**No verificado:** el flujo completo de captura de ideas en producción (solo se confirmó por
+`curl` que el texto del botón está en el HTML de la home, no que el flujo funcione de punta a
+punta).
+
+**Estado accionable:**
+- Unidad: fase/gate
+- En curso: [Producto] Fase -1/0 — flujo de caja para Ángela María — activo, esperando
+  etnografía directa
+- Backlog priorizado (top 2 de 2 abiertos):
+  1. [Operación] `SEC-EXPOSICION-PUBLICA-01` — esperando que Camilo elija opción A/B/C
+  2. [Operación] `check-ticket.mjs` — bug de parseo con `dependencias: [X]`
+- Resuelto esta sesión: [Producto] Deploy de PR #45 a producción — ya estaba desplegado
+- Bloqueados esperando a Camilo: etnografía con Ángela María; decisión A/B/C de
+  `SEC-EXPOSICION-PUBLICA-01`
+- Próximo paso: opcional, verificación visual real de la captura de ideas en producción
+  (Claude in Chrome); luego retomar `check-ticket.mjs`.
