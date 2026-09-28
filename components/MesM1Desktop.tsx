@@ -473,8 +473,13 @@ export default function MesM1Desktop({
 
   const conceptosActivosMes = useMemo(() => {
     return conceptosLocal.filter(c => {
-      if (c.estado !== "activo") return false;
       const movsC = movs.filter(m => m.conceptoId === c.id);
+      // "Solo este mes" se guarda en H1 como `retirado` (ver POST /api/mes/[mes]/conceptos),
+      // pero su movimiento del mes sigue vigente. Retirar desde el panel exige cero
+      // movimientos pendientes, así que un retirado con movimiento vigente es siempre
+      // "solo este mes": debe contar en las semanas igual que en el total del mes.
+      const tieneMovVigente = movsC.some(m => !["no_aplica", "pospuesto", "pospuesto_mes_siguiente"].includes(m.estado));
+      if (c.estado !== "activo" && !tieneMovVigente) return false;
       if (movsC.length > 0 && movsC.every(m => m.estado === "no_aplica" || m.estado === "pospuesto_mes_siguiente")) return false;
       if (c.frecuencia === "bimestral" && c.mesActivoBimestral) {
         return c.mesActivoBimestral.split(",").map(s => s.trim().toLowerCase()).includes(mesNombre);
