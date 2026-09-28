@@ -7916,3 +7916,60 @@ punta).
   `SEC-EXPOSICION-PUBLICA-01`
 - Próximo paso: opcional, verificación visual real de la captura de ideas en producción
   (Claude in Chrome); luego retomar `check-ticket.mjs`.
+
+---
+
+## Sesión DEBUGGING #2 — Balance mes vs. Por semana en planificación (28 sept 2026, Chief of Staff, vault)
+
+**Tipo de sesión:** DEBUGGING. Segundo problema de la misma sesión, tras cerrar el falso bloqueo de PR #45.
+
+**Qué cambió:**
+- Bug: en planificación de octubre, Balance mes marcaba +$855.000 y S5 marcaba +$1,4M.
+- Causa (`components/MesM1Desktop.tsx`): `conceptosActivosMes` excluía todo concepto `retirado`,
+  pero "solo este mes" se guarda como `retirado` en H1 (`POST /api/mes/[mes]/conceptos`, línea 66)
+  con su movimiento vigente. CDT ($500.000, S4, `MOV_1790624204338`) sumaba en el total del mes
+  (línea 486, sobre `movs`) y en ninguna semana (línea 495, sobre conceptos activos). Suma de
+  semanas $21.644.844 vs. total mes $22.144.844: diferencia exacta $500.000, arrastrada a S5.
+  Efecto colateral: CDT tampoco aparecía en la tabla de planificación de escritorio.
+- Fix: `ea0f5f7` — un concepto retirado con movimiento vigente en el mes sigue contando.
+  Producción: PR #46, merge `5eb39c1`, deploy `dpl_5bY9yL8k…` READY, `flujo-dun.vercel.app` 200.
+
+**Decisión (con razón):** el fix va en `conceptosActivosMes`, no en `balancePlanificacion`. Es seguro
+porque `/api/conceptos/[id]/retirar` bloquea el retiro con movimientos pendientes, así que un
+retirado con movimiento vigente solo puede ser "solo este mes". Arregla balance y tabla a la vez.
+
+**Verificación:** réplica del cálculo contra H1/H2 de PROD, solo lectura (suma de semanas = total,
+diferencia 0); `tsc --noEmit` limpio; Camilo confirmó el balance correcto tras el deploy. Sin
+escrituras al Sheet.
+
+**Qué queda pendiente:** un movimiento con `semana = null` entra al total del mes y a ninguna
+semana. Hoy no hay ninguno en octubre.
+
+**Deuda técnica nueva:** mes y semana siguen siendo dos fórmulas independientes; este bug es el
+segundo síntoma. Ya existe un candidato de invariante de "única fuente de verdad" para el cálculo
+de mes/semana; este caso es evidencia para él (error silencioso, sin fallo visible). No se editó
+`INVARIANTS.md`: la decisión de promoverlo o ampliarlo es de Camilo.
+
+**Retrospectiva (Fase 4):**
+1. **Qué funcionó:** replicar ambas fórmulas en un script de solo lectura contra PROD aisló el
+   movimiento culpable en una corrida; `sheet-safety` obligó a confirmar el target antes de leer.
+2. **Qué no funcionó:** "Vercel no disparó deploy" se había registrado como bloqueo sin
+   verificarlo (un `list_deployments` lo refutaba). El clasificador de permisos frenó el merge a
+   `main`; se resolvió con Camilo ejecutando `gh pr merge` él mismo.
+3. **Qué cambia en la próxima sesión:** un diagnóstico que no se pudo completar se registra como
+   "no verificado", no como "bloqueado"; leer el estado real con una herramienta de solo lectura.
+4. **Candidato a invariante:** sumar este caso al candidato existente de única fuente de verdad; sin
+   invariante nuevo.
+
+**Estado accionable:**
+- Unidad: sesión
+- En curso: ninguno
+- Backlog priorizado (top 3 de 3 abiertos):
+  1. [Operación] `check-ticket.mjs` — bug de parseo con `dependencias: [X]` (revisión 2026-09-30)
+  2. [Operación] Balance mes vs. semana — unificar la fórmula y cubrir `semana = null`
+  3. [Producto] Fase -1/0 flujo de caja para Ángela María — esperando etnografía
+- Reactivo/incidentes: ninguno
+- Seguridad: `SEC-EXPOSICION-PUBLICA-01` sigue esperando la opción A/B/C de Camilo
+- FinOps/Costo: sin cambios
+- Bloqueados esperando a Camilo: etnografía con Ángela María; decisión A/B/C de `SEC-EXPOSICION-PUBLICA-01`
+- Próximo paso: retomar `check-ticket.mjs`
