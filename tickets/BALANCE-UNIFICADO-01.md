@@ -262,6 +262,12 @@ Los pickers de UI se verificaron por tsc/lint, NO se recorrieron en navegador (a
 - `iniciar`: `carryover` copia `semana` del mes anterior; si era S5 y el mes destino no tiene S5 la fila queda fuera de las semanas (ahora el cuadre lo delata como `semanaFueraDeMes`).
 - `balanceSemanas` (Ejecución) conserva el fallback `semanaFromFecha` para filas con semana nula; tras la corrección PROD queda sin uso práctico.
 
+### Revisión visual en preview (30 sept 2026, datos sintéticos en DEV)
+Comprometido del mes idéntico en inicio, lista de meses, M1 escritorio/móvil, Planificación y vista semanal (19.493.207 = cálculo a mano); pickers de semana exigen elección; sin desbordes a 390px. Aviso "El balance no cuadra": no verificable sin editar el Sheet a mano.
+- **Decisión de Camilo:** "falta por pagar" de `VistaSemanal` (l.~1049) **sí incluye `pospuesto`** — lo pospuesto dentro del mes sigue pendiente de pago. Intencional, no es defecto; no unificar con `comprometidoDe`.
+- **Corregido (decisión de Camilo):** `ConceptoBoard` ofrecía solo S1-S4 como destino de "mover al mes siguiente"; ahora usa `semanasDeMes(mesSiguienteDe(mov.mes))` (S5 cuando el mes la tiene), igual que `VistaSemanal` y `MesM1Mobile`.
+- **Abierto, menor:** `ConceptoBoard` rotula "Mes sig." un movimiento `pospuesto` dentro del mismo mes (`initialExc` trata `pospuesto` como `next`); "Mes sig." se parte en dos líneas en el selector móvil. Fuera de alcance: "Disponible esta semana" difiere entre pantallas y HomeHub lo muestra con `Math.abs`.
+
 <!-- Al agregar este ticket a tickets/INDICE.md, la fila DEBE incluir la
 columna agente_ejecucion con el mismo valor que el frontmatter de arriba —
 ver nota en INDICE.md, "Columna agente_ejecucion" (15 ago 2026). -->

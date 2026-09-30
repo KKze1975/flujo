@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import type { Movimiento, Semana, Actor, Categoria } from "@/lib/data/types";
 import Icon from "@/components/ui/Icon";
-import { semanasDeMes } from "@/lib/utils/fecha";
+import { semanasDeMes, mesSiguienteDe } from "@/lib/utils/fecha";
 import { comprometidoDe } from "@/lib/utils/balanceMes";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -27,9 +27,13 @@ const FUENTES_PAGO = [
 ];
 
 // DT-M1M4-NULL-01 / B3: semanas ofrecidas como destino de un traslado al mes
-// siguiente. Nunca S5 — SemanaDefault (H1) no la admite, así que ningún
-// concepto trasladable la necesita como destino.
-const SEMANAS_DESTINO_MES_SIGUIENTE: Semana[] = ["S1", "S2", "S3", "S4"];
+// siguiente = las semanas reales de ese mes (incluye S5 cuando existe), igual
+// que VistaSemanal y MesM1Mobile. Antes era fija S1-S4 (SemanaDefault de H1 no
+// admite S5), pero la semana destino es del movimiento, no del concepto —
+// decisión de Camilo, 30 sept 2026 (revisión visual PR #47).
+function semanasDestinoMesSiguiente(mes: string): Semana[] {
+  return semanasDeMes(mesSiguienteDe(mes));
+}
 
 function copCompact(n: number): string {
   const sign = n < 0 ? "-" : "";
@@ -221,7 +225,7 @@ function DkExecForm({
               <p className="dk-exp-lbl" style={{ width: "100%", marginBottom: 0 }}>
                 ¿A qué semana del mes siguiente?
               </p>
-              {SEMANAS_DESTINO_MES_SIGUIENTE.map(s => (
+              {semanasDestinoMesSiguiente(mov.mes).map(s => (
                 <button key={s} type="button" className="dk-fchip"
                   style={{ fontSize: 11, padding: "3px 8px" }}
                   onClick={() => onEjecucionAction({ tipo: "mover_mes_siguiente", semana: s })}>
@@ -331,7 +335,7 @@ function DkPlanForm({
           <div style={{ marginTop: 4 }}>
             <p className="dk-exp-lbl" style={{ marginBottom: 4 }}>¿A qué semana del mes siguiente?</p>
             <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-              {SEMANAS_DESTINO_MES_SIGUIENTE.map(s => (
+              {semanasDestinoMesSiguiente(mov.mes).map(s => (
                 <button key={s} type="button"
                   className={`dk-fchip${semanaDestino === s ? " on" : ""}`}
                   style={{ fontSize: 11, padding: "3px 8px" }}
