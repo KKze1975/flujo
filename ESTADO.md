@@ -8054,3 +8054,22 @@ vive en esta sección.
 - **Validación de cierre, Camilo (quien planea y ejecuta el flujo), 29 sept 2026: "sí, así es
   que quiero que funcione".** Fase 1 cerrada. Cierra sesión DISEÑO.
 - Siguiente: Fase 2 — especificación y ticket (Spec Writer de Flujo), en sesión aparte.
+
+**Fase 2 — Especificación `APORTES-SEMANALES-01` (29 sept 2026, mismo día, Spec Writer de Flujo
+despachado en Opus por la sesión Chief of Staff).**
+- Spec: `specs/APORTES-SEMANALES-01.md` (revisión 3; carpeta `specs/` creada para esto).
+- Respuestas de Camilo incorporadas: un solo monto por semana en M1, igual que el aporte
+  semanal de Angie ("H" = Angie, confirmado); plata llega a NU Camilo; al correr un pago al mes
+  siguiente Camilo elige la semana; meses sin emprendimiento muestran el campo en cero; vista
+  semanal con bloque propio del emprendimiento separado del de Angie ("una división entre lo que
+  semanalmente pone Angie y lo que yo comprometo para cumplir" — interpretación de la sesión);
+  disponible NU Camilo suma los aportes de semanas ya iniciadas (opción b).
+- **Aprobación, Camilo, 29 sept 2026: "aprobado para construir".**
+- Riesgos declarados en el spec: doble fórmula mes/semana (el spec exige un solo cálculo de
+  ingreso con prueba de cuadre); posponer al mes siguiente deja `semana = null` (el spec exige
+  semana obligatoria, 400 si falta); lugar nuevo en la hoja de PROD lo crea o aprueba Camilo.
+- Diseño visual: falta el bloque propio en la vista semanal y el selector de semana del mes
+  siguiente. Qué muestra el bloque propio queda abierto para el Diseñador con Camilo.
+- Consumo: Spec Writer en Opus, 3 pasadas (136.270 / 160.776 / 166.778 subagent_tokens
+  reportados por pasada).
+- Siguiente: Diseñador/Integrador (bloque propio + selector), luego Arquitecto y ticket.
