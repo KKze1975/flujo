@@ -8168,6 +8168,12 @@ despachado en Opus por la sesión Chief of Staff).**
 - Ampliación: Coder Sonnet 149.904; Tester Sonnet 124.085.
 - **Acumulado del ticket:** Coder 526.490 tokens; Tester 389.523 tokens.
 
+**Retrospectiva (Fase 4):**
+1. **Qué funcionó:** DISEÑO y CONSTRUCCIÓN separados por hilo (decisiones (a)/(i) con Camilo, construcción en background); el Manager hizo HALT ante D1 y los cierres H5 en vez de decidir; el Tester reprodujo todo contra PROD en solo lectura; el fix de `check-ticket` se hizo en un worktree aparte sin tocar la rama activa; los datos sintéticos se crearon por la UI del preview, probando de paso los flujos reales.
+2. **Qué no funcionó:** la primera revisión visual se despachó sin verificar que el preview tuviera datos (Sheet DEV vacío, 102K tokens sin cobertura); el alcance de "todas las vistas" se descubrió en tres rondas; retomar al Manager con historial largo para una tarea chica costó 197K; un script del Coder imprimió el Sheet ID de PROD en su log; el clasificador bloqueó copiar PROD→DEV.
+3. **Qué cambia en la próxima sesión:** antes de una revisión visual, verificar que el entorno tenga datos; un ticket de "unificar un cálculo" exige en el primer briefing un grep de todas las superficies que lo usan; tareas cortas con agente nuevo (vault, `ARQUITECTURA_MULTIAGENTE.md` §13, estrategia 7).
+4. **Invariantes:** promovidos por Camilo, 30 sept 2026 — **I-21** (cálculos de mes/semana y de balance desde una única fuente de verdad; absorbe el candidato de `FIX-SEMANA-STUB-01`) e **I-22** (los gates fallan cerrados; implementación pendiente en `check-ticket.mjs`). Ver `INVARIANTS.md`.
+
 **Estado accionable:**
 - Unidad: ticket
 - En curso: ninguno

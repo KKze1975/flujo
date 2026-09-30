@@ -20,10 +20,12 @@
 | Proyecto | Iniciativa | Estado | Próxima revisión | Métrica objetivo | Resultado medido | Puntero |
 |---|---|---|---|---|---|---|
 | Flujo | [Vault] SEC-EXPOSICION-PUBLICA-01 — decisión Camilo A/B/C | bloqueada | 2026-10-02 | decisión explícita | esperando | ESTADO.md, sesión 19 sept — operación bloqueada; requiere input de Camilo sobre opción elegida |
-| Flujo | [Vault] bug check-ticket.mjs: parseo con `dependencias: [X]` | pendiente | 2026-09-30 | bug no reaparece | no verificado aún | ESTADO.md, sesión 19 sept — error en parseo de arrays en campo; categorizado como reactivo/incidentes |
-| Flujo | [Vault] Balance: movimientos con `semana=null` entran al total del mes y a ninguna semana | pendiente | 2026-10-05 | mes = suma de semanas | no hay casos en octubre | ESTADO.md, sesión DEBUGGING #2 28 sept — mismo origen de doble fórmula que el bug de CDT |
 | Flujo | [Vault] Fase -1/0: módulo flujo de caja para Ángela María | en curso | 2026-09-30 | etnografía as-is completada | en espera | ESTADO.md, sesión 19 sept — nueva línea, integrada en Flujo; próximo paso: etnografía directa de Camilo con Ángela María (confirmado pivote de Consultorio) |
 | Flujo | [Vault] APORTES-SEMANALES-01 — Arquitecto y tickets de construcción | en curso | 2026-10-01 | tickets creados contra spec + brief §7 | spec y diseño aprobados 29 sept | ESTADO.md, sesión 29 sept — `specs/APORTES-SEMANALES-01.md`, `design-handoff/APORTES-SEMANALES-01-brief.md` |
+| Flujo | [Operación] BALANCE-CIERRES-H5-01 — cierres H5 con comprometido canónico solo hacia adelante | pendiente | 2026-10-07 | decisión de Camilo sobre `total_comprometido` del plan | propuesto, sin construir | `tickets/BALANCE-CIERRES-H5-01.md`; ESTADO.md, cierre BALANCE-UNIFICADO-01 30 sept |
+| Flujo | [Operación] I-22: `check-ticket.mjs` debe dar NO-GO (no advertencia) si una dependencia no está en INDICE.md | pendiente | 2026-10-07 | dependencia desconocida → NO-GO | invariante promovido, sin implementar | `INVARIANTS.md` I-22; `scripts/check-ticket.mjs` l.~121 |
+| Flujo | [Operación] Línea de ideas: INDICE desactualizado (IDEAS-SCHEMA-01 aprobado vs IDEAS-CAPTURA-01 completado) | pendiente | 2026-10-07 | INDICE refleja el estado real | detectado por `check-ticket` tras PR #48 | ESTADO.md, cierre 30 sept |
+| Flujo | [Operación] Deuda UI menor: etiqueta "Mes sig." en `pospuesto` dentro del mes (ConceptoBoard); "Disponible esta semana" difiere entre pantallas y HomeHub usa `Math.abs` | pendiente | 2026-10-14 | etiquetas y disponible coherentes | anotado en revisión visual | `tickets/BALANCE-UNIFICADO-01.md`, revisión visual 30 sept |
 
 ## Cerradas
 
@@ -31,3 +33,5 @@
 |---|---|---|---|---|
 | Flujo | [Vault] Balance semana vs. mes con conceptos "solo este mes" (CDT $500.000) | hecha | 2026-09-28 | Fix `ea0f5f7`, PR #46 en producción (`5eb39c1`); Camilo confirmó el balance. Ver ESTADO.md, sesión DEBUGGING #2 |
 | Flujo | [Vault] Deploy PR #45 a producción | hecha | 2026-09-28 | Falso bloqueo: deploy `dpl_9x5NFUF2…` READY en producción desde 2026-09-18, `flujo-dun.vercel.app` HTTP 200 con "Sugerir una mejora". Ver ESTADO.md, sesión DEBUGGING 28 sept |
+| Flujo | [Vault] bug check-ticket.mjs: parseo con `dependencias: [X]` | hecha | 2026-09-30 | PR #48 (`51c192d`) en dev y en producción vía PR #49; 5 tickets verificados antes/después. Ver ESTADO.md, cierre 30 sept |
+| Flujo | [Vault] Balance: movimientos con `semana=null` entran al total del mes y a ninguna semana | hecha | 2026-09-30 | BALANCE-UNIFICADO-01 en producción (`06cec8c`); 2 filas de julio corregidas en PROD; cuadre 2026-06..10 con sinSemana=0. Ver ESTADO.md, cierre 30 sept |
