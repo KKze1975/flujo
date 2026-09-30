@@ -20,6 +20,7 @@ import type {
   ConsumoH3,
   IngresoCamilo,
   IngresoAngie,
+  AporteAdicional,
   SaldoCuenta,
   CierreSemana,
   PlanSemana,
@@ -1137,6 +1138,104 @@ export class SheetsDataProvider implements IDataProvider {
     });
 
     return eliminadasCount;
+  }
+
+  // ── H11 AportesEmprendimiento (APORTES-SEMANALES-01A) ───────────────────────
+  // Pestaña propia (no un rango de H4: H4!X:AE es H4D legacy, I-05). Un monto por
+  // semana, upsert por semana. Escritura solo values.update / values.append con
+  // INSERT_ROWS.
+  private readonly H11_HEADERS = ["id_aporte", "mes", "semana", "monto", "fecha", "notas"];
+  private h11Verificada = false;
+
+  // I-10: la app NUNCA crea H11 en runtime. Si falta, error claro (la pestaña se crea
+  // con scripts/setup-h11-prod.mjs en PROD; en DEV ya existe). Solo verifica, no escribe.
+  private async ensureH11(): Promise<void> {
+    if (this.h11Verificada) return;
+    const meta = await this.sheets.spreadsheets.get({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+    });
+    const exists = meta.data.sheets?.some(s => s.properties?.title === "H11");
+    if (!exists) {
+      throw new Error("Falta la pestaña H11: correr scripts/setup-h11-prod.mjs");
+    }
+    // Completitud del esquema: TODAS las columnas, no solo A1.
+    const hdr = await this.sheets.spreadsheets.values.get({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: "H11!A1:F1",
+    });
+    const actual = ((hdr.data.values ?? [[]])[0] ?? []) as string[];
+    const completo = this.H11_HEADERS.every((h, i) => actual[i] === h);
+    if (!completo) {
+      throw new Error("La pestaña H11 tiene headers incompletos o distintos: correr scripts/setup-h11-prod.mjs");
+    }
+    this.h11Verificada = true;
+  }
+
+  private rowToAporteAdicional(row: string[], headers: string[]): AporteAdicional {
+    const col = (name: string) => row[headers.indexOf(name)] ?? "";
+    return {
+      id: col("id_aporte"),
+      mes: col("mes"),
+      semana: col("semana") as Semana,
+      monto: Number(col("monto")) || 0,
+      fecha: col("fecha"),
+      notas: col("notas") || null,
+    };
+  }
+
+  private aporteAdicionalToRow(id: string, a: Omit<AporteAdicional, "id">): string[] {
+    return [id, a.mes, a.semana, String(a.monto), a.fecha, a.notas ?? ""];
+  }
+
+  async getAportesAdicionales(mes: string): Promise<AporteAdicional[]> {
+    await this.ensureH11();
+    const res = await this.sheets.spreadsheets.values.get({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: "H11!A:F",
+    });
+    const rows = (res.data.values ?? []) as string[][];
+    if (rows.length < 2) return [];
+    const [headers, ...dataRows] = rows;
+    const mesIdx = headers.indexOf("mes");
+    return dataRows
+      .filter((row) => row.length > 0 && row[0] && row[mesIdx] === mes)
+      .map((row) => this.rowToAporteAdicional(row, headers));
+  }
+
+  async createAporteAdicional(data: Omit<AporteAdicional, "id">): Promise<AporteAdicional> {
+    await this.ensureH11();
+    const id = `APORTE_EMP_${Date.now()}`;
+    await this.sheets.spreadsheets.values.append({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: "H11!A:F",
+      valueInputOption: "RAW",
+      insertDataOption: "INSERT_ROWS",
+      requestBody: { values: [this.aporteAdicionalToRow(id, data)] },
+    });
+    return { id, ...data };
+  }
+
+  async updateAporteAdicional(id: string, data: Partial<Omit<AporteAdicional, "id">>): Promise<AporteAdicional> {
+    await this.ensureH11();
+    const res = await this.sheets.spreadsheets.values.get({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: "H11!A:F",
+    });
+    const rows = (res.data.values ?? []) as string[][];
+    if (rows.length < 2) throw new Error("H11 vacía");
+    const [headers, ...dataRows] = rows;
+    const rowIndex = dataRows.findIndex((row) => row[headers.indexOf("id_aporte")] === id);
+    if (rowIndex === -1) throw new Error(`AporteAdicional ${id} no encontrado`);
+    const existing = this.rowToAporteAdicional(dataRows[rowIndex], headers);
+    const updated: AporteAdicional = { ...existing, ...data, id };
+    const sheetRow = rowIndex + 2;
+    await this.sheets.spreadsheets.values.update({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: `H11!A${sheetRow}:F${sheetRow}`,
+      valueInputOption: "RAW",
+      requestBody: { values: [this.aporteAdicionalToRow(id, updated)] },
+    });
+    return updated;
   }
 
   // ── H10 IdeasBacklog ────────────────────────────────────────────────────────

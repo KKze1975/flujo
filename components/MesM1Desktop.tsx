@@ -5,7 +5,7 @@ import React from "react";
 import { useRouter } from "next/navigation";
 import type {
   Movimiento, Concepto, SaldoCuenta, Semana, Categoria,
-  Actor, IngresoCamilo, IngresoAngie, CuentaDestino, CuentaH4C, ConsumoH3,
+  Actor, IngresoCamilo, IngresoAngie, AporteAdicional, CuentaDestino, CuentaH4C, ConsumoH3,
 } from "@/lib/data/types";
 import Icon from "@/components/ui/Icon";
 import ConceptoBoard from "@/components/m1/ConceptoBoard";
@@ -13,6 +13,7 @@ import ModalAgregarConcepto from "@/components/m1/ModalAgregarConcepto";
 import ModalConfirmarSaldos from "@/components/m1/ModalConfirmarSaldos";
 import ModalCerrarSemana from "@/components/m1/ModalCerrarSemana";
 import ModalAporteAngie from "@/components/m1/ModalAporteAngie";
+import { ingresosPlaneadosDe } from "@/lib/utils/ingresosPlaneados";
 import { semanasDeMes, semanaDeFechaEnMes } from "@/lib/utils/fecha";
 import { remanenteEncadenadoPorSemana } from "@/lib/utils/balanceSemanal";
 import { calcularBalanceMes } from "@/lib/utils/balanceMes";
@@ -302,6 +303,12 @@ function PlanRow({
   );
 }
 
+// Distintivo del aporte del emprendimiento (brief §7): círculo "E" con tokens existentes.
+const BADGE_E: React.CSSProperties = {
+  display: "inline-grid", placeItems: "center", width: 16, height: 16, borderRadius: 999,
+  background: "var(--primary-soft)", color: "var(--primary)", fontSize: 8.5, fontWeight: 800,
+};
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function MesM1Desktop({
@@ -312,6 +319,8 @@ export default function MesM1Desktop({
   mes,
   ingresoCamilo: ingresoCamiloProp = null,
   ingresosAngie: ingresosAngieProp = [],
+  aportesAdicionales: aportesAdicionalesProp = [],
+  aportesError = null,
   cierresSemana: cierresSemanaProps = [],
   gastosSinClasificar = { S1: 0, S2: 0, S3: 0, S4: 0, S5: 0 },
   gastoH3PorCuenta = {},
@@ -327,6 +336,8 @@ export default function MesM1Desktop({
   mes: string;
   ingresoCamilo?: IngresoCamilo | null;
   ingresosAngie?: IngresoAngie[];
+  aportesAdicionales?: AporteAdicional[];
+  aportesError?: string | null;
   cierresSemana?: import("@/lib/data/types").CierreSemana[];
   gastosSinClasificar?: Record<Semana, number>;
   gastoH3PorCuenta?: Record<string, number>;
@@ -348,7 +359,7 @@ export default function MesM1Desktop({
   const [saldosLocal, setSaldosLocal] = useState<SaldoCuenta[]>(saldos);
   const [saldosBrutosLocal, setSaldosBrutosLocal] = useState<SaldoCuenta[]>(saldosBrutos);
   const [ingresoCamiloLocal, setIngresoCamiloLocal] = useState<IngresoCamilo | null>(ingresoCamiloProp);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(aportesError);
   const [busy, setBusy] = useState(false);
 
   // Ejecución state
@@ -374,6 +385,16 @@ export default function MesM1Desktop({
     return init;
   });
   const [savingAportes, setSavingAportes] = useState(false);
+  // APORTES-SEMANALES-01A: aporte del emprendimiento (H11). Filas guardadas + inputs por semana.
+  const [adicionalesGuardados, setAdicionalesGuardados] = useState<AporteAdicional[]>(aportesAdicionalesProp);
+  const [aportesEmp, setAportesEmp] = useState<Record<Semana, string>>(() => {
+    const init: Record<Semana, string> = { S1: "", S2: "", S3: "", S4: "", S5: "" };
+    for (const a of aportesAdicionalesProp) {
+      init[a.semana] = String((Number(init[a.semana]) || 0) + a.monto);
+    }
+    return init;
+  });
+  const [savingAportesEmp, setSavingAportesEmp] = useState(false);
   const [savingSemanaConcept, setSavingSemanaConcept] = useState<string | null>(null);
 
   const SEMANAS = useMemo(() => semanasDeMes(mes), [mes]);
@@ -432,14 +453,22 @@ export default function MesM1Desktop({
   const ingresoCamiloNum = Number(ingresoMonto) || 0;
   // BALANCE-UNIFICADO-01: única fuente de ingreso/comprometido del mes y por semana.
   // El mes es Σ semanas (lib/utils/balanceMes.ts); no hay fórmula propia del mes aquí.
+  // Aportes (Angie + emprendimiento) salen de ingresosPlaneadosDe (I-21), no se suman aquí.
+  const ingresosPlan = useMemo(() => ingresosPlaneadosDe(
+    (Object.keys(aportes) as Semana[]).map((s) => ({ semana: s, monto: Number(aportes[s]) || 0 })),
+    (Object.keys(aportesEmp) as Semana[]).map((s) => ({ semana: s, monto: Number(aportesEmp[s]) || 0 })),
+  ), [aportes, aportesEmp]);
+  // Ejecución: aportes ya guardados (Angie SSR + emprendimiento guardado).
+  const ingresosEjec = useMemo(
+    () => ingresosPlaneadosDe(ingresosAngieProp, adicionalesGuardados),
+    [ingresosAngieProp, adicionalesGuardados],
+  );
   const balanceMes = useMemo(() => calcularBalanceMes({
     movs,
     semanas: SEMANAS,
     ingresoCamilo: ingresoCamiloNum,
-    aportesPorSemana: Object.fromEntries(
-      (Object.keys(aportes) as Semana[]).map((s) => [s, Number(aportes[s]) || 0]),
-    ) as Partial<Record<Semana, number>>,
-  }), [movs, SEMANAS, ingresoCamiloNum, aportes]);
+    aportesPorSemana: ingresosPlan.aportesPorSemana,
+  }), [movs, SEMANAS, ingresoCamiloNum, ingresosPlan]);
   useEffect(() => {
     if (!balanceMes.cuadre.ok) console.error("[balanceMes] el cuadre mes = Σ semanas FALLA:", balanceMes.cuadre.errores);
   }, [balanceMes]);
@@ -447,7 +476,7 @@ export default function MesM1Desktop({
     const chain = remanenteEncadenadoPorSemana(
       SEMANAS,
       ingresoCamiloLocal?.montoCop ?? 0,
-      (s) => ingresosAngieProp.find(a => a.semana === s)?.monto ?? 0,
+      (s) => ingresosEjec.porSemana[s].total,
       (s) => {
         // BALANCE-UNIFICADO-01 (D1): comprometido y su parte ya ejecutada salen de
         // balanceMes (definición canónica); aquí solo se añade lo propio de Ejecución.
@@ -471,16 +500,20 @@ export default function MesM1Desktop({
         };
       },
     );
-    return chain.map(({ semana, disponible, aporteAngie, diferencia, extra }) => ({
-      semana, remanente: disponible, aporteAngie, diferencia, ...extra,
+    return chain.map(({ semana, disponible, diferencia, extra }) => ({
+      semana, remanente: disponible,
+      aporteAngie: ingresosEjec.porSemana[semana].angie,
+      aporteEmp: ingresosEjec.porSemana[semana].adicional,
+      diferencia, ...extra,
     }));
-  }, [movs, balanceMes, ingresoCamiloLocal, ingresosAngieProp, cierresSemanaProps, gastoH3PorSemana]);
+  }, [movs, balanceMes, ingresoCamiloLocal, ingresosEjec, cierresSemanaProps, gastoH3PorSemana]);
 
 
   // ── Planificación derivations ─────────────────────────────────────────────
 
   const ingresoTotal = balanceMes.mes.ingreso;
-  const aportesNum = ingresoTotal - ingresoCamiloNum;
+  const aportesAngieNum = ingresosPlan.totales.angie;
+  const aportesEmpNum = ingresosPlan.totales.adicional;
 
   const conceptosActivosMes = useMemo(() => {
     return conceptosLocal.filter(c => {
@@ -506,16 +539,19 @@ export default function MesM1Desktop({
     const chain = remanenteEncadenadoPorSemana(
       SEMANAS,
       ingresoCamiloNum,
-      (s) => Number(aportes[s]) || 0,
+      (s) => ingresosPlan.porSemana[s].total,
       (s) => {
         const comprometido = balanceMes.semanas.find((b) => b.semana === s)?.comprometido ?? 0;
         return { restar: comprometido, extra: { comprometido } };
       },
     );
-    return chain.map(({ semana, remanente, aporteAngie, disponible, diferencia, extra }) => ({
-      semana, remanente, aporteAngie, disponible, diferencia, ...extra,
+    return chain.map(({ semana, remanente, disponible, diferencia, extra }) => ({
+      semana, remanente, disponible, diferencia,
+      aporteAngie: ingresosPlan.porSemana[semana].angie,
+      aporteEmp: ingresosPlan.porSemana[semana].adicional,
+      ...extra,
     }));
-  }, [balanceMes, aportes, ingresoCamiloNum]);
+  }, [balanceMes, ingresosPlan, ingresoCamiloNum]);
 
   const gruposPlan = useMemo(() => {
     const filtered = wkPlan === "todas"
@@ -607,6 +643,29 @@ export default function MesM1Desktop({
       setError(e instanceof Error ? e.message : "Error desconocido");
     } finally {
       setSavingAportes(false);
+    }
+  };
+
+  const handleGuardarAportesEmp = async () => {
+    setSavingAportesEmp(true);
+    setError(null);
+    try {
+      const payload = SEMANAS.map(s => ({ semana: s, monto: Number(aportesEmp[s]) || 0 }));
+      const res = await fetch(`/api/ingresos/adicionales/${mes}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ aportes: payload }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Error al guardar");
+      const nuevos: Record<Semana, string> = { S1: "", S2: "", S3: "", S4: "", S5: "" };
+      for (const a of data as AporteAdicional[]) nuevos[a.semana] = String(a.monto);
+      setAportesEmp(nuevos);
+      setAdicionalesGuardados(data as AporteAdicional[]);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Error desconocido");
+    } finally {
+      setSavingAportesEmp(false);
     }
   };
 
@@ -771,12 +830,38 @@ export default function MesM1Desktop({
               </button>
             </div>
 
+            <p className="dk-navlabel" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={BADGE_E}>E</span> Aportes emprendimiento
+            </p>
+            <div style={{ background: "var(--surface-2)", borderRadius: 14, padding: "10px 12px", marginBottom: 8 }}>
+              {SEMANAS.map(s => (
+                <div key={s} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "var(--ink-soft)", width: 20 }}>{s}</span>
+                  <input
+                    type="number"
+                    value={aportesEmp[s]}
+                    onChange={e => setAportesEmp(prev => ({ ...prev, [s]: e.target.value }))}
+                    placeholder="0"
+                    className="fl-input"
+                    style={{ flex: 1, textAlign: "right", fontSize: 12, fontFeatureSettings: '"tnum" 1', fontWeight: 600 }}
+                  />
+                </div>
+              ))}
+              <button type="button" onClick={handleGuardarAportesEmp}
+                disabled={savingAportesEmp}
+                className="fl-btn primary sm"
+                style={{ width: "100%", justifyContent: "center", marginTop: 4 }}>
+                {savingAportesEmp ? "…" : "Guardar aportes emprendimiento"}
+              </button>
+            </div>
+
             <p className="dk-navlabel">Balance mes</p>
             <div style={{ background: "var(--surface-2)", borderRadius: 14, padding: "10px 12px", marginBottom: 8 }}>
               {([
                 { label: "Comprometido",     value: totalComprometido,  color: "var(--ink)"  },
                 { label: "Ingreso Camilo",   value: ingresoCamiloNum,   color: "var(--ink)"  },
-                { label: "Aportes Angie",    value: aportesNum,         color: "var(--ink)"  },
+                { label: "Aportes Angie",    value: aportesAngieNum,    color: "var(--ink)"  },
+                { label: "Aportes emprendimiento", value: aportesEmpNum, color: "var(--primary)" },
                 { label: "Total disponible", value: ingresoTotal,       color: "var(--pos)"  },
                 { label: "Diferencia",       value: diferenciaTotal,    color: diferenciaTotal >= 0 ? "var(--pos)" : "var(--neg)" },
               ] as { label: string; value: number; color: string }[]).map(({ label: lbl, value, color }) => (
@@ -794,7 +879,7 @@ export default function MesM1Desktop({
 
             <p className="dk-navlabel">Por semana</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 4 }}>
-              {balancePlanificacion.map(({ semana, remanente, aporteAngie, comprometido, diferencia }, i) => (
+              {balancePlanificacion.map(({ semana, remanente, aporteAngie, aporteEmp, comprometido, diferencia }, i) => (
                 <button key={semana} type="button"
                   onClick={() => setWkPlan(wkPlan === semana ? "todas" : semana)}
                   style={{
@@ -810,7 +895,7 @@ export default function MesM1Desktop({
                     </span>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "var(--ink-faint)" }}>
-                    <span>{i === 0 ? `C:${COP(remanente, { compact: true })}` : `↪ ${COP(remanente, { compact: true })}`} A:{COP(aporteAngie, { compact: true })}</span>
+                    <span>{i === 0 ? `C:${COP(remanente, { compact: true })}` : `↪ ${COP(remanente, { compact: true })}`} A:{COP(aporteAngie, { compact: true })} <span style={{ color: "var(--primary)", fontWeight: 700 }}>E:{COP(aporteEmp, { compact: true })}</span></span>
                     <span>{COP(comprometido, { compact: true })}</span>
                   </div>
                 </button>
@@ -871,7 +956,7 @@ export default function MesM1Desktop({
 
             <p className="dk-navlabel" style={{ marginTop: 16 }}>Por semana</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 4 }}>
-              {balanceSemanas.map(({ semana, remanente, comprometido, ejecutado, diferencia, pendiente, aporteAngie, isConfirmado }, i) => (
+              {balanceSemanas.map(({ semana, remanente, comprometido, ejecutado, diferencia, pendiente, aporteAngie, aporteEmp, isConfirmado }, i) => (
                 <div key={semana} style={{ background: "var(--surface-2)", borderRadius: 12, padding: "8px 12px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
                     <span style={{ fontSize: 11, fontWeight: 700, color: "var(--ink-soft)" }}>{semana}</span>
@@ -897,7 +982,7 @@ export default function MesM1Desktop({
                         </>
                       ) : (
                         <>
-                          <span style={{ marginRight: 4 }}>↪ {COP(remanente - aporteAngie, { compact: true })}</span>
+                          <span style={{ marginRight: 4 }}>↪ {COP(remanente - aporteAngie - aporteEmp, { compact: true })}</span>
                           <span style={{ color: isConfirmado ? "var(--pos)" : "var(--ink-faint)" }}>
                             A:{COP(aporteAngie, { compact: true })}{isConfirmado ? " ✓" : " (plan)"}
                           </span>

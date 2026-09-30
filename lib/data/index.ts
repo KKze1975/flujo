@@ -8,6 +8,7 @@ import type {
   ConsumoH3,
   IngresoCamilo,
   IngresoAngie,
+  AporteAdicional,
   SaldoCuenta,
   CierreSemana,
   PlanSemana,
@@ -77,12 +78,17 @@ export interface IDataProvider {
   getEventosLog(filtro?: { tipoEvento?: TipoEventoLog; mes?: string; desde?: string; hasta?: string }): Promise<EventoLog[]>;
   limpiarEventosLogAntiguos(diasRetencion?: number): Promise<number>;
 
+  // ── H11 ──────────────────────────────────────────────────────────────────
+  getAportesAdicionales(mes: string): Promise<AporteAdicional[]>;
+  createAporteAdicional(data: Omit<AporteAdicional, "id">): Promise<AporteAdicional>;
+  updateAporteAdicional(id: string, data: Partial<Omit<AporteAdicional, "id">>): Promise<AporteAdicional>;
+
   // ── H10 ──────────────────────────────────────────────────────────────────
   createIdea(data: Pick<Idea, "propuestaPor" | "descripcion" | "casoDeUso" | "motivoImportancia">): Promise<Idea>;
   getIdeas(filtro?: { estado?: EstadoIdea; propuestaPor?: Idea["propuestaPor"] }): Promise<Idea[]>;
   updateIdea(id: string, data: Partial<Omit<Idea, "id">>): Promise<Idea>;
 }
 
-export type { Semana, Concepto, Movimiento, Bolsillo, Consumo, ConsumoH3, IngresoCamilo, IngresoAngie, SaldoCuenta, CierreSemana, PlanSemana, CierreMensual, EventoLog, TipoEventoLog, Idea, EstadoIdea };
+export type { Semana, Concepto, Movimiento, Bolsillo, Consumo, ConsumoH3, IngresoCamilo, IngresoAngie, AporteAdicional, SaldoCuenta, CierreSemana, PlanSemana, CierreMensual, EventoLog, TipoEventoLog, Idea, EstadoIdea };
 export * from "./types";
 
