@@ -63,8 +63,26 @@ export interface BalanceMes {
   };
 }
 
-function esComprometido(estado: string): boolean {
+export function esComprometido(estado: string): boolean {
   return !(ESTADOS_NO_COMPROMETIDOS as readonly string[]).includes(estado);
+}
+
+/**
+ * Comprometido (definición canónica) de un subconjunto de movimientos ya
+ * filtrado por el llamador (una semana, una categoría, un concepto). Es la
+ * MISMA regla que usa `calcularBalanceMes`; existe para superficies que solo
+ * tienen a mano un tramo de movimientos y no todo el mes (BALANCE-UNIFICADO-01,
+ * ampliación 30 sept 2026). Para el total de un mes usa `calcularBalanceMes`.
+ */
+export function comprometidoDe(movs: { estado: string; montoPresupuestado: number }[]): number {
+  return movs.reduce((a, m) => a + (esComprometido(m.estado) ? m.montoPresupuestado : 0), 0);
+}
+
+/** Mapa Semana -> aporte a partir de las filas de ingreso de Angie (suma si hay varias por semana). */
+export function aportesPorSemanaDe(ingresos: { semana: Semana; monto: number }[]): Partial<Record<Semana, number>> {
+  const out: Partial<Record<Semana, number>> = {};
+  for (const a of ingresos) out[a.semana] = (out[a.semana] ?? 0) + a.monto;
+  return out;
 }
 
 export function calcularBalanceMes(args: {

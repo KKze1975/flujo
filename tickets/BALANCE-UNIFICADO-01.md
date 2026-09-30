@@ -5,10 +5,11 @@ estado: activo
 tier: A
 agente_ejecucion: claude-code
 dependencias: ninguna
-rol_activo: tester
-paso_actual: "Tester D1: verificación terminada, reporte entregado"
-actualizado_en: 2026-09-30T09:44:39-05:00
-necesita_aprobacion: no
+rol_activo: coder
+paso_actual: "Construcción ampliada terminada, pendiente de Tester"
+actualizado_en: 2026-09-30T10:09:33-05:00
+necesita_aprobacion: baja
+halt_criterio: 3
 ---
 
 # BALANCE-UNIFICADO-01 — Balance mes = suma de semanas, una sola función, `semana` nunca `null`
@@ -57,6 +58,7 @@ Sheet, rediseño visual, migrar `sinSemana` en DEV.
 - [ ] `PATCH …/movimientos/[id]` `tipo: mover_mes_siguiente` sin `semana` → **400** (respuesta HTTP pegada); con semana válida del mes destino → 200 y la fila nueva en H2 (DEV) trae la semana enviada, leída de vuelta. Igual para cada otro camino inventariado (tabla camino → respuesta 400 pegada).
 - [ ] Ningún llamador del cliente envía `mover_mes_siguiente` sin semana (grep pegado); el flujo de `VistaSemanal`/`MesM1Mobile` abre picker de semana del mes siguiente.
 - [ ] Script de corrección única `scripts/fix-semana-vacia-h2.mjs`: dry-run por defecto, `--apply` explícito, target declarado (DEV|PROD), muestra el contenido actual de cada fila antes de tocarla, lee de vuelta tras escribir. Dry-run contra PROD pegado; `--apply` sobre PROD NO ejecutado sin aprobación de Camilo.
+- [ ] **Ampliación (decisión de Camilo, 30 sept 2026): todas las superficies de comprometido/presupuestado usan `balanceMes`.** Inicio, lista de meses, `/api/meses`, M1 desktop/mobile, Planificación y vista semanal dan el mismo comprometido del mes para 2026-06..2026-10; el total semanal de `VistaSemanal` coincide con `balanceMes` por semana; grep final sin `reduce` de comprometido fuera de `balanceMes.ts` salvo la lista explícita de excepciones justificadas (ver Notas de ejecución, "Ampliación").
 - [ ] `npx tsc --noEmit` limpio; `npm run lint` sin errores nuevos.
 - [ ] Rama propia, PR abierto contra `dev`; sin merge (I-11/I-17).
 
@@ -131,6 +133,45 @@ ANTES/DESPUÉS con datos de PROD (Target: PRODUCCIÓN, solo lectura, scope reado
 Explicación de cada cambio (verificada por script, no supuesta): la variación de "Comprometido" en Ejecución, por semana y mes, es exactamente la suma de `montoPresupuestado` de filas `pospuesto`/`no_aplica`/`pospuesto_mes_siguiente` de esa semana (cumplido en los 5 meses). En Mobile, la variación del mes es esa misma suma de estados excluidos; en 2026-07 son 1.196.000 de estados excluidos + 76.000 de las 2 filas con semana vacía (D2, efecto transitorio hasta la corrección en PROD). La `diferencia` de Ejecución cambia porque `comprometidoRestante` entra en `restar`. Confirmación cruzada: en meses sin ejecutado (2026-10) la diferencia de S5 en Ejecución ahora iguala la diferencia del mes en Planificación (-2.713.847). Desktop Planificación y VistaPlanificacion por semana no cambian (ya eran canónicas, confirmado por lectura).
 
 Grep de fórmulas de comprometido/ingreso (reduce con `montoPresupuestado`/`montoCop`/aporte) en las 4 vistas migradas: ya no queda ninguna en `MesM1Desktop.tsx`, `MesM1Mobile.tsx` (solo `porPagar` = pendientes y `ejecutadoTotal`, no son comprometido) ni `m1/VistaPlanificacion.tsx`. **Residual fuera de las 4 vistas pedidas, NO tocado** (otras superficies con semántica propia; migrarlas sería expandir alcance): `components/MesM1.tsx` l.161/163/656, `components/VistaSemanal.tsx` l.1054/1242/1252 (ya excluye `no_aplica`/`pospuesto_mes_siguiente` pero no `pospuesto`), `components/m1/ConceptoBoard.tsx` l.522/599/605/625-626 (totales por concepto), `app/page.tsx`, `app/meses/page.tsx`, `app/api/meses/route.ts`, `app/api/mes/[mes]/{cerrar-semana,cerrar-m1,semana/[semana]}/route.ts`. Camilo decide si se abre un ticket para unificarlas.
+
+### Ampliación (30 sept 2026) — todas las superficies con `balanceMes`
+
+**Construcción ampliada terminada, pendiente de Tester.** Decisión cerrada de Camilo: toda superficie que muestre comprometido/presupuestado del mes o de la semana usa la definición canónica (excluye `pospuesto`, `no_aplica`, `pospuesto_mes_siguiente`).
+
+Cambios:
+- `lib/utils/balanceMes.ts`: exporta `esComprometido(estado)`, `comprometidoDe(movs)` (misma regla, para tramos: semana/categoría) y `aportesPorSemanaDe(ingresosAngie)`. `calcularBalanceMes` sin cambio de comportamiento.
+- Mes completo vía `calcularBalanceMes(...).mes.comprometido`: `app/page.tsx` (inicio), `app/meses/page.tsx` (lista y métricas del mes activo), `app/api/meses/route.ts`, `components/MesM1.tsx` (Balance mes).
+- Tramos vía `comprometidoDe`: `components/VistaSemanal.tsx` (total semanal y lista del popover "presupuestado", que ahora tampoco lista `pospuesto`), `components/MesM1.tsx` (Balance de una semana y total por categoría), `components/m1/ConceptoBoard.tsx` (total por categoría, total de columna de semana y orden por total), `app/api/mes/[mes]/semana/[semana]/route.ts` (ya excluía los 3 estados con un filter inline; ahora usa el helper).
+- `scripts/verificar-balance-cuadre.ts`: +8 aserciones (helpers, `comprometidoDe(slice semana) == balanceMes.semanas[s]`) y tabla ANTES/DESPUÉS por pantalla en `--prod-readonly`. Resultado: `66/66` sintético; `--prod-readonly` `96/96`, 2026-06..2026-10 cuadran con `sinSemana=0` y `fueraDeMes=0` (la corrección de las 2 filas de julio ya estaba aplicada en PROD).
+- `npx tsc --noEmit` exit 0; eslint sobre los 9 archivos tocados: 2 errores / 5 warnings antes y después (sin errores nuevos).
+
+**Excepciones justificadas (NO migradas, no son "comprometido"):**
+| Lugar | Qué suma | Por qué no aplica |
+|---|---|---|
+| `app/page.tsx` l.44 y `app/meses/page.tsx` l.76 (`pendientesSemana`) | solo `estado: pendiente` de la semana | es "por pagar", no comprometido |
+| `MesM1.tsx` `resta`, `MesM1Mobile` `porPagar`, `ConceptoBoard` `porPagar` | solo `pendiente` | "por pagar" |
+| `VistaSemanal.tsx` `totalFaltaPendientes` (l.1253) | `pendiente` + `pospuesto` de la pestaña Pendientes | "falta por pagar", incluye pospuestos a propósito (lista de trabajo pendiente) |
+| `VistaSemanal.tsx` `bolsillosDedup` (l.1243) | techo de un bolsillo (`pago_fraccionado`) sumando sus filas por semana | es el presupuesto propio del bolsillo (denominador del gasto H3B), no un total de mes/semana; filtrar por estado alteraría el techo |
+| `ejecutado*` (`montoEjecutado ?? montoPresupuestado`) en `MesM1Desktop`, `MesM1Mobile`, `ConceptoBoard`, `app/mes/[mes]/page.tsx`, `app/mes/[mes]/semana/page.tsx` | ejecutado real | no es comprometido |
+| `balanceMes.ts` l.78/136 | implementación de la definición | única fuente |
+
+**HALT parcial (criterio 3: persiste datos en H5), NO tocado:** `app/api/mes/[mes]/cerrar-semana/route.ts` l.57 (`totalPresupuestado`, suma TODOS los estados de la semana, se escribe en H5 `total_presupuestado` y en `desviacionTotal = ejecutado - presupuestado`), l.107 (`totalComprometido` del plan de la semana siguiente = solo `pendiente`, se escribe en H5 `total_comprometido` y en `balanceProyectado`), y `cerrar-m1/route.ts` l.29 (`totalPresupuestado` de S1 en el cierre). Cambiarlos altera lo que queda guardado en los cierres (semántica de datos histórica: los cierres ya escritos usaron la fórmula vieja, habría datos de dos generaciones en la misma columna). Propuesta: (a) `total_presupuestado` y `desviacionTotal` en cierres pasan a `comprometidoDe(movsSemana)` solo hacia adelante y se documenta la fecha de corte, sin reescribir cierres antiguos; (b) `total_comprometido` del plan siguiente se mantiene como "pendiente por comprometer" y se renombra su etiqueta en UI, o se cambia a `comprometidoDe` si Camilo quiere que coincida con la vista semanal. Decide Camilo.
+
+Observaciones: (1) `VistaSemanal` antes de la ampliación solo difería del canónico donde hay filas `pospuesto` en la semana (PROD: solo 2026-07 S5, 1.145.996 -> 1.069.996). (2) `ConceptoBoard` muestra ahora `$0` en el total de una categoría cuyos conceptos están todos pospuestos/no_aplica (siguen listados, no cuentan). (3) El total de una semana en `ConceptoBoard`/`MesM1` ahora coincide con la columna "Comprometido" de Ejecución.
+
+**ANTES/DESPUÉS con datos de PROD** (Target: PRODUCCIÓN, solo lectura, scope readonly, tabs H2/H4; ANTES = fórmulas de HEAD 7662ae7 sobre las mismas filas, DESPUÉS = `balanceMes`; COP). Con la corrección de las 2 filas de julio ya aplicada en PROD, D2 desapareció: julio muestra 19.371.207 (no 19.295.207).
+
+| Pantalla | Número | 2026-06 | 2026-07 | 2026-08 | 2026-09 | 2026-10 |
+|---|---|---|---|---|---|---|
+| Inicio / Lista de meses / `/api/meses` / MesM1 "Balance mes" | Comprometido del mes | 21.980.111 -> 20.199.111 | 20.567.207 -> 19.371.207 | 20.791.207 -> 19.405.211 | 21.460.207 -> 20.840.207 | 22.815.846 -> 22.113.846 |
+| M1 Desktop / Mobile / Planificación | Comprometido del mes | 20.199.111 = | 19.371.207 = | 19.405.211 = | 20.840.207 = | 22.113.846 = |
+| VistaSemanal (total semanal) | por semana, solo cambia donde hay `pospuesto` | sin cambio | S5: 1.145.996 -> 1.069.996 | sin cambio | sin cambio | sin cambio |
+| `/api/mes/[mes]/semana/[semana]` | totalPresupuestado | sin cambio (ya canónico) | sin cambio | sin cambio | sin cambio | sin cambio |
+| ConceptoBoard columna / MesM1 "Balance Sx" | por semana S1..S5 | 14.759.123->14.504.123; 2.349.996->2.249.996; 1.924.996->1.774.996; 2.945.996->1.669.996; 0 | 8.917.383->8.662.383; 6.557.996->6.457.996; 1.559.996->1.309.996; 2.385.836->1.870.836; 1.145.996->1.069.996 | 9.261.383->8.906.383; 6.378.836->6.278.836; 1.814.996->1.449.996; 2.265.996->1.700.000; = | 9.546.383->9.291.383; =; 2.474.996->2.109.996; =; = | 9.623.022->9.171.022; 7.586.996->7.486.996; 2.135.836->1.985.836; =; = |
+
+Cada variación es exactamente la suma de `montoPresupuestado` de filas `pospuesto`/`no_aplica`/`pospuesto_mes_siguiente` (más, en inicio/lista/`/api/meses`, las filas sin semana si las hubiera: hoy 0 en PROD). Verificado por `comprometidoDe(slice semana) == balanceMes.semanas[s]` en los 5 meses (aserciones del script). No se recorrió ninguna pantalla en navegador (verificado por tsc/eslint y por el script contra datos PROD, no visualmente).
+
+Grep final (`grep -rnE "reduce\(\(.*montoPresupuestado" app components lib`): solo quedan las excepciones de la tabla, los 3 puntos del HALT parcial y `balanceMes.ts`.
 
 ### Archivos tocados
 Nuevos: `lib/utils/balanceMes.ts`, `scripts/verificar-balance-cuadre.ts`, `scripts/fix-semana-vacia-h2.mjs`.

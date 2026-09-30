@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { getProvider } from "@/lib/data/provider";
 import type { Semana } from "@/lib/data/types";
 import { semanasDeMes, semanaActivaDeMes } from "@/lib/utils/fecha";
+import { comprometidoDe } from "@/lib/utils/balanceMes";
 
 const MES_REGEX = /^\d{4}-\d{2}$/;
 
@@ -30,9 +31,8 @@ export async function GET(
 
     const cierreSemana = cierres.find((c) => c.semana === semana) ?? null;
 
-    const totalPresupuestado = movimientos
-      .filter((m) => m.estado !== "no_aplica" && m.estado !== "pospuesto" && m.estado !== "pospuesto_mes_siguiente")
-      .reduce((s, m) => s + m.montoPresupuestado, 0);
+    // BALANCE-UNIFICADO-01: misma definición canónica que balanceMes.
+    const totalPresupuestado = comprometidoDe(movimientos);
     const totalEjecutado = movimientos
       .filter((m) => m.estado === "ejecutado")
       .reduce((s, m) => s + (m.montoEjecutado ?? 0), 0);

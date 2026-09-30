@@ -12,6 +12,7 @@ import ModalConfirmarSaldos from "./m1/ModalConfirmarSaldos";
 import VistaPlanificacion from "./m1/VistaPlanificacion";
 import Icon from "@/components/ui/Icon";
 import { semanasDeMes } from "@/lib/utils/fecha";
+import { calcularBalanceMes, comprometidoDe, aportesPorSemanaDe } from "@/lib/utils/balanceMes";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -158,11 +159,17 @@ export default function MesM1({
 
   const balance = useMemo(() => {
     const items = semanaFiltro ? movs.filter((m) => m.semana === semanaFiltro) : movs;
-    const planeado  = items.reduce((s, m) => s + m.montoPresupuestado, 0);
+    // BALANCE-UNIFICADO-01: "Planeado" = comprometido canónico; el mes sale de balanceMes (Σ semanas).
+    const planeado  = semanaFiltro
+      ? comprometidoDe(items)
+      : calcularBalanceMes({
+          movs, semanas: SEMANAS, ingresoCamilo: ingresoCamilo?.montoCop ?? 0,
+          aportesPorSemana: aportesPorSemanaDe(ingresosAngie),
+        }).mes.comprometido;
     const ejecutado = items.filter((m) => m.estado === "ejecutado").reduce((s, m) => s + (m.montoEjecutado ?? 0), 0);
     const resta     = items.filter((m) => m.estado === "pendiente").reduce((s, m) => s + m.montoPresupuestado, 0);
     return { planeado, ejecutado, resta };
-  }, [movs, semanaFiltro]);
+  }, [movs, semanaFiltro, SEMANAS, ingresoCamilo, ingresosAngie]);
 
   const totalEjecutados = movs.filter((m) => m.estado === "ejecutado").length;
   const totalPendientes = movs.filter((m) => m.estado === "pendiente").length;
@@ -653,7 +660,7 @@ export default function MesM1({
                               <span className="mr-1.5 text-xs text-gray-400">{collapsed ? "▸" : "▾"}</span>
                               <span className="text-xs font-semibold uppercase tracking-wide text-[#5f6368]">{cat}</span>
                               <span className="ml-2 font-mono text-xs text-gray-400">
-                                {COP(items.reduce((s, m) => s + m.montoPresupuestado, 0))}
+                                {COP(comprometidoDe(items))}
                               </span>
                             </td>
                           </tr>

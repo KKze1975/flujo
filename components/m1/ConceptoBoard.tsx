@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import type { Movimiento, Semana, Actor, Categoria } from "@/lib/data/types";
 import Icon from "@/components/ui/Icon";
 import { semanasDeMes } from "@/lib/utils/fecha";
+import { comprometidoDe } from "@/lib/utils/balanceMes";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -519,7 +520,7 @@ function CatGroup({
   semanas: Semana[];
 }) {
   const [open, setOpen] = useState(defaultOpen);
-  const tot = items.reduce((s, m) => s + m.montoPresupuestado, 0);
+  const tot = comprometidoDe(items); // BALANCE-UNIFICADO-01: definición canónica (excluye pospuesto/no_aplica/pospuesto_mes_siguiente)
   // F4: verde cuando todos los conceptos de la categoría están ejecutados
   const allDone = mode === "ejecucion" && !empty && items.length > 0 && items.every(m => m.estado === "ejecutado");
 
@@ -596,7 +597,7 @@ function WeekColumn({
   remanenteAngie?: number;
   semanas: Semana[];
 }) {
-  const tot = items.reduce((s, m) => s + m.montoPresupuestado, 0);
+  const tot = comprometidoDe(items); // BALANCE-UNIFICADO-01: definición canónica (excluye pospuesto/no_aplica/pospuesto_mes_siguiente)
   const ejecutados = items.filter(m => m.estado === "ejecutado");
   const ejecutadoMonto = ejecutados.reduce((s, m) => s + (m.montoEjecutado ?? m.montoPresupuestado), 0);
   // B4: excluir no_aplica/pospuesto del denominador
@@ -622,8 +623,8 @@ function WeekColumn({
     const withItems = ALL_CATS
       .filter(c => map[c] && map[c]!.length > 0)
       .sort((a, b) => {
-        const ta = (map[a] ?? []).reduce((s, m) => s + m.montoPresupuestado, 0);
-        const tb = (map[b] ?? []).reduce((s, m) => s + m.montoPresupuestado, 0);
+        const ta = comprometidoDe(map[a] ?? []);
+        const tb = comprometidoDe(map[b] ?? []);
         return tb - ta;
       });
     // For active semana: categories not present in this week's items go at end, dimmed

@@ -11,7 +11,7 @@
 //   --dev-readonly usa GOOGLE_SHEET_ID (DEV) en lugar de PROD.
 
 import { readFileSync } from "node:fs";
-import { calcularBalanceMes } from "../lib/utils/balanceMes.ts";
+import { calcularBalanceMes, comprometidoDe, esComprometido, aportesPorSemanaDe } from "../lib/utils/balanceMes.ts";
 import { semanasDeMes } from "../lib/utils/fecha.ts";
 import type { Semana } from "../lib/data/types.ts";
 
@@ -99,6 +99,25 @@ caso("ingreso Camilo 0", {
     b.semanas.reduce((a, x) => a + x.comprometidoRestante + x.comprometidoEjecutado, 0), b.mes.comprometido);
 }
 
+// Ampliación 30 sept 2026: helpers para superficies que solo ven un tramo (semana, categoría).
+{
+  const movs = [
+    mov("S1", "ejecutado", 100), mov("S1", "pendiente", 30), mov("S1", "pospuesto", 999),
+    mov("S2", "no_aplica", 888), mov("S2", "pendiente", 5), mov("S3", "pospuesto_mes_siguiente", 777),
+  ];
+  const b = calcularBalanceMes({ movs, semanas: S4, ingresoCamilo: 0, aportesPorSemana: {} });
+  assertEq("comprometidoDe(todo el mes) = mes.comprometido", comprometidoDe(movs), b.mes.comprometido);
+  for (const sem of S4) {
+    assertEq(`comprometidoDe(slice ${sem}) = balanceMes.semanas[${sem}]`,
+      comprometidoDe(movs.filter((m) => m.semana === sem)), b.semanas.find((x) => x.semana === sem)!.comprometido);
+  }
+  assertEq("esComprometido(pospuesto) es false", esComprometido("pospuesto"), false);
+  assertEq("esComprometido(pendiente) es true", esComprometido("pendiente"), true);
+  assertEq("aportesPorSemanaDe suma duplicados y respeta semanas", JSON.stringify(aportesPorSemanaDe([
+    { semana: "S1", monto: 10 }, { semana: "S1", monto: 5 }, { semana: "S3", monto: 7 },
+  ])), JSON.stringify({ S1: 15, S3: 7 }));
+}
+
 // ── 2. Caso que DEBE fallar: semana vacía ────────────────────────────────────
 
 {
@@ -178,6 +197,24 @@ async function contraSheet(target: "PROD" | "DEV") {
     for (const idx of b.sinSemana.ids) {
       const f = movs[idx];
       console.log(`       fila sin semana: ${f.id} (fila H2 ${f.fila}) concepto="${f.concepto}" estado=${f.estado} monto=${f.montoPresupuestado}`);
+    }
+    // Tabla ANTES/DESPUÉS por pantalla (ampliación 30 sept 2026). ANTES = fórmulas de HEAD (7662ae7).
+    const cop = (n: number) => n.toLocaleString("es-CO");
+    const antesTodo = movs.reduce((a, m) => a + m.montoPresupuestado, 0);
+    const antesSem = (sem: Semana) => movs.filter((m) => m.semana === sem && m.estado !== "no_aplica" && m.estado !== "pospuesto_mes_siguiente")
+      .reduce((a, m) => a + m.montoPresupuestado, 0);
+    const antesSemTodo = (sem: Semana) => movs.filter((m) => m.semana === sem).reduce((a, m) => a + m.montoPresupuestado, 0);
+    const despMes = b.mes.comprometido;
+    console.log(`TABLA ${mes} | inicio/lista meses/api meses/MesM1(Balance mes): ${cop(antesTodo)} -> ${cop(despMes)}`);
+    for (const sw of b.semanas) {
+      const sliceSem = movs.filter((m) => m.semana === sw.semana);
+      total++;
+      if (comprometidoDe(sliceSem) !== sw.comprometido) { fallos++; console.error(`FALLO  ${mes} ${sw.semana}: comprometidoDe(slice) != balanceMes`); }
+      console.log(
+        `TABLA ${mes} ${sw.semana} | VistaSemanal total: ${cop(antesSem(sw.semana))} -> ${cop(sw.comprometido)}` +
+        ` | api semana: ${cop(comprometidoDe(sliceSem))} = ${cop(sw.comprometido)}` +
+        ` | ConceptoBoard columna/MesM1 Balance ${sw.semana}: ${cop(antesSemTodo(sw.semana))} -> ${cop(sw.comprometido)}`
+      );
     }
     total++;
     if (!b.cuadre.ok) {

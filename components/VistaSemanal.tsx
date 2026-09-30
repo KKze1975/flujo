@@ -8,6 +8,7 @@ import BottomNav from "@/components/ui/BottomNav";
 import RegistroRapido from "@/components/m4/RegistroRapido";
 import type { Movimiento, CierreSemana, Semana, Actor, ConsumoH3, IngresoAngie, Concepto } from "@/lib/data/types";
 import { semanasDeMes, mesSiguienteDe } from "@/lib/utils/fecha";
+import { comprometidoDe, esComprometido } from "@/lib/utils/balanceMes";
 
 type Fuente = "en_mano" | "nequi" | "camilo" | "angie";
 type ModoSemana = "activa" | "lectura" | "edicion";
@@ -1048,10 +1049,10 @@ export default function VistaSemanal({
   const pendientes = conceptos.filter((m) => m.estado === "pendiente" || m.estado === "pospuesto");
   const ejecutados = conceptos.filter((m) => m.estado === "ejecutado");
 
-  const movimientosPresupuestados = movimientos.filter(
-    m => m.estado !== "no_aplica" && m.estado !== "pospuesto_mes_siguiente"
-  );
-  const totalPresupuestado = movimientosPresupuestados.reduce((s, m) => s + m.montoPresupuestado, 0);
+  // BALANCE-UNIFICADO-01: presupuestado/comprometido de la semana = definición canónica
+  // (excluye no_aplica, pospuesto y pospuesto_mes_siguiente), la misma de balanceMes.
+  const movimientosPresupuestados = movimientos.filter(m => esComprometido(m.estado));
+  const totalPresupuestado = comprometidoDe(movimientos);
   // Exclude pago_fraccionado from H2 sum — their spending is always counted via H3B consumos.
   // After cerrar-semana writes estado=ejecutado to pago_fraccionado H2, this prevents double-counting.
   const totalEjecutadoH2 = movimientos
