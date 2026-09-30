@@ -2,6 +2,7 @@ import type {
   Semana,
   Concepto,
   Movimiento,
+  NuevoMovimiento,
   Bolsillo,
   Consumo,
   ConsumoH3,
@@ -29,7 +30,7 @@ export interface IDataProvider {
   getMeses(): Promise<string[]>;
   getMovimientos(mes?: string): Promise<Movimiento[]>;
   getMovimientosByMesYSemana(mes: string, semana: Semana): Promise<Movimiento[]>;
-  crearMovimientosMes(movimientos: Omit<Movimiento, "id">[]): Promise<Movimiento[]>;
+  crearMovimientosMes(movimientos: NuevoMovimiento[]): Promise<Movimiento[]>;
   createMovimiento(data: Omit<Movimiento, "id">): Promise<Movimiento>;
   updateMovimiento(id: string, data: Partial<Omit<Movimiento, "id">>): Promise<Movimiento>;
   ejecutarMovimiento(id: string): Promise<Movimiento>;

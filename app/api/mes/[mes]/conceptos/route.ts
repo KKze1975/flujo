@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { getProvider } from "@/lib/data/provider";
-import type { Concepto, Movimiento, Semana, Categoria, TipoConcepto } from "@/lib/data/types";
+import type { Concepto, NuevoMovimiento, Semana, Categoria, TipoConcepto } from "@/lib/data/types";
 
 const MES_REGEX = /^\d{4}-\d{2}$/;
 // S5 no es un semanaDefault valido para un concepto nuevo (SEMANA5-01: S5
@@ -69,7 +69,7 @@ export async function POST(
     };
     const concepto = await provider.createConcepto(conceptoData);
 
-    const movData: Omit<Movimiento, "id"> = {
+    const movData: NuevoMovimiento = {
       conceptoId: concepto.id,
       mes,
       nombreSnapshot: concepto.nombre,

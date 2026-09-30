@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import React from "react";
 import { useRouter } from "next/navigation";
 import type {
@@ -15,6 +15,7 @@ import ModalCerrarSemana from "@/components/m1/ModalCerrarSemana";
 import ModalAporteAngie from "@/components/m1/ModalAporteAngie";
 import { semanasDeMes, semanaDeFechaEnMes } from "@/lib/utils/fecha";
 import { remanenteEncadenadoPorSemana } from "@/lib/utils/balanceSemanal";
+import { calcularBalanceMes } from "@/lib/utils/balanceMes";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -468,8 +469,21 @@ export default function MesM1Desktop({
   // ── Planificación derivations ─────────────────────────────────────────────
 
   const ingresoCamiloNum = Number(ingresoMonto) || 0;
-  const aportesNum = useMemo(() => SEMANAS.reduce((s, sem) => s + (Number(aportes[sem]) || 0), 0), [aportes]);
-  const ingresoTotal = ingresoCamiloNum + aportesNum;
+  // BALANCE-UNIFICADO-01: única fuente de ingreso/comprometido del mes y por semana.
+  // El mes es Σ semanas (lib/utils/balanceMes.ts); no hay fórmula propia del mes aquí.
+  const balanceMes = useMemo(() => calcularBalanceMes({
+    movs,
+    semanas: SEMANAS,
+    ingresoCamilo: ingresoCamiloNum,
+    aportesPorSemana: Object.fromEntries(
+      (Object.keys(aportes) as Semana[]).map((s) => [s, Number(aportes[s]) || 0]),
+    ) as Partial<Record<Semana, number>>,
+  }), [movs, SEMANAS, ingresoCamiloNum, aportes]);
+  useEffect(() => {
+    if (!balanceMes.cuadre.ok) console.error("[balanceMes] el cuadre mes = Σ semanas FALLA:", balanceMes.cuadre.errores);
+  }, [balanceMes]);
+  const ingresoTotal = balanceMes.mes.ingreso;
+  const aportesNum = ingresoTotal - ingresoCamiloNum;
 
   const conceptosActivosMes = useMemo(() => {
     return conceptosLocal.filter(c => {
@@ -488,14 +502,8 @@ export default function MesM1Desktop({
     });
   }, [conceptosLocal, movs, mesNombre]);
 
-  const totalComprometido = useMemo(() =>
-    movs
-      .filter(m => !["no_aplica", "pospuesto", "pospuesto_mes_siguiente"].includes(m.estado))
-      .reduce((sum, m) => sum + m.montoPresupuestado, 0),
-    [movs]
-  );
-
-  const diferenciaTotal = ingresoTotal - totalComprometido;
+  const totalComprometido = balanceMes.mes.comprometido;
+  const diferenciaTotal = balanceMes.mes.diferencia;
 
   const balancePlanificacion = useMemo(() => {
     const chain = remanenteEncadenadoPorSemana(
@@ -503,25 +511,14 @@ export default function MesM1Desktop({
       ingresoCamiloNum,
       (s) => Number(aportes[s]) || 0,
       (s) => {
-        const comprometido = conceptosActivosMes.reduce((sum, c) => {
-          if (c.frecuencia === "semanal") {
-          const movSem = movs.find(m =>
-            m.conceptoId === c.id &&
-            m.semana === s &&
-            !["no_aplica", "pospuesto", "pospuesto_mes_siguiente"].includes(m.estado)
-          );
-          return movSem ? sum + movSem.montoPresupuestado : sum;
-        }
-          const mov = movs.find(m => m.conceptoId === c.id && !["no_aplica", "pospuesto", "pospuesto_mes_siguiente"].includes(m.estado));
-          return mov?.semana === s ? sum + mov.montoPresupuestado : sum;
-        }, 0);
+        const comprometido = balanceMes.semanas.find((b) => b.semana === s)?.comprometido ?? 0;
         return { restar: comprometido, extra: { comprometido } };
       },
     );
     return chain.map(({ semana, remanente, aporteAngie, disponible, diferencia, extra }) => ({
       semana, remanente, aporteAngie, disponible, diferencia, ...extra,
     }));
-  }, [conceptosActivosMes, movs, aportes, ingresoCamiloNum]);
+  }, [balanceMes, aportes, ingresoCamiloNum]);
 
   const gruposPlan = useMemo(() => {
     const filtered = wkPlan === "todas"
@@ -791,6 +788,11 @@ export default function MesM1Desktop({
                   <span style={{ fontSize: 11, color, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{COP(value)}</span>
                 </div>
               ))}
+              {!balanceMes.cuadre.ok && (
+                <p role="alert" style={{ margin: "6px 0 0", fontSize: 10.5, fontWeight: 700, color: "var(--neg)" }}>
+                  El balance no cuadra: {balanceMes.cuadre.errores.join("; ")}
+                </p>
+              )}
             </div>
 
             <p className="dk-navlabel">Por semana</p>

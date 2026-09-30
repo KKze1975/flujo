@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import React from "react";
 import type { Concepto, Movimiento, Semana, SemanaDefault, Categoria, IngresoCamilo, IngresoAngie } from "@/lib/data/types";
 import ModalAgregarConcepto from "./ModalAgregarConcepto";
-import { semanasDeMes } from "@/lib/utils/fecha";
+import { semanasDeMes, mesSiguienteDe } from "@/lib/utils/fecha";
 
 const COP = (n: number) =>
   new Intl.NumberFormat("es-CO", {
@@ -77,6 +77,8 @@ export default function VistaPlanificacion({
 
   // Panel de acciones por concepto
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  // BALANCE-UNIFICADO-01: picker de semana del mes siguiente (concepto con el picker abierto).
+  const [moverPickerConceptoId, setMoverPickerConceptoId] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   // Overrides locales sincronizados con H2: conceptoId → estado
@@ -312,7 +314,7 @@ export default function VistaPlanificacion({
     }
   };
 
-  const moverMesSiguiente = async (conceptoId: string) => {
+  const moverMesSiguiente = async (conceptoId: string, semanaDestino: Semana) => {
     setActionLoading(conceptoId);
     setError(null);
     try {
@@ -322,7 +324,7 @@ export default function VistaPlanificacion({
         const res = await fetch(`/api/mes/${mes}/movimientos/${mov.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ tipo: "mover_mes_siguiente" }),
+          body: JSON.stringify({ tipo: "mover_mes_siguiente", semana: semanaDestino }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? "Error al mover al mes siguiente");
@@ -330,6 +332,7 @@ export default function VistaPlanificacion({
       }
       setMovs((prev) => prev.map((m) => actualizados.find((u) => u.id === m.id) ?? m));
       setMovOverrides((prev) => new Map(prev).set(conceptoId, "pospuesto_mes_siguiente"));
+      setMoverPickerConceptoId(null);
       setExpandedId(null);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Error desconocido");
@@ -758,12 +761,29 @@ export default function VistaPlanificacion({
                                 <button
                                   type="button"
                                   disabled={!!override || actionLoading === concepto.id}
-                                  onClick={() => moverMesSiguiente(concepto.id)}
+                                  onClick={() => setMoverPickerConceptoId(moverPickerConceptoId === concepto.id ? null : concepto.id)}
                                   style={{ borderColor: "#fed7aa", backgroundColor: "#fff7ed", color: "#c2410c" }}
                                   className="rounded border px-3 py-1 text-xs hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
                                 >
                                   {actionLoading === concepto.id ? "…" : `Mover a ${mesSiguienteNombre}`}
                                 </button>
+                                {moverPickerConceptoId === concepto.id && !override && (
+                                  <>
+                                    <span className="text-xs font-medium text-gray-400">¿A qué semana?</span>
+                                    {semanasDeMes(mesSiguienteDe(mes)).map((sem) => (
+                                      <button
+                                        key={sem}
+                                        type="button"
+                                        disabled={actionLoading === concepto.id}
+                                        onClick={() => moverMesSiguiente(concepto.id, sem)}
+                                        style={{ borderColor: "#fed7aa", backgroundColor: "#fff", color: "#c2410c" }}
+                                        className="rounded border px-2 py-1 text-xs hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
+                                      >
+                                        → {sem}
+                                      </button>
+                                    ))}
+                                  </>
+                                )}
                                 <button
                                   type="button"
                                   onClick={() => setExpandedId(null)}

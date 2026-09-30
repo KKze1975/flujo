@@ -10,7 +10,7 @@ import type {
 import Icon from "@/components/ui/Icon";
 import BottomNav from "@/components/ui/BottomNav";
 import ModalConfirmarSaldos from "@/components/m1/ModalConfirmarSaldos";
-import { semanasDeMes } from "@/lib/utils/fecha";
+import { semanasDeMes, mesSiguienteDe } from "@/lib/utils/fecha";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -136,6 +136,8 @@ export default function MesM1Mobile({
   const [wk, setWk] = useState<Semana>(() => getActiveSemana(mes));
   const [showSaldosModal, setShowSaldosModal] = useState(false);
   const [expandedPlanId, setExpandedPlanId] = useState<string | null>(null);
+  // BALANCE-UNIFICADO-01: picker de semana del mes siguiente (abierto para este movimiento).
+  const [moverPickerId, setMoverPickerId] = useState<string | null>(null);
   const [ejecutarPanel, setEjecutarPanel] = useState<EjecutarPanel | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -392,6 +394,21 @@ export default function MesM1Mobile({
                             </button>
                           ))}
                         </div>
+                        {moverPickerId === mov.id && (
+                          <div style={{ marginBottom: 10 }}>
+                            <p style={{ fontSize: 11, color: "var(--ink-faint)", fontWeight: 600, margin: "0 0 8px" }}>¿A qué semana del mes siguiente?</p>
+                            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                              {semanasDeMes(mesSiguienteDe(mes)).map(s => (
+                                <button key={s} type="button" disabled={busy}
+                                  onClick={() => patchar(mov.id, { tipo: "mover_mes_siguiente", semana: s })}
+                                  className="fl-chip"
+                                  style={{ cursor: "pointer", background: "var(--warn-soft)", color: "var(--warn)", borderColor: "transparent" }}>
+                                  → {s}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                           <button type="button" disabled={busy}
                             onClick={() => patchar(mov.id, { tipo: "no_aplica" })}
@@ -400,7 +417,7 @@ export default function MesM1Mobile({
                             No aplica
                           </button>
                           <button type="button" disabled={busy}
-                            onClick={() => patchar(mov.id, { tipo: "mover_mes_siguiente" })}
+                            onClick={() => setMoverPickerId(moverPickerId === mov.id ? null : mov.id)}
                             className="fl-chip"
                             style={{ cursor: "pointer", background: "var(--warn-soft)", color: "var(--warn)", borderColor: "transparent" }}>
                             Mes siguiente
