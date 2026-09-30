@@ -5,10 +5,10 @@ estado: activo
 tier: A
 agente_ejecucion: claude-code
 dependencias: ninguna
-rol_activo: tester
-paso_actual: "verificación terminada; reporte al Chief of Staff (D1/D2 pendientes de Camilo)"
-actualizado_en: 2026-09-30T09:05:00-05:00
-necesita_aprobacion: baja
+rol_activo: coder
+paso_actual: "Construcción D1 terminada, pendiente de Tester"
+actualizado_en: 2026-09-30T09:42:18-05:00
+necesita_aprobacion: no
 ---
 
 # BALANCE-UNIFICADO-01 — Balance mes = suma de semanas, una sola función, `semana` nunca `null`
@@ -99,6 +99,38 @@ unificación de `comprometido` mes vs. semana.
 **D3 (borde latente, sin dato hoy) — `iniciar` con concepto NO semanal de `semana_default` variable.** No hay semana inequívoca. En vez de elegir una, `POST /api/mes/[mes]/iniciar` responde 400 sin escribir nada y lista los conceptos. En H1 (PROD y DEV) hoy ningún concepto no semanal es `variable` (los 7 `variable` son semanales, que ya reciben una fila por semana), así que no cambia el comportamiento actual. Idem traslados heredados (`pospuesto_mes_siguiente`) con semana vacía. Camilo confirma si prefiere otro tratamiento.
 
 Sin choque detectado con `specs/APORTES-SEMANALES-01.md` (`aportesPorSemana` es el mapa extensible `Semana -> monto` que la función ya acepta).
+
+### Construcción D1 (30 sept 2026) — decisión cerrada de Camilo: definición canónica en TODAS las vistas
+
+**Construcción D1 terminada, pendiente de Tester.** Sustituye la "Decisión tomada por el Coder" de D1 arriba (Ejecución NO se mantiene: adopta la definición canónica).
+
+Qué cambió:
+- `lib/utils/balanceMes.ts`: cada semana devuelve además `comprometidoEjecutado` (parte del comprometido con `estado: ejecutado`) y `comprometidoRestante = comprometido - comprometidoEjecutado`. Es el derivado que Ejecución necesitaba para no doble-contar el ejecutado real.
+- `components/MesM1Desktop.tsx`: `balanceMes` sube antes de `balanceSemanas`; Ejecución toma `comprometido` y `comprometidoRestante` por semana de `balanceMes.semanas`. Conserva lo propio: ejecutado real (H2 con fallback `semanaFromFecha` + H3), pendiente (conteo), isConfirmado. Sin fórmula de comprometido por semana.
+- `components/MesM1Mobile.tsx`: `ingresoTotal` y `totalPresupuestado` = `balanceMes.mes.*` (antes sumaba TODOS los estados, incluido pospuesto/no_aplica).
+- `components/m1/VistaPlanificacion.tsx`: `totalComprometido`, `ingresoTotal`, `diferenciaTotal` = `balanceMes.mes.*`; `balancePorSemana` usa `remanenteEncadenadoPorSemana` + `balanceMes.semanas` (antes fórmula propia por semana).
+- `scripts/verificar-balance-cuadre.ts`: +7 aserciones D1 (comprometidoEjecutado/Restante por semana, con pospuesto/no_aplica/pospuesto_mes_siguiente). Resultado: `58/58 aserciones ok.`; `--prod-readonly`: `62/63`, único fallo = 2026-07 (comprometido -76000, `sinSemana=2`: MOV_1782767829728 y MOV_1782767835789), como se esperaba. `npx tsc --noEmit` exit 0; lint en los 4 archivos tocados: 3 errores / 22 warnings vs 3 / 24 antes (sin errores nuevos).
+
+ANTES/DESPUÉS con datos de PROD (Target: PRODUCCIÓN, solo lectura, scope readonly, tabs H1/H2/H3/H4; "antes" = fórmulas de `HEAD~2` (e88f5bb, código previo al ticket), "después" = `balanceMes`). Cifras en COP.
+
+| Vista | Número visible | 2026-06 | 2026-07 | 2026-08 | 2026-09 | 2026-10 |
+|---|---|---|---|---|---|---|
+| Desktop Planificación | Comprometido mes | 20.199.111 = | 19.371.207 -> 19.295.207 (D2) | 19.405.211 = | 20.840.207 = | 22.113.846 = |
+| Desktop Planificación | Diferencia mes | -765.111 = | -421.207 -> -345.207 (D2) | -785.211 = | 359.793 = | -2.713.847 = |
+| Desktop Planificación | Por semana (comp./dif.) | sin cambio | sin cambio | sin cambio | sin cambio | sin cambio |
+| Desktop Ejecución | Comprometido S1..S5 | 14.759.123->14.504.123; 2.349.996->2.249.996; 1.924.996->1.774.996; 2.945.996->1.669.996; 0 | 8.841.383->8.586.383; 6.557.996->6.457.996; 1.559.996->1.309.996; 2.385.836->1.870.836; 1.145.996->1.069.996 | 9.261.383->8.906.383; 6.378.836->6.278.836; 1.814.996->1.449.996; 2.265.996->1.700.000; 1.069.996 = | 9.546.383->9.291.383; 6.097.996 =; 2.474.996->2.109.996; 2.230.836 =; 1.109.996 = | 9.623.022->9.171.022; 7.586.996->7.486.996; 2.135.836->1.985.836; 2.009.996 =; 1.459.996 = |
+| Desktop Ejecución | Diferencia S5 (cierre) | -6.135.469 -> -4.354.469 | -5.650.794 -> -4.454.794 | -9.296.943,66 -> -7.910.947,66 | -4.491.613 -> -3.871.613 | -3.415.847 -> -2.713.847 |
+| Desktop Ejecución | Ejecutado real S1..S5 | sin cambio | sin cambio | sin cambio | sin cambio | sin cambio (0) |
+| Mobile | Presupuestado | 21.980.111 -> 20.199.111 | 20.567.207 -> 19.295.207 | 20.791.207 -> 19.405.211 | 21.460.207 -> 20.840.207 | 22.815.846 -> 22.113.846 |
+| Mobile | Proy. superávit | -2.546.111 -> -765.111 | -1.617.207 -> -345.207 | -2.171.207 -> -785.211 | -260.207 -> 359.793 | -3.415.847 -> -2.713.847 |
+| Mobile | Ingresos del mes | sin cambio | sin cambio | sin cambio | sin cambio | sin cambio |
+| VistaPlanificacion | Comprometido / diferencia mes | sin cambio | 19.371.207 -> 19.295.207 / -421.207 -> -345.207 (D2) | sin cambio | sin cambio | sin cambio |
+| VistaPlanificacion | Por semana | sin cambio | sin cambio | sin cambio | sin cambio | sin cambio |
+| Todas | Ingreso mes | sin cambio | sin cambio | sin cambio | sin cambio | sin cambio |
+
+Explicación de cada cambio (verificada por script, no supuesta): la variación de "Comprometido" en Ejecución, por semana y mes, es exactamente la suma de `montoPresupuestado` de filas `pospuesto`/`no_aplica`/`pospuesto_mes_siguiente` de esa semana (cumplido en los 5 meses). En Mobile, la variación del mes es esa misma suma de estados excluidos; en 2026-07 son 1.196.000 de estados excluidos + 76.000 de las 2 filas con semana vacía (D2, efecto transitorio hasta la corrección en PROD). La `diferencia` de Ejecución cambia porque `comprometidoRestante` entra en `restar`. Confirmación cruzada: en meses sin ejecutado (2026-10) la diferencia de S5 en Ejecución ahora iguala la diferencia del mes en Planificación (-2.713.847). Desktop Planificación y VistaPlanificacion por semana no cambian (ya eran canónicas, confirmado por lectura).
+
+Grep de fórmulas de comprometido/ingreso (reduce con `montoPresupuestado`/`montoCop`/aporte) en las 4 vistas migradas: ya no queda ninguna en `MesM1Desktop.tsx`, `MesM1Mobile.tsx` (solo `porPagar` = pendientes y `ejecutadoTotal`, no son comprometido) ni `m1/VistaPlanificacion.tsx`. **Residual fuera de las 4 vistas pedidas, NO tocado** (otras superficies con semántica propia; migrarlas sería expandir alcance): `components/MesM1.tsx` l.161/163/656, `components/VistaSemanal.tsx` l.1054/1242/1252 (ya excluye `no_aplica`/`pospuesto_mes_siguiente` pero no `pospuesto`), `components/m1/ConceptoBoard.tsx` l.522/599/605/625-626 (totales por concepto), `app/page.tsx`, `app/meses/page.tsx`, `app/api/meses/route.ts`, `app/api/mes/[mes]/{cerrar-semana,cerrar-m1,semana/[semana]}/route.ts`. Camilo decide si se abre un ticket para unificarlas.
 
 ### Archivos tocados
 Nuevos: `lib/utils/balanceMes.ts`, `scripts/verificar-balance-cuadre.ts`, `scripts/fix-semana-vacia-h2.mjs`.

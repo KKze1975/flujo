@@ -429,45 +429,6 @@ export default function MesM1Desktop({
     return result;
   }, [cierresSemanaProps, SEMANAS]);
 
-  const balanceSemanas = useMemo(() => {
-    const chain = remanenteEncadenadoPorSemana(
-      SEMANAS,
-      ingresoCamiloLocal?.montoCop ?? 0,
-      (s) => ingresosAngieProp.find(a => a.semana === s)?.monto ?? 0,
-      (s) => {
-        const items = movs.filter((m) => m.semana === s);
-        const comprometido = items.reduce((sum, m) => sum + m.montoPresupuestado, 0);
-        const ejecutadoH2 = movs
-          .filter((m) => m.estado === "ejecutado" && (
-            m.semana === s ||
-            (m.semana === null && semanaFromFecha(m.fechaEjecucion, mes) === s)
-          ))
-          .reduce((sum, m) => sum + (m.montoEjecutado ?? m.montoPresupuestado), 0);
-        // ejecutado_real: lo mismo que ya calculaba balanceSemanas antes del fix.
-        const ejecutadoReal = ejecutadoH2 + (gastoH3PorSemana[s] ?? 0);
-        // comprometido_restante: la porción de `comprometido` de esta semana
-        // que todavía NO está marcada como ejecutada (evita doble conteo con
-        // ejecutadoReal, que ya cubre lo que sí está marcado ejecutado).
-        const comprometidoEjecutado = items
-          .filter((m) => m.estado === "ejecutado")
-          .reduce((sum, m) => sum + m.montoPresupuestado, 0);
-        const comprometidoRestante = comprometido - comprometidoEjecutado;
-        const pendiente = items.filter((m) => m.estado === "pendiente").length;
-        const isConfirmado = cierresSemanaProps.some((c) => c.semana === s);
-        return {
-          restar: comprometidoRestante + ejecutadoReal,
-          extra: { comprometido, ejecutado: ejecutadoReal, pendiente, isConfirmado },
-        };
-      },
-    );
-    return chain.map(({ semana, disponible, aporteAngie, diferencia, extra }) => ({
-      semana, remanente: disponible, aporteAngie, diferencia, ...extra,
-    }));
-  }, [movs, ingresoCamiloLocal, ingresosAngieProp, cierresSemanaProps, gastoH3PorSemana]);
-
-
-  // ── Planificación derivations ─────────────────────────────────────────────
-
   const ingresoCamiloNum = Number(ingresoMonto) || 0;
   // BALANCE-UNIFICADO-01: única fuente de ingreso/comprometido del mes y por semana.
   // El mes es Σ semanas (lib/utils/balanceMes.ts); no hay fórmula propia del mes aquí.
@@ -482,6 +443,42 @@ export default function MesM1Desktop({
   useEffect(() => {
     if (!balanceMes.cuadre.ok) console.error("[balanceMes] el cuadre mes = Σ semanas FALLA:", balanceMes.cuadre.errores);
   }, [balanceMes]);
+  const balanceSemanas = useMemo(() => {
+    const chain = remanenteEncadenadoPorSemana(
+      SEMANAS,
+      ingresoCamiloLocal?.montoCop ?? 0,
+      (s) => ingresosAngieProp.find(a => a.semana === s)?.monto ?? 0,
+      (s) => {
+        // BALANCE-UNIFICADO-01 (D1): comprometido y su parte ya ejecutada salen de
+        // balanceMes (definición canónica); aquí solo se añade lo propio de Ejecución.
+        const bs = balanceMes.semanas.find((b) => b.semana === s);
+        const comprometido = bs?.comprometido ?? 0;
+        const comprometidoRestante = bs?.comprometidoRestante ?? 0;
+        const items = movs.filter((m) => m.semana === s);
+        const ejecutadoH2 = movs
+          .filter((m) => m.estado === "ejecutado" && (
+            m.semana === s ||
+            (m.semana === null && semanaFromFecha(m.fechaEjecucion, mes) === s)
+          ))
+          .reduce((sum, m) => sum + (m.montoEjecutado ?? m.montoPresupuestado), 0);
+        // ejecutado_real: ejecutado H2 + consumos H3 de la semana.
+        const ejecutadoReal = ejecutadoH2 + (gastoH3PorSemana[s] ?? 0);
+        const pendiente = items.filter((m) => m.estado === "pendiente").length;
+        const isConfirmado = cierresSemanaProps.some((c) => c.semana === s);
+        return {
+          restar: comprometidoRestante + ejecutadoReal,
+          extra: { comprometido, ejecutado: ejecutadoReal, pendiente, isConfirmado },
+        };
+      },
+    );
+    return chain.map(({ semana, disponible, aporteAngie, diferencia, extra }) => ({
+      semana, remanente: disponible, aporteAngie, diferencia, ...extra,
+    }));
+  }, [movs, balanceMes, ingresoCamiloLocal, ingresosAngieProp, cierresSemanaProps, gastoH3PorSemana]);
+
+
+  // ── Planificación derivations ─────────────────────────────────────────────
+
   const ingresoTotal = balanceMes.mes.ingreso;
   const aportesNum = ingresoTotal - ingresoCamiloNum;
 

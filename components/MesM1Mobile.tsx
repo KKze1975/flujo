@@ -11,6 +11,7 @@ import Icon from "@/components/ui/Icon";
 import BottomNav from "@/components/ui/BottomNav";
 import ModalConfirmarSaldos from "@/components/m1/ModalConfirmarSaldos";
 import { semanasDeMes, mesSiguienteDe } from "@/lib/utils/fecha";
+import { calcularBalanceMes } from "@/lib/utils/balanceMes";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -152,12 +153,18 @@ export default function MesM1Mobile({
   const saldosConfirmados = CUENTAS_H4C.every(({ cuenta }) => saldos.some(s => s.cuenta === cuenta));
 
   const ingresoCamiloNum = ingresoCamiloProp?.montoCop ?? 0;
-  const aportesNum = useMemo(() =>
-    ingresosAngieProp.reduce((s, a) => s + a.monto, 0), [ingresosAngieProp]);
-  const ingresoTotal = ingresoCamiloNum + aportesNum;
-
-  const totalPresupuestado = useMemo(() =>
-    movs.reduce((s, m) => s + m.montoPresupuestado, 0), [movs]);
+  // BALANCE-UNIFICADO-01 (D1): ingreso y comprometido del mes salen de balanceMes
+  // (mes = Σ semanas, definición canónica de comprometido); sin fórmula propia aquí.
+  const balanceMes = useMemo(() => {
+    const aportesPorSemana: Partial<Record<Semana, number>> = {};
+    for (const a of ingresosAngieProp) aportesPorSemana[a.semana] = (aportesPorSemana[a.semana] ?? 0) + a.monto;
+    return calcularBalanceMes({ movs, semanas: SEMANAS, ingresoCamilo: ingresoCamiloNum, aportesPorSemana });
+  }, [movs, SEMANAS, ingresoCamiloNum, ingresosAngieProp]);
+  useEffect(() => {
+    if (!balanceMes.cuadre.ok) console.error("[balanceMes] el cuadre mes = Σ semanas FALLA:", balanceMes.cuadre.errores);
+  }, [balanceMes]);
+  const ingresoTotal = balanceMes.mes.ingreso;
+  const totalPresupuestado = balanceMes.mes.comprometido;
   const proyeccion = ingresoTotal - totalPresupuestado;
 
   const ejecutadoTotal = useMemo(() =>

@@ -31,6 +31,10 @@ export interface BalanceSemanaMes {
   /** Ingreso de la semana: aporte de la semana (+ ingreso de Camilo en la primera semana). */
   ingreso: number;
   comprometido: number;
+  /** Parte de `comprometido` cuyos movimientos ya están `ejecutado` (BALANCE-UNIFICADO-01 D1). */
+  comprometidoEjecutado: number;
+  /** comprometido - comprometidoEjecutado: lo comprometido que aún no está ejecutado (evita doble conteo con el ejecutado real). */
+  comprometidoRestante: number;
 }
 
 export interface CuboSinAsignar {
@@ -75,6 +79,8 @@ export function calcularBalanceMes(args: {
     semana,
     ingreso: (i === 0 ? ingresoCamilo : 0) + (aportesPorSemana[semana] ?? 0),
     comprometido: 0,
+    comprometidoEjecutado: 0,
+    comprometidoRestante: 0,
   }));
   const porSemana = new Map(semanasBalance.map((s) => [s.semana, s]));
 
@@ -97,7 +103,9 @@ export function calcularBalanceMes(args: {
       return;
     }
     s.comprometido += monto;
+    if (m.estado === "ejecutado") s.comprometidoEjecutado += monto;
   });
+  for (const s of semanasBalance) s.comprometidoRestante = s.comprometido - s.comprometidoEjecutado;
 
   const mesIngreso = semanasBalance.reduce((a, s) => a + s.ingreso, 0);
   const mesComprometido = semanasBalance.reduce((a, s) => a + s.comprometido, 0);

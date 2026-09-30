@@ -79,6 +79,26 @@ caso("ingreso Camilo 0", {
   semanas: S4, ingresoCamilo: 0, aportesPorSemana: { S1: 30 },
 }, { comprometido: 100, ingreso: 30 });
 
+// D1: comprometidoEjecutado / comprometidoRestante por semana (Ejecución los consume).
+{
+  const b = calcularBalanceMes({
+    movs: [
+      mov("S1", "ejecutado", 100), mov("S1", "pendiente", 30), mov("S1", "pospuesto", 999),
+      mov("S2", "ejecutado", 50), mov("S2", "no_aplica", 888), mov("S3", "pospuesto_mes_siguiente", 777),
+    ],
+    semanas: S4, ingresoCamilo: 0, aportesPorSemana: {},
+  });
+  const [s1, s2, s3] = b.semanas;
+  assertEq("D1 S1: comprometido (excluye pospuesto)", s1.comprometido, 130);
+  assertEq("D1 S1: comprometidoEjecutado", s1.comprometidoEjecutado, 100);
+  assertEq("D1 S1: comprometidoRestante = comprometido - ejecutado", s1.comprometidoRestante, 30);
+  assertEq("D1 S2: comprometido (excluye no_aplica)", s2.comprometido, 50);
+  assertEq("D1 S2: comprometidoRestante", s2.comprometidoRestante, 0);
+  assertEq("D1 S3: comprometido (excluye pospuesto_mes_siguiente)", s3.comprometido, 0);
+  assertEq("D1: Σ comprometidoRestante + Σ comprometidoEjecutado = mes.comprometido",
+    b.semanas.reduce((a, x) => a + x.comprometidoRestante + x.comprometidoEjecutado, 0), b.mes.comprometido);
+}
+
 // ── 2. Caso que DEBE fallar: semana vacía ────────────────────────────────────
 
 {

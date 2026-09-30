@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
 import React from "react";
 import type { Concepto, Movimiento, Semana, SemanaDefault, Categoria, IngresoCamilo, IngresoAngie } from "@/lib/data/types";
 import ModalAgregarConcepto from "./ModalAgregarConcepto";
 import { semanasDeMes, mesSiguienteDe } from "@/lib/utils/fecha";
+import { calcularBalanceMes } from "@/lib/utils/balanceMes";
+import { remanenteEncadenadoPorSemana } from "@/lib/utils/balanceSemanal";
 
 const COP = (n: number) =>
   new Intl.NumberFormat("es-CO", {
@@ -133,49 +135,41 @@ export default function VistaPlanificacion({
     return name.charAt(0).toUpperCase() + name.slice(1);
   }, [mes]);
 
-  const totalComprometido = useMemo(() =>
-    movs
-      .filter(m => !["no_aplica", "pospuesto", "pospuesto_mes_siguiente"].includes(m.estado))
-      .reduce((sum, m) => sum + m.montoPresupuestado, 0),
-    [movs]
-  );
-
+  // BALANCE-UNIFICADO-01 (D1): ingreso/comprometido del mes y por semana desde
+  // balanceMes (mes = Σ semanas); sin fórmula propia en este componente.
   const ingresoCamiloNum = Number(montoCamilo) || 0;
-  const aportesNum = useMemo(
-    () => SEMANAS.reduce((sum, s) => sum + (Number(aportes[s]) || 0), 0),
-    [aportes]
-  );
-  const ingresoTotal = ingresoCamiloNum + aportesNum;
-  const diferenciaTotal = ingresoTotal - totalComprometido;
+  const balanceMes = useMemo(() => calcularBalanceMes({
+    movs,
+    semanas: SEMANAS,
+    ingresoCamilo: ingresoCamiloNum,
+    aportesPorSemana: Object.fromEntries(
+      SEMANAS.map((s) => [s, Number(aportes[s]) || 0]),
+    ) as Partial<Record<Semana, number>>,
+  }), [movs, SEMANAS, ingresoCamiloNum, aportes]);
+  useEffect(() => {
+    if (!balanceMes.cuadre.ok) console.error("[balanceMes] el cuadre mes = Σ semanas FALLA:", balanceMes.cuadre.errores);
+  }, [balanceMes]);
+  const totalComprometido = balanceMes.mes.comprometido;
+  const ingresoTotal = balanceMes.mes.ingreso;
+  const aportesNum = ingresoTotal - ingresoCamiloNum;
+  const diferenciaTotal = balanceMes.mes.diferencia;
 
   // ── Balance por semana — remanentes encadenados ───────────────────────────
   // S1 arranca con el ingreso Camilo; cada semana hereda el remanente anterior.
 
-  const balancePorSemana = useMemo(() => {
-    const result: {
-      semana: Semana;
-      remanteAnterior: number;
-      aporteAngie: number;
-      disponible: number;
-      comprometido: number;
-      diferencia: number;
-    }[] = [];
-    let remanente = ingresoCamiloNum;
-    for (const s of SEMANAS) {
-      const aporteAngie = Number(aportes[s]) || 0;
-      const comprometido = movs
-        .filter(m =>
-          m.semana === s &&
-          !["no_aplica", "pospuesto", "pospuesto_mes_siguiente"].includes(m.estado)
-        )
-        .reduce((sum, m) => sum + m.montoPresupuestado, 0);
-      const disponible = remanente + aporteAngie;
-      const diferencia = disponible - comprometido;
-      result.push({ semana: s, remanteAnterior: remanente, aporteAngie, disponible, comprometido, diferencia });
-      remanente = diferencia;
-    }
-    return result;
-  }, [movs, aportes, ingresoCamiloNum]);
+  const balancePorSemana = useMemo(() =>
+    remanenteEncadenadoPorSemana(
+      SEMANAS,
+      ingresoCamiloNum,
+      (s) => Number(aportes[s]) || 0,
+      (s) => {
+        const comprometido = balanceMes.semanas.find((b) => b.semana === s)?.comprometido ?? 0;
+        return { restar: comprometido, extra: { comprometido } };
+      },
+    ).map(({ semana, remanente, aporteAngie, disponible, diferencia, extra }) => ({
+      semana, remanteAnterior: remanente, aporteAngie, disponible, comprometido: extra.comprometido, diferencia,
+    })),
+  [balanceMes, aportes, ingresoCamiloNum, SEMANAS]);
 
   // ── Grupos para tabla ─────────────────────────────────────────────────────
 
