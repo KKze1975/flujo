@@ -1147,6 +1147,8 @@ export class SheetsDataProvider implements IDataProvider {
   private readonly H11_HEADERS = ["id_aporte", "mes", "semana", "monto", "fecha", "notas"];
   private h11Verificada = false;
 
+  // I-10: la app NUNCA crea H11 en runtime. Si falta, error claro (la pestaña se crea
+  // con scripts/setup-h11-prod.mjs en PROD; en DEV ya existe). Solo verifica, no escribe.
   private async ensureH11(): Promise<void> {
     if (this.h11Verificada) return;
     const meta = await this.sheets.spreadsheets.get({
@@ -1154,10 +1156,7 @@ export class SheetsDataProvider implements IDataProvider {
     });
     const exists = meta.data.sheets?.some(s => s.properties?.title === "H11");
     if (!exists) {
-      await this.sheets.spreadsheets.batchUpdate({
-        spreadsheetId: process.env.GOOGLE_SHEET_ID,
-        requestBody: { requests: [{ addSheet: { properties: { title: "H11" } } }] },
-      });
+      throw new Error("Falta la pestaña H11: correr scripts/setup-h11-prod.mjs");
     }
     // Completitud del esquema: TODAS las columnas, no solo A1.
     const hdr = await this.sheets.spreadsheets.values.get({
@@ -1167,12 +1166,7 @@ export class SheetsDataProvider implements IDataProvider {
     const actual = ((hdr.data.values ?? [[]])[0] ?? []) as string[];
     const completo = this.H11_HEADERS.every((h, i) => actual[i] === h);
     if (!completo) {
-      await this.sheets.spreadsheets.values.update({
-        spreadsheetId: process.env.GOOGLE_SHEET_ID,
-        range: "H11!A1:F1",
-        valueInputOption: "RAW",
-        requestBody: { values: [this.H11_HEADERS] },
-      });
+      throw new Error("La pestaña H11 tiene headers incompletos o distintos: correr scripts/setup-h11-prod.mjs");
     }
     this.h11Verificada = true;
   }

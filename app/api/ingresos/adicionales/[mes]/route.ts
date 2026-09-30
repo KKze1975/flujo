@@ -59,6 +59,7 @@ export async function PUT(
 
   // Validar TODO antes de escribir: una entrada inválida no deja escrituras parciales.
   const semanasValidas = semanasDeMes(mes);
+  const vistas = new Set<string>();
   for (const aporte of body.aportes) {
     if (!aporte || !semanasValidas.includes(aporte.semana)) {
       return Response.json(
@@ -66,6 +67,13 @@ export async function PUT(
         { status: 400 }
       );
     }
+    if (vistas.has(aporte.semana)) {
+      return Response.json(
+        { error: `Semana repetida en el body: ${aporte.semana}.` },
+        { status: 400 }
+      );
+    }
+    vistas.add(aporte.semana);
     if (typeof aporte.monto !== "number" || !Number.isFinite(aporte.monto) || aporte.monto < 0) {
       return Response.json(
         { error: `Monto inválido en ${aporte.semana}: debe ser un número mayor o igual a 0.` },

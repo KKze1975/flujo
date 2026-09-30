@@ -154,3 +154,15 @@ Cobertura visual: SI, Chrome real sobre el preview de Vercel de la rama (deploym
 **Observaciones:** (1) `ensureH11` crea la pestana en runtime si falta (patron ensureH9/H10): en PROD eso ocurriria en el primer request si Camilo no corre antes `setup-h11-prod.mjs`; ya cubierto por 01D. (2) `npm run lint` global (196 errores preexistentes) y `graphify update .` no verificados. (3) Ejecucion: el disponible por semana ahora suma el aporte (declarado por el Coder); no se inspecciono la pestana Ejecucion en navegador, es alcance de verificacion de 01B.
 
 Limpieza: H11 DEV queda solo con header (`[["id_aporte","mes","semana","monto","fecha","notas"]]`) y hashes de las otras pestanas iguales al estado inicial. Nada escrito en PROD.
+
+## Corrección B1 + H11 runtime (Coder, decidido por Camilo)
+
+**B1:** `app/api/ingresos/adicionales/[mes]/route.ts` responde 400 ("Semana repetida en el body: S1.") si el body repite una semana, dentro de la validación todo-o-nada previa a cualquier escritura. Sin dedupe silencioso.
+**H11 (I-10):** `ensureH11()` (`lib/data/sheets.ts`) ya no crea la pestaña ni escribe headers en runtime: solo verifica. Si falta lanza "Falta la pestaña H11: correr scripts/setup-h11-prod.mjs"; si los headers A1:F1 no coinciden lanza un error análogo. La verificación de todas las columnas se mantiene. `app/mes/[mes]/page.tsx` ya no traga el error de lectura: lo pasa (`aportesError`) a `MesM1Desktop`, que lo muestra en su banner de error; el resto de M1 carga normal. No hay camino de creación en runtime (en DEV la pestaña ya existe; PROD: `setup-h11-prod.mjs`).
+
+**Evidencia (solo DEV):**
+- PUT `[{S1,10},{S1,20}]` a `/api/ingresos/adicionales/2026-09` (next dev local) -> `400 {"error":"Semana repetida en el body: S1."}`; GET antes y después -> `[]` (sin cambios).
+- H11 falta: sin borrar la H11 de DEV, se inyectó un cliente `sheets` falso en una instancia de `SheetsDataProvider` (script temporal fuera del repo). Con pestaña ausente y con headers incompletos, `getAportesAdicionales`, `createAporteAdicional` y `updateAporteAdicional` lanzan el error claro y no se invocó ni `batchUpdate`, ni `update`, ni `append`.
+- `npx tsc --noEmit` limpio; `npm run build` ok; `verificar-balance-cuadre.ts` 140/140 ok. H11 DEV sigue solo con header.
+
+Construcción terminada, pendiente de Tester.

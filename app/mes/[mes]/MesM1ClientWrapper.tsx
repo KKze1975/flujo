@@ -14,6 +14,7 @@ export default function MesM1ClientWrapper({
   ingresoCamilo,
   ingresosAngie,
   aportesAdicionales = [],
+  aportesError = null,
   cierresSemana,
   gastosSinClasificarInit,
   saldosInit,
@@ -29,6 +30,7 @@ export default function MesM1ClientWrapper({
   ingresoCamilo: IngresoCamilo | null;
   ingresosAngie: IngresoAngie[];
   aportesAdicionales?: AporteAdicional[];
+  aportesError?: string | null;
   cierresSemana: CierreSemana[];
   gastosSinClasificarInit: Record<Semana, number>;
   saldosInit: SaldoCuenta[];
@@ -59,6 +61,7 @@ export default function MesM1ClientWrapper({
         ingresoCamilo={ingresoCamilo}
         ingresosAngie={ingresosAngie}
         aportesAdicionales={aportesAdicionales}
+        aportesError={aportesError}
         cierresSemana={cierresSemana}
         gastosSinClasificar={gastosSinClasificarInit}
         gastoH3PorCuenta={gastoH3PorCuenta}

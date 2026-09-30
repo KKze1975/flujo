@@ -320,6 +320,7 @@ export default function MesM1Desktop({
   ingresoCamilo: ingresoCamiloProp = null,
   ingresosAngie: ingresosAngieProp = [],
   aportesAdicionales: aportesAdicionalesProp = [],
+  aportesError = null,
   cierresSemana: cierresSemanaProps = [],
   gastosSinClasificar = { S1: 0, S2: 0, S3: 0, S4: 0, S5: 0 },
   gastoH3PorCuenta = {},
@@ -336,6 +337,7 @@ export default function MesM1Desktop({
   ingresoCamilo?: IngresoCamilo | null;
   ingresosAngie?: IngresoAngie[];
   aportesAdicionales?: AporteAdicional[];
+  aportesError?: string | null;
   cierresSemana?: import("@/lib/data/types").CierreSemana[];
   gastosSinClasificar?: Record<Semana, number>;
   gastoH3PorCuenta?: Record<string, number>;
@@ -357,7 +359,7 @@ export default function MesM1Desktop({
   const [saldosLocal, setSaldosLocal] = useState<SaldoCuenta[]>(saldos);
   const [saldosBrutosLocal, setSaldosBrutosLocal] = useState<SaldoCuenta[]>(saldosBrutos);
   const [ingresoCamiloLocal, setIngresoCamiloLocal] = useState<IngresoCamilo | null>(ingresoCamiloProp);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(aportesError);
   const [busy, setBusy] = useState(false);
 
   // Ejecución state
