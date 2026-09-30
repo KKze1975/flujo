@@ -8142,3 +8142,41 @@ despachado en Opus por la sesión Chief of Staff).**
 - **HALT parcial, sin tocar (persisten en H5), decide Camilo:** `cerrar-semana/route.ts` l.57 (`totalPresupuestado` sin filtro, alimenta `desviacionTotal`) y l.107 (`totalComprometido` del plan, solo pendientes), `cerrar-m1/route.ts` l.29. Propuesta: pasar a `comprometidoDe` solo hacia adelante con fecha de corte, sin reescribir cierres antiguos.
 - Asimetría latente anotada por el Tester: un movimiento con semana fuera del mes cuenta en `comprometidoDe` pero no en `balanceMes.mes`; hoy PROD tiene `fueraDeMes=0`.
 - Consumo ampliación: Coder Sonnet 149.904 tokens; Tester Sonnet 124.085. Acumulado del ticket: Coder 526.490, Tester 389.523.
+
+---
+
+## Cierre BALANCE-UNIFICADO-01 — producción (30 sept 2026, Chief of Staff, vault)
+
+**Qué quedó en producción:**
+- Balance mes = suma de semanas: función única `lib/utils/balanceMes.ts` (pura, sin React) calcula ingresos y comprometido por semana; el mes siempre es la suma (reemplazó dos fórmulas independientes de `MesM1Desktop.tsx`).
+- Semana nunca `null`: servidor exige semana en todo camino que crea o mueve movimientos (400 si falta: `mover_mes_siguiente`, `ejecutar`, `posponer`, `iniciar`, `/api/mes/[mes]/conceptos`). Pickers de semana en `VistaSemanal.tsx`, `MesM1Mobile.tsx`, `MesM1Desktop.tsx`, `m1/VistaPlanificacion.tsx`.
+- Todas las superficies usan `balanceMes`: inicio, lista de meses, `/api/meses`, M1 desktop/móvil, Planificación, vista semanal, `ConceptoBoard` dan el mismo comprometido del mes para 2026-06..2026-10 (cuadre 96/96 reproducido en PROD por Tester).
+- Corrección de filas vacías: 2 filas de julio 2026 (PS Plus, Uber One, 60K+16K) con semana vacía pasaron a S1 (derivada de `semanaDeFechaEnMes`). `fix-semana-vacia-h2.mjs` script con dry-run por defecto, `--apply` exige `--confirmo-prod`.
+- Cuadre verificado: `sinSemana = 0` en PROD (2026-06..2026-10), `fueraDeMes = 0`, `mes - Σ semanas = 0` para ingresos y comprometido en todas las 25 semanas.
+
+**Decisiones de Camilo del 30 sept:**
+- **(a)** Semana nunca `null`: obligatoria server-side.
+- **(i)** Este ticket antes del Arquitecto de `APORTES-SEMANALES-01`.
+- **D1 resuelta:** definición canónica de "comprometido" (excluye `pospuesto`, `no_aplica`, `pospuesto_mes_siguiente`) en TODAS las vistas — migradas Ejecución por semana en `MesM1Desktop`, `MesM1Mobile`, `m1/VistaPlanificacion` a `balanceMes`; números visibles bajan en Ejecución donde hay pospuestos (ej. 2026-06 S4: 2.945.996 → 1.669.996; Mobile 2026-07: 20.567.207 → 19.295.207).
+- **D2 resuelta:** "falta por pagar" de `VistaSemanal` (l.~1049) **sí incluye `pospuesto`** — lo pospuesto dentro del mes sigue pendiente de pago; intencional, no es defecto; no unificar con `comprometidoDe`.
+- **D3:** `ConceptoBoard` ofrece ahora S5 como destino de "mover al mes siguiente" cuando el mes la tiene (igual a `VistaSemanal`/`MesM1Mobile`).
+- PR #47 → dev (`766e66b`), PR #49 dev → main (`06cec8c`). Deploy producción READY, `flujo-dun.vercel.app` 200. Revisión visual con datos sintéticos en DEV (copiar PROD→DEV lo bloqueó el clasificador de permisos).
+
+**Consumo aproximado:**
+- Construcción: Coder Sonnet 224.684; Tester Sonnet 147.866.
+- D1: Coder Sonnet 151.902; Tester Sonnet 117.572.
+- Ampliación: Coder Sonnet 149.904; Tester Sonnet 124.085.
+- **Acumulado del ticket:** Coder 526.490 tokens; Tester 389.523 tokens.
+
+**Retrospectiva (Fase 4):**
+1. **Qué funcionó:** DISEÑO y CONSTRUCCIÓN separados por hilo (decisiones (a)/(i) con Camilo, construcción en background); el Manager hizo HALT ante D1 y los cierres H5 en vez de decidir; el Tester reprodujo todo contra PROD en solo lectura; el fix de `check-ticket` se hizo en un worktree aparte sin tocar la rama activa; los datos sintéticos se crearon por la UI del preview, probando de paso los flujos reales.
+2. **Qué no funcionó:** la primera revisión visual se despachó sin verificar que el preview tuviera datos (Sheet DEV vacío, 102K tokens sin cobertura); el alcance de "todas las vistas" se descubrió en tres rondas; retomar al Manager con historial largo para una tarea chica costó 197K; un script del Coder imprimió el Sheet ID de PROD en su log; el clasificador bloqueó copiar PROD→DEV.
+3. **Qué cambia en la próxima sesión:** antes de una revisión visual, verificar que el entorno tenga datos; un ticket de "unificar un cálculo" exige en el primer briefing un grep de todas las superficies que lo usan; tareas cortas con agente nuevo (vault, `ARQUITECTURA_MULTIAGENTE.md` §13, estrategia 7).
+4. **Invariantes:** promovidos por Camilo, 30 sept 2026 — **I-21** (cálculos de mes/semana y de balance desde una única fuente de verdad; absorbe el candidato de `FIX-SEMANA-STUB-01`) e **I-22** (los gates fallan cerrados; implementación pendiente en `check-ticket.mjs`). Ver `INVARIANTS.md`.
+
+**Estado accionable:**
+- Unidad: ticket
+- En curso: ninguno
+- Backlog top 3: 1) [Producto] APORTES-SEMANALES-01 — Arquitecto: tickets de construcción; 2) [Operación] BALANCE-CIERRES-H5-01 — decisión de Camilo sobre `total_comprometido` del plan; 3) [Operación] línea de ideas: INDICE desactualizado (IDEAS-SCHEMA-01 aprobado vs IDEAS-CAPTURA-01 completado)
+- Bloqueados esperando a Camilo: etnografía con Ángela María; decisión A/B/C de SEC-EXPOSICION-PUBLICA-01
+- Próximo paso: despachar el Arquitecto de Flujo sobre specs/APORTES-SEMANALES-01.md + brief §7

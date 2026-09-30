@@ -100,6 +100,43 @@ listo — error silencioso, el sistema no lo detectó por sí solo.
 panel de administración, `PANEL-*`. Promovido a invariante por Camilo,
 15 ago 2026, tras el incidente real de la misma fecha.)
 
+## I-21 — Cálculos de mes/semana desde una única fuente de verdad
+Dos familias de cálculo tienen una sola implementación compartida y
+ninguna pantalla, API ni script las duplica:
+- **Mes/semana operativos de una fecha** (stub, cierre de fin de semana,
+  semanas de un mes): `lib/utils/fecha.ts`.
+- **Balance del mes y por semana** (comprometido e ingreso):
+  `lib/utils/balanceMes.ts` (`calcularBalanceMes`, `comprometidoDe`,
+  `esComprometido`). Comprometido excluye `pospuesto`, `no_aplica` y
+  `pospuesto_mes_siguiente`; el mes es siempre la suma de sus semanas, y
+  todo movimiento tiene semana (nunca `null` — I-16).
+Excepciones deliberadas, documentadas en el código: "falta por pagar"
+(incluye pospuestos a propósito), "por pagar", techo de bolsillo y sumas de
+ejecutado, que no son comprometido.
+Las copias divergentes produjeron error silencioso al menos cuatro veces:
+`cc51db9` (29 jul), `FIX-SEMANA-STUB-01` (3 ago), el CDT "solo este mes"
+(28 sept, balance del mes ≠ suma de semanas por $500.000) y las filas
+`semana = null` (sumaban al mes y a ninguna semana). `DT-CICLO-OPERATIVO-
+UNIFICADO-01` (`cron/uber-parser`) sigue como deuda abierta contra este
+invariante.
+(Origen: candidato de `FIX-SEMANA-STUB-01`, 3 ago 2026, ampliado con
+`BALANCE-UNIFICADO-01`. Promovido por Camilo, 30 sept 2026.)
+
+## I-22 — Los gates fallan cerrados
+Un gate de verificación (`check-ticket.mjs` y cualquier chequeo que decida
+GO/NO-GO) que no puede evaluar una condición — dato que no reconoce,
+dependencia que no encuentra, formato que no parsea — responde **NO-GO**,
+nunca "GO con advertencia". Una advertencia se lee como permiso: el 30 sept
+2026 `check-ticket.mjs` no reconocía `dependencias: [X]` y daba GO CON
+ADVERTENCIA sobre `IDEAS-VAULT-SYNC-01`, cuya dependencia seguía sin
+completar — error silencioso en los 5 tickets con esa sintaxis (fix de
+parseo en PR #48, `51c192d`). Las advertencias quedan solo para lo que el
+gate sí evaluó y es aceptable con confirmación (ej. I-09 con excepción).
+Pendiente de implementación: hoy una dependencia ausente de `INDICE.md`
+sigue siendo advertencia en `check-ticket.mjs` (l.~121).
+(Origen: DEBUGGING de `check-ticket.mjs`, 30 sept 2026. Promovido por
+Camilo, 30 sept 2026.)
+
 ---
 
 ## Candidatos (pendientes de aprobación — no vinculantes)
@@ -167,8 +204,8 @@ en `FIX-SEMANA-STUB-01` (3 ago 2026, calculado sin considerar el `mes` visible).
 Sigue habiendo una tercera copia divergente sin resolver: `mesDeFecha()` +
 `semanaDeFechaEnMes()` llamadas por separado (no vía `cicloOperativo()`) en
 `cron/uber-parser` — ver `DT-CICLO-OPERATIVO-UNIFICADO-01`.
-(Origen: `FIX-SEMANA-STUB-01`, 3 ago 2026). Pendiente de aprobación explícita
-de Camilo antes de convertirse en invariante real.
+(Origen: `FIX-SEMANA-STUB-01`, 3 ago 2026). **Promovido a I-21 por Camilo,
+30 sept 2026** — ver la sección principal; entrada conservada como historial.
 
 ### Candidato — Acciones de UI sobre filas H2 compartidas entre vistas semanales
 Una acción de UI que muta el `estado` de una fila H2 mostrada sin filtrar por

@@ -1,13 +1,12 @@
 ---
 ticket_id: BALANCE-UNIFICADO-01
 orden: 43
-estado: activo
+estado: completado
 tier: A
 agente_ejecucion: claude-code
 dependencias: ninguna
-rol_activo: tester
-paso_actual: "Tester: ampliacion verificada por ejecucion (tsc, cuadre 66/66 y PROD 96/96, reproduccion independiente 2026-06..10); reporte entregado"
-actualizado_en: 2026-09-30T10:12:00-05:00
+actualizado_en: 2026-09-30
+---
 necesita_aprobacion: baja
 halt_criterio: 6
 ---
@@ -267,6 +266,10 @@ Comprometido del mes idéntico en inicio, lista de meses, M1 escritorio/móvil, 
 - **Decisión de Camilo:** "falta por pagar" de `VistaSemanal` (l.~1049) **sí incluye `pospuesto`** — lo pospuesto dentro del mes sigue pendiente de pago. Intencional, no es defecto; no unificar con `comprometidoDe`.
 - **Corregido (decisión de Camilo):** `ConceptoBoard` ofrecía solo S1-S4 como destino de "mover al mes siguiente"; ahora usa `semanasDeMes(mesSiguienteDe(mov.mes))` (S5 cuando el mes la tiene), igual que `VistaSemanal` y `MesM1Mobile`.
 - **Abierto, menor:** `ConceptoBoard` rotula "Mes sig." un movimiento `pospuesto` dentro del mismo mes (`initialExc` trata `pospuesto` como `next`); "Mes sig." se parte en dos líneas en el selector móvil. Fuera de alcance: "Disponible esta semana" difiere entre pantallas y HomeHub lo muestra con `Math.abs`.
+
+### Cierre (30 sept 2026)
+
+QA aprobado por Angie (I-17). PR #47 → dev (`766e66b`), PR #49 dev → main (`06cec8c`). Deploy producción `dpl_GBQ9XStHiRBqZxYVesZPaooerjss` READY, `flujo-dun.vercel.app` 200; `/meses` muestra 2026-09 20.840.207 y 2026-10 22,1M (valores canónicos). Cierres H5 siguen en `BALANCE-CIERRES-H5-01` (propuesto).
 
 <!-- Al agregar este ticket a tickets/INDICE.md, la fila DEBE incluir la
 columna agente_ejecucion con el mismo valor que el frontmatter de arriba —
