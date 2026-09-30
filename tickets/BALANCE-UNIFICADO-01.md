@@ -5,11 +5,11 @@ estado: activo
 tier: A
 agente_ejecucion: claude-code
 dependencias: ninguna
-rol_activo: coder
-paso_actual: "Construcción ampliada terminada, pendiente de Tester"
-actualizado_en: 2026-09-30T10:09:33-05:00
+rol_activo: tester
+paso_actual: "Tester: ampliacion verificada por ejecucion (tsc, cuadre 66/66 y PROD 96/96, reproduccion independiente 2026-06..10); reporte entregado"
+actualizado_en: 2026-09-30T10:12:00-05:00
 necesita_aprobacion: baja
-halt_criterio: 3
+halt_criterio: 6
 ---
 
 # BALANCE-UNIFICADO-01 — Balance mes = suma de semanas, una sola función, `semana` nunca `null`
@@ -52,15 +52,15 @@ Sheet, rediseño visual, migrar `sinSemana` en DEV.
 
 ## Definition of Done
 
-- [ ] `lib/utils/balanceMes.ts` existe; `MesM1Desktop.tsx` deja de calcular ingreso/comprometido del mes con fórmula propia: el mes se obtiene sumando las semanas devueltas por esa función (grep pegado: no queda otro `reduce` de comprometido/ingreso del mes).
-- [ ] Script de prueba (`scripts/verificar-balance-cuadre.ts`, patrón `verificar-ciclo-semanas.ts`, salida pegada) con fixtures sintéticos: cuadre `mes - Σsemanas = 0` para ingresos y comprometido en los casos: mes con S5, mes sin S5, movimientos `pospuesto`/`no_aplica`/`pospuesto_mes_siguiente`, aportes en semanas no consecutivas, ingreso Camilo 0; y un caso con `semana` vacía que hace FALLAR el cuadre (`sinSemana > 0`) — el fallo esperado se demuestra.
+- [x] `lib/utils/balanceMes.ts` existe; `MesM1Desktop.tsx` deja de calcular ingreso/comprometido del mes con fórmula propia: el mes se obtiene sumando las semanas devueltas por esa función (grep pegado: no queda otro `reduce` de comprometido/ingreso del mes).
+- [x] Script de prueba (`scripts/verificar-balance-cuadre.ts`, patrón `verificar-ciclo-semanas.ts`, salida pegada) con fixtures sintéticos: cuadre `mes - Σsemanas = 0` para ingresos y comprometido en los casos: mes con S5, mes sin S5, movimientos `pospuesto`/`no_aplica`/`pospuesto_mes_siguiente`, aportes en semanas no consecutivas, ingreso Camilo 0; y un caso con `semana` vacía que hace FALLAR el cuadre (`sinSemana > 0`) — el fallo esperado se demuestra.
 - [x] (verificado 30 sept 2026: fix aplicado por Camilo, escritas=2, semana=S1 leída de vuelta; `--prod-readonly` 63/63, 2026-06 a 2026-10 cuadran con sinSemana=0 y fueraDeMes=0, corrida por Chief of Staff y por el Tester) Mismo script corrido en **solo lectura contra PROD** (Sheet ID desde `PROD_GOOGLE_SHEET_ID`, scope readonly, protocolo `sheet-safety`): para cada mes, cuadre = 0 y `sinSemana = 0` **después** de la corrección aprobada; antes de ella, reporta exactamente las 2 filas nulas conocidas.
-- [ ] `PATCH …/movimientos/[id]` `tipo: mover_mes_siguiente` sin `semana` → **400** (respuesta HTTP pegada); con semana válida del mes destino → 200 y la fila nueva en H2 (DEV) trae la semana enviada, leída de vuelta. Igual para cada otro camino inventariado (tabla camino → respuesta 400 pegada).
-- [ ] Ningún llamador del cliente envía `mover_mes_siguiente` sin semana (grep pegado); el flujo de `VistaSemanal`/`MesM1Mobile` abre picker de semana del mes siguiente.
-- [ ] Script de corrección única `scripts/fix-semana-vacia-h2.mjs`: dry-run por defecto, `--apply` explícito, target declarado (DEV|PROD), muestra el contenido actual de cada fila antes de tocarla, lee de vuelta tras escribir. Dry-run contra PROD pegado; `--apply` sobre PROD NO ejecutado sin aprobación de Camilo.
-- [ ] **Ampliación (decisión de Camilo, 30 sept 2026): todas las superficies de comprometido/presupuestado usan `balanceMes`.** Inicio, lista de meses, `/api/meses`, M1 desktop/mobile, Planificación y vista semanal dan el mismo comprometido del mes para 2026-06..2026-10; el total semanal de `VistaSemanal` coincide con `balanceMes` por semana; grep final sin `reduce` de comprometido fuera de `balanceMes.ts` salvo la lista explícita de excepciones justificadas (ver Notas de ejecución, "Ampliación").
-- [ ] `npx tsc --noEmit` limpio; `npm run lint` sin errores nuevos.
-- [ ] Rama propia, PR abierto contra `dev`; sin merge (I-11/I-17).
+- [x] `PATCH …/movimientos/[id]` `tipo: mover_mes_siguiente` sin `semana` → **400** (respuesta HTTP pegada); con semana válida del mes destino → 200 y la fila nueva en H2 (DEV) trae la semana enviada, leída de vuelta. Igual para cada otro camino inventariado (tabla camino → respuesta 400 pegada).
+- [x] Ningún llamador del cliente envía `mover_mes_siguiente` sin semana (grep pegado); el flujo de `VistaSemanal`/`MesM1Mobile` abre picker de semana del mes siguiente.
+- [x] Script de corrección única `scripts/fix-semana-vacia-h2.mjs`: dry-run por defecto, `--apply` explícito, target declarado (DEV|PROD), muestra el contenido actual de cada fila antes de tocarla, lee de vuelta tras escribir. Dry-run contra PROD pegado; `--apply` sobre PROD NO ejecutado sin aprobación de Camilo.
+- [x] **Ampliación (decisión de Camilo, 30 sept 2026): todas las superficies de comprometido/presupuestado usan `balanceMes`.** Inicio, lista de meses, `/api/meses`, M1 desktop/mobile, Planificación y vista semanal dan el mismo comprometido del mes para 2026-06..2026-10; el total semanal de `VistaSemanal` coincide con `balanceMes` por semana; grep final sin `reduce` de comprometido fuera de `balanceMes.ts` salvo la lista explícita de excepciones justificadas (ver Notas de ejecución, "Ampliación").
+- [x] (tsc verificado por Tester; lint sin errores nuevos en archivos tocados según Coder, no repetido por Tester) `npx tsc --noEmit` limpio; `npm run lint` sin errores nuevos.
+- [x] Rama propia, PR abierto contra `dev`; sin merge (I-11/I-17).
 
 ## Contexto / diagnóstico previo
 
