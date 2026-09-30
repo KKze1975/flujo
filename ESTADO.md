@@ -7916,3 +7916,229 @@ punta).
   `SEC-EXPOSICION-PUBLICA-01`
 - Próximo paso: opcional, verificación visual real de la captura de ideas en producción
   (Claude in Chrome); luego retomar `check-ticket.mjs`.
+
+---
+
+## Sesión DEBUGGING #2 — Balance mes vs. Por semana en planificación (28 sept 2026, Chief of Staff, vault)
+
+**Tipo de sesión:** DEBUGGING. Segundo problema de la misma sesión, tras cerrar el falso bloqueo de PR #45.
+
+**Qué cambió:**
+- Bug: en planificación de octubre, Balance mes marcaba +$855.000 y S5 marcaba +$1,4M.
+- Causa (`components/MesM1Desktop.tsx`): `conceptosActivosMes` excluía todo concepto `retirado`,
+  pero "solo este mes" se guarda como `retirado` en H1 (`POST /api/mes/[mes]/conceptos`, línea 66)
+  con su movimiento vigente. CDT ($500.000, S4, `MOV_1790624204338`) sumaba en el total del mes
+  (línea 486, sobre `movs`) y en ninguna semana (línea 495, sobre conceptos activos). Suma de
+  semanas $21.644.844 vs. total mes $22.144.844: diferencia exacta $500.000, arrastrada a S5.
+  Efecto colateral: CDT tampoco aparecía en la tabla de planificación de escritorio.
+- Fix: `ea0f5f7` — un concepto retirado con movimiento vigente en el mes sigue contando.
+  Producción: PR #46, merge `5eb39c1`, deploy `dpl_5bY9yL8k…` READY, `flujo-dun.vercel.app` 200.
+
+**Decisión (con razón):** el fix va en `conceptosActivosMes`, no en `balancePlanificacion`. Es seguro
+porque `/api/conceptos/[id]/retirar` bloquea el retiro con movimientos pendientes, así que un
+retirado con movimiento vigente solo puede ser "solo este mes". Arregla balance y tabla a la vez.
+
+**Verificación:** réplica del cálculo contra H1/H2 de PROD, solo lectura (suma de semanas = total,
+diferencia 0); `tsc --noEmit` limpio; Camilo confirmó el balance correcto tras el deploy. Sin
+escrituras al Sheet.
+
+**Qué queda pendiente:** un movimiento con `semana = null` entra al total del mes y a ninguna
+semana. Hoy no hay ninguno en octubre.
+
+**Deuda técnica nueva:** mes y semana siguen siendo dos fórmulas independientes; este bug es el
+segundo síntoma. Ya existe un candidato de invariante de "única fuente de verdad" para el cálculo
+de mes/semana; este caso es evidencia para él (error silencioso, sin fallo visible). No se editó
+`INVARIANTS.md`: la decisión de promoverlo o ampliarlo es de Camilo.
+
+**Retrospectiva (Fase 4):**
+1. **Qué funcionó:** replicar ambas fórmulas en un script de solo lectura contra PROD aisló el
+   movimiento culpable en una corrida; `sheet-safety` obligó a confirmar el target antes de leer.
+2. **Qué no funcionó:** "Vercel no disparó deploy" se había registrado como bloqueo sin
+   verificarlo (un `list_deployments` lo refutaba). El clasificador de permisos frenó el merge a
+   `main`; se resolvió con Camilo ejecutando `gh pr merge` él mismo.
+3. **Qué cambia en la próxima sesión:** un diagnóstico que no se pudo completar se registra como
+   "no verificado", no como "bloqueado"; leer el estado real con una herramienta de solo lectura.
+4. **Candidato a invariante:** sumar este caso al candidato existente de única fuente de verdad; sin
+   invariante nuevo.
+
+**Estado accionable:**
+- Unidad: sesión
+- En curso: ninguno
+- Backlog priorizado (top 3 de 3 abiertos):
+  1. [Operación] `check-ticket.mjs` — bug de parseo con `dependencias: [X]` (revisión 2026-09-30)
+  2. [Operación] Balance mes vs. semana — unificar la fórmula y cubrir `semana = null`
+  3. [Producto] Fase -1/0 flujo de caja para Ángela María — esperando etnografía
+- Reactivo/incidentes: ninguno
+- Seguridad: `SEC-EXPOSICION-PUBLICA-01` sigue esperando la opción A/B/C de Camilo
+- FinOps/Costo: sin cambios
+- Bloqueados esperando a Camilo: etnografía con Ángela María; decisión A/B/C de `SEC-EXPOSICION-PUBLICA-01`
+- Próximo paso: retomar `check-ticket.mjs`
+
+---
+
+## Sesión DISEÑO — Fase -1/0: ingresos adicionales semanales (29 sept 2026, Chief of Staff, vault)
+
+**Tipo de sesión:** DISEÑO (skill `fase0`). Línea nueva dentro de Flujo: el pedido llegó como
+intuición de solución ("poder registrar ingreso principal + otros ingresos semana a semana"),
+sin flujo as-is validado. Camilo vive el proceso en carne propia: puede validar el cierre.
+
+**Hallazgos as-is (fuente: Camilo en vivo, 29 sept):**
+- Hasta septiembre el único ingreso planeado era el principal, registrado a principio de mes
+  (el mismo ingreso; Camilo lo llama "el de escala"). Confianza: alta.
+- Desde este mes entran ingresos de un emprendimiento propio (contratos de desarrollo de
+  software, $1M–$5M cada uno). Confianza: alta.
+- Registro actual: el único ingreso adicional recibido se anotó como movimiento suelto desde el
+  FAB, después de llegar. La planeación del mes no lo contempla. Confianza: alta.
+- Previsibilidad: Camilo sí sabe con anticipación cuánto y cuándo llega, y quiere planearlo.
+  ~$5M por mes en octubre y noviembre; se trabaja para repetirlo en diciembre y enero.
+  Confianza: media (monto aproximado, contratos en curso).
+- Llegan en pedazos, repartidos entre semanas (S1–S4); el calendario exacto está en
+  definición. Confianza: media.
+- Uso previsto: cubrir una brecha de gastos que el ingreso principal ya no alcanza a cubrir.
+  Confianza: alta (declarado), monto de la brecha: no medido.
+
+**Hipótesis Fase -1 (primer momento, pendiente de validar):**
+- Dolor: la planeación muestra solo el ingreso principal contra gastos que ya lo superan; los
+  ingresos adicionales previstos no aparecen, así que la foto semanal no dice si la brecha
+  queda cubierta.
+- Retorno: por definir en palabras de Camilo.
+- Motivación: alta (flujo de caja propio, recurrente desde octubre).
+
+**Estado:** Fase 0 abierta — sin confirmación "así funciona hoy" ni pregunta "¿más costoso o
+más visible?" todavía.
+
+**Cierre de Fase -1/0 (29 sept 2026, mismo hilo):**
+- Confirmación de quien vive el proceso, citada: "Sí es así, exactamente, que funciona ahora".
+- Retorno en palabras de Camilo: "que se registra ese ingreso efectivamente y que puedo planear
+  desde el principio del mes con exactitud cómo se va a usar el dinero".
+- ¿Más costoso o más visible? Camilo: "Sí es el problema más costoso, el no tener control de
+  ese dinero, porque si no está con trazabilidad, lo que pasa es que se termina gastando en
+  cualquier cosa."
+- Calificación post-etnografía: dolor recurrente (mensual, desde octubre) y atribuible al
+  proceso de planeación, no a mala suerte; retorno verificable (ingresos adicionales previstos
+  visibles en la planeación desde el inicio del mes, con destino asignado); motivación alta.
+- Mapa de actores: Champion y decisor = Camilo (usuario y dueño del dinero). Blocker: ninguno
+  identificado del lado del proceso; gate de merge de Angie como QA aplica en construcción.
+  Métrica de éxito: la del retorno citado arriba.
+- **Fase -1/0 cerrada.** Siguiente: Fase 1 (skill `fase1`), flujo to-be sin tecnología.
+
+**Fase 1 — Diseño to-be (29 sept 2026, mismo hilo, skill `fase1`).** El artefacto de Fase 1
+vive en esta sección.
+
+- Declaraciones de Camilo (fuente: diálogo en vivo, transcripción VoxCros):
+  1. "en el modo planeación debería haber la plata esperada desde el día 1 como es hoy [...]
+     pongo los aportes de Angie, pongo los míos [...] pero ahora quiero agregar entonces esos
+     otros aportes durante el mes".
+  2. "No quiero planear desde antes para dónde va ese dinero porque ya hay compromisos [...] la
+     plata se usa en el momento en el que entra".
+  3. Sin confirmación: "como con Angie [...] simplemente se registra lo que se pagó y se asume
+     que [...] fue lo que efectivamente entró, que a veces puede ser más, puede ser menos".
+  4. Si un pago no llega: "habría que posponer los pagos que se hayan comprometido [...] correrlo
+     al mes siguiente o a la semana siguiente".
+- Dato as-is que precisa Fase 0: los aportes de Angie y de Camilo ya se planean como ingresos
+  del mes; lo nuevo es que un aporte caiga en cualquier semana, no solo a principio de mes.
+- Alternativas: A (regla personal, asignar destino al llegar, planeación igual) — descartada, no
+  da visibilidad desde el día 1. B (planear con lo esperado y confirmar al llegar). C (usar lo
+  recibido el mes siguiente) — descartada, Camilo usa la plata cuando entra. **Elegida: B sin
+  paso de confirmación.** Decide: Camilo. "¿Qué alternativa no estoy evaluando?": no nombró otra.
+  Alternativas A/B/C formuladas por la sesión; la variante sin confirmación la formuló Camilo.
+- To-be: el 1 del mes se planean el aporte de Angie, el de Camilo de principio de mes y los
+  aportes del emprendimiento en las semanas en que se esperan; con todo eso se reparten los
+  pagos. Semana a semana se registra lo pagado, igual que hoy. Si un aporte no llega en su
+  semana, los pagos que dependían de él se corren a la semana o al mes siguiente.
+- Contraste: desaparece el ingreso del emprendimiento registrado suelto y fuera de la
+  planeación; cambia que los aportes pueden caer en cualquier semana; aparece posponer pagos
+  cuando un aporte esperado no llega.
+- Insumos para Fase 2 (estacionados, no entran al diseño): revisar si el mecanismo existente de
+  posponer (`POSPONER-S5-01`) cubre el caso de aporte no recibido — fuente: la sesión.
+- **Validación de cierre, Camilo (quien planea y ejecuta el flujo), 29 sept 2026: "sí, así es
+  que quiero que funcione".** Fase 1 cerrada. Cierra sesión DISEÑO.
+- Siguiente: Fase 2 — especificación y ticket (Spec Writer de Flujo), en sesión aparte.
+
+**Fase 2 — Especificación `APORTES-SEMANALES-01` (29 sept 2026, mismo día, Spec Writer de Flujo
+despachado en Opus por la sesión Chief of Staff).**
+- Spec: `specs/APORTES-SEMANALES-01.md` (revisión 3; carpeta `specs/` creada para esto).
+- Respuestas de Camilo incorporadas: un solo monto por semana en M1, igual que el aporte
+  semanal de Angie ("H" = Angie, confirmado); plata llega a NU Camilo; al correr un pago al mes
+  siguiente Camilo elige la semana; meses sin emprendimiento muestran el campo en cero; vista
+  semanal con bloque propio del emprendimiento separado del de Angie ("una división entre lo que
+  semanalmente pone Angie y lo que yo comprometo para cumplir" — interpretación de la sesión);
+  disponible NU Camilo suma los aportes de semanas ya iniciadas (opción b).
+- **Aprobación, Camilo, 29 sept 2026: "aprobado para construir".**
+- Riesgos declarados en el spec: doble fórmula mes/semana (el spec exige un solo cálculo de
+  ingreso con prueba de cuadre); posponer al mes siguiente deja `semana = null` (el spec exige
+  semana obligatoria, 400 si falta); lugar nuevo en la hoja de PROD lo crea o aprueba Camilo.
+- Diseño visual: falta el bloque propio en la vista semanal y el selector de semana del mes
+  siguiente. Qué muestra el bloque propio queda abierto para el Diseñador con Camilo.
+- Consumo: Spec Writer en Opus, 3 pasadas (136.270 / 160.776 / 166.778 subagent_tokens
+  reportados por pasada).
+- Siguiente: Diseñador/Integrador (bloque propio + selector), luego Arquitecto y ticket.
+
+**Diseño aprobado + cierre de sesión (29 sept 2026).**
+- Diseño: en vez de Antigravity/Stitch, mock con `/impeccable` sobre el sistema visual real
+  (`design-handoff/APORTES-SEMANALES-01-mock.html`). Decisiones de Camilo: los dos recuadros
+  juntos en la vista semanal para ambos actores (antes el de Angie era solo `actor === "angie"`);
+  línea "+ Emprendimiento" visible en saldo NU Camilo; recuadro de Angie sin cambios.
+  **"Diseño aprobado"**, 29 sept. Detalle en el brief §7.
+
+**Retrospectiva (Fase 4):**
+1. **Qué funcionó:** Fase 0→1→2→diseño en una sola sesión sin mezclar tecnología antes de tiempo;
+   las preguntas abiertas del Spec Writer llegaron a Camilo en vez de decidirse solas; leer el
+   código antes del mock hizo aparecer la regla `actor === "angie"` y un tercer botón sin semana.
+2. **Qué no funcionó:** sin navegador en Linux para ver el mock renderizado (se validó con el
+   detector y la revisión de Camilo); el detector marcó contraste bajo en colores que la app ya usa.
+3. **Qué cambia en la próxima sesión:** el Arquitecto debe incluir el chip móvil "Mes siguiente"
+   y el cambio de visibilidad del recuadro de Angie, que no estaban en el spec original.
+4. **Candidato a invariante:** ninguno nuevo.
+
+**Deuda técnica:** contraste de `--ink-faint` y `--pos` en textos pequeños (heredado; sin ticket).
+
+**Estado accionable:**
+- Unidad: ticket
+- En curso: [Producto] APORTES-SEMANALES-01 — aportes del emprendimiento por semana — spec y diseño aprobados, falta Arquitecto
+- Backlog priorizado (top 3 de 4 abiertos):
+  1. [Producto] APORTES-SEMANALES-01 — Arquitecto: tickets de construcción
+  2. [Operación] `check-ticket.mjs` — bug de parseo con `dependencias: [X]` (revisión 2026-09-30)
+  3. [Operación] Balance mes vs. semana — unificar fórmula y `semana = null` (parcialmente cubierto por el spec)
+- Reactivo/incidentes: ninguno
+- Seguridad: `SEC-EXPOSICION-PUBLICA-01` sigue esperando la opción A/B/C de Camilo
+- FinOps/Costo: sin gasto nuevo; subagentes: Spec Writer Opus (136K/161K/167K por pasada), Diseñador Sonnet (109K)
+- Bloqueados esperando a Camilo: etnografía con Ángela María; decisión A/B/C de `SEC-EXPOSICION-PUBLICA-01`; crear lugar nuevo en la hoja de PROD (antes del merge)
+- Próximo paso: despachar el Arquitecto de Flujo sobre `specs/APORTES-SEMANALES-01.md` + brief §7
+
+---
+
+## Sesión CONSTRUCCIÓN — BALANCE-UNIFICADO-01 (30 sept 2026, Manager de Flujo despachado por Chief of Staff, vault)
+
+**Tipo de sesión:** CONSTRUCCIÓN (decisiones de diseño cerradas por Camilo, sesión DISEÑO del vault, 30 sept 2026).
+
+**Decisiones de Camilo (30 sept 2026):**
+- **(a)** `semana` nunca es `null`: el servidor la exige en todo camino que crea o mueve movimientos (400 si falta); las filas `null` existentes se corrigen una sola vez.
+- **(i)** Secuencia: este ticket va ANTES del Arquitecto de `APORTES-SEMANALES-01`, que construirá encima de la función unificada.
+- Criterio de cierre: mes = suma de semanas, con UNA función de cálculo de ingresos y comprometido, y prueba de cuadre.
+
+**Diagnóstico PROD (solo lectura, tab H2, 382 filas):** 2 filas con `semana` vacía, ambas 2026-07, `ejecutado`, ejecutor angie: `MOV_1782767829728` (PS Plus, 60.000, 2026-07-01) y `MOV_1782767835789` (Uber One, 16.000, 2026-07-05). Semana propuesta S1 en ambas (`semanaDeFechaEnMes`; julio empieza miércoles, días 1-5 son S1). No se escribió nada en PROD.
+
+**Trabajo:** ticket `BALANCE-UNIFICADO-01` (tier A, claude-code) creado; Coder (Sonnet) construyó en `feat/balance-unificado-01` (commit `302de0d`): `lib/utils/balanceMes.ts`, `scripts/verificar-balance-cuadre.ts` (51/51 aserciones), `scripts/fix-semana-vacia-h2.mjs` (dry-run por defecto, `--apply` a PROD exige `--confirmo-prod`), 400 server-side en `mover_mes_siguiente`/`ejecutar`/`posponer`/`iniciar`, pickers de semana en 3 llamadores. Tester (Sonnet, aparte): **CUMPLE_PARCIAL**, sin nada roto en lo ejecutado; `tsc` limpio.
+
+**Abierto, esperando a Camilo:** D1 (Ejecución por semana no filtra estados y difiere de la definición canónica; también Mobile y VistaPlanificacion con fórmula propia del mes), aprobar y correr el fix de las 2 filas en PROD (después repetir `--prod-readonly`), D3 (400 sin escribir en `iniciar` con concepto no semanal variable), revisión de pickers en navegador. PR pendiente; sin merge (I-11/I-17).
+
+**Consumo:** Coder Sonnet 224.684 tokens; Tester Sonnet 147.866 tokens.
+
+**Estado accionable:**
+- Unidad: ticket
+- En curso: [Operación] BALANCE-UNIFICADO-01 — construido, Tester CUMPLE_PARCIAL, HALT por D1
+- Bloqueados esperando a Camilo: D1; aprobación del fix en PROD; D3; etnografía con Ángela María; `SEC-EXPOSICION-PUBLICA-01` A/B/C
+- Próximo paso: decisión de Camilo sobre D1, luego cierre del ticket y Arquitecto de `APORTES-SEMANALES-01`
+
+**D1 resuelta por Camilo (30 sept 2026):** la definición canónica de "comprometido" (excluye `pospuesto`, `no_aplica`, `pospuesto_mes_siguiente`) se aplica en TODAS las vistas. Coder (Sonnet, commit `08f977e`) migró Ejecución por semana en `MesM1Desktop`, `MesM1Mobile` y `m1/VistaPlanificacion` a `balanceMes`; Tester aparte: **CUMPLE** (tsc limpio, 58/58 sintético, `--prod-readonly` 63/63). Fix de las 2 filas de julio aplicado en PROD por Camilo (escritas=2, S1 leída de vuelta); 2026-06 a 2026-10 cuadran con `sinSemana=0`.
+- Cambian números visibles: Ejecución por semana baja donde hay pospuestos/no_aplica (ej. 2026-06 S4: 2.945.996 a 1.669.996); Mobile "Presupuestado" baja (2026-06 21.980.111 a 20.199.111; 2026-07 20.567.207 a 19.295.207 antes del fix; 2026-09 21.460.207 a 20.840.207; 2026-10 22.815.846 a 22.113.846).
+- Abierto: superficies con fórmula propia que contradicen a las tres vistas (`VistaSemanal.tsx` ~l.1054, `MesM1.tsx` l.161, `app/page.tsx` l.24, `app/meses/page.tsx` l.27/72; `ConceptoBoard` riesgo bajo); pickers de semana sin verificar en navegador; D3 (400 en `iniciar`); PR #47 sin merge (I-11/I-17).
+- Consumo D1: Coder Sonnet 151.902 tokens; Tester Sonnet 117.572.
+
+**Ampliación de BALANCE-UNIFICADO-01 (decisión de Camilo, 30 sept 2026):** TODAS las superficies que muestran comprometido/presupuestado del mes o de la semana usan `lib/utils/balanceMes.ts`, en el mismo ticket y PR #47 (no ticket aparte). Coder (Sonnet, commit `a19e34a`): inicio, lista de meses, `/api/meses`, `MesM1.tsx`, `VistaSemanal`, `ConceptoBoard` y `/api/mes/[mes]/semana/[semana]`. Tester aparte: **CUMPLE** (tsc limpio, 66/66 sintético, `--prod-readonly` 96/96, reproducción independiente con datos de PROD: el comprometido del mes coincide en todas las pantallas para 2026-06..2026-10 y `comprometidoDe` por semana = `balanceMes.semanas` en las 25 semanas).
+- Cambian: inicio/lista de meses/`/api/meses` bajan (2026-06 21.980.111 a 20.199.111; 2026-07 20.567.207 a 19.371.207; 2026-08 20.791.207 a 19.405.211; 2026-09 21.460.207 a 20.840.207; 2026-10 22.815.846 a 22.113.846); `VistaSemanal` solo en semanas con pospuestos (2026-07 S5 1.145.996 a 1.069.996); columnas por semana de `ConceptoBoard` y Balance de semana de `MesM1` bajan donde hay pospuestos.
+- Excepciones justificadas: totales de "por pagar" (solo pendientes), `totalFaltaPendientes` de `VistaSemanal` (pendiente + pospuesto a propósito), techo de bolsillo, y sumas de ejecutado.
+- **HALT parcial, sin tocar (persisten en H5), decide Camilo:** `cerrar-semana/route.ts` l.57 (`totalPresupuestado` sin filtro, alimenta `desviacionTotal`) y l.107 (`totalComprometido` del plan, solo pendientes), `cerrar-m1/route.ts` l.29. Propuesta: pasar a `comprometidoDe` solo hacia adelante con fecha de corte, sin reescribir cierres antiguos.
+- Asimetría latente anotada por el Tester: un movimiento con semana fuera del mes cuenta en `comprometidoDe` pero no en `balanceMes.mes`; hoy PROD tiene `fueraDeMes=0`.
+- Consumo ampliación: Coder Sonnet 149.904 tokens; Tester Sonnet 124.085. Acumulado del ticket: Coder 526.490, Tester 389.523.

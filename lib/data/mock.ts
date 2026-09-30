@@ -3,6 +3,7 @@ import type {
   Semana,
   Concepto,
   Movimiento,
+  NuevoMovimiento,
   Bolsillo,
   Consumo,
   ConsumoH3,
@@ -42,7 +43,7 @@ export class MockDataProvider implements IDataProvider {
   getMovimientosByMesYSemana(_mes: string, _semana: Semana): Promise<Movimiento[]> {
     return Promise.resolve([]);
   }
-  crearMovimientosMes(_movimientos: Omit<Movimiento, "id">[]): Promise<Movimiento[]> {
+  crearMovimientosMes(_movimientos: NuevoMovimiento[]): Promise<Movimiento[]> {
     return Promise.resolve([]);
   }
   createMovimiento(_data: Omit<Movimiento, "id">): Promise<Movimiento> {

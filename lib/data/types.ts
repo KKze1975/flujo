@@ -53,7 +53,7 @@ export interface Movimiento {
   nombreSnapshot: string;            // copia inmutable del nombre de H1
   categoriaSnapshot: Categoria;      // copia inmutable de categoria
   tipoSnapshot: TipoConcepto;        // copia inmutable de tipo
-  semana: Semana | null;             // null si semana_default = variable
+  semana: Semana | null;             // null solo en filas heredadas; filas nuevas siempre traen semana (NuevoMovimiento, BALANCE-UNIFICADO-01, I-16)
   montoPresupuestado: number;        // monto_referencia de H1, incluyendo 0
   montoEjecutado: number | null;     // null si no ejecutado
   desviacion: number | null;         // null si no ejecutado
@@ -73,6 +73,9 @@ export interface Movimiento {
   montoEjecutadoAngie: number | null;
   idRecargaOrigen: string | null;
 }
+
+// Fila nueva de H2: `semana` nunca es null (BALANCE-UNIFICADO-01, I-16).
+export type NuevoMovimiento = Omit<Movimiento, "id" | "semana"> & { semana: Semana };
 
 // ── H3 ─────────────────────────────────────────────────────────────────────
 

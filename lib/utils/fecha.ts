@@ -141,6 +141,13 @@ export function semanaActivaDeMes(mes: string, fecha: Date = new Date()): Semana
   return semanas[semanas.length - 1];
 }
 
+// Mes siguiente en formato YYYY-MM (BALANCE-UNIFICADO-01: usado por la ruta
+// mover_mes_siguiente y por los pickers de semana destino del cliente).
+export function mesSiguienteDe(mes: string): string {
+  const [year, month] = mes.split("-").map(Number);
+  return month === 12 ? `${year + 1}-01` : `${year}-${String(month + 1).padStart(2, "0")}`;
+}
+
 // ── UBER-04 ──────────────────────────────────────────────────────────────
 export function mesDeFecha(fecha: Date): string {
   const { year, month } = getColombiaDate(fecha);
