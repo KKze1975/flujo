@@ -9,6 +9,7 @@ import type {
   ConsumoH3,
   IngresoCamilo,
   IngresoAngie,
+  AporteAdicional,
   SaldoCuenta,
   CierreSemana,
   PlanSemana,
@@ -160,6 +161,17 @@ export class MockDataProvider implements IDataProvider {
   }
   limpiarEventosLogAntiguos(_diasRetencion?: number): Promise<number> {
     return Promise.resolve(0);
+  }
+
+  // ── H11 ──────────────────────────────────────────────────────────────────
+  getAportesAdicionales(_mes: string): Promise<AporteAdicional[]> {
+    return Promise.resolve([]);
+  }
+  createAporteAdicional(_data: Omit<AporteAdicional, "id">): Promise<AporteAdicional> {
+    return Promise.resolve({ id: "mock-1", ..._data });
+  }
+  updateAporteAdicional(_id: string, _data: Partial<Omit<AporteAdicional, "id">>): Promise<AporteAdicional> {
+    return Promise.resolve(null as unknown as AporteAdicional);
   }
 
   // ── H10 ──────────────────────────────────────────────────────────────────

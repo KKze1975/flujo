@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { Movimiento, Concepto, IngresoCamilo, IngresoAngie, SaldoCuenta, CierreSemana, Semana, ConsumoH3 } from "@/lib/data/types";
+import type { Movimiento, Concepto, IngresoCamilo, IngresoAngie, AporteAdicional, SaldoCuenta, CierreSemana, Semana, ConsumoH3 } from "@/lib/data/types";
 import MesM1Mobile from "@/components/MesM1Mobile";
 import MesM1Desktop from "@/components/MesM1Desktop";
 
@@ -13,6 +13,7 @@ export default function MesM1ClientWrapper({
   conceptos,
   ingresoCamilo,
   ingresosAngie,
+  aportesAdicionales = [],
   cierresSemana,
   gastosSinClasificarInit,
   saldosInit,
@@ -27,6 +28,7 @@ export default function MesM1ClientWrapper({
   conceptos: Concepto[];
   ingresoCamilo: IngresoCamilo | null;
   ingresosAngie: IngresoAngie[];
+  aportesAdicionales?: AporteAdicional[];
   cierresSemana: CierreSemana[];
   gastosSinClasificarInit: Record<Semana, number>;
   saldosInit: SaldoCuenta[];
@@ -56,6 +58,7 @@ export default function MesM1ClientWrapper({
         saldosBrutos={saldosBrutos}
         ingresoCamilo={ingresoCamilo}
         ingresosAngie={ingresosAngie}
+        aportesAdicionales={aportesAdicionales}
         cierresSemana={cierresSemana}
         gastosSinClasificar={gastosSinClasificarInit}
         gastoH3PorCuenta={gastoH3PorCuenta}

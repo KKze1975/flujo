@@ -99,4 +99,30 @@ Datos de prueba sintéticos en DEV (mes 2026-10 o sintético) **limpiados al cie
 (vacío hasta completar)
 
 ## Notas de ejecución
-(vacío — lo llena el Coder al cerrar)
+**Construcción terminada, pendiente de Tester.** Rama `feat/aportes-semanales-01a`. Sin PR, sin merge. Casillas del DoD sin marcar (las marca el Tester).
+
+### Construido
+- `lib/data/types.ts`, `index.ts`, `sheets.ts`, `mock.ts`: `AporteAdicional` + `getAportesAdicionales` / `createAporteAdicional` / `updateAporteAdicional`. Pestaña `H11` (headers `id_aporte, mes, semana, monto, fecha, notas`), `ensureH11()` crea la pestaña si falta y verifica TODOS los headers (A1:F1), no solo A1. Escritura solo `values.update` / `values.append` con `INSERT_ROWS`.
+- `app/api/ingresos/adicionales/[mes]/route.ts`: GET/PUT. Valida todo antes de escribir; semana fuera de `semanasDeMes(mes)`, monto negativo o no numérico -> 400. Monto 0 sobre fila existente la deja en 0; sobre semana sin fila no crea fila.
+- `lib/utils/ingresosPlaneados.ts`: `ingresosPlaneadosDe(angie, adicionales)` -> `{ porSemana, aportesPorSemana, totales }`. `aportesPorSemana` alimenta `calcularBalanceMes`; no hay fórmula nueva. Un aporte en semana fuera del mes no se descarta (el cuadre falla en voz alta). No importa `balanceMes` (agrupación local) para poder cargarse desde `verificar-balance-cuadre.ts` sin alias `@/`.
+- `components/MesM1Desktop.tsx` (path activo verificado: `app/mes/[mes]/page.tsx` -> `MesM1ClientWrapper` -> `MesM1Desktop`): sidebar "Aportes emprendimiento" bajo el de Angie, fila en "Balance mes", chip `E:` (`--primary`) en "Por semana" de planificación, badge "E" con tokens existentes. Ejecución: el disponible por semana ahora suma Angie + emprendimiento (antes solo Angie); el "↪ remanente entrante" descuenta también el aporte. Sin chip `E:` ni botón en Ejecución (van en 01B).
+- `app/mes/[mes]/page.tsx` y `MesM1ClientWrapper.tsx`: cargan `getAportesAdicionales(mes)` y lo pasan como prop.
+- `scripts/setup-h11-prod.mjs`: dry-run por defecto (scope readonly), `--apply` escribe. Guards: aborta si falta `PROD_GOOGLE_SHEET_ID` o coincide con DEV. No imprime Sheet IDs. **NO ejecutado contra PROD**, solo `node --check`.
+- `scripts/verificar-balance-cuadre.ts`: fixtures A01 (semanas no consecutivas, mes con y sin S5, aporte 0, Angie+emprendimiento misma semana, Camilo 0, aporte en S5 de mes sin S5 falla en voz alta).
+
+### Evidencia (DEV)
+- I-03: `spreadsheets.get` DEV antes: `H1, H2, H4, H5, H3, H5B, H9, H10` (sin H11); `H4!X1:AE1` = headers H4D legacy (`id_recarga, mes, semana, monto, ...`), sin tocar.
+- PUT 2026-10 S2=2.000.000, S4=3.000.000 -> 200; GET devuelve exactamente esas 2 filas. Segundo PUT S2=2.500.000 actualiza la misma fila (GET: 2 filas, sin duplicados). `2026-02` S5 -> 400; monto -5 -> 400; monto "abc" -> 400. Monto 0 en S2 existente -> queda 0; monto 0 en S3 sin fila -> no crea fila.
+- Hash/filas de H2, H3B(H3), H4A, H4B, H4C, H5A, H5B idénticos antes y después de los PUT. Limitación: `/admin/trazabilidad` no lista la pestaña H11 (no se modificó trazabilidad en este ticket); evidencia = GET + hashes.
+- `node --experimental-strip-types scripts/verificar-balance-cuadre.ts`: 140/140 (baseline previo medido: 66/66, no 58/58; las previas siguen OK).
+- Render SSR de `MesM1Desktop` (página temporal, borrada) sobre DEV 2026-10 (S2=2M, S4=3M; sin ingreso Camilo ni Angie): Balance mes: Comprometido 50.000, Aportes emprendimiento 5.000.000, Total disponible 5.000.000, Diferencia 4.950.000. Por semana: S2 `E:$2.0M` (+1.9M), S4 `E:$3.0M`; S1 y S3 `E:$0`; la diferencia encadenada de S5 (+4.95M) == ingresoTotal - totalComprometido. 2026-09 (sin aportes): bloque visible con las 5 semanas vacías (placeholder 0), Angie sin cambios (S1 2.000.000, S2 1.000.000), `E:$0` en todas.
+- Datos de prueba H11 en DEV limpiados (queda solo el header).
+- `npx tsc --noEmit` limpio; `npm run build` OK; `eslint` sobre los archivos tocados: 0 errores (warnings preexistentes). `npm run lint` global tiene 196 errores preexistentes en otros archivos.
+
+### Desviaciones / pendientes
+- No se pudieron tomar capturas de pantalla: el Chrome de la extensión no alcanza el dev server de Crostini. Se sustituyó por render SSR del componente (arriba). El Tester debería revisar visualmente en escritorio.
+- `graphify update .` no ejecutado: `graphify` no está instalado en este entorno.
+- Guardar y recargar persiste: verificado por GET tras PUT y por hidratación de los inputs desde la prop en el render; no se probó el click real del botón en navegador.
+- Ejecución cambia visiblemente (el disponible de cada semana ahora incluye el aporte del emprendimiento); es lo pedido ("debe incluir el aporte").
+- Antes del merge, Camilo: `node scripts/setup-h11-prod.mjs` (dry-run) y luego `node scripts/setup-h11-prod.mjs --apply` (o lo hace el Coder con su OK explícito, ver 01D).
+

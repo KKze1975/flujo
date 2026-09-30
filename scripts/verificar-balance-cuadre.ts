@@ -13,6 +13,7 @@
 import { readFileSync } from "node:fs";
 import { calcularBalanceMes, comprometidoDe, esComprometido, aportesPorSemanaDe } from "../lib/utils/balanceMes.ts";
 import { semanasDeMes } from "../lib/utils/fecha.ts";
+import { ingresosPlaneadosDe } from "../lib/utils/ingresosPlaneados.ts";
 import type { Semana } from "../lib/data/types.ts";
 
 let fallos = 0;
@@ -116,6 +117,57 @@ caso("ingreso Camilo 0", {
   assertEq("aportesPorSemanaDe suma duplicados y respeta semanas", JSON.stringify(aportesPorSemanaDe([
     { semana: "S1", monto: 10 }, { semana: "S1", monto: 5 }, { semana: "S3", monto: 7 },
   ])), JSON.stringify({ S1: 15, S3: 7 }));
+}
+
+// ── 1b. APORTES-SEMANALES-01A: Angie + emprendimiento vía ingresosPlaneadosDe ─
+
+function casoAportes(
+  nombre: string,
+  semanas: Semana[],
+  ingresoCamilo: number,
+  angie: { semana: Semana; monto: number }[],
+  adicional: { semana: Semana; monto: number }[],
+  movs: M[],
+) {
+  const ip = ingresosPlaneadosDe(angie, adicional);
+  const b = calcularBalanceMes({ movs, semanas, ingresoCamilo, aportesPorSemana: ip.aportesPorSemana });
+  assertEq(`${nombre}: mes.ingreso - Σsemanas.ingreso`, b.mes.ingreso - b.semanas.reduce((a, x) => a + x.ingreso, 0), 0);
+  assertEq(`${nombre}: mes.comprometido - Σsemanas.comprometido`, b.mes.comprometido - b.semanas.reduce((a, x) => a + x.comprometido, 0), 0);
+  assertEq(`${nombre}: cuadre.ok`, b.cuadre.ok, true);
+  semanas.forEach((sem, i) => {
+    const esperado = (i === 0 ? ingresoCamilo : 0)
+      + angie.filter((x) => x.semana === sem).reduce((a, x) => a + x.monto, 0)
+      + adicional.filter((x) => x.semana === sem).reduce((a, x) => a + x.monto, 0);
+    assertEq(`${nombre}: ingreso ${sem} = Camilo(solo S1) + Angie + emprendimiento`, b.semanas[i].ingreso, esperado);
+    assertEq(`${nombre}: porSemana ${sem}.total = angie + adicional`, ip.porSemana[sem].total, ip.porSemana[sem].angie + ip.porSemana[sem].adicional);
+  });
+  const totAng = angie.reduce((a, x) => a + x.monto, 0);
+  const totAdi = adicional.reduce((a, x) => a + x.monto, 0);
+  assertEq(`${nombre}: totales.angie`, ip.totales.angie, totAng);
+  assertEq(`${nombre}: totales.adicional`, ip.totales.adicional, totAdi);
+  assertEq(`${nombre}: mes.ingreso = Camilo + Angie + emprendimiento`, b.mes.ingreso, ingresoCamilo + totAng + totAdi);
+}
+
+casoAportes("A01 semanas no consecutivas (S1,S3,S5), mes con S5", S5, 1000,
+  [{ semana: "S2", monto: 40 }], [{ semana: "S1", monto: 7 }, { semana: "S3", monto: 9 }, { semana: "S5", monto: 11 }],
+  [mov("S1", "pendiente", 100), mov("S5", "ejecutado", 30)]);
+casoAportes("A01 mes sin S5", S4, 500,
+  [{ semana: "S4", monto: 25 }], [{ semana: "S2", monto: 2_000_000 }, { semana: "S4", monto: 3_000_000 }],
+  [mov("S2", "pendiente", 60), mov("S3", "pospuesto", 999)]);
+casoAportes("A01 aporte 0", S4, 100, [], [{ semana: "S2", monto: 0 }], [mov("S1", "pendiente", 10)]);
+casoAportes("A01 Angie y emprendimiento en la misma semana", S4, 100,
+  [{ semana: "S2", monto: 800 }], [{ semana: "S2", monto: 2000 }], [mov("S2", "pendiente", 500)]);
+casoAportes("A01 ingreso Camilo 0", S4, 0, [{ semana: "S1", monto: 30 }], [{ semana: "S1", monto: 5 }, { semana: "S3", monto: 6 }],
+  [mov("S1", "pendiente", 20)]);
+{
+  const ip = ingresosPlaneadosDe([{ semana: "S2", monto: 800 }], [{ semana: "S2", monto: 2000 }]);
+  assertEq("A01 aporte de S2 no suma al disponible de S1 ni S3", `${ip.porSemana.S1.total}/${ip.porSemana.S2.total}/${ip.porSemana.S3.total}`, "0/2800/0");
+  // aporte del emprendimiento en semana fuera del mes: el cuadre debe fallar en voz alta (no se descarta).
+  const b = calcularBalanceMes({
+    movs: [], semanas: S4, ingresoCamilo: 0,
+    aportesPorSemana: ingresosPlaneadosDe([], [{ semana: "S5", monto: 9 }]).aportesPorSemana,
+  });
+  assertEq("A01 aporte emprendimiento en S5 de mes sin S5: cuadre.ok es false", b.cuadre.ok, false);
 }
 
 // ── 2. Caso que DEBE fallar: semana vacía ────────────────────────────────────

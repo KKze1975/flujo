@@ -165,6 +165,18 @@ export interface IngresoAngie {
   notas: string | null;
 }
 
+// ── H11 ────────────────────────────────────────────────────────────────────
+// APORTES-SEMANALES-01A: aporte del emprendimiento. Mismo molde que IngresoAngie
+// (un monto por semana, upsert por semana) pero en pestaña propia H11.
+export interface AporteAdicional {
+  id: string;
+  mes: string;     // "2026-10"
+  semana: Semana;
+  monto: number;
+  fecha: string;
+  notas: string | null;
+}
+
 // ── H5 ─────────────────────────────────────────────────────────────────────
 
 export interface CierreSemana {
