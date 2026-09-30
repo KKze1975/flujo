@@ -44,6 +44,7 @@
 | 40 | IDEAS-TRIAGE-01 | descartado | B | claude-code | IDEAS-SCHEMA-01 | `f6d45d8` | Triage automático con Haiku, construido pero bloqueado por saldo insuficiente en la API de Anthropic. **Descartado 18 sept 2026** por decisión de Camilo: el triage se hace conversando en sesiones del vault, no con un bot independiente. Código queda en el historial (commit `f6d45d8`, sin push), sin usarse. |
 | 41 | IDEAS-VISTA-PRIORIZADA-01 | descartado | B | claude-code | IDEAS-SCHEMA-01, IDEAS-TRIAGE-01 | | Vista de revisión conjunta dentro de la app. **Descartado 18 sept 2026** — el triage y la revisión pasan al vault, sin propósito para esta vista. Nunca se construyó. |
 | 42 | IDEAS-VAULT-SYNC-01 | aprobado | A | claude-code | IDEAS-SCHEMA-01 | | Script que genera `flujo/IDEAS-BACKLOG.md` desde H10 (mismo patrón que `generate-kanban.mjs`), legible desde el vault vía el symlink `work/flujo` ya existente. Disparo manual por ahora. |
+| 43 | BALANCE-UNIFICADO-01 | activo | A | claude-code | ninguna | | Mes = suma de semanas con una sola función de ingresos/comprometido + prueba de cuadre; `semana` obligatoria server-side (400 si falta) y corrección única de 2 filas nulas de PROD (espera aprobación). Decisiones (a) e (i) de Camilo, 30 sept 2026. Va antes del Arquitecto de `APORTES-SEMANALES-01`. |
 
 **Estados posibles:** `propuesto` \| `aprobado` \| `activo` \| `completado` \| `completado_parcial` \| `bloqueado` \| `descartado` \| `diagnostico_listo` (Tier B, fase de diagnóstico cerrada, esperando elección de opción)
 
