@@ -7973,3 +7973,84 @@ de mes/semana; este caso es evidencia para él (error silencioso, sin fallo visi
 - FinOps/Costo: sin cambios
 - Bloqueados esperando a Camilo: etnografía con Ángela María; decisión A/B/C de `SEC-EXPOSICION-PUBLICA-01`
 - Próximo paso: retomar `check-ticket.mjs`
+
+---
+
+## Sesión DISEÑO — Fase -1/0: ingresos adicionales semanales (29 sept 2026, Chief of Staff, vault)
+
+**Tipo de sesión:** DISEÑO (skill `fase0`). Línea nueva dentro de Flujo: el pedido llegó como
+intuición de solución ("poder registrar ingreso principal + otros ingresos semana a semana"),
+sin flujo as-is validado. Camilo vive el proceso en carne propia: puede validar el cierre.
+
+**Hallazgos as-is (fuente: Camilo en vivo, 29 sept):**
+- Hasta septiembre el único ingreso planeado era el principal, registrado a principio de mes
+  (el mismo ingreso; Camilo lo llama "el de escala"). Confianza: alta.
+- Desde este mes entran ingresos de un emprendimiento propio (contratos de desarrollo de
+  software, $1M–$5M cada uno). Confianza: alta.
+- Registro actual: el único ingreso adicional recibido se anotó como movimiento suelto desde el
+  FAB, después de llegar. La planeación del mes no lo contempla. Confianza: alta.
+- Previsibilidad: Camilo sí sabe con anticipación cuánto y cuándo llega, y quiere planearlo.
+  ~$5M por mes en octubre y noviembre; se trabaja para repetirlo en diciembre y enero.
+  Confianza: media (monto aproximado, contratos en curso).
+- Llegan en pedazos, repartidos entre semanas (S1–S4); el calendario exacto está en
+  definición. Confianza: media.
+- Uso previsto: cubrir una brecha de gastos que el ingreso principal ya no alcanza a cubrir.
+  Confianza: alta (declarado), monto de la brecha: no medido.
+
+**Hipótesis Fase -1 (primer momento, pendiente de validar):**
+- Dolor: la planeación muestra solo el ingreso principal contra gastos que ya lo superan; los
+  ingresos adicionales previstos no aparecen, así que la foto semanal no dice si la brecha
+  queda cubierta.
+- Retorno: por definir en palabras de Camilo.
+- Motivación: alta (flujo de caja propio, recurrente desde octubre).
+
+**Estado:** Fase 0 abierta — sin confirmación "así funciona hoy" ni pregunta "¿más costoso o
+más visible?" todavía.
+
+**Cierre de Fase -1/0 (29 sept 2026, mismo hilo):**
+- Confirmación de quien vive el proceso, citada: "Sí es así, exactamente, que funciona ahora".
+- Retorno en palabras de Camilo: "que se registra ese ingreso efectivamente y que puedo planear
+  desde el principio del mes con exactitud cómo se va a usar el dinero".
+- ¿Más costoso o más visible? Camilo: "Sí es el problema más costoso, el no tener control de
+  ese dinero, porque si no está con trazabilidad, lo que pasa es que se termina gastando en
+  cualquier cosa."
+- Calificación post-etnografía: dolor recurrente (mensual, desde octubre) y atribuible al
+  proceso de planeación, no a mala suerte; retorno verificable (ingresos adicionales previstos
+  visibles en la planeación desde el inicio del mes, con destino asignado); motivación alta.
+- Mapa de actores: Champion y decisor = Camilo (usuario y dueño del dinero). Blocker: ninguno
+  identificado del lado del proceso; gate de merge de Angie como QA aplica en construcción.
+  Métrica de éxito: la del retorno citado arriba.
+- **Fase -1/0 cerrada.** Siguiente: Fase 1 (skill `fase1`), flujo to-be sin tecnología.
+
+**Fase 1 — Diseño to-be (29 sept 2026, mismo hilo, skill `fase1`).** El artefacto de Fase 1
+vive en esta sección.
+
+- Declaraciones de Camilo (fuente: diálogo en vivo, transcripción VoxCros):
+  1. "en el modo planeación debería haber la plata esperada desde el día 1 como es hoy [...]
+     pongo los aportes de Angie, pongo los míos [...] pero ahora quiero agregar entonces esos
+     otros aportes durante el mes".
+  2. "No quiero planear desde antes para dónde va ese dinero porque ya hay compromisos [...] la
+     plata se usa en el momento en el que entra".
+  3. Sin confirmación: "como con Angie [...] simplemente se registra lo que se pagó y se asume
+     que [...] fue lo que efectivamente entró, que a veces puede ser más, puede ser menos".
+  4. Si un pago no llega: "habría que posponer los pagos que se hayan comprometido [...] correrlo
+     al mes siguiente o a la semana siguiente".
+- Dato as-is que precisa Fase 0: los aportes de Angie y de Camilo ya se planean como ingresos
+  del mes; lo nuevo es que un aporte caiga en cualquier semana, no solo a principio de mes.
+- Alternativas: A (regla personal, asignar destino al llegar, planeación igual) — descartada, no
+  da visibilidad desde el día 1. B (planear con lo esperado y confirmar al llegar). C (usar lo
+  recibido el mes siguiente) — descartada, Camilo usa la plata cuando entra. **Elegida: B sin
+  paso de confirmación.** Decide: Camilo. "¿Qué alternativa no estoy evaluando?": no nombró otra.
+  Alternativas A/B/C formuladas por la sesión; la variante sin confirmación la formuló Camilo.
+- To-be: el 1 del mes se planean el aporte de Angie, el de Camilo de principio de mes y los
+  aportes del emprendimiento en las semanas en que se esperan; con todo eso se reparten los
+  pagos. Semana a semana se registra lo pagado, igual que hoy. Si un aporte no llega en su
+  semana, los pagos que dependían de él se corren a la semana o al mes siguiente.
+- Contraste: desaparece el ingreso del emprendimiento registrado suelto y fuera de la
+  planeación; cambia que los aportes pueden caer en cualquier semana; aparece posponer pagos
+  cuando un aporte esperado no llega.
+- Insumos para Fase 2 (estacionados, no entran al diseño): revisar si el mecanismo existente de
+  posponer (`POSPONER-S5-01`) cubre el caso de aporte no recibido — fuente: la sesión.
+- **Validación de cierre, Camilo (quien planea y ejecuta el flujo), 29 sept 2026: "sí, así es
+  que quiero que funcione".** Fase 1 cerrada. Cierra sesión DISEÑO.
+- Siguiente: Fase 2 — especificación y ticket (Spec Writer de Flujo), en sesión aparte.
