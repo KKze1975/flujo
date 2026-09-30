@@ -1,4 +1,6 @@
 import { getProvider } from "@/lib/data/provider";
+import { semanasDeMes } from "@/lib/utils/fecha";
+import { calcularBalanceMes, aportesPorSemanaDe } from "@/lib/utils/balanceMes";
 
 export async function GET() {
   const provider = getProvider();
@@ -14,12 +16,18 @@ export async function GET() {
           provider.getIngresosAngie(mes).catch(() => []),
         ]);
 
-        const totalPresupuestado = movs.reduce((s, m) => s + m.montoPresupuestado, 0);
+        const ingresoCamilo = ingresosCamilo[0]?.montoCop ?? 0;
+        // BALANCE-UNIFICADO-01: comprometido del mes = balanceMes (definición canónica).
+        const totalPresupuestado = calcularBalanceMes({
+          movs,
+          semanas: semanasDeMes(mes),
+          ingresoCamilo,
+          aportesPorSemana: aportesPorSemanaDe(ingresosAngie),
+        }).mes.comprometido;
         const totalEjecutado = movs
           .filter((m) => m.estado === "ejecutado")
           .reduce((s, m) => s + (m.montoEjecutado ?? 0), 0);
         const totalPendiente = movs.filter((m) => m.estado === "pendiente").length;
-        const ingresoCamilo = ingresosCamilo[0]?.montoCop ?? 0;
         const ingresoAngie = ingresosAngie.reduce((s, a) => s + a.monto, 0);
         const totalIngresos = ingresoCamilo + ingresoAngie;
 

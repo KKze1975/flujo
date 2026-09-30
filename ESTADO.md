@@ -8105,3 +8105,40 @@ despachado en Opus por la sesión Chief of Staff).**
 - FinOps/Costo: sin gasto nuevo; subagentes: Spec Writer Opus (136K/161K/167K por pasada), Diseñador Sonnet (109K)
 - Bloqueados esperando a Camilo: etnografía con Ángela María; decisión A/B/C de `SEC-EXPOSICION-PUBLICA-01`; crear lugar nuevo en la hoja de PROD (antes del merge)
 - Próximo paso: despachar el Arquitecto de Flujo sobre `specs/APORTES-SEMANALES-01.md` + brief §7
+
+---
+
+## Sesión CONSTRUCCIÓN — BALANCE-UNIFICADO-01 (30 sept 2026, Manager de Flujo despachado por Chief of Staff, vault)
+
+**Tipo de sesión:** CONSTRUCCIÓN (decisiones de diseño cerradas por Camilo, sesión DISEÑO del vault, 30 sept 2026).
+
+**Decisiones de Camilo (30 sept 2026):**
+- **(a)** `semana` nunca es `null`: el servidor la exige en todo camino que crea o mueve movimientos (400 si falta); las filas `null` existentes se corrigen una sola vez.
+- **(i)** Secuencia: este ticket va ANTES del Arquitecto de `APORTES-SEMANALES-01`, que construirá encima de la función unificada.
+- Criterio de cierre: mes = suma de semanas, con UNA función de cálculo de ingresos y comprometido, y prueba de cuadre.
+
+**Diagnóstico PROD (solo lectura, tab H2, 382 filas):** 2 filas con `semana` vacía, ambas 2026-07, `ejecutado`, ejecutor angie: `MOV_1782767829728` (PS Plus, 60.000, 2026-07-01) y `MOV_1782767835789` (Uber One, 16.000, 2026-07-05). Semana propuesta S1 en ambas (`semanaDeFechaEnMes`; julio empieza miércoles, días 1-5 son S1). No se escribió nada en PROD.
+
+**Trabajo:** ticket `BALANCE-UNIFICADO-01` (tier A, claude-code) creado; Coder (Sonnet) construyó en `feat/balance-unificado-01` (commit `302de0d`): `lib/utils/balanceMes.ts`, `scripts/verificar-balance-cuadre.ts` (51/51 aserciones), `scripts/fix-semana-vacia-h2.mjs` (dry-run por defecto, `--apply` a PROD exige `--confirmo-prod`), 400 server-side en `mover_mes_siguiente`/`ejecutar`/`posponer`/`iniciar`, pickers de semana en 3 llamadores. Tester (Sonnet, aparte): **CUMPLE_PARCIAL**, sin nada roto en lo ejecutado; `tsc` limpio.
+
+**Abierto, esperando a Camilo:** D1 (Ejecución por semana no filtra estados y difiere de la definición canónica; también Mobile y VistaPlanificacion con fórmula propia del mes), aprobar y correr el fix de las 2 filas en PROD (después repetir `--prod-readonly`), D3 (400 sin escribir en `iniciar` con concepto no semanal variable), revisión de pickers en navegador. PR pendiente; sin merge (I-11/I-17).
+
+**Consumo:** Coder Sonnet 224.684 tokens; Tester Sonnet 147.866 tokens.
+
+**Estado accionable:**
+- Unidad: ticket
+- En curso: [Operación] BALANCE-UNIFICADO-01 — construido, Tester CUMPLE_PARCIAL, HALT por D1
+- Bloqueados esperando a Camilo: D1; aprobación del fix en PROD; D3; etnografía con Ángela María; `SEC-EXPOSICION-PUBLICA-01` A/B/C
+- Próximo paso: decisión de Camilo sobre D1, luego cierre del ticket y Arquitecto de `APORTES-SEMANALES-01`
+
+**D1 resuelta por Camilo (30 sept 2026):** la definición canónica de "comprometido" (excluye `pospuesto`, `no_aplica`, `pospuesto_mes_siguiente`) se aplica en TODAS las vistas. Coder (Sonnet, commit `08f977e`) migró Ejecución por semana en `MesM1Desktop`, `MesM1Mobile` y `m1/VistaPlanificacion` a `balanceMes`; Tester aparte: **CUMPLE** (tsc limpio, 58/58 sintético, `--prod-readonly` 63/63). Fix de las 2 filas de julio aplicado en PROD por Camilo (escritas=2, S1 leída de vuelta); 2026-06 a 2026-10 cuadran con `sinSemana=0`.
+- Cambian números visibles: Ejecución por semana baja donde hay pospuestos/no_aplica (ej. 2026-06 S4: 2.945.996 a 1.669.996); Mobile "Presupuestado" baja (2026-06 21.980.111 a 20.199.111; 2026-07 20.567.207 a 19.295.207 antes del fix; 2026-09 21.460.207 a 20.840.207; 2026-10 22.815.846 a 22.113.846).
+- Abierto: superficies con fórmula propia que contradicen a las tres vistas (`VistaSemanal.tsx` ~l.1054, `MesM1.tsx` l.161, `app/page.tsx` l.24, `app/meses/page.tsx` l.27/72; `ConceptoBoard` riesgo bajo); pickers de semana sin verificar en navegador; D3 (400 en `iniciar`); PR #47 sin merge (I-11/I-17).
+- Consumo D1: Coder Sonnet 151.902 tokens; Tester Sonnet 117.572.
+
+**Ampliación de BALANCE-UNIFICADO-01 (decisión de Camilo, 30 sept 2026):** TODAS las superficies que muestran comprometido/presupuestado del mes o de la semana usan `lib/utils/balanceMes.ts`, en el mismo ticket y PR #47 (no ticket aparte). Coder (Sonnet, commit `a19e34a`): inicio, lista de meses, `/api/meses`, `MesM1.tsx`, `VistaSemanal`, `ConceptoBoard` y `/api/mes/[mes]/semana/[semana]`. Tester aparte: **CUMPLE** (tsc limpio, 66/66 sintético, `--prod-readonly` 96/96, reproducción independiente con datos de PROD: el comprometido del mes coincide en todas las pantallas para 2026-06..2026-10 y `comprometidoDe` por semana = `balanceMes.semanas` en las 25 semanas).
+- Cambian: inicio/lista de meses/`/api/meses` bajan (2026-06 21.980.111 a 20.199.111; 2026-07 20.567.207 a 19.371.207; 2026-08 20.791.207 a 19.405.211; 2026-09 21.460.207 a 20.840.207; 2026-10 22.815.846 a 22.113.846); `VistaSemanal` solo en semanas con pospuestos (2026-07 S5 1.145.996 a 1.069.996); columnas por semana de `ConceptoBoard` y Balance de semana de `MesM1` bajan donde hay pospuestos.
+- Excepciones justificadas: totales de "por pagar" (solo pendientes), `totalFaltaPendientes` de `VistaSemanal` (pendiente + pospuesto a propósito), techo de bolsillo, y sumas de ejecutado.
+- **HALT parcial, sin tocar (persisten en H5), decide Camilo:** `cerrar-semana/route.ts` l.57 (`totalPresupuestado` sin filtro, alimenta `desviacionTotal`) y l.107 (`totalComprometido` del plan, solo pendientes), `cerrar-m1/route.ts` l.29. Propuesta: pasar a `comprometidoDe` solo hacia adelante con fecha de corte, sin reescribir cierres antiguos.
+- Asimetría latente anotada por el Tester: un movimiento con semana fuera del mes cuenta en `comprometidoDe` pero no en `balanceMes.mes`; hoy PROD tiene `fueraDeMes=0`.
+- Consumo ampliación: Coder Sonnet 149.904 tokens; Tester Sonnet 124.085. Acumulado del ticket: Coder 526.490, Tester 389.523.

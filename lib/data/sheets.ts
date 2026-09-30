@@ -14,6 +14,7 @@ import type {
   Actor,
   Concepto,
   Movimiento,
+  NuevoMovimiento,
   Bolsillo,
   Consumo,
   ConsumoH3,
@@ -272,7 +273,7 @@ export class SheetsDataProvider implements IDataProvider {
       .map((row) => this.rowToMovimiento(row, headers));
   }
 
-  async crearMovimientosMes(movimientos: Omit<Movimiento, "id">[]): Promise<Movimiento[]> {
+  async crearMovimientosMes(movimientos: NuevoMovimiento[]): Promise<Movimiento[]> {
     await this.ensureH2Headers();
     const existing = await this.sheets.spreadsheets.values.get({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
