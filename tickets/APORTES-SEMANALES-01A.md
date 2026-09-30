@@ -70,20 +70,34 @@ aportes; tocar H4A/H4B/H2/H5A/H5B; el aporte de Angie y el de principio de mes d
 Todo en rama `dev`, Sheet **DEV** (I-04/I-08: ningún Sheet ID en archivos ni en la salida pegada).
 Datos de prueba sintéticos en DEV (mes 2026-10 o sintético) **limpiados al cierre**.
 
-- [ ] I-03 previo, solo lectura: `spreadsheets.get` sobre DEV pegado (solo títulos de pestañas) confirma que `H11` no existe antes de construir, y `H4!X:AE` sigue siendo H4D legacy sin tocar.
-- [ ] `PUT /api/ingresos/adicionales/2026-10` con montos en S2 y S4 → 200; `GET` del mismo mes devuelve exactamente esas dos filas (respuestas HTTP pegadas).
-- [ ] Segundo PUT sobre S2 actualiza la misma fila; GET pegado: una fila por semana, sin duplicados.
-- [ ] PUT con semana fuera de `semanasDeMes(mes)` (ej. `S5` en un mes de 28 días) → 400; PUT con monto negativo → 400 (dos respuestas pegadas). PUT con monto 0 sobre S2 existente la deja en 0; monto 0 sobre semana sin fila no crea fila (GET pegado).
-- [ ] `/admin/trazabilidad`: diff tras los PUT sin cambios en H2, H3B, H4A, H4B, H5A, H5B (diff pegado). Si trazabilidad no muestra la pestaña nueva, GET pegado como evidencia y se declara la limitación (no se modifica trazabilidad en este ticket).
-- [ ] Función `ingresosPlaneadosDe` existe y se consume desde `MesM1Desktop`; `grep` pegado: no hay otra suma de aportes/ingreso de mes o semana en `MesM1Desktop.tsx` fuera de `balanceMes`/`ingresosPlaneadosDe`.
-- [ ] Script de verificación (extender `scripts/verificar-balance-cuadre.ts` o hermano, salida pegada) con fixtures sintéticos: aporte adicional en semanas no consecutivas, mes con y sin S5, aporte 0, aportes de Angie y del emprendimiento en la misma semana, ingreso Camilo 0: `mes − Σ semanas = 0` para ingreso y comprometido, y el ingreso de una semana = Camilo (solo S1) + Angie + emprendimiento. Aserciones 58/58 previas siguen OK.
-- [ ] Octubre en DEV con aportes: en planificación de escritorio **Σ `diferencia` por semana == `ingresoTotal − totalComprometido`** (diferencia 0, valores pegados).
-- [ ] El aporte de S2 suma al disponible de S2 y no al de S1 ni S3 en "Por semana" de planificación (valores pegados).
-- [ ] Sidebar: bloque "Aportes emprendimiento" con un input por semana y botón; guardar y recargar persiste (captura antes/después + GET pegado). Mes sin aportes (p. ej. DEV 2026-09): bloque visible con todas las semanas en 0 (captura). Bloque de Angie sin cambios visibles (captura antes/después).
-- [ ] "Balance mes" muestra la fila "Aportes emprendimiento" y "Total disponible" = Camilo + Σ Angie + Σ emprendimiento (valores pegados). Chip `E:` visible junto a `A:` en "Por semana" de planificación (captura).
-- [ ] `scripts/setup-h11-prod.mjs` existe y aborta si `PROD_GOOGLE_SHEET_ID` falta o coincide con DEV; **no ejecutado contra PROD** (declararlo explícitamente en las notas). Probado solo con `node --check` o dry-run que no escriba.
-- [ ] `npx tsc --noEmit` limpio; `npm run lint` sin errores nuevos (salida pegada); `graphify update .`; ningún Sheet ID en archivos commiteados.
-- [ ] Rama propia, PR contra `dev`, sin merge (I-11/I-17). Tester como subagente aparte (no verificación inline).
+- [~] I-03 previo, solo lectura: `spreadsheets.get` sobre DEV pegado (solo títulos de pestañas) confirma que `H11` no existe antes de construir, y `H4!X:AE` sigue siendo H4D legacy sin tocar.
+  - **Tester PARCIAL:** al llegar el Tester H11 ya existía (creada por el Coder); no reproducible. Por lectura: H4!X1:AE1 sigue siendo H4D legacy (id_recarga,mes,semana,monto,...). Evidencia del Coder sin reproducir.
+- [x] `PUT /api/ingresos/adicionales/2026-10` con montos en S2 y S4 → 200; `GET` del mismo mes devuelve exactamente esas dos filas (respuestas HTTP pegadas).
+  - **Tester OK:** PUT S2=2M,S4=3M -> 200 con 2 filas; GET devuelve exactamente esas 2 (reproducido por Tester, dev local sobre DEV).
+- [x] Segundo PUT sobre S2 actualiza la misma fila; GET pegado: una fila por semana, sin duplicados.
+  - **Tester OK:** PUT S2=2.5M -> 200, misma id; GET: 2 filas, sin duplicados.
+- [x] PUT con semana fuera de `semanasDeMes(mes)` (ej. `S5` en un mes de 28 días) → 400; PUT con monto negativo → 400 (dos respuestas pegadas). PUT con monto 0 sobre S2 existente la deja en 0; monto 0 sobre semana sin fila no crea fila (GET pegado).
+  - **Tester OK:** 2026-02 S5 -> 400; monto -5 -> 400; monto "abc" -> 400; body mixto valido+invalido -> 400 sin escritura parcial; S2 existente con 0 -> queda 0; S3 sin fila con 0 -> no crea fila (GET).
+- [x] `/admin/trazabilidad`: diff tras los PUT sin cambios en H2, H3B, H4A, H4B, H5A, H5B (diff pegado). Si trazabilidad no muestra la pestaña nueva, GET pegado como evidencia y se declara la limitación (no se modifica trazabilidad en este ticket).
+  - **Tester OK:** Hashes sha256 por pestana (H1,H2,H4,H5,H3,H5B,H9,H10) identicos antes y despues de todos los PUT; H4X:AE1 igual. Limitacion declarada: trazabilidad no lista H11; no se abrio /admin/trazabilidad (requiere PIN), la evidencia es hash + GET.
+- [x] Función `ingresosPlaneadosDe` existe y se consume desde `MesM1Desktop`; `grep` pegado: no hay otra suma de aportes/ingreso de mes o semana en `MesM1Desktop.tsx` fuera de `balanceMes`/`ingresosPlaneadosDe`.
+  - **Tester OK:** grep: unicos reduce en MesM1Desktop.tsx son de movimientos (l.418, 490, 571, 911, 944), ninguno suma aportes/ingreso; aportes salen de ingresosPlaneadosDe -> calcularBalanceMes.
+- [x] Script de verificación (extender `scripts/verificar-balance-cuadre.ts` o hermano, salida pegada) con fixtures sintéticos: aporte adicional en semanas no consecutivas, mes con y sin S5, aporte 0, aportes de Angie y del emprendimiento en la misma semana, ingreso Camilo 0: `mes − Σ semanas = 0` para ingreso y comprometido, y el ingreso de una semana = Camilo (solo S1) + Angie + emprendimiento. Aserciones 58/58 previas siguen OK.
+  - **Tester OK:** node --experimental-strip-types scripts/verificar-balance-cuadre.ts -> 140/140 aserciones ok (reproducido).
+- [x] Octubre en DEV con aportes: en planificación de escritorio **Σ `diferencia` por semana == `ingresoTotal − totalComprometido`** (diferencia 0, valores pegados).
+  - **Tester OK:** Preview Vercel: S2=2M,S3=1M,S4=3M: Balance mes Total 6.000.000, comprometido 50.000, Diferencia 5.950.000; cadena por semana S2 +1.9M, S3 +3.0M, S4 +6.0M, S5 +6.0M (compacto) == 5.95M. Sept: 23.000.000-19.493.207=3.506.793 == S5 +3.5M.
+- [x] El aporte de S2 suma al disponible de S2 y no al de S1 ni S3 en "Por semana" de planificación (valores pegados).
+  - **Tester OK:** Con S2=2M,S4=3M: S1 E:$0 +$0; S2 E:$2.0M +$1.9M; S3 E:$0 +$1.9M (arrastre, no aporte propio).
+- [x] Sidebar: bloque "Aportes emprendimiento" con un input por semana y botón; guardar y recargar persiste (captura antes/después + GET pegado). Mes sin aportes (p. ej. DEV 2026-09): bloque visible con todas las semanas en 0 (captura). Bloque de Angie sin cambios visibles (captura antes/después).
+  - **Tester OK:** Preview Vercel (Chrome real): bloque con 5 inputs y boton; tipeado S3=1000000 + click real en 'Guardar aportes emprendimiento' -> fila en H11 (GET Sheet), recarga conserva 2M/1M/3M. 2026-09: bloque visible todo vacio; Angie intacto (20M/2M/1M). Sin capturas guardadas a disco: verificado por screenshot + texto DOM.
+- [x] "Balance mes" muestra la fila "Aportes emprendimiento" y "Total disponible" = Camilo + Σ Angie + Σ emprendimiento (valores pegados). Chip `E:` visible junto a `A:` en "Por semana" de planificación (captura).
+  - **Tester OK:** Fila 'Aportes emprendimiento' bajo Aportes Angie; Total disponible 6.000.000 = 0 + 0 + 6.000.000; chip E: en Por semana junto a A: (screenshot + DOM).
+- [x] `scripts/setup-h11-prod.mjs` existe y aborta si `PROD_GOOGLE_SHEET_ID` falta o coincide con DEV; **no ejecutado contra PROD** (declararlo explícitamente en las notas). Probado solo con `node --check` o dry-run que no escriba.
+  - **Tester OK:** node --check OK; revisado: aborta si falta PROD_GOOGLE_SHEET_ID o == DEV; dry-run usa scope readonly; Tester NO lo ejecuto (ni dry-run ni --apply).
+- [~] `npx tsc --noEmit` limpio; `npm run lint` sin errores nuevos (salida pegada); `graphify update .`; ningún Sheet ID en archivos commiteados.
+  - **Tester PARCIAL:** tsc limpio (exit 0) y npm run build OK, reproducidos. No verificados: npm run lint global, graphify (no instalado).
+- [~] Rama propia, PR contra `dev`, sin merge (I-11/I-17). Tester como subagente aparte (no verificación inline).
+  - **Tester PARCIAL:** Rama propia sin PR ni merge (HEAD c9ebc0a); PR fuera del alcance del Tester. Tester es agente aparte.
 
 ## Contexto / diagnóstico previo
 
@@ -126,3 +140,17 @@ Datos de prueba sintéticos en DEV (mes 2026-10 o sintético) **limpiados al cie
 - Ejecución cambia visiblemente (el disponible de cada semana ahora incluye el aporte del emprendimiento); es lo pedido ("debe incluir el aporte").
 - Antes del merge, Camilo: `node scripts/setup-h11-prod.mjs` (dry-run) y luego `node scripts/setup-h11-prod.mjs --apply` (o lo hace el Coder con su OK explícito, ver 01D).
 
+
+
+## Verificación del Tester (30 sept 2026, agente aparte, sobre c9ebc0a)
+**Veredicto: CUMPLE-PARCIAL (sin NO CUMPLE funcional; un bug menor abierto).** `[x]` verificado, `[~]` parcial (motivo en cada casilla).
+
+Sospecha de convergencia cómoda: mis resultados coinciden con el reporte del Coder sin fricción; por eso se reprodujeron PUT/GET, hashes, build, verificación y la UI en navegador real (no SSR), y se probaron casos que el Coder no (body mixto, duplicados).
+
+Cobertura visual: SI, Chrome real sobre el preview de Vercel de la rama (deployment READY de c9ebc0a, equipo camilo-s-projects10, proyecto flujo). Comparte Sheet con DEV: los aportes que escribí por API aparecieron en la UI. No se guardaron capturas a disco. El dev server local no era alcanzable desde el Chrome.
+
+**Bug (no corregido) B1, severidad baja:** un PUT cuyo body repite la misma semana (ej. `[{S1,10},{S1,20}]`) sobre una semana sin fila crea DOS filas (S1 duplicada), porque `existing` no se refresca dentro del bucle de `route.ts`. Viola "una fila por semana". La UI nunca envia duplicados (un input por semana), por eso no afecta el flujo normal; `ingresosPlaneadosDe` sumaria ambas. Sugerencia: dedupe/400 por semana repetida en el body.
+
+**Observaciones:** (1) `ensureH11` crea la pestana en runtime si falta (patron ensureH9/H10): en PROD eso ocurriria en el primer request si Camilo no corre antes `setup-h11-prod.mjs`; ya cubierto por 01D. (2) `npm run lint` global (196 errores preexistentes) y `graphify update .` no verificados. (3) Ejecucion: el disponible por semana ahora suma el aporte (declarado por el Coder); no se inspecciono la pestana Ejecucion en navegador, es alcance de verificacion de 01B.
+
+Limpieza: H11 DEV queda solo con header (`[["id_aporte","mes","semana","monto","fecha","notas"]]`) y hashes de las otras pestanas iguales al estado inicial. Nada escrito en PROD.
