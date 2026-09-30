@@ -8105,3 +8105,28 @@ despachado en Opus por la sesión Chief of Staff).**
 - FinOps/Costo: sin gasto nuevo; subagentes: Spec Writer Opus (136K/161K/167K por pasada), Diseñador Sonnet (109K)
 - Bloqueados esperando a Camilo: etnografía con Ángela María; decisión A/B/C de `SEC-EXPOSICION-PUBLICA-01`; crear lugar nuevo en la hoja de PROD (antes del merge)
 - Próximo paso: despachar el Arquitecto de Flujo sobre `specs/APORTES-SEMANALES-01.md` + brief §7
+
+---
+
+## Sesión CONSTRUCCIÓN — BALANCE-UNIFICADO-01 (30 sept 2026, Manager de Flujo despachado por Chief of Staff, vault)
+
+**Tipo de sesión:** CONSTRUCCIÓN (decisiones de diseño cerradas por Camilo, sesión DISEÑO del vault, 30 sept 2026).
+
+**Decisiones de Camilo (30 sept 2026):**
+- **(a)** `semana` nunca es `null`: el servidor la exige en todo camino que crea o mueve movimientos (400 si falta); las filas `null` existentes se corrigen una sola vez.
+- **(i)** Secuencia: este ticket va ANTES del Arquitecto de `APORTES-SEMANALES-01`, que construirá encima de la función unificada.
+- Criterio de cierre: mes = suma de semanas, con UNA función de cálculo de ingresos y comprometido, y prueba de cuadre.
+
+**Diagnóstico PROD (solo lectura, tab H2, 382 filas):** 2 filas con `semana` vacía, ambas 2026-07, `ejecutado`, ejecutor angie: `MOV_1782767829728` (PS Plus, 60.000, 2026-07-01) y `MOV_1782767835789` (Uber One, 16.000, 2026-07-05). Semana propuesta S1 en ambas (`semanaDeFechaEnMes`; julio empieza miércoles, días 1-5 son S1). No se escribió nada en PROD.
+
+**Trabajo:** ticket `BALANCE-UNIFICADO-01` (tier A, claude-code) creado; Coder (Sonnet) construyó en `feat/balance-unificado-01` (commit `302de0d`): `lib/utils/balanceMes.ts`, `scripts/verificar-balance-cuadre.ts` (51/51 aserciones), `scripts/fix-semana-vacia-h2.mjs` (dry-run por defecto, `--apply` a PROD exige `--confirmo-prod`), 400 server-side en `mover_mes_siguiente`/`ejecutar`/`posponer`/`iniciar`, pickers de semana en 3 llamadores. Tester (Sonnet, aparte): **CUMPLE_PARCIAL**, sin nada roto en lo ejecutado; `tsc` limpio.
+
+**Abierto, esperando a Camilo:** D1 (Ejecución por semana no filtra estados y difiere de la definición canónica; también Mobile y VistaPlanificacion con fórmula propia del mes), aprobar y correr el fix de las 2 filas en PROD (después repetir `--prod-readonly`), D3 (400 sin escribir en `iniciar` con concepto no semanal variable), revisión de pickers en navegador. PR pendiente; sin merge (I-11/I-17).
+
+**Consumo:** Coder Sonnet 224.684 tokens; Tester Sonnet 147.866 tokens.
+
+**Estado accionable:**
+- Unidad: ticket
+- En curso: [Operación] BALANCE-UNIFICADO-01 — construido, Tester CUMPLE_PARCIAL, HALT por D1
+- Bloqueados esperando a Camilo: D1; aprobación del fix en PROD; D3; etnografía con Ángela María; `SEC-EXPOSICION-PUBLICA-01` A/B/C
+- Próximo paso: decisión de Camilo sobre D1, luego cierre del ticket y Arquitecto de `APORTES-SEMANALES-01`

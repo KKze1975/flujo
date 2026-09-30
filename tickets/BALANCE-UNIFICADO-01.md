@@ -5,11 +5,10 @@ estado: activo
 tier: A
 agente_ejecucion: claude-code
 dependencias: ninguna
-rol_activo: coder
-paso_actual: "Construcción terminada, pendiente de Tester; desviaciones D1/D2 esperan decisión de Camilo"
-actualizado_en: 2026-09-30T08:32:00-05:00
-necesita_aprobacion: alta
-halt_criterio: 4
+rol_activo: tester
+paso_actual: "verificación terminada; reporte al Chief of Staff (D1/D2 pendientes de Camilo)"
+actualizado_en: 2026-09-30T09:05:00-05:00
+necesita_aprobacion: baja
 ---
 
 # BALANCE-UNIFICADO-01 — Balance mes = suma de semanas, una sola función, `semana` nunca `null`
