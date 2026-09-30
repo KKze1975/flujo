@@ -1,7 +1,7 @@
 ---
 ticket_id: APORTES-SEMANALES-01A
 orden: 45
-estado: propuesto
+estado: completado
 tier: A
 agente_ejecucion: claude-code
 dependencias: BALANCE-UNIFICADO-01

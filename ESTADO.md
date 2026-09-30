@@ -8180,3 +8180,33 @@ despachado en Opus por la sesión Chief of Staff).**
 - Backlog top 3: 1) [Producto] APORTES-SEMANALES-01 — Arquitecto: tickets de construcción; 2) [Operación] BALANCE-CIERRES-H5-01 — decisión de Camilo sobre `total_comprometido` del plan; 3) [Operación] línea de ideas: INDICE desactualizado (IDEAS-SCHEMA-01 aprobado vs IDEAS-CAPTURA-01 completado)
 - Bloqueados esperando a Camilo: etnografía con Ángela María; decisión A/B/C de SEC-EXPOSICION-PUBLICA-01
 - Próximo paso: despachar el Arquitecto de Flujo sobre specs/APORTES-SEMANALES-01.md + brief §7
+
+## APORTES-SEMANALES-01A en producción (30 sept 2026, Chief of Staff, vault)
+
+**Tipo de sesión:** DEBUGGING (cerrado sin bug) → CONSTRUCCIÓN.
+
+- **DEBUGGING:** Camilo no veía cambios en M1 Planeación Desktop. Deploy correcto (`06cec8c`); el bloque de aportes del emprendimiento nunca se había construido — APORTES-SEMANALES-01 seguía en fase Arquitecto.
+- **Arquitecto:** 4 tickets seriales 01A–01D (`4f1386e`). Dato en pestaña nueva **H11**, no en H4 (rangos legacy e incidente previo de spillover).
+- **01A:** Coder `c9ebc0a`; Tester CUMPLE-PARCIAL `47e26e1` con revisión visual real en el preview (datos sintéticos en DEV); corrección `9768a5f`: B1 (semana repetida → 400) y H11 nunca se crea en runtime (I-10), error claro en el banner de M1 si falta.
+- QA de Angie aprobado (I-17). H11 creada en PROD por Camilo (`setup-h11-prod.mjs --apply`), verificada en solo lectura. PR #50 → dev (`b6cf586`), PR #51 → main (`ed1aac2`). Deploy READY; bloque "Aportes emprendimiento" visible en `/mes/2026-10` (verificado en Chrome, sin escribir).
+
+**Consumo (todo Sonnet):** Arquitecto 168K; Coder 177K; Tester 135K; corrección 99K. Total ~580K.
+
+**Retrospectiva (Fase 4):**
+1. **Qué funcionó:** diagnóstico antes que cambio (tres lecturas descartaron el deploy); cadena Arquitecto → Coder → Tester → corrección → QA → producción en una tarde; el Tester aplicó la lección previa (datos sintéticos antes de la revisión visual); la revisión detectó que la app podía crear estructura en PROD sola.
+2. **Qué no funcionó:** el cierre de BALANCE-UNIFICADO-01 reportó "en producción" sin decir que el bloque que Camilo necesitaba seguía sin construir — lo descubrió al ir a usarlo. La corrección no tuvo re-Tester (solo QA de Camilo/Angie).
+3. **Qué cambia en la próxima sesión:** al cerrar un ticket habilitador, el reporte dice explícitamente qué de lo pedido por Camilo **todavía no está disponible** y cuándo llegaría.
+4. **Invariantes:** ninguno nuevo. La creación runtime de estructura en PROD ya la cubre I-10; el punto 3 es comportamiento → memoria.
+
+**Estado accionable:**
+- Unidad: ticket
+- En curso: ninguno
+- Backlog priorizado (top 3 de 7 abiertos):
+  1. [Producto] APORTES-SEMANALES-01B — registrar en Ejecución el aporte cuando llega (chip, modal, disponible NU)
+  2. [Producto] APORTES-SEMANALES-01C — recuadro del emprendimiento en la vista semanal (`agente_ejecucion: antigravity`, Camilo decide si pasa a claude-code)
+  3. [Operación] BALANCE-CIERRES-H5-01 — cierres H5 con comprometido canónico
+- Reactivo/incidentes: ninguno
+- Seguridad: sin pendientes nuevos; SEC-EXPOSICION-PUBLICA-01 en revisión 2 oct
+- FinOps/Costo: sin cambio (Vercel/Sheets)
+- Bloqueados esperando a Camilo: AporteCard de Inicio (3ª barra o solo total, para 01D); agente de 01C; etnografía con Ángela María; A/B/C de SEC-EXPOSICION-PUBLICA-01
+- Próximo paso: despachar el Coder de APORTES-SEMANALES-01B
