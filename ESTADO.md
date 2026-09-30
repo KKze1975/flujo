@@ -8130,3 +8130,8 @@ despachado en Opus por la sesión Chief of Staff).**
 - En curso: [Operación] BALANCE-UNIFICADO-01 — construido, Tester CUMPLE_PARCIAL, HALT por D1
 - Bloqueados esperando a Camilo: D1; aprobación del fix en PROD; D3; etnografía con Ángela María; `SEC-EXPOSICION-PUBLICA-01` A/B/C
 - Próximo paso: decisión de Camilo sobre D1, luego cierre del ticket y Arquitecto de `APORTES-SEMANALES-01`
+
+**D1 resuelta por Camilo (30 sept 2026):** la definición canónica de "comprometido" (excluye `pospuesto`, `no_aplica`, `pospuesto_mes_siguiente`) se aplica en TODAS las vistas. Coder (Sonnet, commit `08f977e`) migró Ejecución por semana en `MesM1Desktop`, `MesM1Mobile` y `m1/VistaPlanificacion` a `balanceMes`; Tester aparte: **CUMPLE** (tsc limpio, 58/58 sintético, `--prod-readonly` 63/63). Fix de las 2 filas de julio aplicado en PROD por Camilo (escritas=2, S1 leída de vuelta); 2026-06 a 2026-10 cuadran con `sinSemana=0`.
+- Cambian números visibles: Ejecución por semana baja donde hay pospuestos/no_aplica (ej. 2026-06 S4: 2.945.996 a 1.669.996); Mobile "Presupuestado" baja (2026-06 21.980.111 a 20.199.111; 2026-07 20.567.207 a 19.295.207 antes del fix; 2026-09 21.460.207 a 20.840.207; 2026-10 22.815.846 a 22.113.846).
+- Abierto: superficies con fórmula propia que contradicen a las tres vistas (`VistaSemanal.tsx` ~l.1054, `MesM1.tsx` l.161, `app/page.tsx` l.24, `app/meses/page.tsx` l.27/72; `ConceptoBoard` riesgo bajo); pickers de semana sin verificar en navegador; D3 (400 en `iniciar`); PR #47 sin merge (I-11/I-17).
+- Consumo D1: Coder Sonnet 151.902 tokens; Tester Sonnet 117.572.

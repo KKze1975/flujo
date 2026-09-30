@@ -5,9 +5,9 @@ estado: activo
 tier: A
 agente_ejecucion: claude-code
 dependencias: ninguna
-rol_activo: coder
-paso_actual: "Construcción D1 terminada, pendiente de Tester"
-actualizado_en: 2026-09-30T09:42:18-05:00
+rol_activo: tester
+paso_actual: "Tester D1: verificación terminada, reporte entregado"
+actualizado_en: 2026-09-30T09:44:39-05:00
 necesita_aprobacion: no
 ---
 
@@ -53,7 +53,7 @@ Sheet, rediseño visual, migrar `sinSemana` en DEV.
 
 - [ ] `lib/utils/balanceMes.ts` existe; `MesM1Desktop.tsx` deja de calcular ingreso/comprometido del mes con fórmula propia: el mes se obtiene sumando las semanas devueltas por esa función (grep pegado: no queda otro `reduce` de comprometido/ingreso del mes).
 - [ ] Script de prueba (`scripts/verificar-balance-cuadre.ts`, patrón `verificar-ciclo-semanas.ts`, salida pegada) con fixtures sintéticos: cuadre `mes - Σsemanas = 0` para ingresos y comprometido en los casos: mes con S5, mes sin S5, movimientos `pospuesto`/`no_aplica`/`pospuesto_mes_siguiente`, aportes en semanas no consecutivas, ingreso Camilo 0; y un caso con `semana` vacía que hace FALLAR el cuadre (`sinSemana > 0`) — el fallo esperado se demuestra.
-- [ ] Mismo script corrido en **solo lectura contra PROD** (Sheet ID desde `PROD_GOOGLE_SHEET_ID`, scope readonly, protocolo `sheet-safety`): para cada mes, cuadre = 0 y `sinSemana = 0` **después** de la corrección aprobada; antes de ella, reporta exactamente las 2 filas nulas conocidas.
+- [x] (verificado 30 sept 2026: fix aplicado por Camilo, escritas=2, semana=S1 leída de vuelta; `--prod-readonly` 63/63, 2026-06 a 2026-10 cuadran con sinSemana=0 y fueraDeMes=0, corrida por Chief of Staff y por el Tester) Mismo script corrido en **solo lectura contra PROD** (Sheet ID desde `PROD_GOOGLE_SHEET_ID`, scope readonly, protocolo `sheet-safety`): para cada mes, cuadre = 0 y `sinSemana = 0` **después** de la corrección aprobada; antes de ella, reporta exactamente las 2 filas nulas conocidas.
 - [ ] `PATCH …/movimientos/[id]` `tipo: mover_mes_siguiente` sin `semana` → **400** (respuesta HTTP pegada); con semana válida del mes destino → 200 y la fila nueva en H2 (DEV) trae la semana enviada, leída de vuelta. Igual para cada otro camino inventariado (tabla camino → respuesta 400 pegada).
 - [ ] Ningún llamador del cliente envía `mover_mes_siguiente` sin semana (grep pegado); el flujo de `VistaSemanal`/`MesM1Mobile` abre picker de semana del mes siguiente.
 - [ ] Script de corrección única `scripts/fix-semana-vacia-h2.mjs`: dry-run por defecto, `--apply` explícito, target declarado (DEV|PROD), muestra el contenido actual de cada fila antes de tocarla, lee de vuelta tras escribir. Dry-run contra PROD pegado; `--apply` sobre PROD NO ejecutado sin aprobación de Camilo.
