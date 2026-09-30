@@ -8073,3 +8073,35 @@ despachado en Opus por la sesión Chief of Staff).**
 - Consumo: Spec Writer en Opus, 3 pasadas (136.270 / 160.776 / 166.778 subagent_tokens
   reportados por pasada).
 - Siguiente: Diseñador/Integrador (bloque propio + selector), luego Arquitecto y ticket.
+
+**Diseño aprobado + cierre de sesión (29 sept 2026).**
+- Diseño: en vez de Antigravity/Stitch, mock con `/impeccable` sobre el sistema visual real
+  (`design-handoff/APORTES-SEMANALES-01-mock.html`). Decisiones de Camilo: los dos recuadros
+  juntos en la vista semanal para ambos actores (antes el de Angie era solo `actor === "angie"`);
+  línea "+ Emprendimiento" visible en saldo NU Camilo; recuadro de Angie sin cambios.
+  **"Diseño aprobado"**, 29 sept. Detalle en el brief §7.
+
+**Retrospectiva (Fase 4):**
+1. **Qué funcionó:** Fase 0→1→2→diseño en una sola sesión sin mezclar tecnología antes de tiempo;
+   las preguntas abiertas del Spec Writer llegaron a Camilo en vez de decidirse solas; leer el
+   código antes del mock hizo aparecer la regla `actor === "angie"` y un tercer botón sin semana.
+2. **Qué no funcionó:** sin navegador en Linux para ver el mock renderizado (se validó con el
+   detector y la revisión de Camilo); el detector marcó contraste bajo en colores que la app ya usa.
+3. **Qué cambia en la próxima sesión:** el Arquitecto debe incluir el chip móvil "Mes siguiente"
+   y el cambio de visibilidad del recuadro de Angie, que no estaban en el spec original.
+4. **Candidato a invariante:** ninguno nuevo.
+
+**Deuda técnica:** contraste de `--ink-faint` y `--pos` en textos pequeños (heredado; sin ticket).
+
+**Estado accionable:**
+- Unidad: ticket
+- En curso: [Producto] APORTES-SEMANALES-01 — aportes del emprendimiento por semana — spec y diseño aprobados, falta Arquitecto
+- Backlog priorizado (top 3 de 4 abiertos):
+  1. [Producto] APORTES-SEMANALES-01 — Arquitecto: tickets de construcción
+  2. [Operación] `check-ticket.mjs` — bug de parseo con `dependencias: [X]` (revisión 2026-09-30)
+  3. [Operación] Balance mes vs. semana — unificar fórmula y `semana = null` (parcialmente cubierto por el spec)
+- Reactivo/incidentes: ninguno
+- Seguridad: `SEC-EXPOSICION-PUBLICA-01` sigue esperando la opción A/B/C de Camilo
+- FinOps/Costo: sin gasto nuevo; subagentes: Spec Writer Opus (136K/161K/167K por pasada), Diseñador Sonnet (109K)
+- Bloqueados esperando a Camilo: etnografía con Ángela María; decisión A/B/C de `SEC-EXPOSICION-PUBLICA-01`; crear lugar nuevo en la hoja de PROD (antes del merge)
+- Próximo paso: despachar el Arquitecto de Flujo sobre `specs/APORTES-SEMANALES-01.md` + brief §7

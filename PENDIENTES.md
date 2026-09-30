@@ -23,6 +23,7 @@
 | Flujo | [Vault] bug check-ticket.mjs: parseo con `dependencias: [X]` | pendiente | 2026-09-30 | bug no reaparece | no verificado aún | ESTADO.md, sesión 19 sept — error en parseo de arrays en campo; categorizado como reactivo/incidentes |
 | Flujo | [Vault] Balance: movimientos con `semana=null` entran al total del mes y a ninguna semana | pendiente | 2026-10-05 | mes = suma de semanas | no hay casos en octubre | ESTADO.md, sesión DEBUGGING #2 28 sept — mismo origen de doble fórmula que el bug de CDT |
 | Flujo | [Vault] Fase -1/0: módulo flujo de caja para Ángela María | en curso | 2026-09-30 | etnografía as-is completada | en espera | ESTADO.md, sesión 19 sept — nueva línea, integrada en Flujo; próximo paso: etnografía directa de Camilo con Ángela María (confirmado pivote de Consultorio) |
+| Flujo | [Vault] APORTES-SEMANALES-01 — Arquitecto y tickets de construcción | en curso | 2026-10-01 | tickets creados contra spec + brief §7 | spec y diseño aprobados 29 sept | ESTADO.md, sesión 29 sept — `specs/APORTES-SEMANALES-01.md`, `design-handoff/APORTES-SEMANALES-01-brief.md` |
 
 ## Cerradas
 

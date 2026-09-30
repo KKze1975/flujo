@@ -5,7 +5,7 @@ documento es el brief para Antigravity/Stitch. La integración (paso 2) ocurre c
 trae de vuelta el HTML/diseño. Hoy no hay HTML: este brief es el insumo, no la aprobación.
 Spec de origen (aprobado 29 sept 2026): `specs/APORTES-SEMANALES-01.md`, §2.5.
 
-**Estado: variante A elegida por Camilo (29 sept 2026). Brief listo para Antigravity/Stitch.** Las
+**Estado: DISEÑO APROBADO por Camilo (29 sept 2026) — ver sección 7 y el mock.** Las
 demás piezas están definidas. Ningún ticket de construcción abre contra la vista semanal hasta
 que Camilo apruebe el diseño generado (regla T21).
 
@@ -142,3 +142,22 @@ bloques de aportes; (2) "Balance mes" y "Por semana" con `E:`; (3) barra de ejec
 botones; (4) `VistaSemanal` con recuadro de Angie intacto + bloque del emprendimiento en las
 tres variantes A/B/C, con estado de semana en $0; (5) modal de posponer y chip móvil con el
 selector de semana del mes siguiente en sus estados. Solo tokens/clases de la sección 1.
+
+## 7. Mock con /impeccable y decisiones de Camilo (29 sept 2026)
+
+En lugar de Antigravity/Stitch, el diseño se definió con `/impeccable` sobre el sistema visual
+real: `design-handoff/APORTES-SEMANALES-01-mock.html` (usa `app/globals.css`; lo nuevo con
+borde punteado). Decisiones de Camilo sobre el mock ("los dos recuadros para ambos, sí a la
+línea, sin la A"):
+
+1. **Vista semanal:** el recuadro de Angie y el del emprendimiento se muestran juntos, para
+   ambos actores (Camilo y Angie). Cambio frente a hoy: el recuadro de Angie deja de ser solo
+   `actor === "angie"`; su contenido no cambia.
+2. **Saldo NU Camilo (ejecución):** línea visible "+ Emprendimiento (S1–Sx)" con el monto que
+   suma al disponible.
+3. **Recuadro de Angie:** sin distintivo "A" nuevo; queda exactamente como hoy.
+
+Distintivo del emprendimiento: `.fl-badge.primary`-style "E" y chip `E:` en `--primary`
+(propuesta del brief, sin objeción de Camilo).
+
+**Diseño aprobado por Camilo, 29 sept 2026: "diseño aprobado".** Siguiente: Arquitecto (tickets).
