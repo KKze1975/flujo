@@ -8278,3 +8278,32 @@ Principio: la S5 de septiembre deja de existir; sus movimientos reemplazan (no d
 - Backlog top 3: 1) [Producto] APORTES-SEMANALES-01B; 2) [Operación] BALANCE-CIERRES-H5-01; 3) [Operación] DT-CICLO-OPERATIVO-UNIFICADO-01
 - Bloqueados esperando a Camilo: terminar carga manual de oct S1; luego QA de Angie (I-17) y PR dev -> main; etnografía con Ángela María; SEC-EXPOSICION-PUBLICA-01 A/B/C
 - Próximo paso: Camilo confirma carga manual; QA Angie; PR; deploy
+
+
+## Cierre de sesión — Chief of Staff (vault), 1 oct 2026
+
+**Tipo de sesión:** CONSTRUCCIÓN de decisiones cerradas por Camilo (un tramo de DEBUGGING sin bug real). Manager de Flujo despachado en Sonnet; Coder y Tester aparte.
+
+**Qué cambió:** regla del viernes en rama `feat/semanas-viernes-01` (ver las dos entradas anteriores de SEMANAS-VIERNES-01). Desde 2026-09 el viernes decide el mes de la semana; sep 4 semanas, oct 5, nov 4, dic 4; agosto conserva su S5. La migración (cambio de celdas y luego conciliación) se descartó: Camilo ingresa a mano los movimientos del 28 al 30 sep en oct S1. Lectura de solo lectura de lo registrado el 28-30 sep entregada a Camilo. Camilo registró aportes del emprendimiento por M1 Planeación (01A).
+
+**Decisiones y razón:** corte de la regla en 2026-09 (un cambio global dejaba huérfanas las filas de agosto S5); migración descartada (11 filas, la conciliación costó ~607K tokens y dejaba ambigüedades que Camilo resuelve a mano); deploy solo después de la carga manual (si no, sep no cuadra). Camilo indicó que el aporte del emprendimiento va solo en Planeación: pendiente su confirmación para descartar 01B y reajustar 01C/01D (no se tocó spec ni backlog).
+
+**Deuda técnica nueva:** UI de etiquetas de rango y días restantes sin verificar en navegador; `--prod-readonly` del cuadre sin ejecutar; `HomeHub.diasRestantes` cuenta hasta el domingo también en S4/S5. Rama con "ahead 2" de origin pese a que los Managers reportaron no haber hecho push: verificar quién la empujó.
+
+**Consumo (Sonnet explícito):** Coder regla 145.364; Tester regla 143.443; Coder conciliación 173.416; Re-Tester 145.025; Tester tras descarte 87.324; Manager (entrega 1) 212.381; Manager (conciliación, acumulado) 250.748; Manager (solo regla) 99.268; lectura 28-30 sep 107.300 (el agente auto-reportó ~45K; vale la notificación).
+
+**Retrospectiva (Fase 4):**
+1. Qué funcionó: HALT del Manager antes de PROD, ambigüedades devueltas en vez de decididas; lectura de solo lectura dio a Camilo una lista accionable.
+2. Qué no funcionó: se construyó la conciliación antes de preguntar lo que solo Camilo sabía (depósito único o doble, mesadas, H3); el Chief of Staff mencionó 01B sin que se pidiera y dio una inferencia como hecho.
+3. Qué cambia: antes de construir una migración de PROD, contar las filas; si son pocas, proponer primero la carga manual. Tomar tokens de la notificación, no del auto-reporte.
+4. Invariante: ninguno nuevo.
+
+**Estado accionable:**
+- Unidad: ticket
+- En curso: [Operación] SEMANAS-VIERNES-01 — solo regla, construida y verificada; bloqueado hasta la carga manual de Camilo
+- Backlog top 3: 1) [Producto] APORTES-SEMANALES-01B/C/D — a la espera de la decisión "aporte solo en Planeación"; 2) [Operación] BALANCE-CIERRES-H5-01; 3) [Operación] I-22 `check-ticket.mjs`
+- Reactivo/incidentes: ninguno
+- Seguridad: SEC-EXPOSICION-PUBLICA-01 A/B/C sigue esperando a Camilo (revisión 2 oct)
+- FinOps/Costo: sin gasto de infraestructura nuevo; subagentes Sonnet ~1,15M tokens en total (Coder/Tester/lectura 801.872 + Managers 349.016, sin doble contar la primera entrega)
+- Bloqueados esperando a Camilo: terminar carga manual de oct S1; confirmar aporte solo en Planeación (01B/01C/01D); etnografía con Ángela María; SEC-EXPOSICION-PUBLICA-01 A/B/C
+- Próximo paso: Camilo confirma la carga manual; QA de Angie; PR dev -> main; deploy
