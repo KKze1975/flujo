@@ -20,14 +20,20 @@ VIERNES**; S1, S2, S3... = primer, segundo, tercer viernes del mes. La cantidad 
 cantidad de viernes del mes (4 o 5). Ejemplo: lun 28 sep - dom 4 oct tiene su viernes el 2 oct, es la
 **S1 de octubre 2026**.
 
-Alcance acordado con Camilo (1 oct 2026), SOLO la semana de transición:
+Alcance FINAL (decisión de Camilo, 1 oct 2026): SOLO la regla del viernes.
 1. Regla nueva en la función única (`lib/utils/fecha.ts`, I-21). **No se reclasifica el historial
    anterior**: la regla nueva rige desde el mes `2026-09` (corte `MES_CORTE_VIERNES = "2026-09"`);
    meses <= `2026-08` conservan la regla vieja (agosto sigue con S5 = 31 ago, y sus filas).
-2. Migración única en PROD, con dry-run por defecto: lo que está en **2026-09 S5 pasa a 2026-10 S1**
-   (cambian `mes` y `semana`) en H2, H3, H4B (IngresoAngie) y H5B (PlanSemana). Los movimientos del 28-30
-   sep quedan en la S1 de octubre.
-3. Unificar las copias divergentes del cálculo semana/fecha (ver inventario) sobre `fecha.ts`.
+2. Unificar las copias divergentes del cálculo semana/fecha (ver inventario) sobre `fecha.ts`, incluidos
+   los fixes de `startsWith(mes)` en `semanaFromFecha` y `fix-semana-vacia-h2.mjs`.
+3. **MIGRACIÓN DESCARTADA** por decisión de Camilo (1 oct 2026): no hay script de migración ni
+   conciliación. Camilo ingresa a mano en octubre S1 los movimientos del 28-30 sep. Los archivos
+   `migrar-semana-transicion-viernes.mjs`, `lib/conciliacion-viernes.mjs` y `simular-conciliacion-viernes.ts`
+   se eliminaron con un commit nuevo (la historia previa los conserva).
+
+**RIESGO EXPLÍCITO:** al regir la regla nueva, las filas de 2026-09 S5 (8 H2, 1 H3, 1 H4B, 1 H5B) quedan
+fuera de las semanas de septiembre (mes != suma de semanas) hasta que Camilo las reingrese o retire a mano
+en octubre S1. Por eso el DEPLOY a PROD debe ir DESPUÉS de que Camilo confirme que terminó la carga manual.
 
 NO cubre: reescribir cierres H5A (ninguno existe para 2026-09 S5 ni 2026-10 S1; el último es
 2026-09 S4), reclasificar meses <= 2026-08, el prompt de IA de `/api/registro/interpretar`
@@ -59,18 +65,18 @@ NO cubre: reescribir cierres H5A (ninguno existe para 2026-09 S5 ni 2026-10 S1; 
       nov 2026 = 4 (30 nov -> dic S1); dic 2026 = 4 (28 dic-3 ene -> 2027-01 S1); ago 2026 = 5 (legacy).
 - [ ] Ninguna copia divergente queda: `grep` de `29–`, `d <= 7`, `endDay`, `fechaDefaultSemana` local = 0.
 - [ ] `tsc --noEmit` limpio; `verificar-balance-cuadre.ts` sigue verde.
-- [ ] Script `scripts/migrar-semana-transicion-viernes.mjs`: dry-run por defecto, `--apply` en PROD exige
-      `--confirmo-prod`, solo celdas mes/semana, relectura previa y lectura de vuelta, aborta si cambió la fila.
-- [ ] (HALT, Camilo) migración aplicada en PROD y leída de vuelta; cuadre `--prod-readonly` 2026-09 y 2026-10.
-- [ ] (HALT, Camilo/Angie) merge a main por PR (I-11/I-17); la migración se aplica ANTES o junto al deploy,
-      porque `semanasDeMes("2026-09")` pasa a 4 semanas y las filas S5 quedarían fuera del mes.
+- [ ] Sin referencias a los scripts de migración eliminados (fuera de la historia en ESTADO.md).
+- [ ] (HALT, Camilo) Camilo confirma que terminó la carga manual de octubre S1 ANTES del deploy a PROD.
+- [ ] (HALT, Camilo/Angie) QA de Angie (I-17) y merge por PR dev -> main (I-11); deploy después de la carga manual.
 
 ## Contexto / diagnóstico previo
-Diagnóstico PROD solo lectura, 1 oct 2026 (ver ESTADO.md): 11 filas a migrar (H2 8, H3 1, H4B 1, H5B 1).
-Preguntas abiertas para Camilo en la entrada de ESTADO.md del 1 oct 2026.
+Diagnóstico PROD solo lectura, 1 oct 2026 (ver ESTADO.md): 11 filas en 2026-09 S5 (H2 8, H3 1, H4B 1, H5B 1)
+que Camilo gestiona a mano (migración descartada).
 
 ## Commit de cierre
 (vacío hasta completar)
 
 ## Notas de ejecución
 1 oct 2026: la migración pasó de 'cambiar celdas mes/semana' a CONCILIACION (decision de Camilo: sep S5 reemplaza, no duplica, a oct S1; H5B de sep S5 se retira). Commits 3a5f2e5, 78b0296, 739e21b, 7b59240. Coder Sonnet 145.364 + 173.416; Tester Sonnet 143.443 + re-Tester. HALT: aprobacion de la tabla fila a fila y decisiones H4B (oct|sep), filas S2 330/335 (revertir|retirar), pago unico de mesadas, consumo H3 posible duplicado. Detalle en ESTADO.md.
+
+1 oct 2026 (final): migración/conciliación DESCARTADA por decisión de Camilo (carga manual en oct S1). Eliminados los 3 archivos de migración (commit 60e10cd). La rama queda solo con la regla del viernes. Deploy a PROD después de la carga manual.

@@ -8265,3 +8265,16 @@ Principio: la S5 de septiembre deja de existir; sus movimientos reemplazan (no d
 - Backlog top 3: 1) [Producto] APORTES-SEMANALES-01B; 2) [Operación] BALANCE-CIERRES-H5-01; 3) [Operación] DT-CICLO-OPERATIVO-UNIFICADO-01 (parcialmente absorbido)
 - Bloqueados esperando a Camilo: aprobar tabla de conciliación y decidir H4B, filas 330/335, pago único de mesadas y consumo H3 duplicado; etnografía con Ángela María; SEC-EXPOSICION-PUBLICA-01 A/B/C
 - Próximo paso: Camilo aprueba; luego `--apply --confirmo-prod --h4b <x> --h2-ejecutadas-s2 <y>` y PR (QA de Angie, I-17)
+
+
+## Sesión CONSTRUCCIÓN acotada — SEMANAS-VIERNES-01, alcance final (1 oct 2026, Manager de Flujo)
+
+**Tipo de sesión:** CONSTRUCCIÓN acotada de decisión cerrada. **Decisión de Camilo:** se DESCARTA la migración/conciliación; Camilo ingresa a mano los movimientos del 28-30 sep en octubre S1. La rama `feat/semanas-viernes-01` queda SOLO con la regla del viernes (`fecha.ts`, helpers, 12 copias unificadas, fixes de `startsWith(mes)`). Eliminados `scripts/migrar-semana-transicion-viernes.mjs`, `scripts/lib/conciliacion-viernes.mjs` y `scripts/simular-conciliacion-viernes.ts` (commit `60e10cd`, historia intacta; respaldo en `flujo-backups-migracion/` no se tocó). Las entradas anteriores de esta bitácora sobre migración/conciliación quedan como historia superseded.
+- **Riesgo:** con la regla nueva, las filas de 2026-09 S5 (8 H2, 1 H3, 1 H4B, 1 H5B) quedan fuera de las semanas de septiembre hasta que Camilo las reingrese/retire a mano; el DEPLOY a PROD va DESPUÉS de que Camilo confirme que terminó la carga manual.
+
+**Estado accionable:**
+- Unidad: ticket
+- En curso: [Operación] SEMANAS-VIERNES-01 — solo regla, construida; HALT: sin push/PR/merge/PROD
+- Backlog top 3: 1) [Producto] APORTES-SEMANALES-01B; 2) [Operación] BALANCE-CIERRES-H5-01; 3) [Operación] DT-CICLO-OPERATIVO-UNIFICADO-01
+- Bloqueados esperando a Camilo: terminar carga manual de oct S1; luego QA de Angie (I-17) y PR dev -> main; etnografía con Ángela María; SEC-EXPOSICION-PUBLICA-01 A/B/C
+- Próximo paso: Camilo confirma carga manual; QA Angie; PR; deploy
