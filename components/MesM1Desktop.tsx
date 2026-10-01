@@ -14,7 +14,7 @@ import ModalConfirmarSaldos from "@/components/m1/ModalConfirmarSaldos";
 import ModalCerrarSemana from "@/components/m1/ModalCerrarSemana";
 import ModalAporteAngie from "@/components/m1/ModalAporteAngie";
 import { ingresosPlaneadosDe } from "@/lib/utils/ingresosPlaneados";
-import { semanasDeMes, semanaDeFechaEnMes } from "@/lib/utils/fecha";
+import { semanasDeMes, semanaDeFechaEnMes, etiquetaRangoSemana, semanaDeHoyEnMes } from "@/lib/utils/fecha";
 import { remanenteEncadenadoPorSemana } from "@/lib/utils/balanceSemanal";
 import { calcularBalanceMes } from "@/lib/utils/balanceMes";
 
@@ -38,7 +38,6 @@ function semanaFromFecha(fecha: string | null, mes: string): Semana | null {
   return semanaDeFechaEnMes(new Date(fecha + "T12:00:00"));
 }
 
-const MESES_ES = ["","ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
 const MESES_FULL = ["","Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const MESES_ES_MAP: Record<string, string> = {
   "01":"enero","02":"febrero","03":"marzo","04":"abril","05":"mayo","06":"junio",
@@ -46,15 +45,10 @@ const MESES_ES_MAP: Record<string, string> = {
 };
 
 function semanaDates(mes: string): Record<Semana, string> {
-  const [year, monthStr] = mes.split("-");
-  const month = Number(monthStr);
-  const last = new Date(Number(year), month, 0).getDate();
-  const m = MESES_ES[month];
-  return {
-    S1: `1–7 ${m}`, S2: `8–14 ${m}`, S3: `15–21 ${m}`, S4: `22–28 ${m}`,
-    // SEMANA5-01: solo se muestra cuando el mes tiene 29+ dias.
-    S5: `29–${last} ${m}`,
-  };
+  // I-21: rangos desde lib/utils/fecha.ts (viernes desde 2026-09, lunes antes).
+  const out = { S1: "", S2: "", S3: "", S4: "", S5: "" } as Record<Semana, string>;
+  for (const s of semanasDeMes(mes)) out[s] = etiquetaRangoSemana(mes, s);
+  return out;
 }
 
 function mesLabel(mes: string): string {
@@ -63,15 +57,7 @@ function mesLabel(mes: string): string {
 }
 
 function getActiveSemana(mes: string): Semana {
-  const today = new Date();
-  const [year, monthStr] = mes.split("-");
-  if (today.getFullYear() !== Number(year) || today.getMonth() + 1 !== Number(monthStr)) return "S1";
-  const d = today.getDate();
-  if (d <= 7) return "S1";
-  if (d <= 14) return "S2";
-  if (d <= 21) return "S3";
-  if (d <= 28) return "S4";
-  return "S5";
+  return semanaDeHoyEnMes(mes);
 }
 
 const CATEGORIAS_ORDER: Categoria[] = [

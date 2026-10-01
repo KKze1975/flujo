@@ -3,12 +3,11 @@
 import { useState, useMemo, useEffect } from "react";
 import type { Movimiento, Semana, Actor, Categoria } from "@/lib/data/types";
 import Icon from "@/components/ui/Icon";
-import { semanasDeMes, mesSiguienteDe } from "@/lib/utils/fecha";
+import { semanasDeMes, mesSiguienteDe, etiquetaRangoSemana, semanaDeHoyEnMes } from "@/lib/utils/fecha";
 import { comprometidoDe } from "@/lib/utils/balanceMes";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const MESES_ES = ["","ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
 
 const CAT_ICON: Record<string, string> = {
   "Casa": "home", "Servicios Públicos": "bolt",
@@ -50,26 +49,14 @@ function copFull(n: number): string {
 }
 
 function semanaDates(mes: string): Record<Semana, string> {
-  const [year, monthStr] = mes.split("-");
-  const month = Number(monthStr);
-  const last = new Date(Number(year), month, 0).getDate();
-  const m = MESES_ES[month];
-  return {
-    S1: `1–7 ${m}`, S2: `8–14 ${m}`, S3: `15–21 ${m}`, S4: `22–28 ${m}`,
-    S5: `29–${last} ${m}`,
-  };
+  // I-21: rangos desde lib/utils/fecha.ts (viernes desde 2026-09, lunes antes).
+  const out = { S1: "", S2: "", S3: "", S4: "", S5: "" } as Record<Semana, string>;
+  for (const s of semanasDeMes(mes)) out[s] = etiquetaRangoSemana(mes, s);
+  return out;
 }
 
 function getActiveSemana(mes: string): Semana {
-  const today = new Date();
-  const [year, monthStr] = mes.split("-");
-  if (today.getFullYear() !== Number(year) || today.getMonth() + 1 !== Number(monthStr)) return "S1";
-  const d = today.getDate();
-  if (d <= 7) return "S1";
-  if (d <= 14) return "S2";
-  if (d <= 21) return "S3";
-  if (d <= 28) return "S4";
-  return "S5";
+  return semanaDeHoyEnMes(mes);
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
