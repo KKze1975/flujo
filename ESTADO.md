@@ -8208,5 +8208,5 @@ despachado en Opus por la sesión Chief of Staff).**
 - Reactivo/incidentes: ninguno
 - Seguridad: sin pendientes nuevos; SEC-EXPOSICION-PUBLICA-01 en revisión 2 oct
 - FinOps/Costo: sin cambio (Vercel/Sheets)
-- Bloqueados esperando a Camilo: AporteCard de Inicio (3ª barra o solo total, para 01D); agente de 01C; etnografía con Ángela María; A/B/C de SEC-EXPOSICION-PUBLICA-01
+- Bloqueados esperando a Camilo: decidir el AporteCard de Inicio (3ª barra o solo total, para 01D); decidir el agente de 01C; hacer la etnografía con Ángela María; decidir A/B/C de SEC-EXPOSICION-PUBLICA-01
 - Próximo paso: despachar el Coder de APORTES-SEMANALES-01B
