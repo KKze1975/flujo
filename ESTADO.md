@@ -8247,3 +8247,21 @@ despachado en Opus por la sesión Chief of Staff).**
 - Backlog top 3: 1) [Producto] APORTES-SEMANALES-01B; 2) [Operación] BALANCE-CIERRES-H5-01; 3) [Operación] DT-CICLO-OPERATIVO-UNIFICADO-01 (parcialmente absorbido)
 - Bloqueados esperando a Camilo: decisiones 1 a 6 de SEMANAS-VIERNES-01; etnografía con Ángela María; SEC-EXPOSICION-PUBLICA-01 A/B/C
 - Próximo paso: Camilo responde 1 a 6; luego migración PROD (`--apply --confirmo-prod --h4b separado`) y PR
+
+
+**Actualización SEMANAS-VIERNES-01 (1 oct 2026): migración rediseñada como CONCILIACIÓN, por decisión de Camilo.**
+Principio: la S5 de septiembre deja de existir; sus movimientos reemplazan (no duplican) a los de 2026-10 S1; si la fila de sep S5 trae ejecución, prevalece. Saldo inicial de oct ya descuenta los gastos del 29 sep (sin ajuste). H5B de sep S5 se retira. Corte confirmado: regla nueva desde 2026-09.
+- Construido (commit `7b59240`, rama `feat/semanas-viernes-01`): `scripts/lib/conciliacion-viernes.mjs` (decisión pura), `scripts/migrar-semana-transicion-viernes.mjs` (conciliación fila a fila; `--apply` PROD exige `--confirmo-prod`, `--h4b oct|sep` y `--h2-ejecutadas-s2 revertir|retirar`; backup JSON verificado fuera del repo en `/home/camilovillamil/flujo-backups-migracion/` antes de escribir; actualiza antes de borrar; lectura de vuelta; código != 0 si hay omitidas), `scripts/simular-conciliacion-viernes.ts`; fix de `startsWith(mes)` en `MesM1Desktop.semanaFromFecha` y `fix-semana-vacia-h2.mjs`. `diasRestantes` de HomeHub no se tocó (cambio de semántica ya aceptado).
+- Re-Tester aparte: CUMPLE_PARCIAL. Recálculo independiente OK: sep 19.730.211 y oct 21.613.846 (sin subir 1.109.996), mes = Σ semanas, fueraDeMes 0, un solo `id_concepto` por semana en oct S1, ninguna ejecución contada dos veces (ejecutado baja 589.996 = 369.996 de 3 R duplicadas + 220.000 de las dos S2 si se revierten). Prueba `--apply` solo en DEV con datos sintéticos (limpiados). PROD: solo dry-run de lectura.
+- Tabla de conciliación (PROD, dry-run): H2 fila 257 Mesada Emma, 262 Mesada Lucas, 267 Mireyita (ejecutadas en ambas: sobrevive la de oct S1, se retira la de sep); 273 Chucherías, 292 Frutas, 297 Víveres, 306 Imprevistos (pendientes en ambas: sobrevive oct); 282 Entretenimiento (pendiente vs no_aplica de oct: sobrevive no_aplica, verificar). Ambiguas: 330 y 335 (oct S2 ejecutadas el 30 sep). H3 fila 210: reubicar. H4B fila 23 (2.000.000) vs fila 24 (1.570.000): `oct` deja 1.570.000, `sep` deja 2.000.000. H5B fila 9: retirar. H5A: 0.
+- Decisiones pendientes de Camilo: (1) H4B `oct` o `sep`; si fueron dos depósitos reales, ninguna opción sirve y hay que añadir "conservar ambas"; (2) filas 330/335: `revertir` (vuelven a pendiente, plan de S2 intacto) o `retirar` (-220.000 de comprometido); (3) confirmar que Emma/Lucas/Mireyita fue un solo pago real; (4) el consumo H3 "Compras papel higiénico y varios" (60.000, 30 sep) puede ser el mismo gasto que "Papel higiénico y otra compras" (60.000, 1 oct): el script no deduplica H3.
+- Huecos menores sin corregir (PROD hoy no los ejercita): la fusión (a) pierde `id_recarga_origen`, `pendiente_aprobacion` y `razon_postergacion` sin avisar; reubicar (e) puede dejar una S2 ejecutada sin detectar hasta una segunda pasada; con 2+ ingresos H4B y `--h4b sep` el último pisa; el backup no incluye H4A ni H4C; el apply hace ~36 lecturas (límite 60/min).
+- Consumo: Coder (conciliación) Sonnet 173.416; Re-Tester Sonnet: ver reporte del Chief of Staff (no medido al cierre). Acumulado del ticket: Coder 318.780, Tester 143.443 + re-Tester.
+- **HALT vigente:** sin escritura en PROD, merge ni push; no se prepara el `--apply` hasta que Camilo apruebe la tabla y responda 1 a 4.
+
+**Estado accionable:**
+- Unidad: ticket
+- En curso: [Operación] SEMANAS-VIERNES-01 — conciliación construida y probada, HALT por aprobación de la tabla y decisiones 1 a 4
+- Backlog top 3: 1) [Producto] APORTES-SEMANALES-01B; 2) [Operación] BALANCE-CIERRES-H5-01; 3) [Operación] DT-CICLO-OPERATIVO-UNIFICADO-01 (parcialmente absorbido)
+- Bloqueados esperando a Camilo: aprobar tabla de conciliación y decidir H4B, filas 330/335, pago único de mesadas y consumo H3 duplicado; etnografía con Ángela María; SEC-EXPOSICION-PUBLICA-01 A/B/C
+- Próximo paso: Camilo aprueba; luego `--apply --confirmo-prod --h4b <x> --h2-ejecutadas-s2 <y>` y PR (QA de Angie, I-17)

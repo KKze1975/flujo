@@ -73,4 +73,4 @@ Preguntas abiertas para Camilo en la entrada de ESTADO.md del 1 oct 2026.
 (vacío hasta completar)
 
 ## Notas de ejecución
-(vacío)
+1 oct 2026: la migración pasó de 'cambiar celdas mes/semana' a CONCILIACION (decision de Camilo: sep S5 reemplaza, no duplica, a oct S1; H5B de sep S5 se retira). Commits 3a5f2e5, 78b0296, 739e21b, 7b59240. Coder Sonnet 145.364 + 173.416; Tester Sonnet 143.443 + re-Tester. HALT: aprobacion de la tabla fila a fila y decisiones H4B (oct|sep), filas S2 330/335 (revertir|retirar), pago unico de mesadas, consumo H3 posible duplicado. Detalle en ESTADO.md.
