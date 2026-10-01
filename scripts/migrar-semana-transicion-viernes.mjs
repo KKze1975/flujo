@@ -1,36 +1,40 @@
-// Migración única — SEMANAS-VIERNES-01: la semana de transición 28-sep..4-oct-2026
-// pasa de (2026-09, S5) a (2026-10, S1) por la regla del viernes.
+// SEMANAS-VIERNES-01 — CONCILIACIÓN de la semana de transición 28-sep..4-oct-2026.
 //
-// Uso (Node >= 22.6; mismo patrón que fix-semana-vacia-h2.mjs):
-//   node scripts/migrar-semana-transicion-viernes.mjs --target DEV|PROD                       # dry-run (default, solo lectura)
-//   node scripts/migrar-semana-transicion-viernes.mjs --target DEV --apply --h4b separado
-//   node scripts/migrar-semana-transicion-viernes.mjs --target PROD --apply --h4b separado --confirmo-prod
+// Decisión de Camilo (1 oct 2026): la S5 de septiembre deja de existir; sus movimientos se CONCILIAN con la
+// planeación/ejecución de octubre S1. REEMPLAZAN, no duplican: por concepto queda UNA fila en 2026-10 S1 con el
+// estado real; si la fila de sep S5 trae ejecución, esa ejecución prevalece sobre la planeada de octubre.
+// El saldo inicial de octubre ya descuenta los gastos del 29-sep (no se ajusta saldo). La lógica de decisión vive
+// en scripts/lib/conciliacion-viernes.mjs (compartida con scripts/simular-conciliacion-viernes.ts).
 //
-// - `--target` obligatorio (sin default). DEV = GOOGLE_SHEET_ID, PROD = PROD_GOOGLE_SHEET_ID (.env.local).
-//   Los Sheet IDs nunca se imprimen ni se escriben aquí (I-04/I-08).
-// - Dry-run por defecto: scope spreadsheets.readonly. `--apply` abre scope de escritura;
-//   sobre PROD exige además `--confirmo-prod` (y aprobación explícita de Camilo).
-// - Migra SOLO filas con mes==="2026-09" && semana==="S5" -> mes "2026-10", semana "S1" en:
-//   H2 (A:Y), H3 (A:Q), H4B IngresoAngie (H4!I:N), H5B PlanSemana (H5B!A:I).
-// - Escribe SOLO las 2 celdas mes y semana (values.batchUpdate, RAW). Por fila: muestra el
-//   contenido ACTUAL, re-lee justo antes de escribir (aborta la fila si cambió id o mes/semana),
-//   y lee de vuelta para verificar.
-// - NO toca H5A (tab H5, CierreSemana): la CUENTA (filas con (2026-09,S5) o (2026-10,S1)); si
-//   hay >0, --apply aborta sin escribir nada.
-// - `--h4b separado` es obligatorio para --apply: mueve la fila H4B tal cual y deja las dos
-//   filas de ingreso Angie en la misma semana. Cualquier otro valor aborta ("decisión de Camilo pendiente").
-// - Los conflictos (ids duplicados en 2026-10 S1, dos ingresos Angie, fechas del 28-sep..4-oct
-//   fuera de 2026-10 S1) solo se INFORMAN para decisión de Camilo; el script no actúa sobre ellos.
-// - Idempotente: tras aplicar, un dry-run da 0 candidatas.
+// Uso (Node >= 22.6):
+//   node scripts/migrar-semana-transicion-viernes.mjs --target DEV|PROD                  # dry-run (default, solo lectura)
+//   node scripts/migrar-semana-transicion-viernes.mjs --target DEV --apply --h4b oct|sep [--h2-ejecutadas-s2 revertir|retirar]
+//   node scripts/migrar-semana-transicion-viernes.mjs --target PROD --apply ... --confirmo-prod
+//
+// - `--target` obligatorio. DEV = GOOGLE_SHEET_ID, PROD = PROD_GOOGLE_SHEET_ID (.env.local). Nunca se imprime el Sheet ID.
+// - Dry-run por defecto (scope readonly): imprime la TABLA fila a fila de H2, la sección AMBIGUO, H3, H4B y H5B.
+// - --apply (scope escritura; PROD exige además --confirmo-prod y aprobación explícita de Camilo):
+//     * --h4b oct|sep obligatorio si hay ingreso Angie de sep S5; --h2-ejecutadas-s2 revertir|retirar obligatorio si
+//       hay filas ambiguas. Aborta si queda cualquier DECISIÓN sin resolver o si H5A (CierreSemana) tiene filas con
+//       (2026-09,S5) o (2026-10,S1) (este script no toca H5A).
+//     * Antes de CUALQUIER escritura: backup JSON en /home/camilovillamil/flujo-backups-migracion/ (fuera del repo),
+//       con encabezados y las filas afectadas más H2 completo; se lee de vuelta y se verifica.
+//     * Actualiza primero (fusiones, reubicaciones, reversiones; values.batchUpdate RAW) y borra después, de MAYOR a
+//       MENOR número de fila, re-resolviendo cada fila por id justo antes (no por número guardado). H2/H3/H5B:
+//       deleteDimension de la fila; H4B (bloque I:N de la pestaña H4): deleteRange con shift de filas SOLO en I:N,
+//       para no arrastrar los bloques H4A/H4C vecinos.
+//     * Lee de vuelta y compara el estado final de las 4 tablas contra lo esperado; sale != 0 si algo quedó omitido
+//       o la verificación falla. Idempotente: tras aplicar, el dry-run da 0 acciones.
 
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { createRequire } from "node:module";
+import {
+  MES_ORIGEN, SEM_ORIGEN, MES_DESTINO, SEM_DESTINO,
+  planificar, aplicarOps, normalizarTabla, imprimirPlan, describirOp, norm,
+} from "./lib/conciliacion-viernes.mjs";
 
 const require = createRequire(import.meta.url);
 const { google } = require("googleapis");
-
-const MES_ORIGEN = "2026-09", SEM_ORIGEN = "S5";
-const MES_DESTINO = "2026-10", SEM_DESTINO = "S1";
 
 const args = process.argv.slice(2);
 const flagVal = (n) => { const i = args.indexOf(n); return i >= 0 ? args[i + 1] : undefined; };
@@ -38,6 +42,7 @@ const target = flagVal("--target");
 const apply = args.includes("--apply");
 const confirmoProd = args.includes("--confirmo-prod");
 const h4bOpcion = flagVal("--h4b");
+const h2S2Opcion = flagVal("--h2-ejecutadas-s2");
 
 if (target !== "DEV" && target !== "PROD") {
   console.error("Falta --target DEV|PROD (obligatorio, sin default).");
@@ -47,8 +52,12 @@ if (apply && target === "PROD" && !confirmoProd) {
   console.error("Escritura sobre PROD requiere --confirmo-prod (y aprobación explícita de Camilo).");
   process.exit(2);
 }
-if (apply && h4bOpcion !== "separado") {
-  console.error("decisión de Camilo pendiente: --apply exige --h4b separado (única opción implementada: mueve la fila H4B tal cual y deja las dos filas en la semana).");
+if (h4bOpcion !== undefined && h4bOpcion !== "oct" && h4bOpcion !== "sep") {
+  console.error("--h4b solo acepta 'oct' o 'sep'.");
+  process.exit(2);
+}
+if (h2S2Opcion !== undefined && h2S2Opcion !== "revertir" && h2S2Opcion !== "retirar") {
+  console.error("--h2-ejecutadas-s2 solo acepta 'revertir' o 'retirar'.");
   process.exit(2);
 }
 
@@ -75,179 +84,221 @@ const auth = new google.auth.JWT({
 });
 const sheets = google.sheets({ version: "v4", auth });
 
-// Letra de columna (A..Z, AA..) a partir de un índice 0-based absoluto de la hoja.
 const colLetra = (idx) => {
   let n = idx + 1, s = "";
   while (n > 0) { const r = (n - 1) % 26; s = String.fromCharCode(65 + r) + s; n = Math.floor((n - 1) / 26); }
   return s;
 };
 
-// tab: nombre de hoja. range: rango de lectura. offset: índice absoluto de la primera columna del rango
-// (H4B empieza en I => 8: la letra de columna = columna I + índice, NO columna A + índice).
-const TABS = [
-  { clave: "H2", tab: "H2", range: "H2!A:Y", offset: 0 },
-  { clave: "H3", tab: "H3", range: "H3!A:Q", offset: 0 },
-  { clave: "H4B", tab: "H4", range: "H4!I:N", offset: 8 },
-  { clave: "H5B", tab: "H5B", range: "H5B!A:I", offset: 0 },
-];
+// offset: índice absoluto de la primera columna del rango (H4B empieza en I => 8).
+const TABS = {
+  H2: { tab: "H2", range: "H2!A:Y", offset: 0 },
+  H3: { tab: "H3", range: "H3!A:Q", offset: 0 },
+  H4B: { tab: "H4", range: "H4!I:N", offset: 8, anchoBloque: 6 },
+  H5B: { tab: "H5B", range: "H5B!A:I", offset: 0 },
+};
 
 async function leer(range) {
   const res = await sheets.spreadsheets.values.get({ spreadsheetId, range });
   return res.data.values ?? [];
 }
-
-const norm = (v) => (v ?? "").toString().trim();
+async function leerTablas() {
+  const t = {};
+  for (const [k, spec] of Object.entries(TABS)) t[k] = await leer(spec.range);
+  return t;
+}
+async function contarH5A() {
+  const h5 = await leer("H5!A:P");
+  if (h5.length === 0) return 0;
+  const iM = h5[0].indexOf("mes"), iS = h5[0].indexOf("semana");
+  if (iM === -1 || iS === -1) throw new Error("H5 sin columnas mes/semana");
+  return h5.slice(1).filter((r) => {
+    const m = norm(r[iM]), s = norm(r[iS]);
+    return (m === MES_ORIGEN && s === SEM_ORIGEN) || (m === MES_DESTINO && s === SEM_DESTINO);
+  }).length;
+}
+const conteos = (t) => {
+  const datos = (rows) => (rows ?? []).slice(1).filter((r) => norm(r[0])).length;
+  const h2 = (t.H2 ?? []);
+  const iM = h2[0]?.indexOf("mes") ?? -1, iS = h2[0]?.indexOf("semana") ?? -1;
+  const cuenta = (m, s) => h2.slice(1).filter((r) => norm(r[0]) && norm(r[iM]) === m && norm(r[iS]) === s).length;
+  return {
+    H2: datos(t.H2), H3: datos(t.H3), H4B: datos(t.H4B), H5B: datos(t.H5B),
+    "H2 sep S5": cuenta(MES_ORIGEN, SEM_ORIGEN), "H2 oct S1": cuenta(MES_DESTINO, SEM_DESTINO),
+  };
+};
 
 console.log(`Target: ${target}`);
 console.log(`Modo: ${apply ? "APPLY (escribe)" : "DRY-RUN (solo lectura)"}`);
-console.log(`Migración: (${MES_ORIGEN}, ${SEM_ORIGEN}) -> (${MES_DESTINO}, ${SEM_DESTINO}) — solo celdas mes y semana`);
+console.log(`Conciliación: (${MES_ORIGEN}, ${SEM_ORIGEN}) -> (${MES_DESTINO}, ${SEM_DESTINO}) — la S5 de septiembre deja de existir`);
 
-// ── H5A (tab H5): solo contar ─────────────────────────────────────────────
-let h5aCount = 0;
-let h5aError = null;
-try {
-  const h5 = await leer("H5!A:P");
-  if (h5.length > 0) {
-    const iM = h5[0].indexOf("mes"), iS = h5[0].indexOf("semana");
-    if (iM === -1 || iS === -1) throw new Error("H5 sin columnas mes/semana");
-    h5aCount = h5.slice(1).filter((r) => {
-      const m = norm(r[iM]), s = norm(r[iS]);
-      return (m === MES_ORIGEN && s === SEM_ORIGEN) || (m === MES_DESTINO && s === SEM_DESTINO);
-    }).length;
-  }
-} catch (e) {
-  h5aError = e instanceof Error ? e.message : String(e);
-}
+let h5aCount = 0, h5aError = null;
+try { h5aCount = await contarH5A(); } catch (e) { h5aError = e instanceof Error ? e.message : String(e); }
 console.log(`\nH5A (CierreSemana, tab H5) con (${MES_ORIGEN},${SEM_ORIGEN}) o (${MES_DESTINO},${SEM_DESTINO}): ${h5aError ? `NO SE PUDO LEER (${h5aError})` : h5aCount}`);
 
-// ── Candidatas por tab ────────────────────────────────────────────────────
-const datos = {}; // clave -> { spec, rows, headers, iId, iMes, iSemana, candidatas }
-for (const spec of TABS) {
-  const rows = await leer(spec.range);
-  if (rows.length === 0) {
-    console.log(`\n[${spec.clave}] sin datos.`);
-    datos[spec.clave] = { spec, rows, headers: [], candidatas: [] };
-    continue;
-  }
-  const headers = rows[0];
-  const iId = 0;
-  const iMes = headers.indexOf("mes");
-  const iSemana = headers.indexOf("semana");
-  if (iMes === -1 || iSemana === -1) {
-    console.error(`[${spec.clave}] no tiene columnas mes/semana en el encabezado. Aborta.`);
-    process.exit(1);
-  }
-  const candidatas = [];
-  rows.slice(1).forEach((r, i) => {
-    if (norm(r[iId]) && norm(r[iMes]) === MES_ORIGEN && norm(r[iSemana]) === SEM_ORIGEN) {
-      candidatas.push({ fila: i + 2, r });
-    }
-  });
-  datos[spec.clave] = { spec, rows, headers, iId, iMes, iSemana, candidatas };
-  console.log(`\n[${spec.clave}] (${spec.tab}, rango ${spec.range}) candidatas: ${candidatas.length}`);
-  for (const { fila, r } of candidatas) {
-    const actual = Object.fromEntries(headers.map((h, i) => [h, r[i] ?? ""]).filter(([, v]) => v !== ""));
-    console.log(`--- ${r[iId]} | tab ${spec.tab} | fila ${fila} | celdas ${spec.tab}!${colLetra(spec.offset + iMes)}${fila} (mes), ${spec.tab}!${colLetra(spec.offset + iSemana)}${fila} (semana) — contenido ACTUAL ---`);
-    console.log(JSON.stringify(actual));
-  }
+const tablasPre = await leerTablas();
+for (const [k, rows] of Object.entries(tablasPre)) {
+  const h = rows[0] ?? [];
+  if (!h.includes("mes") || !h.includes("semana")) { console.error(`[${k}] sin columnas mes/semana. Aborta.`); process.exit(1); }
 }
+const opts = { h2S2: h2S2Opcion, h4b: h4bOpcion };
+const plan = planificar(tablasPre, opts);
+imprimirPlan(plan);
 
-// ── Conflictos para decisión de Camilo (solo informar) ────────────────────
-console.log("\n=== Conflictos para decisión de Camilo (solo informativo, el script no actúa) ===");
-{
-  const d = datos.H2;
-  if (d.headers.length) {
-    const h = d.headers;
-    const g = (r, n) => norm(r[h.indexOf(n)]);
-    const resumen = (fila, r) => `fila ${fila} id=${g(r, "id_movimiento")} ${g(r, "mes")}/${g(r, "semana")} estado=${g(r, "estado")} presup=${g(r, "monto_presupuestado")} ejec=${g(r, "monto_ejecutado")} fecha_ejecucion=${g(r, "fecha_ejecucion")}`;
-    const destinoRows = d.rows.slice(1).map((r, i) => ({ fila: i + 2, r }))
-      .filter(({ r }) => norm(r[d.iId]) && g(r, "mes") === MES_DESTINO && g(r, "semana") === SEM_DESTINO);
-    let a = 0;
-    for (const c of d.candidatas) {
-      const idc = g(c.r, "id_concepto");
-      if (!idc) continue;
-      for (const o of destinoRows.filter(({ r }) => g(r, "id_concepto") === idc)) {
-        a++;
-        console.log(`(a) id_concepto=${idc} duplicaría en ${MES_DESTINO} ${SEM_DESTINO}:\n      candidata: ${resumen(c.fila, c.r)}\n      existente: ${resumen(o.fila, o.r)}`);
-      }
-    }
-    if (a === 0) console.log("(a) H2: ninguna candidata coincide en id_concepto con filas ya existentes en 2026-10 S1.");
-
-    const iF = h.indexOf("fecha_ejecucion");
-    const candSet = new Set(d.candidatas.map((c) => c.fila));
-    let c3 = 0;
-    d.rows.slice(1).forEach((r, i) => {
-      const fila = i + 2, f = norm(r[iF]);
-      if (candSet.has(fila) || !f || f < "2026-09-28" || f > "2026-10-04") return;
-      if (g(r, "mes") === MES_DESTINO && g(r, "semana") === SEM_DESTINO) return;
-      c3++;
-      console.log(`(c) H2 NO candidata con fecha en 28-sep..4-oct fuera de 2026-10 S1: ${resumen(fila, r)}`);
-    });
-    if (c3 === 0) console.log("(c) H2: ninguna fila no candidata con fecha_ejecucion 2026-09-28..2026-10-04 fuera de 2026-10 S1.");
-  }
+const antes = conteos(tablasPre);
+console.log(`\nResumen acciones: H2=${plan.filasH2.length} ambiguas=${plan.ambiguos.length} H3=${plan.filasH3.length} H4B=${plan.h4b.candidatas.length} H5B=${plan.filasH5B.length} total=${plan.totalAcciones} | H5A=${h5aError ? "ERROR" : h5aCount}`);
+if (plan.pendientes.length) {
+  console.log("Pendientes de decisión (bloquean --apply):");
+  for (const p of plan.pendientes) console.log(`  - ${p}`);
 }
-{
-  const d = datos.H4B;
-  if (d.headers.length) {
-    const h = d.headers;
-    const g = (r, n) => norm(r[h.indexOf(n)]);
-    const existentes = d.rows.slice(1).map((r, i) => ({ fila: i + 2, r }))
-      .filter(({ r }) => norm(r[d.iId]) && g(r, "mes") === MES_DESTINO && g(r, "semana") === SEM_DESTINO);
-    if (d.candidatas.length > 0 && existentes.length > 0) {
-      for (const c of d.candidatas) {
-        console.log(`(b) H4B: ya hay ingreso Angie en ${MES_DESTINO} ${SEM_DESTINO}; quedarían dos filas en la semana:`);
-        console.log(`      candidata: fila ${c.fila} id=${g(c.r, "id_ingreso")} monto=${g(c.r, "monto")} fecha=${g(c.r, "fecha")}`);
-        for (const o of existentes) console.log(`      existente: fila ${o.fila} id=${g(o.r, "id_ingreso")} monto=${g(o.r, "monto")} fecha=${g(o.r, "fecha")}`);
-      }
-    } else {
-      console.log("(b) H4B: sin conflicto (no hay ingreso Angie previo en 2026-10 S1 o no hay candidata).");
-    }
-  }
-}
-
-const totalCand = Object.values(datos).reduce((n, d) => n + d.candidatas.length, 0);
-console.log(`\nResumen candidatas: ${TABS.map((t) => `${t.clave}=${datos[t.clave].candidatas.length}`).join(" ")} total=${totalCand} | H5A=${h5aError ? "ERROR" : h5aCount}`);
 
 if (!apply) {
-  console.log(`Resumen: modo=dry-run target=${target} (no se escribió nada)`);
+  console.log(`\nResumen: modo=dry-run target=${target} (no se escribió nada)`);
   process.exit(0);
 }
 
 // ── APPLY ─────────────────────────────────────────────────────────────────
+if (plan.totalAcciones === 0) {
+  console.log("\n0 acciones: nada que aplicar (idempotente).");
+  process.exit(0);
+}
 if (h5aError || h5aCount > 0) {
   console.error(`\nABORTA --apply: ${h5aError ? "no se pudo contar H5A" : `H5A tiene ${h5aCount} fila(s) con (${MES_ORIGEN},${SEM_ORIGEN}) o (${MES_DESTINO},${SEM_DESTINO})`}. Este script no toca cierres; reportar a Camilo.`);
   process.exit(1);
 }
+if (plan.h4b.candidatas.length > 0 && !h4bOpcion) {
+  console.error("ABORTA --apply: falta --h4b oct|sep (decisión de Camilo).");
+  process.exit(2);
+}
+if (plan.pendientes.length) {
+  console.error(`ABORTA --apply: ${plan.pendientes.length} decisión(es) sin resolver (ver arriba). No se escribe nada.`);
+  process.exit(2);
+}
 
-let escritas = 0, omitidas = 0;
-for (const spec of TABS) {
-  const d = datos[spec.clave];
-  for (const { fila, r } of d.candidatas) {
-    const id = r[d.iId];
-    const fresca = await leer(spec.range);
-    const f = fresca[fila - 1];
-    if (!f || f[d.iId] !== id || norm(f[d.iMes]) !== MES_ORIGEN || norm(f[d.iSemana]) !== SEM_ORIGEN) {
-      console.error(`ABORTA fila ${spec.clave} ${id} (fila ${fila}): cambió desde la lectura inicial (id o mes/semana distintos). No se escribe.`);
-      omitidas++;
-      continue;
+// 1) Backup fuera del repo, leído de vuelta.
+const dirBackup = "/home/camilovillamil/flujo-backups-migracion";
+if (!existsSync(dirBackup)) mkdirSync(dirBackup, { recursive: true });
+const marca = new Date().toISOString().replace(/[:.]/g, "-");
+const archivoBackup = `${dirBackup}/${target}-${marca}.json`;
+const idsAfectados = { H2: new Set(), H3: new Set(), H4B: new Set(), H5B: new Set() };
+for (const o of plan.ops) idsAfectados[o.tab].add(o.id);
+for (const f of plan.filasH2) { idsAfectados.H2.add(f.idR); if (f.T) String(f.T.id).split("+").forEach((i) => idsAfectados.H2.add(i)); }
+for (const a of plan.ambiguos) { idsAfectados.H2.add(a.id); a.s1.forEach((s) => idsAfectados.H2.add(s.id)); }
+for (const c of plan.h4b.candidatas) idsAfectados.H4B.add(c.id);
+for (const d of plan.h4b.destino) idsAfectados.H4B.add(d.id);
+const afectadas = {};
+for (const k of Object.keys(TABS)) {
+  afectadas[k] = tablasPre[k].map((r, i) => ({ fila: i + 1, id: norm(r[0]), row: r }))
+    .filter((x, i) => i > 0 && idsAfectados[k].has(x.id));
+}
+const backup = {
+  target, generado: new Date().toISOString(), opciones: opts,
+  headers: Object.fromEntries(Object.keys(TABS).map((k) => [k, tablasPre[k][0]])),
+  afectadas, H2_completo: tablasPre.H2,
+};
+writeFileSync(archivoBackup, JSON.stringify(backup, null, 2));
+{
+  const leido = JSON.parse(readFileSync(archivoBackup, "utf-8"));
+  let ok = true;
+  for (const k of Object.keys(TABS)) {
+    for (const x of afectadas[k]) {
+      const y = leido.afectadas?.[k]?.find((z) => z.id === x.id && JSON.stringify(z.row) === JSON.stringify(x.row));
+      if (!y) { ok = false; console.error(`Backup: falta ${k} ${x.id}`); }
     }
-    await sheets.spreadsheets.values.batchUpdate({
-      spreadsheetId,
-      requestBody: {
-        valueInputOption: "RAW",
-        data: [
-          { range: `${spec.tab}!${colLetra(spec.offset + d.iMes)}${fila}`, values: [[MES_DESTINO]] },
-          { range: `${spec.tab}!${colLetra(spec.offset + d.iSemana)}${fila}`, values: [[SEM_DESTINO]] },
-        ],
-      },
-    });
-    const despues = (await leer(spec.range))[fila - 1];
-    console.log(`ESCRITA ${spec.clave} ${id} fila ${fila}. Lectura de vuelta: id=${despues?.[d.iId]} mes=${despues?.[d.iMes]} semana=${despues?.[d.iSemana]}`);
-    if (!despues || despues[d.iId] !== id || norm(despues[d.iMes]) !== MES_DESTINO || norm(despues[d.iSemana]) !== SEM_DESTINO) {
-      console.error("VERIFICACIÓN FALLÓ: la lectura de vuelta no coincide.");
-      process.exit(1);
-    }
-    escritas++;
+    if (JSON.stringify(leido.headers?.[k]) !== JSON.stringify(tablasPre[k][0])) { ok = false; console.error(`Backup: encabezado ${k} no coincide`); }
+  }
+  if (JSON.stringify(leido.H2_completo) !== JSON.stringify(tablasPre.H2)) { ok = false; console.error("Backup: H2 completo no coincide"); }
+  if (!ok) { console.error("ABORTA: el backup no se pudo verificar. No se escribió nada."); process.exit(1); }
+  const n = Object.values(afectadas).reduce((a, v) => a + v.length, 0);
+  console.log(`\nBACKUP creado y verificado: ${archivoBackup} (${n} filas afectadas + H2 completo ${leido.H2_completo.length - 1} filas)`);
+}
+
+// 2) Ejecución.
+const meta = await sheets.spreadsheets.get({ spreadsheetId, fields: "sheets.properties(sheetId,title)" });
+const gid = (tab) => {
+  const s = meta.data.sheets.find((x) => x.properties.title === tab);
+  if (!s) throw new Error(`Pestaña ${tab} no encontrada`);
+  return s.properties.sheetId;
+};
+
+async function resolver(clave, id, esperado) {
+  const spec = TABS[clave];
+  const rows = await leer(spec.range);
+  const headers = rows[0];
+  const idxs = rows.map((r, i) => (i > 0 && norm(r[0]) === id ? i : -1)).filter((i) => i > 0);
+  if (idxs.length !== 1) throw new Error(`${clave} ${id}: ${idxs.length} filas con ese id`);
+  const i = idxs[0];
+  for (const [c, v] of Object.entries(esperado ?? {})) {
+    const actual = norm(rows[i][headers.indexOf(c)]);
+    if (actual !== v) throw new Error(`${clave} ${id} (fila ${i + 1}): ${c} esperado "${v}" y es "${actual}" (cambió desde la lectura inicial)`);
+  }
+  return { fila: i + 1, headers, row: rows[i], spec };
+}
+
+let hechas = 0, omitidas = 0;
+async function ejecutarUpdate(o) {
+  const { fila, headers, row, spec } = await resolver(o.tab, o.id, o.esperado);
+  const data = [], cambios = [];
+  for (const [c, v] of Object.entries(o.set)) {
+    const j = headers.indexOf(c);
+    if (j === -1) throw new Error(`${o.tab}: columna ${c} inexistente`);
+    cambios.push(`${c}: "${norm(row[j])}" -> "${v}"`);
+    data.push({ range: `${spec.tab}!${colLetra(spec.offset + j)}${fila}`, values: [[v]] });
+  }
+  await sheets.spreadsheets.values.batchUpdate({ spreadsheetId, requestBody: { valueInputOption: "RAW", data } });
+  const despues = (await leer(spec.range))[fila - 1];
+  for (const [c, v] of Object.entries(o.set)) {
+    if (norm(despues?.[headers.indexOf(c)]) !== norm(v) || norm(despues?.[0]) !== o.id) throw new Error(`VERIFICACIÓN FALLÓ ${o.tab} ${o.id} col ${c}`);
+  }
+  console.log(`ACTUALIZADA ${o.tab} fila ${fila} id ${o.id}: ${cambios.join("; ")}`);
+  hechas++;
+}
+async function ejecutarDelete(o) {
+  const { fila, row, spec } = await resolver(o.tab, o.id, o.esperado);
+  console.log(`BORRADO ${o.tab} fila ${fila} id ${o.id}: ${JSON.stringify(row)}`);
+  const sheetId = gid(spec.tab);
+  const request = o.tab === "H4B"
+    ? { deleteRange: { range: { sheetId, startRowIndex: fila - 1, endRowIndex: fila, startColumnIndex: spec.offset, endColumnIndex: spec.offset + spec.anchoBloque }, shiftDimension: "ROWS" } }
+    : { deleteDimension: { range: { sheetId, dimension: "ROWS", startIndex: fila - 1, endIndex: fila } } };
+  await sheets.spreadsheets.batchUpdate({ spreadsheetId, requestBody: { requests: [request] } });
+  const rows = await leer(spec.range);
+  if (rows.some((r, i) => i > 0 && norm(r[0]) === o.id)) throw new Error(`VERIFICACIÓN FALLÓ: ${o.tab} ${o.id} sigue presente tras el borrado`);
+  hechas++;
+}
+
+try {
+  for (const o of plan.ops.filter((x) => x.tipo === "update")) await ejecutarUpdate(o);
+  for (const clave of Object.keys(TABS)) {
+    const dels = plan.ops.filter((x) => x.tipo === "delete" && x.tab === clave);
+    if (dels.length === 0) continue;
+    // De MAYOR a MENOR fila actual; cada una se re-resuelve por id justo antes de borrar.
+    const filaDe = new Map(tablasPre[clave].map((r, i) => [norm(r[0]), i + 1]));
+    dels.sort((a, b) => (filaDe.get(b.id) ?? 0) - (filaDe.get(a.id) ?? 0));
+    for (const o of dels) await ejecutarDelete(o);
+  }
+} catch (e) {
+  omitidas = plan.ops.length - hechas;
+  console.error(`\nERROR durante la aplicación: ${e instanceof Error ? e.message : String(e)}`);
+  console.error(`Operaciones hechas=${hechas} omitidas=${omitidas}. Backup en ${archivoBackup}. Revisar antes de reintentar.`);
+  process.exit(1);
+}
+
+// 3) Lectura de vuelta y verificación fila por fila del estado final.
+const tablasPost = await leerTablas();
+const esperadas = aplicarOps(tablasPre, plan.ops);
+let difs = 0;
+for (const k of Object.keys(TABS)) {
+  const a = normalizarTabla(esperadas[k]), b = normalizarTabla(tablasPost[k]);
+  if (a.length !== b.length) { difs++; console.error(`VERIFICACIÓN ${k}: filas esperadas=${a.length - 1} reales=${b.length - 1}`); }
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    if (JSON.stringify(a[i]) !== JSON.stringify(b[i])) { difs++; console.error(`VERIFICACIÓN ${k} fila ${i + 1}: esperado ${JSON.stringify(a[i])} real ${JSON.stringify(b[i])}`); if (difs > 20) break; }
   }
 }
-console.log(`\nResumen: candidatas=${totalCand} escritas=${escritas} omitidas=${omitidas} modo=apply target=${target}`);
+const despues = conteos(tablasPost);
+console.log("\nRecuento por tab (antes -> después):");
+for (const k of Object.keys(antes)) console.log(`  ${k}: ${antes[k]} -> ${despues[k]}`);
+const replan = planificar(tablasPost, opts);
+console.log(`Re-plan sobre el estado final: ${replan.totalAcciones} acciones (esperado 0).`);
+if (replan.totalAcciones !== 0) difs++;
+console.log(`\nResumen: operaciones=${plan.ops.length} hechas=${hechas} omitidas=${omitidas} diferencias_verificacion=${difs} modo=apply target=${target} backup=${archivoBackup}`);
+if (omitidas > 0 || difs > 0) process.exit(1);

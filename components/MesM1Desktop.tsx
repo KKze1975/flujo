@@ -14,7 +14,7 @@ import ModalConfirmarSaldos from "@/components/m1/ModalConfirmarSaldos";
 import ModalCerrarSemana from "@/components/m1/ModalCerrarSemana";
 import ModalAporteAngie from "@/components/m1/ModalAporteAngie";
 import { ingresosPlaneadosDe } from "@/lib/utils/ingresosPlaneados";
-import { semanasDeMes, semanaDeFechaEnMes, etiquetaRangoSemana, semanaDeHoyEnMes } from "@/lib/utils/fecha";
+import { semanasDeMes, semanaDeFechaEnMes, mesDeFecha, etiquetaRangoSemana, semanaDeHoyEnMes } from "@/lib/utils/fecha";
 import { remanenteEncadenadoPorSemana } from "@/lib/utils/balanceSemanal";
 import { calcularBalanceMes } from "@/lib/utils/balanceMes";
 
@@ -34,8 +34,10 @@ const COP = (n: number, opts?: { compact?: boolean }): string => {
 };
 
 function semanaFromFecha(fecha: string | null, mes: string): Semana | null {
-  if (!fecha || !fecha.startsWith(mes)) return null;
-  return semanaDeFechaEnMes(new Date(fecha + "T12:00:00"));
+  if (!fecha) return null;
+  const d = new Date(fecha + "T12:00:00");
+  if (mesDeFecha(d) !== mes) return null; // SEMANAS-VIERNES-01: el mes lo define el viernes, no el prefijo de la fecha
+  return semanaDeFechaEnMes(d);
 }
 
 const MESES_FULL = ["","Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
