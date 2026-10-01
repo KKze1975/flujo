@@ -8210,3 +8210,40 @@ despachado en Opus por la sesión Chief of Staff).**
 - FinOps/Costo: sin cambio (Vercel/Sheets)
 - Bloqueados esperando a Camilo: decidir el AporteCard de Inicio (3ª barra o solo total, para 01D); decidir el agente de 01C; hacer la etnografía con Ángela María; decidir A/B/C de SEC-EXPOSICION-PUBLICA-01
 - Próximo paso: despachar el Coder de APORTES-SEMANALES-01B
+
+
+## Sesión CONSTRUCCIÓN — SEMANAS-VIERNES-01 (1 oct 2026, Manager de Flujo despachado por Chief of Staff, vault)
+
+**Tipo de sesión:** CONSTRUCCIÓN de una decisión de diseño cerrada por Camilo (1 oct 2026), con HALT antes de PROD, merge y H5.
+
+**Decisión de Camilo:** semana lunes-domingo; el mes de la semana es el mes de su viernes; S1, S2... = primer, segundo... viernes; semanas del mes = viernes del mes. Alcance acordado: SOLO la semana de transición (28 sep-4 oct 2026); no se reclasifica el historial; los movimientos del 28-30 sep y lo que estaba en 2026-09 S5 pasan a 2026-10 S1 (cambian `mes` y `semana`).
+
+**Diagnóstico (solo lectura, PROD):**
+- Superficies: núcleo `lib/utils/fecha.ts` (11 funciones); 14 consumidores de servidor; 9 de cliente; 12 copias divergentes con días fijos 1-7/8-14/... (I-21); 3 scripts. Inventario completo en `tickets/SEMANAS-VIERNES-01.md`.
+- Hallazgo clave: la regla vieja y la nueva solo difieren en las semanas puente (29-30 jun, 31 ago, 28 sep-4 oct, y a futuro 30 nov, 28 dic). Un cambio global dejaría huérfanas las filas históricas de agosto S5 (8 H2, 4 H3, 1 H5B), por eso la regla nueva rige desde 2026-09 (`MES_CORTE_VIERNES`) y los meses anteriores conservan la vieja.
+- Filas a migrar (2026-09 S5 -> 2026-10 S1): H2 8 (filas 257, 262, 267, 273, 282, 292, 297, 306), H3 1 (fila 210), H4B 1 (fila 23, 2.000.000), H5B 1 (fila 9). H5A: 0 (no hay cierre de 2026-09 S5 ni de 2026-10 S1; el último es 2026-09 S4). Total 11.
+- Semanas por mes con la regla nueva: sep 2026 = 4, oct = 5, nov = 4 (30 nov va a dic S1), dic = 4 (28 dic va a 2027-01 S1).
+
+**Construido** (rama `feat/semanas-viernes-01`, sin push ni merge): regla en `fecha.ts` + helpers `rangoSemana`, `etiquetaRangoSemana`, `fechaDefaultSemana`, `semanaDeHoyEnMes`, `diasHastaFinSemana` (`3a5f2e5`); 12 copias divergentes unificadas (`78b0296`); `scripts/migrar-semana-transicion-viernes.mjs`, dry-run por defecto, `--apply` en PROD exige `--confirmo-prod` y `--h4b separado` (`739e21b`). Tester aparte: regla CUMPLE (2559 fechas 2026-09..2028-12 y 1821 fechas legacy, 0 discrepancias), tsc limpio, 389/389 y 140/140; script CUMPLE_PARCIAL (el clasificador bloqueó su dry-run PROD; verificado por lectura y por simulación sobre el snapshot). Dry-run PROD del Coder: H2=8 H3=1 H4B=1 H5B=1 H5A=0.
+- Simulación con datos reales: sin migrar, 2026-09 falla el cuadre (8 filas S5 fuera de semanas, 1.109.996); migrando, 2026-09 queda 19.730.211 (mes = Σ semanas) y 2026-10 sube de 21.613.846 a 22.723.842.
+- Aplicado pero NO verificado: la UI en navegador (etiquetas de rango y días restantes).
+
+**HALT, esperando a Camilo (nada de esto se decidió ni se escribió):**
+1. Duplicados: las 8 filas de 2026-09 S5 repiten el concepto de una fila que ya existe en 2026-10 S1 (Mesada Emma/Lucas, Empleada Mireyita ya ejecutadas en ambas; Chucherías, Frutas, Víveres, Imprevistos pendientes; Entretenimiento pendiente vs no_aplica). Migrar tal cual suma +1.109.996 al comprometido de octubre y deja dos filas por concepto. Opciones: dejar ambas, o consolidar.
+2. H4B: quedan dos ingresos Angie en 2026-10 S1 (2.000.000 del 29 sep + 1.570.000 del 1 oct). El balance suma 3.570.000, pero el modal y el PUT solo ven la primera fila. Elegir separado o fusionar (solo "separado" está implementado).
+3. Filas 330 y 335 (Mesada Emma/Lucas, planeadas en 2026-10 S2, pagadas el 30 sep): ¿se quedan en S2 o pasan a S1?
+4. H5B `PLAN_1790548072870` (plan de 2026-09 S5, aporte 2.000.000, comprometido 1.109.996): ¿pasa a 2026-10 S1 con el resto?
+5. Saldos: el saldo inicial de octubre (10.700.000) está fechado 30 sep; confirmar si ya descuenta los gastos del 29 sep de 2026-09 S5 para no contarlos dos veces.
+6. Corte: confirmar que la regla nueva rige desde 2026-09 (agosto conserva su S5 del 31 ago).
+7. Orden de despliegue: aplicar la migración en PROD ANTES o junto al deploy (si no, 2026-09 S5 queda fuera del mes). Merge a main exige Angie (I-17).
+8. Cierres H5: ninguno se reescribe. Con 4 semanas en septiembre, cerrar la última semana de un mes ya no genera plan de la siguiente (igual que antes con S5).
+- Hallazgos menores (sin corregir): `MesM1Desktop.semanaFromFecha` y `fix-semana-vacia-h2.mjs` usan `startsWith(mes)`, desalineado para fechas 28-30 sep sin semana; el script omite filas cambiadas y sale con 0.
+
+**Consumo:** Coder Sonnet 145.364 tokens; Tester Sonnet (ver reporte del Chief of Staff, no medido al cierre de esta entrada).
+
+**Estado accionable:**
+- Unidad: ticket
+- En curso: [Operación] SEMANAS-VIERNES-01 — construido y probado, HALT antes de migrar PROD y de mergear
+- Backlog top 3: 1) [Producto] APORTES-SEMANALES-01B; 2) [Operación] BALANCE-CIERRES-H5-01; 3) [Operación] DT-CICLO-OPERATIVO-UNIFICADO-01 (parcialmente absorbido)
+- Bloqueados esperando a Camilo: decisiones 1 a 6 de SEMANAS-VIERNES-01; etnografía con Ángela María; SEC-EXPOSICION-PUBLICA-01 A/B/C
+- Próximo paso: Camilo responde 1 a 6; luego migración PROD (`--apply --confirmo-prod --h4b separado`) y PR
