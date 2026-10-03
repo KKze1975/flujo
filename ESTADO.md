@@ -8180,3 +8180,130 @@ despachado en Opus por la sesión Chief of Staff).**
 - Backlog top 3: 1) [Producto] APORTES-SEMANALES-01 — Arquitecto: tickets de construcción; 2) [Operación] BALANCE-CIERRES-H5-01 — decisión de Camilo sobre `total_comprometido` del plan; 3) [Operación] línea de ideas: INDICE desactualizado (IDEAS-SCHEMA-01 aprobado vs IDEAS-CAPTURA-01 completado)
 - Bloqueados esperando a Camilo: etnografía con Ángela María; decisión A/B/C de SEC-EXPOSICION-PUBLICA-01
 - Próximo paso: despachar el Arquitecto de Flujo sobre specs/APORTES-SEMANALES-01.md + brief §7
+
+## APORTES-SEMANALES-01A en producción (30 sept 2026, Chief of Staff, vault)
+
+**Tipo de sesión:** DEBUGGING (cerrado sin bug) → CONSTRUCCIÓN.
+
+- **DEBUGGING:** Camilo no veía cambios en M1 Planeación Desktop. Deploy correcto (`06cec8c`); el bloque de aportes del emprendimiento nunca se había construido — APORTES-SEMANALES-01 seguía en fase Arquitecto.
+- **Arquitecto:** 4 tickets seriales 01A–01D (`4f1386e`). Dato en pestaña nueva **H11**, no en H4 (rangos legacy e incidente previo de spillover).
+- **01A:** Coder `c9ebc0a`; Tester CUMPLE-PARCIAL `47e26e1` con revisión visual real en el preview (datos sintéticos en DEV); corrección `9768a5f`: B1 (semana repetida → 400) y H11 nunca se crea en runtime (I-10), error claro en el banner de M1 si falta.
+- QA de Angie aprobado (I-17). H11 creada en PROD por Camilo (`setup-h11-prod.mjs --apply`), verificada en solo lectura. PR #50 → dev (`b6cf586`), PR #51 → main (`ed1aac2`). Deploy READY; bloque "Aportes emprendimiento" visible en `/mes/2026-10` (verificado en Chrome, sin escribir).
+
+**Consumo (todo Sonnet):** Arquitecto 168K; Coder 177K; Tester 135K; corrección 99K. Total ~580K.
+
+**Retrospectiva (Fase 4):**
+1. **Qué funcionó:** diagnóstico antes que cambio (tres lecturas descartaron el deploy); cadena Arquitecto → Coder → Tester → corrección → QA → producción en una tarde; el Tester aplicó la lección previa (datos sintéticos antes de la revisión visual); la revisión detectó que la app podía crear estructura en PROD sola.
+2. **Qué no funcionó:** el cierre de BALANCE-UNIFICADO-01 reportó "en producción" sin decir que el bloque que Camilo necesitaba seguía sin construir — lo descubrió al ir a usarlo. La corrección no tuvo re-Tester (solo QA de Camilo/Angie).
+3. **Qué cambia en la próxima sesión:** al cerrar un ticket habilitador, el reporte dice explícitamente qué de lo pedido por Camilo **todavía no está disponible** y cuándo llegaría.
+4. **Invariantes:** ninguno nuevo. La creación runtime de estructura en PROD ya la cubre I-10; el punto 3 es comportamiento → memoria.
+
+**Estado accionable:**
+- Unidad: ticket
+- En curso: ninguno
+- Backlog priorizado (top 3 de 7 abiertos):
+  1. [Producto] APORTES-SEMANALES-01B — registrar en Ejecución el aporte cuando llega (chip, modal, disponible NU)
+  2. [Producto] APORTES-SEMANALES-01C — recuadro del emprendimiento en la vista semanal (`agente_ejecucion: antigravity`, Camilo decide si pasa a claude-code)
+  3. [Operación] BALANCE-CIERRES-H5-01 — cierres H5 con comprometido canónico
+- Reactivo/incidentes: ninguno
+- Seguridad: sin pendientes nuevos; SEC-EXPOSICION-PUBLICA-01 en revisión 2 oct
+- FinOps/Costo: sin cambio (Vercel/Sheets)
+- Bloqueados esperando a Camilo: decidir el AporteCard de Inicio (3ª barra o solo total, para 01D); decidir el agente de 01C; hacer la etnografía con Ángela María; decidir A/B/C de SEC-EXPOSICION-PUBLICA-01
+- Próximo paso: despachar el Coder de APORTES-SEMANALES-01B
+
+
+## Sesión CONSTRUCCIÓN — SEMANAS-VIERNES-01 (1 oct 2026, Manager de Flujo despachado por Chief of Staff, vault)
+
+**Tipo de sesión:** CONSTRUCCIÓN de una decisión de diseño cerrada por Camilo (1 oct 2026), con HALT antes de PROD, merge y H5.
+
+**Decisión de Camilo:** semana lunes-domingo; el mes de la semana es el mes de su viernes; S1, S2... = primer, segundo... viernes; semanas del mes = viernes del mes. Alcance acordado: SOLO la semana de transición (28 sep-4 oct 2026); no se reclasifica el historial; los movimientos del 28-30 sep y lo que estaba en 2026-09 S5 pasan a 2026-10 S1 (cambian `mes` y `semana`).
+
+**Diagnóstico (solo lectura, PROD):**
+- Superficies: núcleo `lib/utils/fecha.ts` (11 funciones); 14 consumidores de servidor; 9 de cliente; 12 copias divergentes con días fijos 1-7/8-14/... (I-21); 3 scripts. Inventario completo en `tickets/SEMANAS-VIERNES-01.md`.
+- Hallazgo clave: la regla vieja y la nueva solo difieren en las semanas puente (29-30 jun, 31 ago, 28 sep-4 oct, y a futuro 30 nov, 28 dic). Un cambio global dejaría huérfanas las filas históricas de agosto S5 (8 H2, 4 H3, 1 H5B), por eso la regla nueva rige desde 2026-09 (`MES_CORTE_VIERNES`) y los meses anteriores conservan la vieja.
+- Filas a migrar (2026-09 S5 -> 2026-10 S1): H2 8 (filas 257, 262, 267, 273, 282, 292, 297, 306), H3 1 (fila 210), H4B 1 (fila 23, 2.000.000), H5B 1 (fila 9). H5A: 0 (no hay cierre de 2026-09 S5 ni de 2026-10 S1; el último es 2026-09 S4). Total 11.
+- Semanas por mes con la regla nueva: sep 2026 = 4, oct = 5, nov = 4 (30 nov va a dic S1), dic = 4 (28 dic va a 2027-01 S1).
+
+**Construido** (rama `feat/semanas-viernes-01`, sin push ni merge): regla en `fecha.ts` + helpers `rangoSemana`, `etiquetaRangoSemana`, `fechaDefaultSemana`, `semanaDeHoyEnMes`, `diasHastaFinSemana` (`3a5f2e5`); 12 copias divergentes unificadas (`78b0296`); `scripts/migrar-semana-transicion-viernes.mjs`, dry-run por defecto, `--apply` en PROD exige `--confirmo-prod` y `--h4b separado` (`739e21b`). Tester aparte: regla CUMPLE (2559 fechas 2026-09..2028-12 y 1821 fechas legacy, 0 discrepancias), tsc limpio, 389/389 y 140/140; script CUMPLE_PARCIAL (el clasificador bloqueó su dry-run PROD; verificado por lectura y por simulación sobre el snapshot). Dry-run PROD del Coder: H2=8 H3=1 H4B=1 H5B=1 H5A=0.
+- Simulación con datos reales: sin migrar, 2026-09 falla el cuadre (8 filas S5 fuera de semanas, 1.109.996); migrando, 2026-09 queda 19.730.211 (mes = Σ semanas) y 2026-10 sube de 21.613.846 a 22.723.842.
+- Aplicado pero NO verificado: la UI en navegador (etiquetas de rango y días restantes).
+
+**HALT, esperando a Camilo (nada de esto se decidió ni se escribió):**
+1. Duplicados: las 8 filas de 2026-09 S5 repiten el concepto de una fila que ya existe en 2026-10 S1 (Mesada Emma/Lucas, Empleada Mireyita ya ejecutadas en ambas; Chucherías, Frutas, Víveres, Imprevistos pendientes; Entretenimiento pendiente vs no_aplica). Migrar tal cual suma +1.109.996 al comprometido de octubre y deja dos filas por concepto. Opciones: dejar ambas, o consolidar.
+2. H4B: quedan dos ingresos Angie en 2026-10 S1 (2.000.000 del 29 sep + 1.570.000 del 1 oct). El balance suma 3.570.000, pero el modal y el PUT solo ven la primera fila. Elegir separado o fusionar (solo "separado" está implementado).
+3. Filas 330 y 335 (Mesada Emma/Lucas, planeadas en 2026-10 S2, pagadas el 30 sep): ¿se quedan en S2 o pasan a S1?
+4. H5B `PLAN_1790548072870` (plan de 2026-09 S5, aporte 2.000.000, comprometido 1.109.996): ¿pasa a 2026-10 S1 con el resto?
+5. Saldos: el saldo inicial de octubre (10.700.000) está fechado 30 sep; confirmar si ya descuenta los gastos del 29 sep de 2026-09 S5 para no contarlos dos veces.
+6. Corte: confirmar que la regla nueva rige desde 2026-09 (agosto conserva su S5 del 31 ago).
+7. Orden de despliegue: aplicar la migración en PROD ANTES o junto al deploy (si no, 2026-09 S5 queda fuera del mes). Merge a main exige Angie (I-17).
+8. Cierres H5: ninguno se reescribe. Con 4 semanas en septiembre, cerrar la última semana de un mes ya no genera plan de la siguiente (igual que antes con S5).
+- Hallazgos menores (sin corregir): `MesM1Desktop.semanaFromFecha` y `fix-semana-vacia-h2.mjs` usan `startsWith(mes)`, desalineado para fechas 28-30 sep sin semana; el script omite filas cambiadas y sale con 0.
+
+**Consumo:** Coder Sonnet 145.364 tokens; Tester Sonnet (ver reporte del Chief of Staff, no medido al cierre de esta entrada).
+
+**Estado accionable:**
+- Unidad: ticket
+- En curso: [Operación] SEMANAS-VIERNES-01 — construido y probado, HALT antes de migrar PROD y de mergear
+- Backlog top 3: 1) [Producto] APORTES-SEMANALES-01B; 2) [Operación] BALANCE-CIERRES-H5-01; 3) [Operación] DT-CICLO-OPERATIVO-UNIFICADO-01 (parcialmente absorbido)
+- Bloqueados esperando a Camilo: decisiones 1 a 6 de SEMANAS-VIERNES-01; etnografía con Ángela María; SEC-EXPOSICION-PUBLICA-01 A/B/C
+- Próximo paso: Camilo responde 1 a 6; luego migración PROD (`--apply --confirmo-prod --h4b separado`) y PR
+
+
+**Actualización SEMANAS-VIERNES-01 (1 oct 2026): migración rediseñada como CONCILIACIÓN, por decisión de Camilo.**
+Principio: la S5 de septiembre deja de existir; sus movimientos reemplazan (no duplican) a los de 2026-10 S1; si la fila de sep S5 trae ejecución, prevalece. Saldo inicial de oct ya descuenta los gastos del 29 sep (sin ajuste). H5B de sep S5 se retira. Corte confirmado: regla nueva desde 2026-09.
+- Construido (commit `7b59240`, rama `feat/semanas-viernes-01`): `scripts/lib/conciliacion-viernes.mjs` (decisión pura), `scripts/migrar-semana-transicion-viernes.mjs` (conciliación fila a fila; `--apply` PROD exige `--confirmo-prod`, `--h4b oct|sep` y `--h2-ejecutadas-s2 revertir|retirar`; backup JSON verificado fuera del repo en `/home/camilovillamil/flujo-backups-migracion/` antes de escribir; actualiza antes de borrar; lectura de vuelta; código != 0 si hay omitidas), `scripts/simular-conciliacion-viernes.ts`; fix de `startsWith(mes)` en `MesM1Desktop.semanaFromFecha` y `fix-semana-vacia-h2.mjs`. `diasRestantes` de HomeHub no se tocó (cambio de semántica ya aceptado).
+- Re-Tester aparte: CUMPLE_PARCIAL. Recálculo independiente OK: sep 19.730.211 y oct 21.613.846 (sin subir 1.109.996), mes = Σ semanas, fueraDeMes 0, un solo `id_concepto` por semana en oct S1, ninguna ejecución contada dos veces (ejecutado baja 589.996 = 369.996 de 3 R duplicadas + 220.000 de las dos S2 si se revierten). Prueba `--apply` solo en DEV con datos sintéticos (limpiados). PROD: solo dry-run de lectura.
+- Tabla de conciliación (PROD, dry-run): H2 fila 257 Mesada Emma, 262 Mesada Lucas, 267 Mireyita (ejecutadas en ambas: sobrevive la de oct S1, se retira la de sep); 273 Chucherías, 292 Frutas, 297 Víveres, 306 Imprevistos (pendientes en ambas: sobrevive oct); 282 Entretenimiento (pendiente vs no_aplica de oct: sobrevive no_aplica, verificar). Ambiguas: 330 y 335 (oct S2 ejecutadas el 30 sep). H3 fila 210: reubicar. H4B fila 23 (2.000.000) vs fila 24 (1.570.000): `oct` deja 1.570.000, `sep` deja 2.000.000. H5B fila 9: retirar. H5A: 0.
+- Decisiones pendientes de Camilo: (1) H4B `oct` o `sep`; si fueron dos depósitos reales, ninguna opción sirve y hay que añadir "conservar ambas"; (2) filas 330/335: `revertir` (vuelven a pendiente, plan de S2 intacto) o `retirar` (-220.000 de comprometido); (3) confirmar que Emma/Lucas/Mireyita fue un solo pago real; (4) el consumo H3 "Compras papel higiénico y varios" (60.000, 30 sep) puede ser el mismo gasto que "Papel higiénico y otra compras" (60.000, 1 oct): el script no deduplica H3.
+- Huecos menores sin corregir (PROD hoy no los ejercita): la fusión (a) pierde `id_recarga_origen`, `pendiente_aprobacion` y `razon_postergacion` sin avisar; reubicar (e) puede dejar una S2 ejecutada sin detectar hasta una segunda pasada; con 2+ ingresos H4B y `--h4b sep` el último pisa; el backup no incluye H4A ni H4C; el apply hace ~36 lecturas (límite 60/min).
+- Consumo: Coder (conciliación) Sonnet 173.416; Re-Tester Sonnet: ver reporte del Chief of Staff (no medido al cierre). Acumulado del ticket: Coder 318.780, Tester 143.443 + re-Tester.
+- **HALT vigente:** sin escritura en PROD, merge ni push; no se prepara el `--apply` hasta que Camilo apruebe la tabla y responda 1 a 4.
+
+**Estado accionable:**
+- Unidad: ticket
+- En curso: [Operación] SEMANAS-VIERNES-01 — conciliación construida y probada, HALT por aprobación de la tabla y decisiones 1 a 4
+- Backlog top 3: 1) [Producto] APORTES-SEMANALES-01B; 2) [Operación] BALANCE-CIERRES-H5-01; 3) [Operación] DT-CICLO-OPERATIVO-UNIFICADO-01 (parcialmente absorbido)
+- Bloqueados esperando a Camilo: aprobar tabla de conciliación y decidir H4B, filas 330/335, pago único de mesadas y consumo H3 duplicado; etnografía con Ángela María; SEC-EXPOSICION-PUBLICA-01 A/B/C
+- Próximo paso: Camilo aprueba; luego `--apply --confirmo-prod --h4b <x> --h2-ejecutadas-s2 <y>` y PR (QA de Angie, I-17)
+
+
+## Sesión CONSTRUCCIÓN acotada — SEMANAS-VIERNES-01, alcance final (1 oct 2026, Manager de Flujo)
+
+**Tipo de sesión:** CONSTRUCCIÓN acotada de decisión cerrada. **Decisión de Camilo:** se DESCARTA la migración/conciliación; Camilo ingresa a mano los movimientos del 28-30 sep en octubre S1. La rama `feat/semanas-viernes-01` queda SOLO con la regla del viernes (`fecha.ts`, helpers, 12 copias unificadas, fixes de `startsWith(mes)`). Eliminados `scripts/migrar-semana-transicion-viernes.mjs`, `scripts/lib/conciliacion-viernes.mjs` y `scripts/simular-conciliacion-viernes.ts` (commit `60e10cd`, historia intacta; respaldo en `flujo-backups-migracion/` no se tocó). Las entradas anteriores de esta bitácora sobre migración/conciliación quedan como historia superseded.
+- **Riesgo:** con la regla nueva, las filas de 2026-09 S5 (8 H2, 1 H3, 1 H4B, 1 H5B) quedan fuera de las semanas de septiembre hasta que Camilo las reingrese/retire a mano; el DEPLOY a PROD va DESPUÉS de que Camilo confirme que terminó la carga manual.
+
+**Estado accionable:**
+- Unidad: ticket
+- En curso: [Operación] SEMANAS-VIERNES-01 — solo regla, construida; HALT: sin push/PR/merge/PROD
+- Backlog top 3: 1) [Producto] APORTES-SEMANALES-01B; 2) [Operación] BALANCE-CIERRES-H5-01; 3) [Operación] DT-CICLO-OPERATIVO-UNIFICADO-01
+- Bloqueados esperando a Camilo: terminar carga manual de oct S1; luego QA de Angie (I-17) y PR dev -> main; etnografía con Ángela María; SEC-EXPOSICION-PUBLICA-01 A/B/C
+- Próximo paso: Camilo confirma carga manual; QA Angie; PR; deploy
+
+
+## Cierre de sesión — Chief of Staff (vault), 1 oct 2026
+
+**Tipo de sesión:** CONSTRUCCIÓN de decisiones cerradas por Camilo (un tramo de DEBUGGING sin bug real). Manager de Flujo despachado en Sonnet; Coder y Tester aparte.
+
+**Qué cambió:** regla del viernes en rama `feat/semanas-viernes-01` (ver las dos entradas anteriores de SEMANAS-VIERNES-01). Desde 2026-09 el viernes decide el mes de la semana; sep 4 semanas, oct 5, nov 4, dic 4; agosto conserva su S5. La migración (cambio de celdas y luego conciliación) se descartó: Camilo ingresa a mano los movimientos del 28 al 30 sep en oct S1. Lectura de solo lectura de lo registrado el 28-30 sep entregada a Camilo. Camilo registró aportes del emprendimiento por M1 Planeación (01A).
+
+**Decisiones y razón:** corte de la regla en 2026-09 (un cambio global dejaba huérfanas las filas de agosto S5); migración descartada (11 filas, la conciliación costó ~607K tokens y dejaba ambigüedades que Camilo resuelve a mano); deploy solo después de la carga manual (si no, sep no cuadra). Camilo indicó que el aporte del emprendimiento va solo en Planeación: pendiente su confirmación para descartar 01B y reajustar 01C/01D (no se tocó spec ni backlog).
+
+**Deuda técnica nueva:** UI de etiquetas de rango y días restantes sin verificar en navegador; `--prod-readonly` del cuadre sin ejecutar; `HomeHub.diasRestantes` cuenta hasta el domingo también en S4/S5. Rama con "ahead 2" de origin pese a que los Managers reportaron no haber hecho push: verificar quién la empujó.
+
+**Consumo (Sonnet explícito):** Coder regla 145.364; Tester regla 143.443; Coder conciliación 173.416; Re-Tester 145.025; Tester tras descarte 87.324; Manager (entrega 1) 212.381; Manager (conciliación, acumulado) 250.748; Manager (solo regla) 99.268; lectura 28-30 sep 107.300 (el agente auto-reportó ~45K; vale la notificación).
+
+**Retrospectiva (Fase 4):**
+1. Qué funcionó: HALT del Manager antes de PROD, ambigüedades devueltas en vez de decididas; lectura de solo lectura dio a Camilo una lista accionable.
+2. Qué no funcionó: se construyó la conciliación antes de preguntar lo que solo Camilo sabía (depósito único o doble, mesadas, H3); el Chief of Staff mencionó 01B sin que se pidiera y dio una inferencia como hecho.
+3. Qué cambia: antes de construir una migración de PROD, contar las filas; si son pocas, proponer primero la carga manual. Tomar tokens de la notificación, no del auto-reporte.
+4. Invariante: ninguno nuevo.
+
+**Estado accionable:**
+- Unidad: ticket
+- En curso: [Operación] SEMANAS-VIERNES-01 — solo regla, construida y verificada; bloqueado hasta la carga manual de Camilo
+- Backlog top 3: 1) [Producto] APORTES-SEMANALES-01B/C/D — a la espera de la decisión "aporte solo en Planeación"; 2) [Operación] BALANCE-CIERRES-H5-01; 3) [Operación] I-22 `check-ticket.mjs`
+- Reactivo/incidentes: ninguno
+- Seguridad: SEC-EXPOSICION-PUBLICA-01 A/B/C sigue esperando a Camilo (revisión 2 oct)
+- FinOps/Costo: sin gasto de infraestructura nuevo; subagentes Sonnet ~1,15M tokens en total (Coder/Tester/lectura 801.872 + Managers 349.016, sin doble contar la primera entrega)
+- Bloqueados esperando a Camilo: terminar carga manual de oct S1; confirmar aporte solo en Planeación (01B/01C/01D); etnografía con Ángela María; SEC-EXPOSICION-PUBLICA-01 A/B/C
+- Próximo paso: Camilo confirma la carga manual; QA de Angie; PR dev -> main; deploy
