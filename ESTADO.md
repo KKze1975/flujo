@@ -8307,3 +8307,26 @@ Principio: la S5 de septiembre deja de existir; sus movimientos reemplazan (no d
 - FinOps/Costo: sin gasto de infraestructura nuevo; subagentes Sonnet ~1,15M tokens en total (Coder/Tester/lectura 801.872 + Managers 349.016, sin doble contar la primera entrega)
 - Bloqueados esperando a Camilo: terminar carga manual de oct S1; confirmar aporte solo en Planeación (01B/01C/01D); etnografía con Ángela María; SEC-EXPOSICION-PUBLICA-01 A/B/C
 - Próximo paso: Camilo confirma la carga manual; QA de Angie; PR dev -> main; deploy
+
+
+## Cierre de sesión — SEMANAS-VIERNES-01 desplegada (3 oct 2026, Manager de Flujo, despachado por Chief of Staff)
+
+**Tipo de sesión:** DEBUGGING (cerrado) -> CONSTRUCCIÓN (despliegue de una decisión ya cerrada). Tomas de tokens y consumo: las registra el Chief of Staff aparte.
+
+**Síntoma:** producción volvió a mostrar la semana 28 sep-4 oct como S5 de septiembre; un consumo del 3 oct ("Desayuno McDonald's", 50.000, H3 fila 216) se guardó como 2026-09 S5.
+
+**Causa raíz:** la regla del viernes (SEMANAS-VIERNES-01) vivía en `feat/semanas-viernes-01` sin desplegar; PROD corría `main` `ed1aac2` con la regla vieja. El bloqueo de despliegue (HALT hasta la carga manual) era deliberado, pero el uso real de PROD siguió escribiendo en la semana puente.
+
+**Acción:** push de la rama; PR #52 (rama -> dev); PR #53 (dev -> main), QA de Angie aprobado (I-17), mergeado por Camilo. `main` = `6b21e6f`; deploy de Vercel producción en success.
+
+**Verificación (solo lectura, PROD, `verificar-balance-cuadre.ts --prod-readonly`, re-corrida el 3 oct):** 2026-10 cuadra (cuadre 0, fueraDeMes 0) y su S1 sigue en 9.000.022. 2026-09 NO cuadra, por diseño hasta retirar filas de sep S5: 8 movimientos H2 con semana S5 fuera del mes (1.109.996) y aportes H4B fuera del mes (2.000.000). Filas de 2026-09 S5 que quedan hoy en el Sheet: H2 filas 257, 262, 267, 273, 282, 292, 297, 306 (1.109.996); H3 filas 210 (60.000) y 216 (50.000, la del 3 oct); H4B fila 23 (2.000.000); H5B fila 9 (`PLAN_1790548072870`). Camilo dijo que "todo se pasó automáticamente" al cambiar a S1 y que lo deja así; la lectura muestra que esas filas siguen en el Sheet (el dato en celdas no cambió solo; solo cambió cómo se interpreta la semana).
+
+**Riesgo vigente:** con la regla nueva en PROD, las 12 filas de sep S5 quedan fuera de las semanas de septiembre: 2026-09 no cuadra y esas filas no suman en ninguna semana visible. Retiro/reingreso a oct S1 pendiente de decisión de Camilo (propuesta de script con backup fuera del repo, sin crear ni escribir en PROD).
+
+**Estado accionable:**
+- Unidad: ticket
+- En curso: [Operación] SEMANAS-VIERNES-01 — desplegada en producción (main `6b21e6f`); queda el retiro de 12 filas de 2026-09 S5 para que sep cuadre
+- Backlog top 3: 1) [Operación] retiro de filas sep S5 (aprobación de Camilo); 2) [Producto] APORTES-SEMANALES-01B/C/D (a la espera de "aporte solo en Planeación"); 3) [Operación] BALANCE-CIERRES-H5-01
+- Reactivo/incidentes: sep 2026 no cuadra (sep S5 residual)
+- Bloqueados esperando a Camilo: aprobar el retiro de las filas sep S5 (y confirmar el destino de H3 216 y H3 210); etnografía con Ángela María; SEC-EXPOSICION-PUBLICA-01 A/B/C
+- Próximo paso: Camilo aprueba el script de retiro; correr dry-run, luego `--apply` en PROD con backup y lectura de vuelta
