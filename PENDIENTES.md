@@ -29,6 +29,8 @@
 | Flujo | [Operación] I-22: `check-ticket.mjs` debe dar NO-GO (no advertencia) si una dependencia no está en INDICE.md | pendiente | 2026-10-07 | dependencia desconocida → NO-GO | invariante promovido, sin implementar | `INVARIANTS.md` I-22; `scripts/check-ticket.mjs` l.~121 |
 | Flujo | [Operación] Línea de ideas: INDICE desactualizado (IDEAS-SCHEMA-01 aprobado vs IDEAS-CAPTURA-01 completado) | pendiente | 2026-10-07 | INDICE refleja el estado real | detectado por `check-ticket` tras PR #48 | ESTADO.md, cierre 30 sept |
 | Flujo | [Operación] Deuda UI menor: etiqueta "Mes sig." en `pospuesto` dentro del mes (ConceptoBoard); "Disponible esta semana" difiere entre pantallas y HomeHub usa `Math.abs` | pendiente | 2026-10-14 | etiquetas y disponible coherentes | anotado en revisión visual | `tickets/BALANCE-UNIFICADO-01.md`, revisión visual 30 sept |
+| Flujo | [Operación] SEMANAS-VIERNES-01 — regla del viernes en rama `feat/semanas-viernes-01`: Camilo termina carga manual de oct S1, luego QA de Angie (I-17), PR dev -> main y deploy (deploy SOLO después de la carga) | bloqueada | 2026-10-03 | mes = Σ semanas en 2026-09 y 2026-10 tras la carga; regla en producción | esperando carga manual | `tickets/SEMANAS-VIERNES-01.md`; ESTADO.md, cierre 1 oct |
+| Flujo | [Producto] APORTES-SEMANALES: Camilo indicó (1 oct) que el aporte del emprendimiento va solo en Planeación; confirmar si se descarta 01B y qué se reajusta en 01C y 01D | bloqueada | 2026-10-03 | decisión explícita de Camilo sobre 01B/01C/01D | esperando confirmación | ESTADO.md, cierre 1 oct |
 
 ## Cerradas
 

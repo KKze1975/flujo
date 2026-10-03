@@ -11,7 +11,7 @@ import ModalCerrarSemana from "./m1/ModalCerrarSemana";
 import ModalConfirmarSaldos from "./m1/ModalConfirmarSaldos";
 import VistaPlanificacion from "./m1/VistaPlanificacion";
 import Icon from "@/components/ui/Icon";
-import { semanasDeMes } from "@/lib/utils/fecha";
+import { semanasDeMes, etiquetaRangoSemana } from "@/lib/utils/fecha";
 import { calcularBalanceMes, comprometidoDe, aportesPorSemanaDe } from "@/lib/utils/balanceMes";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -27,18 +27,13 @@ const CATEGORIAS_ORDER: Categoria[] = [
   "Recreación", "Transporte", "Metas Familiares", "Frida",
 ];
 
-const MESES_ES = ["","ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
 const MESES_FULL = ["","Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
 function semanaDates(mes: string): Record<Semana, string> {
-  const [year, monthStr] = mes.split("-");
-  const month = Number(monthStr);
-  const last = new Date(Number(year), month, 0).getDate();
-  const m = MESES_ES[month];
-  return {
-    S1: `1–7 ${m}`, S2: `8–14 ${m}`, S3: `15–21 ${m}`, S4: `22–28 ${m}`,
-    S5: `29–${last} ${m}`,
-  };
+  // I-21: rangos desde lib/utils/fecha.ts (viernes desde 2026-09, lunes antes).
+  const out = { S1: "", S2: "", S3: "", S4: "", S5: "" } as Record<Semana, string>;
+  for (const s of semanasDeMes(mes)) out[s] = etiquetaRangoSemana(mes, s);
+  return out;
 }
 
 function formatMesLabel(mes: string): string {

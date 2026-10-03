@@ -50,6 +50,7 @@
 | 46 | APORTES-SEMANALES-01B | propuesto | A | claude-code | APORTES-SEMANALES-01A | | Ejecución M1: chip `E:`, botón/modal "Aporte emprendimiento", disponible NU Camilo opción (b) con semana activa server-side y línea "+ Emprendimiento (S1–Sx)". |
 | 47 | APORTES-SEMANALES-01C | propuesto | A | antigravity | APORTES-SEMANALES-01A | | Vista semanal: recuadro de Angie visible para ambos actores (contenido intacto) + recuadro nuevo del emprendimiento, variante A (solo el número). |
 | 48 | APORTES-SEMANALES-01D | propuesto | A | claude-code | APORTES-SEMANALES-01A, APORTES-SEMANALES-01B, APORTES-SEMANALES-01C | | Móvil, Home, `/meses`, `reset-mes` (H11), re-verificación de F5 (ya en prod por BALANCE-UNIFICADO-01) y cierre técnico; gate humano de la pestaña H11 en PROD antes del merge (I-10, I-17). |
+| 49 | SEMANAS-VIERNES-01 | activo | A | claude-code | BALANCE-UNIFICADO-01 | | Semanas del mes definidas por el mes de su viernes (decisión de Camilo, 1 oct 2026). Regla nueva en `fecha.ts` desde 2026-09 sin reclasificar historial; migración única 2026-09 S5 -> 2026-10 S1 (H2/H3/H4B/H5B, 11 filas) con dry-run; unifica 12 copias divergentes. HALT antes de escribir en PROD, merge y H5. |
 
 **Estados posibles:** `propuesto` \| `aprobado` \| `activo` \| `completado` \| `completado_parcial` \| `bloqueado` \| `descartado` \| `diagnostico_listo` (Tier B, fase de diagnóstico cerrada, esperando elección de opción)
 

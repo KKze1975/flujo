@@ -1,18 +1,13 @@
 import type { NextRequest } from "next/server";
 import { getProvider } from "@/lib/data/provider";
 import type { Semana } from "@/lib/data/types";
-import { semanasDeMes } from "@/lib/utils/fecha";
+import { semanasDeMes, fechaDefaultSemana } from "@/lib/utils/fecha";
 
 // APORTES-SEMANALES-01A — aporte del emprendimiento (H11). Molde: ingresos/angie/[mes].
 // Diferencia con Angie (exigida por el spec): semana fuera de semanasDeMes(mes) o monto
 // negativo/no numérico -> 400, no se ignoran en silencio.
 
 const MES_REGEX = /^\d{4}-\d{2}$/;
-
-function fechaDefaultSemana(mes: string, semana: Semana): string {
-  const dias: Record<Semana, number> = { S1: 1, S2: 8, S3: 15, S4: 22, S5: 29 };
-  return `${mes}-${String(dias[semana]).padStart(2, "0")}`;
-}
 
 export async function GET(
   _req: NextRequest,

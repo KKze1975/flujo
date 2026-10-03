@@ -18,7 +18,7 @@
 
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { semanaDeFechaEnMes } from "../lib/utils/fecha.ts";
+import { semanaDeFechaEnMes, mesDeFecha } from "../lib/utils/fecha.ts";
 
 const require = createRequire(import.meta.url);
 const { google } = require("googleapis");
@@ -98,7 +98,8 @@ for (const { fila, r } of candidatas) {
 
   const fecha = (r[iFecha] ?? "").trim();
   const mes = r[iMes];
-  if (!fecha || !fecha.startsWith(mes)) {
+  // SEMANAS-VIERNES-01: pertenencia por mesDeFecha (mes del viernes), no por prefijo de la fecha.
+  if (!fecha || mesDeFecha(new Date(fecha + "T12:00:00")) !== mes) {
     console.log(`  -> OMITIDA: sin fecha_ejecucion dentro de ${mes}; semana no derivable sin ambigüedad. No se toca.`);
     omitidas++;
     continue;
