@@ -18,6 +18,8 @@
 
 ---
 
+> **Objetivos declarados:** viven en `OBJETIVOS-CLIENTE.md` (esta carpeta), no aquí.
+
 ## Misión
 
 Promover salud y educación financiera familiar (Camilo, Angie, Lucas, Emma)
