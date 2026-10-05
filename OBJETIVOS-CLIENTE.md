@@ -1,7 +1,6 @@
 # OBJETIVOS-CLIENTE — Flujo
 
-> **Borrador pendiente de revisión de Camilo.** Migración del 5 oct 2026 hecha por una sesión que solo
-> transcribe lo ya declarado en `ESTADO.md`; no se inventó ni se infirió ningún objetivo.
+> **Confirmado por Camilo el 5 oct 2026, tal como estaba transcrito** (originalmente un borrador de una sesión de CONSTRUCCIÓN desde `ESTADO.md` y otras fuentes). Los huecos marcados "sin definir" siguen abiertos; confirmar no los cierra.
 
 **Qué es:** referencia única de qué quiere lograr el cliente con el proyecto. Separada de `ESTADO.md`
 (bitácora). Reglas: ver `brain/doctrine/OBJETIVOS-PROYECTO.md` (vault).
@@ -30,3 +29,4 @@ es Camilo, con Angie como co-decisora en conversación conjunta (`ESTADO.md`, ma
 - **Falta definir, con Camilo (y Angie para lo familiar):** (a) confirmar la autoría de OC-01; (b) métricas
   de éxito de OC-02 y OC-03; (c) ¿hay un objetivo de uso diario/familiar (p. ej. Angie) distinto de la misión?
   No hay declaración con fuente de Angie sobre qué quiere lograr con la app.
+- **5 oct 2026:** Camilo confirmó el archivo completo sin cambios de fondo (opción 1: confirmar tal cual). Se quitó el aviso de borrador. No se editó ninguna fila; los "sin definir" y los pendientes con terceros listados arriba siguen vigentes.
