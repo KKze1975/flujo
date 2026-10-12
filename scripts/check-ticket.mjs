@@ -111,7 +111,9 @@ function evaluateTicket(ticketId, indice, indiceById) {
   }
 
   // 3. Dependencias — todas deben estar completado
+  // Acepta tanto `X, Y` como `[X, Y]` (sintaxis de lista usada en varios tickets).
   const deps = (fm.dependencias || "ninguna")
+    .replace(/^\s*\[|\]\s*$/g, "")
     .split(",")
     .map((d) => d.trim())
     .filter((d) => d && d.toLowerCase() !== "ninguna");

@@ -2,11 +2,13 @@ import type {
   Semana,
   Concepto,
   Movimiento,
+  NuevoMovimiento,
   Bolsillo,
   Consumo,
   ConsumoH3,
   IngresoCamilo,
   IngresoAngie,
+  AporteAdicional,
   SaldoCuenta,
   CierreSemana,
   PlanSemana,
@@ -29,7 +31,7 @@ export interface IDataProvider {
   getMeses(): Promise<string[]>;
   getMovimientos(mes?: string): Promise<Movimiento[]>;
   getMovimientosByMesYSemana(mes: string, semana: Semana): Promise<Movimiento[]>;
-  crearMovimientosMes(movimientos: Omit<Movimiento, "id">[]): Promise<Movimiento[]>;
+  crearMovimientosMes(movimientos: NuevoMovimiento[]): Promise<Movimiento[]>;
   createMovimiento(data: Omit<Movimiento, "id">): Promise<Movimiento>;
   updateMovimiento(id: string, data: Partial<Omit<Movimiento, "id">>): Promise<Movimiento>;
   ejecutarMovimiento(id: string): Promise<Movimiento>;
@@ -76,12 +78,17 @@ export interface IDataProvider {
   getEventosLog(filtro?: { tipoEvento?: TipoEventoLog; mes?: string; desde?: string; hasta?: string }): Promise<EventoLog[]>;
   limpiarEventosLogAntiguos(diasRetencion?: number): Promise<number>;
 
+  // ── H11 ──────────────────────────────────────────────────────────────────
+  getAportesAdicionales(mes: string): Promise<AporteAdicional[]>;
+  createAporteAdicional(data: Omit<AporteAdicional, "id">): Promise<AporteAdicional>;
+  updateAporteAdicional(id: string, data: Partial<Omit<AporteAdicional, "id">>): Promise<AporteAdicional>;
+
   // ── H10 ──────────────────────────────────────────────────────────────────
   createIdea(data: Pick<Idea, "propuestaPor" | "descripcion" | "casoDeUso" | "motivoImportancia">): Promise<Idea>;
   getIdeas(filtro?: { estado?: EstadoIdea; propuestaPor?: Idea["propuestaPor"] }): Promise<Idea[]>;
   updateIdea(id: string, data: Partial<Omit<Idea, "id">>): Promise<Idea>;
 }
 
-export type { Semana, Concepto, Movimiento, Bolsillo, Consumo, ConsumoH3, IngresoCamilo, IngresoAngie, SaldoCuenta, CierreSemana, PlanSemana, CierreMensual, EventoLog, TipoEventoLog, Idea, EstadoIdea };
+export type { Semana, Concepto, Movimiento, Bolsillo, Consumo, ConsumoH3, IngresoCamilo, IngresoAngie, AporteAdicional, SaldoCuenta, CierreSemana, PlanSemana, CierreMensual, EventoLog, TipoEventoLog, Idea, EstadoIdea };
 export * from "./types";
 

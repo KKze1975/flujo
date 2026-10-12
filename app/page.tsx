@@ -2,7 +2,8 @@ export const dynamic = "force-dynamic";
 
 import { getProvider } from "@/lib/data/provider";
 import HomeHub from "@/components/HomeHub";
-import { mesActual, semanaActual } from "@/lib/utils/fecha";
+import { mesActual, semanaActual, semanasDeMes } from "@/lib/utils/fecha";
+import { calcularBalanceMes, aportesPorSemanaDe } from "@/lib/utils/balanceMes";
 
 export default async function Home() {
   const provider = getProvider();
@@ -21,7 +22,13 @@ export default async function Home() {
       provider.getCierresSemana(mesActivo).catch(() => []),
     ]);
 
-    const totalPresupuestado = movs.reduce((s, m) => s + m.montoPresupuestado, 0);
+    // BALANCE-UNIFICADO-01: comprometido del mes = balanceMes (definición canónica).
+    const totalPresupuestado = calcularBalanceMes({
+      movs,
+      semanas: semanasDeMes(mesActivo),
+      ingresoCamilo: ingresosCamilo[0]?.montoCop ?? 0,
+      aportesPorSemana: aportesPorSemanaDe(ingresosAngie),
+    }).mes.comprometido;
     const totalEjecutado = movs
       .filter((m) => m.estado === "ejecutado")
       .reduce((s, m) => s + (m.montoEjecutado ?? 0), 0);

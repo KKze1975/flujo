@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { getProvider } from "@/lib/data/provider";
-import type { Movimiento, Semana } from "@/lib/data/types";
+import type { NuevoMovimiento, Semana } from "@/lib/data/types";
 import { semanasDeMes } from "@/lib/utils/fecha";
 
 const MES_REGEX = /^\d{4}-\d{2}$/;
@@ -106,7 +106,32 @@ export async function POST(
     idRecargaOrigen: null,
   };
 
-  const desdeH1: Omit<Movimiento, "id">[] = conceptos
+  // BALANCE-UNIFICADO-01: `semana` nunca queda vacía (I-16). Un concepto NO
+  // semanal con semana_default "variable" no tiene semana inequívoca al
+  // iniciar el mes: se falla en voz alta, sin escribir nada, en vez de crear
+  // una fila con semana null. (Hoy ningún concepto de H1 está en ese caso.)
+  const sinSemanaInequivoca = conceptos
+    .filter((c) => conceptoActivoEnMes(c, mes))
+    .filter((c) => c.frecuencia === "semanal" || !conceptoIdsExistentes.has(c.id))
+    .filter((c) => c.frecuencia !== "semanal" && c.semanaDefault === "variable")
+    .map((c) => c.nombre);
+  const carryoverSinSemana = movimientosPrevios
+    .filter((m) => m.estado === "pospuesto_mes_siguiente")
+    .filter((m) => !conceptoIdsExistentes.has(m.conceptoId))
+    .filter((m) => m.semana === null)
+    .map((m) => m.nombreSnapshot);
+  if (sinSemanaInequivoca.length > 0 || carryoverSinSemana.length > 0) {
+    return Response.json(
+      {
+        error: "No se puede iniciar el mes: hay movimientos sin semana inequívoca. Asígnales semana antes de iniciar.",
+        conceptosSemanaVariable: sinSemanaInequivoca,
+        trasladosSinSemana: carryoverSinSemana,
+      },
+      { status: 400 }
+    );
+  }
+
+  const desdeH1: NuevoMovimiento[] = conceptos
     .filter((c) => conceptoActivoEnMes(c, mes))
     // TICKET-B-GUARDIA-01 P2: no duplicar la fila regular de un concepto que
     // ya tiene una fila en el mes (traslado previo). Los semanales siempre
@@ -125,14 +150,14 @@ export async function POST(
       if (c.frecuencia === "semanal") {
         return SEMANAS.map((s) => ({ ...base, semana: s }));
       }
-      return [{ ...base, semana: c.semanaDefault === "variable" ? null : (c.semanaDefault as Semana) }];
+      return [{ ...base, semana: c.semanaDefault as Semana }];
     });
 
   // Conceptos pospuestos del mes anterior pasan a pendiente en este mes.
   // TICKET-B-GUARDIA-01 P2: si ya existe una fila para ese conceptoId (creada
   // por mover_mes_siguiente antes de que se corriera iniciar), se omite aquí
   // para no duplicarla — la fila existente queda intacta.
-  const carryover: Omit<Movimiento, "id">[] = movimientosPrevios
+  const carryover: NuevoMovimiento[] = movimientosPrevios
     .filter((m) => m.estado === "pospuesto_mes_siguiente")
     .filter((m) => !conceptoIdsExistentes.has(m.conceptoId))
     .map((m) => ({
@@ -143,7 +168,7 @@ export async function POST(
       categoriaSnapshot: m.categoriaSnapshot,
       tipoSnapshot: m.tipoSnapshot,
       montoPresupuestado: m.montoPresupuestado,
-      semana: m.semana,
+      semana: m.semana as Semana,
     }));
 
   const movimientosACrear = [...desdeH1, ...carryover];

@@ -3,11 +3,11 @@
 import { useState, useMemo, useEffect } from "react";
 import type { Movimiento, Semana, Actor, Categoria } from "@/lib/data/types";
 import Icon from "@/components/ui/Icon";
-import { semanasDeMes } from "@/lib/utils/fecha";
+import { semanasDeMes, mesSiguienteDe, etiquetaRangoSemana, semanaDeHoyEnMes } from "@/lib/utils/fecha";
+import { comprometidoDe } from "@/lib/utils/balanceMes";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const MESES_ES = ["","ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
 
 const CAT_ICON: Record<string, string> = {
   "Casa": "home", "Servicios Públicos": "bolt",
@@ -26,9 +26,13 @@ const FUENTES_PAGO = [
 ];
 
 // DT-M1M4-NULL-01 / B3: semanas ofrecidas como destino de un traslado al mes
-// siguiente. Nunca S5 — SemanaDefault (H1) no la admite, así que ningún
-// concepto trasladable la necesita como destino.
-const SEMANAS_DESTINO_MES_SIGUIENTE: Semana[] = ["S1", "S2", "S3", "S4"];
+// siguiente = las semanas reales de ese mes (incluye S5 cuando existe), igual
+// que VistaSemanal y MesM1Mobile. Antes era fija S1-S4 (SemanaDefault de H1 no
+// admite S5), pero la semana destino es del movimiento, no del concepto —
+// decisión de Camilo, 30 sept 2026 (revisión visual PR #47).
+function semanasDestinoMesSiguiente(mes: string): Semana[] {
+  return semanasDeMes(mesSiguienteDe(mes));
+}
 
 function copCompact(n: number): string {
   const sign = n < 0 ? "-" : "";
@@ -45,26 +49,14 @@ function copFull(n: number): string {
 }
 
 function semanaDates(mes: string): Record<Semana, string> {
-  const [year, monthStr] = mes.split("-");
-  const month = Number(monthStr);
-  const last = new Date(Number(year), month, 0).getDate();
-  const m = MESES_ES[month];
-  return {
-    S1: `1–7 ${m}`, S2: `8–14 ${m}`, S3: `15–21 ${m}`, S4: `22–28 ${m}`,
-    S5: `29–${last} ${m}`,
-  };
+  // I-21: rangos desde lib/utils/fecha.ts (viernes desde 2026-09, lunes antes).
+  const out = { S1: "", S2: "", S3: "", S4: "", S5: "" } as Record<Semana, string>;
+  for (const s of semanasDeMes(mes)) out[s] = etiquetaRangoSemana(mes, s);
+  return out;
 }
 
 function getActiveSemana(mes: string): Semana {
-  const today = new Date();
-  const [year, monthStr] = mes.split("-");
-  if (today.getFullYear() !== Number(year) || today.getMonth() + 1 !== Number(monthStr)) return "S1";
-  const d = today.getDate();
-  if (d <= 7) return "S1";
-  if (d <= 14) return "S2";
-  if (d <= 21) return "S3";
-  if (d <= 28) return "S4";
-  return "S5";
+  return semanaDeHoyEnMes(mes);
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -220,7 +212,7 @@ function DkExecForm({
               <p className="dk-exp-lbl" style={{ width: "100%", marginBottom: 0 }}>
                 ¿A qué semana del mes siguiente?
               </p>
-              {SEMANAS_DESTINO_MES_SIGUIENTE.map(s => (
+              {semanasDestinoMesSiguiente(mov.mes).map(s => (
                 <button key={s} type="button" className="dk-fchip"
                   style={{ fontSize: 11, padding: "3px 8px" }}
                   onClick={() => onEjecucionAction({ tipo: "mover_mes_siguiente", semana: s })}>
@@ -330,7 +322,7 @@ function DkPlanForm({
           <div style={{ marginTop: 4 }}>
             <p className="dk-exp-lbl" style={{ marginBottom: 4 }}>¿A qué semana del mes siguiente?</p>
             <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-              {SEMANAS_DESTINO_MES_SIGUIENTE.map(s => (
+              {semanasDestinoMesSiguiente(mov.mes).map(s => (
                 <button key={s} type="button"
                   className={`dk-fchip${semanaDestino === s ? " on" : ""}`}
                   style={{ fontSize: 11, padding: "3px 8px" }}
@@ -519,7 +511,7 @@ function CatGroup({
   semanas: Semana[];
 }) {
   const [open, setOpen] = useState(defaultOpen);
-  const tot = items.reduce((s, m) => s + m.montoPresupuestado, 0);
+  const tot = comprometidoDe(items); // BALANCE-UNIFICADO-01: definición canónica (excluye pospuesto/no_aplica/pospuesto_mes_siguiente)
   // F4: verde cuando todos los conceptos de la categoría están ejecutados
   const allDone = mode === "ejecucion" && !empty && items.length > 0 && items.every(m => m.estado === "ejecutado");
 
@@ -596,7 +588,7 @@ function WeekColumn({
   remanenteAngie?: number;
   semanas: Semana[];
 }) {
-  const tot = items.reduce((s, m) => s + m.montoPresupuestado, 0);
+  const tot = comprometidoDe(items); // BALANCE-UNIFICADO-01: definición canónica (excluye pospuesto/no_aplica/pospuesto_mes_siguiente)
   const ejecutados = items.filter(m => m.estado === "ejecutado");
   const ejecutadoMonto = ejecutados.reduce((s, m) => s + (m.montoEjecutado ?? m.montoPresupuestado), 0);
   // B4: excluir no_aplica/pospuesto del denominador
@@ -622,8 +614,8 @@ function WeekColumn({
     const withItems = ALL_CATS
       .filter(c => map[c] && map[c]!.length > 0)
       .sort((a, b) => {
-        const ta = (map[a] ?? []).reduce((s, m) => s + m.montoPresupuestado, 0);
-        const tb = (map[b] ?? []).reduce((s, m) => s + m.montoPresupuestado, 0);
+        const ta = comprometidoDe(map[a] ?? []);
+        const tb = comprometidoDe(map[b] ?? []);
         return tb - ta;
       });
     // For active semana: categories not present in this week's items go at end, dimmed

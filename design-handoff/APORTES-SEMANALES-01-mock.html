@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aportes emprendimiento — mock</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Hanken+Grotesk:wght@400;600;700;800&display=swap" rel="stylesheet">
+<!-- Sistema visual real de Flujo: mismos tokens y clases fl-* / dk-* que la app -->
+<link rel="stylesheet" href="../app/globals.css">
+<style>
+  :root {
+    --font-hanken: "Hanken Grotesk", system-ui, sans-serif;
+    --font-bricolage: "Bricolage Grotesque", system-ui, sans-serif;
+    --font-body: var(--font-hanken);
+    --font-display: var(--font-bricolage);
+    --font-num: var(--font-hanken);
+    --num-feat: "tnum" 1;
+  }
+  /* Solo para el lienzo del mock — no es parte del diseño */
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); }
+  ::selection { background: var(--primary-soft); color: var(--primary-2); }
+  .mk-page { max-width: 1180px; margin: 0 auto; padding: 40px 24px 80px; }
+  .mk-page > header h1 { font-family: var(--font-display); font-size: 26px; letter-spacing: -0.02em; margin: 0 0 6px; }
+  .mk-page > header p { color: var(--ink-soft); font-size: 14px; margin: 0; max-width: 68ch; line-height: 1.5; }
+  .mk-sec { margin-top: 48px; }
+  .mk-sec > h2 { font-family: var(--font-display); font-size: 18px; letter-spacing: -0.01em; margin: 0 0 4px; }
+  .mk-sec > p { color: var(--ink-soft); font-size: 13px; margin: 0 0 18px; max-width: 70ch; line-height: 1.5; }
+  .mk-row { display: flex; gap: 28px; flex-wrap: wrap; align-items: flex-start; }
+  .mk-frame { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 18px; box-shadow: var(--shadow-card); }
+  .mk-cap { font-size: 11.5px; color: var(--ink-soft); margin: 10px 2px 0; max-width: 300px; line-height: 1.45; }
+  .mk-new { outline: 2px dashed color-mix(in oklch, var(--primary) 55%, transparent); outline-offset: 3px; border-radius: 14px; }
+  .mk-side { width: 268px; }
+  .mk-lbl { font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-faint); font-weight: 700; margin: 16px 2px 8px; }
+  .mk-lbl:first-child { margin-top: 0; }
+  .mk-card { background: var(--surface-2); border-radius: 14px; padding: 10px 12px; }
+  .mk-wk { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .mk-wk b { font-size: 11px; color: var(--ink-soft); width: 20px; }
+  .mk-in { flex: 1; text-align: right; font-size: 12px; font-weight: 600; font-feature-settings: "tnum" 1; }
+  .mk-line { display: flex; justify-content: space-between; padding: 2px 0; font-size: 11px; font-weight: 600; }
+  .mk-line span:first-child { color: var(--ink-faint); }
+  .mk-line span:last-child { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .mk-wkcard { background: var(--surface-2); border-radius: 12px; padding: 8px 12px; margin-bottom: 6px; }
+  .mk-wkcard .top { display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; margin-bottom: 4px; }
+  .mk-wkcard .bot { display: flex; justify-content: space-between; font-size: 10px; color: var(--ink-faint); }
+  .mk-e { color: var(--primary); font-weight: 700; }
+  .mk-eb { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 999px; background: var(--primary-soft); color: var(--primary); font-size: 8.5px; font-weight: 800; }
+  .mk-bar { display: flex; gap: 8px; flex-wrap: wrap; }
+  .mk-phone { width: 360px; }
+  .mk-box { background: var(--surface-2); border-radius: 16px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+  .mk-box .r { display: flex; justify-content: space-between; align-items: center; }
+  .mk-box .k { font-size: 12px; color: var(--ink-soft); }
+  .mk-box .kb { font-size: 12px; font-weight: 700; color: var(--ink-soft); display: inline-flex; align-items: center; gap: 7px; }
+  .mk-box .v { font-size: 13px; font-variant-numeric: tabular-nums; color: var(--ink); }
+  .mk-box .vb { font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .mk-modal { width: 400px; background: var(--surface); border-radius: 22px; border: 1px solid var(--line); box-shadow: var(--shadow-pop); overflow: hidden; }
+  .mk-modal .hd { padding: 18px 20px 12px; display: flex; justify-content: space-between; align-items: flex-start; }
+  .mk-modal .hd h3 { font-family: var(--font-display); font-size: 17px; margin: 0; letter-spacing: -0.01em; }
+  .mk-modal .bd { padding: 4px 20px 18px; }
+  .mk-modal .ft { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 20px; border-top: 1px solid var(--line); }
+  .mk-q { font-size: 11px; font-weight: 700; color: var(--ink-soft); margin: 14px 0 8px; }
+  .mk-seg { display: grid; gap: 6px; }
+  .mk-seg button { font-family: var(--font-num); font-size: 12px; font-weight: 700; padding: 8px 0; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); cursor: pointer; }
+  .mk-seg button.on { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
+  .mk-seg button:disabled { opacity: 0.45; cursor: not-allowed; }
+  .mk-seg button:focus-visible, .fl-btn:focus-visible, .dk-fchip:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .mk-sub { background: var(--surface-2); border-radius: 12px; padding: 10px 12px; margin-top: 10px; }
+  .mk-help { font-size: 11.5px; color: var(--ink-soft); margin: 8px 0 0; }
+  .mk-err { background: var(--neg-soft); color: var(--neg); border-radius: 14px; padding: 8px 12px; font-size: 12.5px; font-weight: 600; margin-top: 10px; }
+  .mk-q-open { border: 1px solid var(--warn); background: var(--warn-soft); color: oklch(0.42 0.1 60); border-radius: 14px; padding: 12px 14px; font-size: 12.5px; line-height: 1.5; max-width: 70ch; }
+  .mk-mchip { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 999px; border: 1px solid transparent; cursor: pointer; }
+  @media (max-width: 720px) { .mk-row { flex-direction: column; } .mk-phone, .mk-modal, .mk-side { width: 100%; } }
+</style>
+</head>
+<body class="dk">
+<main class="mk-page">
+  <header>
+    <h1>Aportes del emprendimiento por semana</h1>
+    <p>Mock de APORTES-SEMANALES-01 sobre el sistema visual actual de Flujo (tokens y clases de <code>app/globals.css</code>). Lo nuevo va con borde punteado; todo lo demás es como se ve hoy. Datos de ejemplo: octubre, ingreso Camilo $12M, Angie $800K por semana, emprendimiento $2M en S2 y $3M en S4.</p>
+  </header>
+
+  <!-- 1. M1 PLANIFICACIÓN -->
+  <section class="mk-sec">
+    <h2>1 · M1 Planificación — barra lateral</h2>
+    <p>El bloque del emprendimiento va justo debajo del de Angie, con su misma forma. En "Balance mes" suma una fila, y en "Por semana" aparece <span class="mk-e">E:</span> al lado de <b>A:</b>, en color primario para no confundirlos.</p>
+    <div class="mk-row">
+      <div class="mk-frame mk-side">
+        <p class="mk-lbl">Ingreso Camilo</p>
+        <div class="mk-card">
+          <input class="fl-input mk-in" style="width:100%;font-size:14px" value="12000000" readonly>
+          <p style="margin:6px 0 0;font-size:11px;color:var(--pos);font-weight:600">✓ $12.000.000</p>
+        </div>
+
+        <p class="mk-lbl">Aportes Angie</p>
+        <div class="mk-card">
+          <div class="mk-wk"><b>S1</b><input class="fl-input mk-in" value="800000" readonly></div>
+          <div class="mk-wk"><b>S2</b><input class="fl-input mk-in" value="800000" readonly></div>
+          <div class="mk-wk"><b>S3</b><input class="fl-input mk-in" value="800000" readonly></div>
+          <div class="mk-wk"><b>S4</b><input class="fl-input mk-in" value="800000" readonly></div>
+          <button class="fl-btn primary sm" style="width:100%;justify-content:center;margin-top:4px">Guardar aportes</button>
+        </div>
+
+        <div class="mk-new">
+          <p class="mk-lbl" style="display:flex;align-items:center;gap:6px"><span class="mk-eb">E</span> Aportes emprendimiento</p>
+          <div class="mk-card">
+            <div class="mk-wk"><b>S1</b><input class="fl-input mk-in" placeholder="0" readonly></div>
+            <div class="mk-wk"><b>S2</b><input class="fl-input mk-in" value="2000000" readonly></div>
+            <div class="mk-wk"><b>S3</b><input class="fl-input mk-in" placeholder="0" readonly></div>
+            <div class="mk-wk"><b>S4</b><input class="fl-input mk-in" value="3000000" readonly></div>
+            <button class="fl-btn primary sm" style="width:100%;justify-content:center;margin-top:4px">Guardar aportes emprendimiento</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mk-frame mk-side">
+        <p class="mk-lbl">Balance mes</p>
+        <div class="mk-card">
+          <div class="mk-line"><span>Comprometido</span><span>$19.800.000</span></div>
+          <div class="mk-line"><span>Ingreso Camilo</span><span>$12.000.000</span></div>
+          <div class="mk-line"><span>Aportes Angie</span><span>$3.200.000</span></div>
+          <div class="mk-line mk-new" style="outline-offset:1px"><span>Aportes emprendimiento</span><span class="mk-e">$5.000.000</span></div>
+          <div class="mk-line"><span>Total disponible</span><span style="color:var(--pos)">$20.200.000</span></div>
+          <div class="mk-line"><span>Diferencia</span><span style="color:var(--pos)">$400.000</span></div>
+        </div>
+
+        <p class="mk-lbl">Por semana</p>
+        <div class="mk-wkcard"><div class="top"><span style="color:var(--ink-soft)">S1</span><span style="color:var(--pos)">+$1.2M</span></div>
+          <div class="bot"><span>C:$12.0M A:$800K <span class="mk-e">E:$0</span></span><span>$11.6M</span></div></div>
+        <div class="mk-wkcard" style="background:var(--primary-soft);border:1px solid var(--primary)"><div class="top"><span style="color:var(--ink-soft)">S2</span><span style="color:var(--pos)">+$0.6M</span></div>
+          <div class="bot"><span>↪ $1.2M A:$800K <span class="mk-e">E:$2.0M</span></span><span>$3.4M</span></div></div>
+        <div class="mk-wkcard"><div class="top"><span style="color:var(--ink-soft)">S3</span><span style="color:var(--neg)">-$1.4M</span></div>
+          <div class="bot"><span>↪ $0.6M A:$800K <span class="mk-e">E:$0</span></span><span>$2.8M</span></div></div>
+        <div class="mk-wkcard"><div class="top"><span style="color:var(--ink-soft)">S4</span><span style="color:var(--pos)">+$0.4M</span></div>
+          <div class="bot"><span>↪ -$1.4M A:$800K <span class="mk-e">E:$3.0M</span></span><span>$2.0M</span></div></div>
+        <p class="mk-cap">En semanas sin aporte, <span class="mk-e">E:$0</span> aparece igual. El bloque se muestra todos los meses; en los meses sin emprendimiento queda en cero.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. M1 EJECUCIÓN -->
+  <section class="mk-sec">
+    <h2>2 · M1 Ejecución — botones y saldo NU Camilo</h2>
+    <p>"Aporte emprendimiento" es un botón hermano de "Aporte Angie" y abre el mismo modal, con una casilla por semana. En Saldos, el disponible de NU Camilo suma los aportes de las semanas que ya empezaron (opción b). Para que se entienda por qué subió, aparece una línea propia.</p>
+    <div class="mk-row">
+      <div class="mk-frame" style="flex:1;min-width:300px">
+        <div class="mk-bar">
+          <button class="fl-btn ghost sm"><span class="fl-person a" style="width:16px;height:16px;font-size:8px">A</span> Aporte Angie</button>
+          <button class="fl-btn ghost sm mk-new"><span class="mk-eb">E</span> Aporte emprendimiento</button>
+          <button class="fl-btn ghost sm">+ Agregar concepto</button>
+          <button class="fl-btn ghost sm">✓ Cerrar S2</button>
+        </div>
+      </div>
+      <div class="mk-frame mk-side">
+        <p class="mk-lbl">Saldos</p>
+        <div class="mk-card">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span class="fl-person c" style="width:18px;height:18px;font-size:9px">C</span><span style="font-size:11.5px;color:var(--ink-soft);font-weight:600">NU Camilo</span></div>
+          <div style="padding-left:26px">
+            <div class="mk-line" style="font-size:10.5px"><span>Inicial</span><span style="color:var(--ink-soft);font-weight:400">$4.1M</span></div>
+            <div class="mk-line mk-new" style="font-size:10.5px;outline-offset:1px"><span>+ Emprendimiento (S1–S2)</span><span class="mk-e">$2.0M</span></div>
+            <div class="mk-line" style="font-size:10.5px"><span>Ejecutado</span><span style="color:var(--ink-soft);font-weight:400">$3.3M</span></div>
+            <div class="mk-line"><span style="color:var(--ink-soft)">Disponible</span><span style="color:var(--pos)">$2.8M</span></div>
+          </div>
+        </div>
+        <p class="mk-cap">La línea "+ Emprendimiento" queda visible (decidido por Camilo, 29 sept 2026).</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. VISTA SEMANAL -->
+  <section class="mk-sec">
+    <h2>3 · Vista semanal — bloque propio del emprendimiento (variante A)</h2>
+    <p>El recuadro de Angie no cambia. El del emprendimiento usa el mismo lenguaje visual pero con su propio título y distintivo, y muestra una sola línea con el aporte planeado de la semana visible.</p>
+    <div class="mk-q-open"><b>Decidido por Camilo (29 sept 2026):</b> los dos recuadros se muestran juntos, uno encima del otro, para ambos (Camilo y Angie). Cambio frente a hoy: el recuadro de Angie, que solo aparecía cuando la vista la abre Angie, pasa a verse también para Camilo, sin cambiar su contenido.</div>
+    <div class="mk-row" style="margin-top:18px">
+      <div>
+        <div class="mk-frame mk-phone" style="display:flex;flex-direction:column;gap:12px">
+          <div class="mk-box">
+            <div class="r"><span class="kb">Saldo NU Angie</span><span class="vb">$1.4M</span></div>
+            <div style="border-top:1px solid var(--line);padding-top:8px;display:flex;flex-direction:column;gap:6px">
+              <div class="r"><span class="k">Aporte planeado S2</span><span class="v">$800K</span></div>
+              <div class="r"><span class="k">Gastado esta semana</span><span class="v">$310K</span></div>
+              <div class="r" style="border-top:1px dashed var(--line);padding-top:6px"><span class="kb">Disponible semana</span><span class="v" style="font-weight:800;color:var(--pos)">$490K</span></div>
+            </div>
+          </div>
+          <div class="mk-box mk-new">
+            <div class="r"><span class="kb"><span class="mk-eb">E</span>Emprendimiento</span></div>
+            <div class="r"><span class="k">Aporte planeado S2</span><span class="vb mk-e">$2.0M</span></div>
+          </div>
+        </div>
+        <p class="mk-cap">Semana con aporte (S2). El recuadro de Angie queda exactamente como está hoy.</p>
+      </div>
+      <div>
+        <div class="mk-frame mk-phone">
+          <div class="mk-box mk-new">
+            <div class="r"><span class="kb"><span class="mk-eb">E</span>Emprendimiento</span></div>
+            <div class="r"><span class="k">Aporte planeado S3</span><span class="vb" style="color:var(--ink-faint)">$0</span></div>
+          </div>
+        </div>
+        <p class="mk-cap">Semana sin aporte (S3): el recuadro sigue apareciendo, con $0 en tono suave. No muestra "pagado con" ni "lo que queda".</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. POSPONER AL MES SIGUIENTE -->
+  <section class="mk-sec">
+    <h2>4 · Posponer al mes siguiente — elegir semana</h2>
+    <p>Al tocar "Mes sig." se abre en el mismo modal la pregunta "¿A qué semana del mes siguiente?", con el mismo patrón que ya usa M1 ("→ S1"…). Mientras no elijas semana, "Posponer" queda deshabilitado.</p>
+    <div class="mk-row">
+      <div>
+        <div class="mk-modal">
+          <div class="hd"><h3>Arriendo</h3><button class="fl-btn ghost sm" style="padding:6px 9px" aria-label="Cerrar">✕</button></div>
+          <div class="bd">
+            <div style="display:flex;gap:4px"><button class="fl-btn ghost sm">Ejecutar</button><button class="fl-btn primary sm">Posponer</button><button class="fl-btn ghost sm">No aplica</button></div>
+            <p class="mk-q">SEMANA DESTINO</p>
+            <div class="mk-seg" style="grid-template-columns:repeat(5,1fr)">
+              <button disabled>S1 ×</button><button disabled>S2 ×</button><button>S3</button><button>S4</button><button class="on">Mes sig.</button>
+            </div>
+            <div class="mk-sub mk-new">
+              <p class="mk-q" style="margin-top:0">¿A qué semana del mes siguiente?</p>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <button class="dk-fchip">→ S1</button><button class="dk-fchip">→ S2</button><button class="dk-fchip">→ S3</button><button class="dk-fchip">→ S4</button>
+              </div>
+              <p class="mk-help">Elige la semana del mes siguiente.</p>
+            </div>
+          </div>
+          <div class="ft"><button class="fl-btn ghost sm">Cancelar</button><button class="fl-btn primary sm" disabled>Posponer</button></div>
+        </div>
+        <p class="mk-cap">"Mes sig." sin semana: el botón de confirmar está deshabilitado y la ayuda explica por qué.</p>
+      </div>
+      <div>
+        <div class="mk-modal">
+          <div class="hd"><h3>Arriendo</h3><button class="fl-btn ghost sm" style="padding:6px 9px" aria-label="Cerrar">✕</button></div>
+          <div class="bd">
+            <div style="display:flex;gap:4px"><button class="fl-btn ghost sm">Ejecutar</button><button class="fl-btn primary sm">Posponer</button><button class="fl-btn ghost sm">No aplica</button></div>
+            <p class="mk-q">SEMANA DESTINO</p>
+            <div class="mk-seg" style="grid-template-columns:repeat(5,1fr)">
+              <button disabled>S1 ×</button><button disabled>S2 ×</button><button>S3</button><button>S4</button><button class="on">Mes sig.</button>
+            </div>
+            <div class="mk-sub mk-new">
+              <p class="mk-q" style="margin-top:0">¿A qué semana del mes siguiente?</p>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <button class="dk-fchip on">→ S1</button><button class="dk-fchip">→ S2</button><button class="dk-fchip">→ S3</button><button class="dk-fchip">→ S4</button>
+              </div>
+            </div>
+            <div class="mk-err">No se pudo posponer: la semana S1 de noviembre ya está cerrada. Elige otra semana.</div>
+          </div>
+          <div class="ft"><button class="fl-btn ghost sm">Cancelar</button><button class="fl-btn primary sm">Posponer a nov · S1</button></div>
+        </div>
+        <p class="mk-cap">Con semana elegida, el botón dice exactamente a dónde va el pago. Abajo, el estado de error dentro del modal (sin alert).</p>
+      </div>
+      <div>
+        <div class="mk-frame mk-phone">
+          <p style="font-size:13px;font-weight:700;margin:0 0 8px">Arriendo · $1.8M</p>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <span class="mk-mchip" style="background:var(--surface-2);color:var(--ink-soft)">S3</span>
+            <span class="mk-mchip" style="background:var(--surface-2);color:var(--ink-soft)">S4</span>
+            <span class="mk-mchip" style="background:var(--warn-soft);color:oklch(0.42 0.1 60);border-color:var(--warn)">Mes siguiente</span>
+          </div>
+          <div class="mk-sub mk-new">
+            <p class="mk-q" style="margin-top:0">¿A qué semana del mes siguiente?</p>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <span class="fl-chip" style="cursor:pointer">→ S1</span><span class="fl-chip" style="cursor:pointer">→ S2</span><span class="fl-chip" style="cursor:pointer">→ S3</span><span class="fl-chip" style="cursor:pointer">→ S4</span>
+            </div>
+          </div>
+        </div>
+        <p class="mk-cap">Móvil: al tocar "Mes siguiente", el chip se marca y debajo se despliegan las semanas. El pago se mueve cuando tocas una; sin semana, no se envía nada.</p>
+      </div>
+    </div>
+  </section>
+</main>
+</body>
+</html>

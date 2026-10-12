@@ -10,7 +10,8 @@ import type {
 import Icon from "@/components/ui/Icon";
 import BottomNav from "@/components/ui/BottomNav";
 import ModalConfirmarSaldos from "@/components/m1/ModalConfirmarSaldos";
-import { semanasDeMes } from "@/lib/utils/fecha";
+import { semanasDeMes, mesSiguienteDe, etiquetaRangoSemana, semanaDeHoyEnMes, diasHastaFinSemana } from "@/lib/utils/fecha";
+import { calcularBalanceMes } from "@/lib/utils/balanceMes";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -27,18 +28,13 @@ const COP = (n: number, opts?: { compact?: boolean }): string => {
   }).format(n);
 };
 
-const MESES_ES = ["","ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
 const MESES_FULL = ["","Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
 function semanaDates(mes: string): Record<Semana, string> {
-  const [year, monthStr] = mes.split("-");
-  const month = Number(monthStr);
-  const last = new Date(Number(year), month, 0).getDate();
-  const m = MESES_ES[month];
-  return {
-    S1: `1–7 ${m}`, S2: `8–14 ${m}`, S3: `15–21 ${m}`, S4: `22–28 ${m}`,
-    S5: `29–${last} ${m}`,
-  };
+  // I-21: rangos desde lib/utils/fecha.ts (viernes desde 2026-09, lunes antes).
+  const out = { S1: "", S2: "", S3: "", S4: "", S5: "" } as Record<Semana, string>;
+  for (const s of semanasDeMes(mes)) out[s] = etiquetaRangoSemana(mes, s);
+  return out;
 }
 
 function mesLabel(mes: string): string {
@@ -47,25 +43,11 @@ function mesLabel(mes: string): string {
 }
 
 function getActiveSemana(mes: string): Semana {
-  const today = new Date();
-  const [year, monthStr] = mes.split("-");
-  if (today.getFullYear() !== Number(year) || today.getMonth() + 1 !== Number(monthStr)) return "S1";
-  const d = today.getDate();
-  if (d <= 7) return "S1";
-  if (d <= 14) return "S2";
-  if (d <= 21) return "S3";
-  if (d <= 28) return "S4";
-  return "S5";
+  return semanaDeHoyEnMes(mes);
 }
 
 function diasParaCerrar(mes: string, semana: Semana): number {
-  const [year, monthStr] = mes.split("-");
-  const month = Number(monthStr);
-  const lastDay = new Date(Number(year), month, 0).getDate();
-  const endDay = semana === "S1" ? 7 : semana === "S2" ? 14 : semana === "S3" ? 21 : semana === "S4" ? 28 : lastDay;
-  const endDate = new Date(Number(year), month - 1, endDay);
-  const diff = Math.ceil((endDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-  return Math.max(0, diff);
+  return diasHastaFinSemana(mes, semana);
 }
 
 const CAT_ICON: Record<string, string> = {
@@ -136,6 +118,8 @@ export default function MesM1Mobile({
   const [wk, setWk] = useState<Semana>(() => getActiveSemana(mes));
   const [showSaldosModal, setShowSaldosModal] = useState(false);
   const [expandedPlanId, setExpandedPlanId] = useState<string | null>(null);
+  // BALANCE-UNIFICADO-01: picker de semana del mes siguiente (abierto para este movimiento).
+  const [moverPickerId, setMoverPickerId] = useState<string | null>(null);
   const [ejecutarPanel, setEjecutarPanel] = useState<EjecutarPanel | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -150,12 +134,18 @@ export default function MesM1Mobile({
   const saldosConfirmados = CUENTAS_H4C.every(({ cuenta }) => saldos.some(s => s.cuenta === cuenta));
 
   const ingresoCamiloNum = ingresoCamiloProp?.montoCop ?? 0;
-  const aportesNum = useMemo(() =>
-    ingresosAngieProp.reduce((s, a) => s + a.monto, 0), [ingresosAngieProp]);
-  const ingresoTotal = ingresoCamiloNum + aportesNum;
-
-  const totalPresupuestado = useMemo(() =>
-    movs.reduce((s, m) => s + m.montoPresupuestado, 0), [movs]);
+  // BALANCE-UNIFICADO-01 (D1): ingreso y comprometido del mes salen de balanceMes
+  // (mes = Σ semanas, definición canónica de comprometido); sin fórmula propia aquí.
+  const balanceMes = useMemo(() => {
+    const aportesPorSemana: Partial<Record<Semana, number>> = {};
+    for (const a of ingresosAngieProp) aportesPorSemana[a.semana] = (aportesPorSemana[a.semana] ?? 0) + a.monto;
+    return calcularBalanceMes({ movs, semanas: SEMANAS, ingresoCamilo: ingresoCamiloNum, aportesPorSemana });
+  }, [movs, SEMANAS, ingresoCamiloNum, ingresosAngieProp]);
+  useEffect(() => {
+    if (!balanceMes.cuadre.ok) console.error("[balanceMes] el cuadre mes = Σ semanas FALLA:", balanceMes.cuadre.errores);
+  }, [balanceMes]);
+  const ingresoTotal = balanceMes.mes.ingreso;
+  const totalPresupuestado = balanceMes.mes.comprometido;
   const proyeccion = ingresoTotal - totalPresupuestado;
 
   const ejecutadoTotal = useMemo(() =>
@@ -392,6 +382,21 @@ export default function MesM1Mobile({
                             </button>
                           ))}
                         </div>
+                        {moverPickerId === mov.id && (
+                          <div style={{ marginBottom: 10 }}>
+                            <p style={{ fontSize: 11, color: "var(--ink-faint)", fontWeight: 600, margin: "0 0 8px" }}>¿A qué semana del mes siguiente?</p>
+                            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                              {semanasDeMes(mesSiguienteDe(mes)).map(s => (
+                                <button key={s} type="button" disabled={busy}
+                                  onClick={() => patchar(mov.id, { tipo: "mover_mes_siguiente", semana: s })}
+                                  className="fl-chip"
+                                  style={{ cursor: "pointer", background: "var(--warn-soft)", color: "var(--warn)", borderColor: "transparent" }}>
+                                  → {s}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                           <button type="button" disabled={busy}
                             onClick={() => patchar(mov.id, { tipo: "no_aplica" })}
@@ -400,7 +405,7 @@ export default function MesM1Mobile({
                             No aplica
                           </button>
                           <button type="button" disabled={busy}
-                            onClick={() => patchar(mov.id, { tipo: "mover_mes_siguiente" })}
+                            onClick={() => setMoverPickerId(moverPickerId === mov.id ? null : mov.id)}
                             className="fl-chip"
                             style={{ cursor: "pointer", background: "var(--warn-soft)", color: "var(--warn)", borderColor: "transparent" }}>
                             Mes siguiente

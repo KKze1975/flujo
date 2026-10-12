@@ -2,20 +2,7 @@
 
 import { useState } from "react";
 import type { IngresoAngie, Semana } from "@/lib/data/types";
-import { semanasDeMes } from "@/lib/utils/fecha";
-
-const SEMANA_FECHAS: Record<Semana, (mes: string) => string> = {
-  S1: (mes) => `1–7 ${mes.split("-")[1] === "05" ? "may" : mes}`,
-  S2: (mes) => `8–14 ${mes.split("-")[1] === "05" ? "may" : mes}`,
-  S3: (mes) => `15–21 ${mes.split("-")[1] === "05" ? "may" : mes}`,
-  S4: (mes) => `22–28 ${mes.split("-")[1] === "05" ? "may" : mes}`,
-  S5: (mes) => {
-    const [year, month] = mes.split("-").map(Number);
-    const last = new Date(year, month, 0).getDate();
-    const mLabel = ["", "ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"][month];
-    return `29–${last} ${mLabel}`;
-  },
-};
+import { semanasDeMes, etiquetaRangoSemana } from "@/lib/utils/fecha";
 
 const COP = (n: number) =>
   new Intl.NumberFormat("es-CO", {
@@ -88,7 +75,7 @@ export default function ModalAporteAngie({ mes, existing, onClose, onSave }: Pro
             {SEMANAS.map((s) => (
               <tr key={s} className="border-b border-gray-50">
                 <td className="py-2 font-medium text-gray-700">{s}</td>
-                <td className="py-2 text-gray-400 text-xs">{SEMANA_FECHAS[s](mes)}</td>
+                <td className="py-2 text-gray-400 text-xs">{etiquetaRangoSemana(mes, s)}</td>
                 <td className="py-2 text-right">
                   <input
                     type="number"

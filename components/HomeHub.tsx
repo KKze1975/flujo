@@ -6,6 +6,8 @@ import Icon from "@/components/ui/Icon";
 import BottomNav from "@/components/ui/BottomNav";
 import RegistroRapido from "@/components/m4/RegistroRapido";
 import SugerirIdea from "@/components/m4/SugerirIdea";
+import type { Semana } from "@/lib/data/types";
+import { diasHastaFinSemana, mesActual } from "@/lib/utils/fecha";
 
 function COP(n: number, compact = false): string {
   if (compact && Math.abs(n) >= 1_000_000) {
@@ -28,15 +30,6 @@ const MESES_FULL = [
 function formatMes(mes: string): string {
   const [year, m] = mes.split("-");
   return `${MESES_FULL[Number(m)]} ${year}`;
-}
-
-function diasRestantes(semana: string): number {
-  const day = new Date().getDate();
-  if (semana === "S1") return Math.max(7 - day, 0);
-  if (semana === "S2") return Math.max(14 - day, 0);
-  if (semana === "S3") return Math.max(21 - day, 0);
-  const lastDay = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
-  return Math.max(lastDay - day, 0);
 }
 
 export interface HubMetricas {
@@ -63,7 +56,7 @@ export default function HomeHub({
   const [ideaSheetOpen, setIdeaSheetOpen] = useState(false);
 
   const destSemana = mesActivo ? `/mes/${mesActivo}/semana` : "/meses";
-  const dias = diasRestantes(semanaActiva);
+  const dias = diasHastaFinSemana(mesActivo ?? mesActual(), semanaActiva as Semana);
   const disponible = metricas?.disponibleSemana ?? 0;
 
   return (

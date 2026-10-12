@@ -7,7 +7,8 @@ import Ring from "@/components/ui/Ring";
 import BottomNav from "@/components/ui/BottomNav";
 import RegistroRapido from "@/components/m4/RegistroRapido";
 import type { Movimiento, CierreSemana, Semana, Actor, ConsumoH3, IngresoAngie, Concepto } from "@/lib/data/types";
-import { semanasDeMes } from "@/lib/utils/fecha";
+import { semanasDeMes, mesSiguienteDe } from "@/lib/utils/fecha";
+import { comprometidoDe, esComprometido } from "@/lib/utils/balanceMes";
 
 type Fuente = "en_mano" | "nequi" | "camilo" | "angie";
 type ModoSemana = "activa" | "lectura" | "edicion";
@@ -480,6 +481,8 @@ function ModalAccionesPendiente({
 
   const [accion, setAccion] = useState<Accion>("ejecutar");
   const [destino, setDestino] = useState<Destino>("S1");
+  // BALANCE-UNIFICADO-01: semana destino del mes siguiente, obligatoria para trasladar.
+  const [semanaMesSiguiente, setSemanaMesSiguiente] = useState<Semana | null>(null);
   const [montoEditar, setMontoEditar] = useState(String(movimiento.montoPresupuestado));
   const [fuenteEditar, setFuenteEditar] = useState<Fuente | null>(null);
   const [busy, setBusy] = useState(false);
@@ -508,7 +511,8 @@ function ModalAccionesPendiente({
       } else if (accion === "no_aplica") {
         body = { tipo: "no_aplica" };
       } else if (destino === "siguiente") {
-        body = { tipo: "mover_mes_siguiente" };
+        if (!semanaMesSiguiente) { setError("Elige la semana del mes siguiente"); setBusy(false); return; }
+        body = { tipo: "mover_mes_siguiente", semana: semanaMesSiguiente };
       } else {
         body = { tipo: "posponer", nuevaSemana: destino };
       }
@@ -618,6 +622,20 @@ function ModalAccionesPendiente({
                   Mes sig.
                 </button>
               </div>
+              {destino === "siguiente" && (
+                <div style={{ marginTop: 10 }}>
+                  <p className="dk-exp-lbl">¿A qué semana del mes siguiente?</p>
+                  <div className="dk-seg2" style={{ gridTemplateColumns: `repeat(${semanasDeMes(mesSiguienteDe(mes)).length}, 1fr)`, gap: 6 }}>
+                    {semanasDeMes(mesSiguienteDe(mes)).map(s => (
+                      <button key={s} type="button"
+                        className={semanaMesSiguiente === s ? "on" : ""}
+                        onClick={() => setSemanaMesSiguiente(s)}>
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -639,7 +657,7 @@ function ModalAccionesPendiente({
             Cancelar
           </button>
           <button type="button" className="fl-btn primary sm" onClick={confirmar}
-            disabled={busy || (accion === "ejecutar" && !fuenteEditar)}>
+            disabled={busy || (accion === "ejecutar" && !fuenteEditar) || (accion === "posponer" && destino === "siguiente" && !semanaMesSiguiente)}>
             {busy ? "…" : accion === "ejecutar" ? "Confirmar ejecución" : accion === "posponer" ? "Posponer" : "Confirmar no aplica"}
           </button>
         </footer>
@@ -1031,10 +1049,10 @@ export default function VistaSemanal({
   const pendientes = conceptos.filter((m) => m.estado === "pendiente" || m.estado === "pospuesto");
   const ejecutados = conceptos.filter((m) => m.estado === "ejecutado");
 
-  const movimientosPresupuestados = movimientos.filter(
-    m => m.estado !== "no_aplica" && m.estado !== "pospuesto_mes_siguiente"
-  );
-  const totalPresupuestado = movimientosPresupuestados.reduce((s, m) => s + m.montoPresupuestado, 0);
+  // BALANCE-UNIFICADO-01: presupuestado/comprometido de la semana = definición canónica
+  // (excluye no_aplica, pospuesto y pospuesto_mes_siguiente), la misma de balanceMes.
+  const movimientosPresupuestados = movimientos.filter(m => esComprometido(m.estado));
+  const totalPresupuestado = comprometidoDe(movimientos);
   // Exclude pago_fraccionado from H2 sum — their spending is always counted via H3B consumos.
   // After cerrar-semana writes estado=ejecutado to pago_fraccionado H2, this prevents double-counting.
   const totalEjecutadoH2 = movimientos

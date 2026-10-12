@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { getProvider } from "@/lib/data/provider";
 import type { Semana } from "@/lib/data/types";
-import { semanasDeMes } from "@/lib/utils/fecha";
+import { semanasDeMes, mesSiguienteDe } from "@/lib/utils/fecha";
 
 const MES_REGEX = /^\d{4}-\d{2}$/;
 
@@ -21,7 +21,7 @@ type PatchBody =
   | { tipo: "no_aplica" }
   | { tipo: "reasignar_semana"; semana: Semana }
   | { tipo: "actualizar_monto"; montoPresupuestado: number }
-  | { tipo: "mover_mes_siguiente"; semana?: Semana }
+  | { tipo: "mover_mes_siguiente"; semana: Semana }
   | { tipo: "revertir_mes_siguiente" }
   | { tipo: "revertir_ejecucion" };
 
@@ -64,6 +64,17 @@ export async function PATCH(
       if (typeof montoEjecutado !== "number" || montoEjecutado < 0) {
         return Response.json({ error: "montoEjecutado inválido." }, { status: 400 });
       }
+      // BALANCE-UNIFICADO-01: `semana` nunca queda vacía. Un movimiento sin
+      // semana (fila heredada) exige que el cliente envíe una al ejecutarlo.
+      if (mov.semana === null && !body.semana) {
+        return Response.json(
+          { error: "Este movimiento no tiene semana asignada; envía `semana` para ejecutarlo." },
+          { status: 400 }
+        );
+      }
+      if (mov.semana === null && body.semana && !semanasDeMes(mes).includes(body.semana)) {
+        return Response.json({ error: "semana inválida." }, { status: 400 });
+      }
       patch = {
         estado: "ejecutado",
         montoEjecutado,
@@ -78,6 +89,13 @@ export async function PATCH(
         ...(body.semana && mov.semana === null ? { semana: body.semana } : {}),
       };
     } else if (body.tipo === "posponer") {
+      // BALANCE-UNIFICADO-01: posponer un movimiento sin semana exige una semana destino.
+      if (mov.semana === null && !body.nuevaSemana) {
+        return Response.json(
+          { error: "Este movimiento no tiene semana asignada; envía `nuevaSemana` para posponerlo." },
+          { status: 400 }
+        );
+      }
       if (body.nuevaSemana && !semanasDeMes(mes).includes(body.nuevaSemana)) {
         return Response.json({ error: "nuevaSemana inválida." }, { status: 400 });
       }
@@ -106,26 +124,23 @@ export async function PATCH(
       }
       patch = { montoPresupuestado: body.montoPresupuestado };
     } else if (body.tipo === "mover_mes_siguiente") {
-      const [year, month] = mes.split("-").map(Number);
-      const nextMes = month === 12
-        ? `${year + 1}-01`
-        : `${year}-${String(month + 1).padStart(2, "0")}`;
+      const nextMes = mesSiguienteDe(mes);
+
+      // BALANCE-UNIFICADO-01: la semana destino es obligatoria para todo
+      // traslado (semana nunca `null`, I-16). La elige quien traslada.
+      if (!body.semana) {
+        return Response.json(
+          { error: "Falta semana destino: todo traslado al mes siguiente exige una semana." },
+          { status: 400 }
+        );
+      }
 
       const conceptos = await provider.getConceptos();
       const concepto = conceptos.find((c) => c.id === mov.conceptoId);
 
-      // DT-M1M4-NULL-01 / B3: un concepto de semana variable nunca puede
-      // trasladarse con semana:null (M1 lo excluye de cualquier filtro
-      // específico, M4 lo incluye en las 4 simultáneamente mientras esté
-      // pendiente — asimetría confirmada por auditoría de código). Exigir
-      // semana destino explícita en el body cuando aplica.
-      if (concepto?.semanaDefault === "variable" && !body.semana) {
-        return Response.json(
-          { error: "Este concepto requiere semana destino explícita para trasladarlo al mes siguiente." },
-          { status: 400 }
-        );
-      }
-      if (body.semana && !semanasDeMes(nextMes).includes(body.semana)) {
+      // DT-M1M4-NULL-01 / B3 (generalizado por BALANCE-UNIFICADO-01): antes solo
+      // los conceptos de semana variable exigían semana destino; ahora todos.
+      if (!semanasDeMes(nextMes).includes(body.semana)) {
         return Response.json({ error: "semana inválida." }, { status: 400 });
       }
 
@@ -151,7 +166,7 @@ export async function PATCH(
         nombreSnapshot: mov.nombreSnapshot,
         categoriaSnapshot: mov.categoriaSnapshot,
         tipoSnapshot: mov.tipoSnapshot,
-        semana: body.semana ?? null,
+        semana: body.semana,
         montoPresupuestado: mov.montoPresupuestado,
         montoEjecutado: null,
         desviacion: null,
