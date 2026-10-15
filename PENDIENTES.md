@@ -31,6 +31,9 @@
 | Flujo | [Operación] Deuda UI menor: etiqueta "Mes sig." en `pospuesto` dentro del mes (ConceptoBoard); "Disponible esta semana" difiere entre pantallas y HomeHub usa `Math.abs` | pendiente | 2026-10-14 | etiquetas y disponible coherentes | anotado en revisión visual | `tickets/BALANCE-UNIFICADO-01.md`, revisión visual 30 sept |
 | Flujo | [Operación] SEMANAS-VIERNES-01 — regla del viernes DESPLEGADA en producción (main `6b21e6f`, 3 oct); falta retirar las 12 filas de 2026-09 S5 (H2 8, H3 2, H4B 1, H5B 1) para que sep cuadre | bloqueada | 2026-10-07 | 2026-09 cuadra (mes = Σ semanas) | esperando aprobación de Camilo del script de retiro | `tickets/SEMANAS-VIERNES-01.md`; ESTADO.md, cierre 3 oct |
 | Flujo | [Producto] APORTES-SEMANALES: Camilo indicó (1 oct) que el aporte del emprendimiento va solo en Planeación; confirmar si se descarta 01B y qué se reajusta en 01C y 01D | bloqueada | 2026-10-03 | decisión explícita de Camilo sobre 01B/01C/01D | esperando confirmación | ESTADO.md, cierre 1 oct |
+| Flujo | [ESP] Documentación del empleador anterior por escrito; apetito: 1 h | pendiente | 2026-10-20 | documento por escrito | verbal del 13 oct, sin escrito | detalle en `PRESUPUESTO-GUERRA.md` (fuera de git); ↑ sin respaldo (padre por definir) |
+| Flujo | [ESP] Confirmar por escrito contrato e ingresos nuevos de clientes (ene a mar) | pendiente | 2026-10-27 | confirmación y fecha por escrito de cada ingreso nuevo | supuestos en el documento fuera de git | detalle en `PRESUPUESTO-GUERRA.md` (fuera de git); ↑ sin respaldo (padre por definir) |
+| Flujo | [ACT] Decidir el fondo de transporte y actualizar el modelo | pendiente | 2026-10-16 | decisión de Camilo | abierta | detalle en `PRESUPUESTO-GUERRA.md` (fuera de git); ↑ sin respaldo |
 
 ## Cerradas
 

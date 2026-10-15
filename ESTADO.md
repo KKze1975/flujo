@@ -8332,3 +8332,36 @@ Principio: la S5 de septiembre deja de existir; sus movimientos reemplazan (no d
 - Reactivo/incidentes: sep 2026 no cuadra (sep S5 residual)
 - Bloqueados esperando a Camilo: aprobar el retiro de las filas sep S5 (y confirmar el destino de H3 216 y H3 210); etnografía con Ángela María; SEC-EXPOSICION-PUBLICA-01 A/B/C
 - Próximo paso: Camilo aprueba el script de retiro; correr dry-run, luego `--apply` en PROD con backup y lectura de vuelta
+
+
+## Registro — documento vivo PRESUPUESTO-GUERRA.md (12 oct 2026, a pedido de Camilo)
+
+**Tipo de sesión:** CONSTRUCCIÓN (registro de una decisión ya cerrada).
+
+Se creó `work/flujo/PRESUPUESTO-GUERRA.md`: documento vivo, separado de la app y del Sheet, con un plan de caja (escenarios, disparadores, bitácora de eventos). Sin cambios al código ni a los datos. Se revisita a medida que evolucionen los eventos. Las cifras viven solo en ese documento, no aquí.
+
+
+## Cierre de sesión — presupuesto de guerra y capa de ingresos nuevos (13 oct 2026, Chief of Staff)
+
+**Tipo de sesión:** DISEÑO (solo cálculo de flujo; sin cambios al Sheet ni a la app).
+
+**Qué cambió:** `PRESUPUESTO-GUERRA.md` y `PRESUPUESTO-GUERRA.html` pasaron de registro inicial a modelo de flujo mensual completo (secciones 2, 5, 5B, 5C, 6, 7, 11 alineadas; sección 5D nueva; HTML con interruptores de la capa). Las cifras viven solo en esos documentos.
+
+**Decisiones de Camilo (13 oct):** parámetros del plan y de la capa opcional de ingresos nuevos (detalle en `PRESUPUESTO-GUERRA.md`, fuera de git).
+
+**Supuestos míos sin confirmar:** supuestos sobre ingresos nuevos (detalle en `PRESUPUESTO-GUERRA.md`, fuera de git).
+
+**Retrospectiva:** funcionó verificar con node y control con la capa apagada, y separar ingreso firme de esperado. No funcionó un atajo de ejecución porcentual ni asumir un mes ya cubierto (corregidos por Camilo). Próxima sesión: documentación pendiente del empleador anterior y confirmar supuestos de la capa. Sin candidato a invariante.
+
+**Estado accionable:**
+- Unidad: sesión
+- En curso: [Producto] PRESUPUESTO-GUERRA — modelo de flujo y capa de ingresos nuevos listos; sin confirmar la documentación del empleador anterior ni los ingresos nuevos — activo
+- Backlog priorizado (top 3 de N abiertos):
+  1. [Operación] Retiro de filas sep S5 (SEMANAS-VIERNES-01) — aprobación de Camilo
+  2. [Producto] APORTES-SEMANALES-01B/C/D — a la espera de "aporte solo en Planeación"
+  3. [Operación] BALANCE-CIERRES-H5-01
+- Reactivo/incidentes: sep 2026 no cuadra (sep S5 residual)
+- Seguridad: SEC-EXPOSICION-PUBLICA-01 A/B/C sigue esperando a Camilo
+- FinOps/Costo: sin gasto de infraestructura; cálculo local, sin subagentes
+- Bloqueados esperando a Camilo: documentación por escrito del empleador anterior; confirmación por escrito de ingresos nuevos de clientes; decisión sobre el fondo de transporte (detalle en `PRESUPUESTO-GUERRA.md`, fuera de git); aprobar retiro de filas sep S5; etnografía con Ángela María
+- Próximo paso: Camilo obtiene la documentación pendiente por escrito y confirma los supuestos de la capa; recalcular con la bitácora de eventos
