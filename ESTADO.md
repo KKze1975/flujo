@@ -8365,3 +8365,33 @@ Se creó `work/flujo/PRESUPUESTO-GUERRA.md`: documento vivo, separado de la app 
 - FinOps/Costo: sin gasto de infraestructura; cálculo local, sin subagentes
 - Bloqueados esperando a Camilo: documentación por escrito del empleador anterior; confirmación por escrito de ingresos nuevos de clientes; decisión sobre el fondo de transporte (detalle en `PRESUPUESTO-GUERRA.md`, fuera de git); aprobar retiro de filas sep S5; etnografía con Ángela María
 - Próximo paso: Camilo obtiene la documentación pendiente por escrito y confirma los supuestos de la capa; recalcular con la bitácora de eventos
+
+
+## Cierre de sesión — actualización del presupuesto de guerra y limpieza de exposición (15 oct 2026, Chief of Staff)
+
+**Tipo de sesión:** DISEÑO/registro. Después hubo una construcción de decisiones ya cerradas, hecha por esta misma sesión a pedido explícito de Camilo.
+
+**Qué cambió:**
+- `PRESUPUESTO-GUERRA.md` y `.html` se actualizaron con la documentación ya firmada por escrito.
+- Las cifras viven solo en esos archivos, que ahora están en `.gitignore` junto con `documentos/`.
+- Se rehízo el commit local para que ningún commit contenga esos archivos (`1420702`, sin push).
+- `PENDIENTES.md`: la fila de espera se reescribió, con revisión el 20 oct.
+
+**Decisiones de Camilo:** sacar la información sensible del commit; planear contra el escenario conservador hasta confirmar el ingreso.
+
+**Pendiente sin resolver:** confirmaciones por escrito del empleador anterior (detalle en `PRESUPUESTO-GUERRA.md`, fuera de git).
+
+**Retrospectiva:** funcionó verificar el HTML ejecutando su JS y contrastar la pista contra el escenario anterior. No funcionó que el commit de cierre de la sesión previa arrastrara archivos financieros hacia un repo público; se detectó antes del push. Próxima sesión: decidir A/B/C de SEC-EXPOSICION-PUBLICA-01 y si se redactan las entradas previas de `ESTADO.md` y `PENDIENTES.md`.
+
+**Estado accionable:**
+- Unidad: sesión
+- En curso: [Operación] SEC-EXPOSICION-PUBLICA-01, saneamiento del historial y repo público — bloqueado
+- Backlog priorizado (top 3 de N abiertos):
+  1. [Operación] Retiro de filas sep S5 (SEMANAS-VIERNES-01)
+  2. [Producto] APORTES-SEMANALES-01B/C/D
+  3. [Operación] BALANCE-CIERRES-H5-01
+- Reactivo/incidentes: [Operación] sep 2026 no cuadra (sep S5 residual)
+- Seguridad: SEC-EXPOSICION-PUBLICA-01 abierta; `ESTADO.md` y `PENDIENTES.md` conservan rastros genéricos del plan de caja
+- FinOps/Costo: sin gasto de infraestructura, sin subagentes
+- Bloqueados esperando a Camilo: decisión A/B/C del repo público; documentación pendiente del empleador anterior; fondo de transporte; aprobar el retiro de filas sep S5; etnografía con Ángela María
+- Próximo paso: Camilo decide la exposición del repo; pedir la documentación pendiente por escrito; revisar el pendiente el 20 oct

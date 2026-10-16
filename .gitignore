@@ -60,3 +60,10 @@ doctrine
 
 # cron de Antigravity (scripts/cron-antigravity.sh) — kill switch en disco
 scripts/.cron-antigravity-pausado
+
+# Documentos personales confidenciales (cartas, chats, capturas) — repo público, no commitear
+documentos/
+
+# Presupuesto de guerra: finanzas personales, repo público, no commitear
+PRESUPUESTO-GUERRA.md
+PRESUPUESTO-GUERRA.html
