@@ -8395,3 +8395,32 @@ Se creó `work/flujo/PRESUPUESTO-GUERRA.md`: documento vivo, separado de la app 
 - FinOps/Costo: sin gasto de infraestructura, sin subagentes
 - Bloqueados esperando a Camilo: decisión A/B/C del repo público; documentación pendiente del empleador anterior; fondo de transporte; aprobar el retiro de filas sep S5; etnografía con Ángela María
 - Próximo paso: Camilo decide la exposición del repo; pedir la documentación pendiente por escrito; revisar el pendiente el 20 oct
+
+
+## Cierre de sesión — planificación de caja (27 oct 2026, Chief of Staff)
+
+**Tipo de sesión:** DISEÑO (investigación y planificación), cerrado. Al final hubo un tramo de CONSTRUCCIÓN, solo para registrar decisiones ya cerradas.
+
+**Qué cambió:**
+- Se registró el avance de un ingreso pendiente del empleador anterior; queda un componente en trámite, incierto y fuera del plan (detalle en `PRESUPUESTO-GUERRA.md`, fuera de git).
+- `PRESUPUESTO-GUERRA.md` y `.html` se actualizaron (secciones y bitácora). Las cifras viven solo ahí.
+- Investigación de mercado con dos agentes Opus: guardada en `documentos/` (informe HTML y dos archivos con la URL de cada dato). Ignorado por git.
+- Se leyó el plan de noviembre del Sheet de producción en solo lectura. No se escribió nada.
+- `PENDIENTES.md`: una fila a `hecha` y tres filas nuevas de planificación (detalle en `PRESUPUESTO-GUERRA.md`, fuera de git).
+
+**Decisiones de Camilo (27 oct):** registradas en `PRESUPUESTO-GUERRA.md` (fuera de git).
+
+**Retrospectiva:** funcionó contrastar la prensa con la fuente primaria, leer el Sheet en solo lectura para sacar el pico real de caja y usar un dato que aportó Camilo. No funcionó: dos afirmaciones de fuentes secundarias contradictorias que hubo que corregir; una recomendación dada antes de tener todos los datos; y asumir libre un puerto local que ya usaba otro servidor (el `curl` dio 200 desde ese otro). Próxima sesión: verificar supuestos antes de recomendar nada en finanzas, y comprobar el contenido de un servidor local, no solo el 200. Sin candidato a invariante.
+
+**Estado accionable:**
+- Unidad: sesión
+- En curso: [Operación] planificación de caja (detalle en `PRESUPUESTO-GUERRA.md`, fuera de git) — activo
+- Backlog priorizado (top 3 de N abiertos):
+  1. [Operación] Retiro de filas sep S5 (SEMANAS-VIERNES-01), aprobación de Camilo
+  2. [Producto] APORTES-SEMANALES-01B/C/D, a la espera de "aporte solo en Planeación"
+  3. [Operación] BALANCE-CIERRES-H5-01
+- Reactivo/incidentes: [Operación] sep 2026 no cuadra (sep S5 residual)
+- Seguridad: SEC-EXPOSICION-PUBLICA-01 sigue abierta y bloqueada; esta entrada no lleva cifras por el repo público
+- FinOps/Costo: ~420.000 tokens en Opus con esfuerzo alto (dos agentes: 230.000 y 190.000). Sin gasto de infraestructura
+- Bloqueados esperando a Camilo: decisión A/B/C del repo público; aprobar el retiro de filas sep S5; fondo de transporte; etnografía con Ángela María; fijar umbrales pendientes
+- Próximo paso: Camilo completa las verificaciones pendientes de la planificación de caja (detalle en `PRESUPUESTO-GUERRA.md`, fuera de git)
